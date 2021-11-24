@@ -8,19 +8,22 @@ from chimerax.atomic import AtomicStructuresArg, StructureArg
 from chimerax.map import MapArg
 from chimerax.core.errors import UserError
 
-def write_rsr_cmd(session, model, resolution, volume, file_name=None, 
+def write_rsr_cmd(session, model, resolution, volume, 
+        model_file_name=None, param_file_name=None, 
         restrain_coordination_sites=False,
         restrain_positions=False,
         include_hydrogens=False):
     from .real_space_refine_input import write_real_space_refine_defaults
     write_real_space_refine_defaults(
-        session, model, volume, resolution, file_name=file_name,
+        session, model, volume, resolution, 
+        model_file_name=model_file_name, param_file_name=param_file_name,
         restrain_coordination_sites=restrain_coordination_sites,
         restrain_positions=restrain_positions,
         include_hydrogens=include_hydrogens
     )
 
-def write_phenix_refine_cmd(session, model, file_name=None,
+def write_phenix_refine_cmd(session, model, 
+        model_file_name=None, param_file_name=None,
         restrain_coordination_sites=False,
         include_hydrogens=False,
         num_processors=1,
@@ -36,7 +39,8 @@ def write_phenix_refine_cmd(session, model, file_name=None,
         raise UserError(crystal_error_str)
     xmapset = sh.map_mgr.xmapsets[0]
     from .refine_input import write_phenix_refine_defaults
-    write_phenix_refine_defaults(session, model, xmapset, file_name=file_name,
+    write_phenix_refine_defaults(session, model, xmapset, 
+        model_file_name=model_file_name, param_file_name=param_file_name,
         restrain_coordination_sites=restrain_coordination_sites,
         include_hydrogens=include_hydrogens,
         num_processors=num_processors,
@@ -52,7 +56,8 @@ def register_write_phenix_rsr(logger):
             ('volume', MapArg),
         ],
         keyword=[
-            ('file_name', FileNameArg),
+            ('model_file_name', FileNameArg),
+            ('param_file_name', FileNameArg),
             ('restrain_positions', BoolArg),
             ('include_hydrogens', BoolArg)
         ],
@@ -66,7 +71,8 @@ def register_write_phenix_refine(logger):
             ('model', StructureArg),
         ],
         keyword=[
-            ('file_name', FileNameArg),
+            ('model_file_name', FileNameArg),
+            ('param_file_name', FileNameArg),
             ('include_hydrogens', BoolArg),
             ('num_processors', IntArg),
             ('num_macrocycles', IntArg),

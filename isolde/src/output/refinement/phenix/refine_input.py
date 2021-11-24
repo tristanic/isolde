@@ -1,5 +1,5 @@
 def write_phenix_refine_defaults(session, model, xmapset,
-        file_name=None,
+        param_file_name=None, model_file_name=None,
         restrain_coordination_sites=False,
         include_hydrogens=False,
         num_processors=1,
@@ -9,9 +9,10 @@ def write_phenix_refine_defaults(session, model, xmapset,
         ):
     if restrain_coordination_sites:
         raise NotImplementedError('Coordination site restraints not yet implemented')
-    if file_name is None:
-        file_name = 'refine.eff'
-    model_file_name = '{}_for_phenix.cif'.format(model.name)
+    if param_file_name is None:
+        param_file_name = 'refine.eff'
+    if model_file_name is None:
+        model_file_name = '{}_for_phenix.cif'.format(model.name)
     reflections_file_name = '{}_for_phenix.mtz'.format(model.name)
 
     if not include_hydrogens:
@@ -103,14 +104,14 @@ refinement {{
     }}
 }}
     '''
-    with open(file_name, 'wt') as outfile:
+    with open(param_file_name, 'wt') as outfile:
         outfile.write(out_str)
     import os
     session.logger.info(
-        f'A phenix.refine input file {file_name} with settings recommended for ISOLDE models '
+        f'A phenix.refine input file {param_file_name} with settings recommended for ISOLDE models '
         f'has been written to {os.getcwd()} along with a current snapshot of your model ({model_file_name}) '
         f'and reflections ({reflections_file_name}). Note that the reflections file only contains '
-        f'amplitudes - if you have a MTZ file with intensities you may wish to edit {file_name} '
+        f'amplitudes - if you have a MTZ file with intensities you may wish to edit {param_file_name} '
         f'to substitute that. You can start a refinement job by running the following command in the working directory: \n'
-        f'phenix.refine {file_name}.'
+        f'phenix.refine {param_file_name}.'
     )
