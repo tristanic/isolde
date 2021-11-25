@@ -162,6 +162,14 @@ are otherwise intractable (e.g. docked homology models with intertwined loops):
 * stop any running simulation, *isolde ~ignore*, then run a final simulation
   with everything included to resolve any remaining clashes.
 
+
+..
+  Sphinx does not know what to do with the '~' character and converts .. _`~ignore` to a generic span id.
+
+.. raw:: html
+
+  <span id="~ignore"></span>
+
 .. _`~ignore`:
 
 isolde ~ignore
@@ -205,6 +213,31 @@ Syntax: isolde jumpto [*next|prev*]
 
 Jump the residue stepper to the first residue of the next chain, or last residue
 of the previous chain.
+
+.. _`add aa`:
+
+isolde add aa
+==============
+
+Syntax: isolde add aa *3-character resname* [*residue*] [**addDirection** *C|N*]
+[**structure** *model ID*] [**chainID** *string*] [**number** *integer*]
+[**addBFactor** *float*] [**occupancy** *float (1.0)*]
+[**approxConformation** *helix|strand (strand)*]
+
+Add an amino acid either to an existing terminal residue, or as a new chain or chain fragment.
+At its simplest, with a single terminal residue selected "isolde add aa ALA sel" will add 
+an alanine residue to the terminus. By default, the B-factors of the new atoms will be the 
+average B-factor of the backbone and CB atoms of the residue it attaches to; this can be 
+adjusted up or down using the *addBfactor* argument. The *approxConformation* argument 
+seeds the *phi* and *psi* angles for the new residue to alpha-helical or beta-strand 
+geometry; as the name suggests the result is very approximate and *will* need energy 
+minimisation.
+
+The *addDirection* argument is only required if the target existing residue is unbonded
+on both the N and C atoms.
+
+If *residue* is not specified, then *structure*, *chainID* and *number* must all be provided.
+The new residue will be placed at the current centre of rotation.
 
 .. _`add ligand`:
 
@@ -282,7 +315,210 @@ aware of bond order nor of chirality, so attempting to replace (for example) a
 D-sugar with its L-enantiomer will simply rename the residue while retaining the
 D coordinates. This will be improved upon in a future release.
 
+.. _`adjust bfactors`:
 
+isolde adjust bfactors
+======================
+
+Syntax: isolde adjust bfactors *float* [*atoms*]
+
+Increase/decrease B-factors of a set of atoms by the chosen amount. If no atoms are 
+specified, the change will be applied to all currently-selected atoms. Will raise a 
+UserError if the change would reduce any B-factor below zero.
+
+.. _`modify his`:
+
+isolde modify his
+=================
+
+Syntax: isolde modify his *residues* *{ND|NE|both}
+
+Modify one or more histidine residues to place the hydrogen on the 
+specified atom. Should not be used while a simulation is running.
+
+.. _`parameterise`:
+
+isolde parameterise
+===================
+
+Syntax: isolde parameterise *residues* [**override** *true|FALSE*]
+[**netCharge** *integer*]
+
+Parameterise one or more ligands for ISOLDE with the AMBER GAFF2 
+force field using ANTECHAMBER. Limitations:
+
+* Only applicable to molecules with no covalent bonds to other ligands/residues
+* Only supports molecules made up of the elements C, N, O, S, P, H, F, Cl, Br, or I
+* Hydrogens **must** be present and correct (it is up to you to ensure this)
+* For ligands with multiple possible protonation states, only one protonation state 
+  is currently supported per residue name.
+* Unless you know what you're doing, the ligand should be complete (if you do truncate 
+  it, all instances of ligands with the same residue name will need to be truncated in 
+  the same way)
+
+Note that the time taken by ANTECHAMBER scales with (number of atoms)^3 - while for small 
+molecules with less than a dozen or so heavy atoms it will typically complete in under a minute, for 
+larger molecules such as phospholipids it can easily take over an hour.
+
+The resulting parameters will be written into files, one for each residue type, called
+{resname}.xml. If ISOLDE is already running these will be automatically added to its 
+forcefield so those ligands should "just work" for the remainder of the session; for 
+future sessions use the "Load residue MD definition(s)" button to add them.
+
+By default, if parameters for a residue with the same name already exist they will not 
+be recalculated; this can be changed by setting *override* to true. 
+
+In almost all cases the net charge on the molecule is estimated correctly by ChimeraX;
+if ANTECHAMBER fails with an error message in the Log mentioning an odd number of electrons,
+the most likely explanations are:
+
+1. There is something wrong with your molecule (too many/too few hydrogens). Double-check 
+   or, if necessary, load a trusted exemplar and parameterise against that.
+2. ChimeraX incorrectly guessed the charge. If you know what it *should* be, you can 
+   specify it with the *netCharge* argument.
+3. Your molecule is actually some form of stable radical. These are not supported by 
+   ANTECHAMBER - you will need to turn to some more in-depth QM method to parameterise 
+   it.
+
+
+
+..
+  Because Sphinx makes all anchors lowercase whereas the links in the ChimeraX log are camelCase.
+
+.. raw:: html
+
+  <span id="write-phenixRefineInput"></span>
+
+.. _`write phenixRefineInput`:
+
+isolde write phenixRefineInput
+==============================
+
+Syntax: isolde write phenixRefineInput *model ID* 
+[**modelFileName** *filename*] [**paramFileName** *filename*]
+[**includeHydrogens** *true|FALSE*] [**numProcessors** *integer (1)*] 
+[**numMacrocycles** *integer (6)*] [**nqhFlips** *true|FALSE*]
+[**scatteringType** *xray|electron|neutron (xray)*]
+
+**(IMPORTANT NOTE: This command will only work correctly for crystallographic datasets - for 
+cryoEM models use the "isolde write phenixRsrInput" command)**
+
+*(NOTE: ISOLDE does not provide Phenix-compatible restraints for non-standard residues and 
+ligands. If you have any )*
+
+Writes a model file defined by *modelFileName* (default: {model name}_for_phenix.cif),
+a reflections file ({model name}_for_phenix.mtz) and a parameter file defined by 
+*paramFileName* (default: refine.eff) with settings pre-defined to those that typically
+work best for models coming from ISOLDE. To use the result you will need to have 
+Phenix installed; navigate to the working directory in a terminal window and run:
+
+phenix.refine {parameter file}.eff
+
+(instructions for this will be written to the log.) 
+
+Specifically, the model is used as its own reference for torsion restraints, and
+rotamer, Ramachandran and secondary structure restraints are disabled.
+Additionally, automatic weighting of X-ray/XYZ and X-ray/adp terms is enabled.
+The aim is to limit the refinement to only subtle movements, primarily
+tightening the bond and angle distributions while maintaining the overall
+geometry of your model. Note that Phenix's approach to automatic
+weighting involves running a number of refinements (typically 12) at each step
+and choosing the best result. In Unix environments the *numProcessors* argument
+allows these to run in parallel. By default, hydrogens are *not* passed to
+Phenix; you can change this by setting *includeHydrogens* to *true*, but this
+may on occasion fail in Phenix due to incorrectly-named hydrogens on some
+non-standard residues. This will be addressed in a future version.
+
+..
+  Because Sphinx makes all anchors lowercase whereas the links in the ChimeraX log are camelCase.
+
+.. raw:: html
+
+  <span id="write-phenixRsrInput"></span>
+
+.. _`write phenixRsrInput`:
+
+isolde write phenixRsrInput
+===========================
+
+Syntax: isolde write phenixRsrInput *model ID* *resolution* *map ID*
+[**modelFileName** *filename*] [**paramFileName** *filename*]
+[**restrainPositions** *true|FALSE*] [**includeHydrogens** *true|FALSE*]
+
+**(IMPORTANT NOTE: This command will only work correctly for cryo-EM maps - for 
+crystallographic datasets use the "isolde write phenixRefineInput" command)**
+
+Writes a model file defined by *modelFileName* (default: {model
+name}_for_phenix.cif) and a parameter file defined by *paramFileName* (default:
+refine.eff) with settings pre-defined to those that typically work best for
+models coming from ISOLDE. To use the result you will need to have Phenix installed;
+navigate to the working directory in a terminal window and run:
+
+phenix.real_space_refine {parameter file}.eff
+
+(instructions for this will be written to the log.) 
+
+Specifically, the model is used as its own reference
+for torsion restraints, and rotamer, Ramachandran and secondary structure
+restraints are disabled. Additionally, the refinement strategy is limited to 
+global minimisation and B-factor (ADP) refinement - most importantly, grid 
+searching (i.e. automated searching of different side-chain conformations) 
+is disabled. The aim is to limit the refinement to only subtle
+movements, primarily tightening the bond and angle distributions while
+maintaining the overall geometry of your model.
+
+The *map ID* argument should correspond to a map loaded from a file, not one 
+generated by ChimeraX (e.g. via the "volume gaussian" command). Usually, this 
+will be a map associated with the model via Clipper, but that is not a necessity.
+If you have only a single map associated with your model you can specify it with 
+just the top-level identifier (e.g. "#1"); if you have multiple maps associated 
+you will need to burrow down in the Models viewer to identify the correct one 
+(should be #\ *x*\ .1.1.\ *y* where *x* is your top-level model identifier and *y*
+is the actual map you want). 
+
+The *resolution* should correspond to the nominal resolution of the map (i.e. as 
+reported in the wwPDB or EMDB entry, or the 0.143 FSC level if you're working on 
+a new dataset). Unfortunately this isn't stored in any reliable way in existing 
+formats, so ChimeraX doesn't automatically know what it is. The value you specify
+will affect some of the weighting decisions made by *phenix.real_space_refine*.
+
+Setting the *restrainPositions* argument to *true* instructs *phenix.real_space_refine*
+to restrain all heavy atoms to their starting positions using top-out restraints,
+on top of the default torsion restraints. This can be useful where your model includes
+domains fitted into very weak or fuzzy density.
+
+By default, hydrogens are *not* passed to
+Phenix; you can change this by setting *includeHydrogens* to *true*, but this
+may on occasion fail in Phenix due to incorrectly-named hydrogens on some
+non-standard residues. This will be addressed in a future version.
+
+..
+  Because Sphinx makes all anchors lowercase whereas the links in the ChimeraX log are camelCase.
+
+.. raw:: html
+
+  <span id="write-refmacRestraints"></span>
+
+
+.. _`write refmacRestraints`:
+
+isolde write refmacRestraints
+=============================
+
+Syntax: isolde write refmacRestraints *model ID* [**distanceCutoff** *number (4.5)*]
+[**includeWaters** *true|FALSE*] [**fileName** *filename (RESTRAINTS.txt)*] 
+
+Writes a REFMAC input file similar to one generated by ProSMART to restrain heavy atom interatomic 
+distances to their current values. Note that this does *not* write the model itself - you 
+should save that separately. The resulting file can be used via the CCP-EM GUI, or at the 
+command line via:
+
+refmac5 {all other command-line arguments} \< *filename*
+
+The *distanceCutoff* argument specifies the maximum distance between atoms to be restrained. 
+The default value is the same as that used by ProSMART. Note that the total number of restraints
+blows out **extremely** rapidly with increasing *distanceCutoff*, so increasing this value 
+substantially would be inadvisable.
 
 .. _`restrain distances`:
 
@@ -326,3 +562,33 @@ isolde release torsions
 =======================
 
 See :ref:`adaptive_dihedral_restraint_cmd`
+
+.. _`remote xmlrpc`:
+
+.. _`remote rest start`:
+
+isolde remote rest start
+========================
+
+See :ref:`remote_control_cmd`
+
+.. _`remote rest stop`:
+
+isolde remote rest stop
+=======================
+
+See :ref:`remote_control_cmd`
+
+.. _`remote rest info`:
+
+isolde remote rest info
+=======================
+
+See :ref:`remote_control_cmd`
+
+isolde remote xmlrpc
+====================
+
+See :ref:`remote_control_cmd`
+
+

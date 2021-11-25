@@ -23,3 +23,7 @@ isolde remote rest info
 =======================
 
 Report the host address and port of the server to the log.
+
+isolde remote xmlrpc
+====================
+
