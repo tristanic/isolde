@@ -28,7 +28,7 @@ _forcefield_files = {
         # 'tip3p_IOD_multivalent.xml', # Metal ions
         'gaff2.xml',                 # General AMBER force field
         'CDL.xml',                   # Cardiolipin
-        'all_modrna08.xml',
+        # 'all_modrna08.xml',          # <BUGGY/BROKEN> Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
         'mse.xml',                   # Approximation (same charges as MET)
         'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
