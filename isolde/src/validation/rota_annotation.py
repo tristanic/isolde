@@ -147,7 +147,7 @@ class RotamerAnnotator(Model):
 
     def delete(self):
         h = self._structure_change_handler
-        if h is not None:
+        if h is not None and self._atomic_structure is not None:
             self._atomic_structure.triggers.remove_handler(h)
         Model.delete(self)
 
