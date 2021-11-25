@@ -49,7 +49,12 @@ def parameterise_cmd(session, residues, override=False, net_charge=None):
                     raise UserError(f'Residue name {residue.name} already corresponds to template {templates[0]} in '
                         f'the {ff_name} forcefield. If you wish to replace that template, re-run this '
                         'command with override=True')
-        parameterise_ligand(session, residue, net_charge=net_charge)
+        try:
+            parameterise_ligand(session, residue, net_charge=net_charge)
+        except Exception as e:
+            session.logger.warning(f'Parameterisation of {residue.name} failed with the following message:')
+            session.logger.warning(str(e))
+            continue
         session.logger.info(f'OpenMM ffXML file {residue.name} written to the current working directory.')
         if hasattr(session, 'isolde'):
             if len(templates):
