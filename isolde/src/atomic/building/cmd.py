@@ -241,5 +241,5 @@ def register_isolde_add(logger):
                 ('protonated_atom', EnumOf(['ND', 'NE', 'both']))
             ]
         )
-        register('isolde mod his', desc, mod_his_command, logger=logger)
+        register('isolde modify his', desc, mod_his_command, logger=logger)
     register_isolde_mod_his()
