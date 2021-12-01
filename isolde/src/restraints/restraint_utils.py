@@ -528,6 +528,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     '''
     from chimerax.std_commands.align import IterationError
     from chimerax.isolde import session_extensions as sx
+    import numpy
     if not protein and not nucleic and not len(custom_atom_names):
         raise UserError('Nothing to restrain!')
     # if len(template_residues) != len(restrained_residues):
