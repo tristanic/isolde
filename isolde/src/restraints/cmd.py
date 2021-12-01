@@ -277,9 +277,9 @@ def register_isolde_restrain(logger):
             synopsis = 'Release selected adaptive distance restraints',
             required = [('atoms', AtomsArg)],
             keyword = [
+                ('to', AtomsArg),
                 ('internal_only', BoolArg),
                 ('external_only', BoolArg),
-                ('to', AtomsArg),
                 ('longer_than', FloatArg),
                 ('strained_only', BoolArg),
                 ('stretch_limit', FloatArg),
