@@ -80,6 +80,17 @@ update and timesteps per second) to the status bar. The optional
 before reporting. Only valid while a simulation is running, and automatically
 terminates once that simulation stops.
 
+.. _select:
+
+isolde select
+=============
+
+Syntax: isolde select *model*
+
+Set the specified model as ISOLDE's current selected model. If the target model 
+has not already been initialised for control by Clipper to provide ISOLDE's 
+standard view, this command will cause that to happen.
+
 .. _sim:
 
 isolde sim
@@ -331,7 +342,7 @@ UserError if the change would reduce any B-factor below zero.
 isolde modify his
 =================
 
-Syntax: isolde modify his *residues* *{ND|NE|both}
+Syntax: isolde modify his *residues* *{ND|NE|both}*
 
 Modify one or more histidine residues to place the hydrogen on the 
 specified atom. Should not be used while a simulation is running.
@@ -380,7 +391,41 @@ the most likely explanations are:
    ANTECHAMBER - you will need to turn to some more in-depth QM method to parameterise 
    it.
 
+.. _`shorthand`:
 
+isolde shorthand
+================
+
+Syntax: isolde shorthand
+
+Enables a set of shorthand aliases to commonly-used ISOLDE commands, and prints a summary
+to the log. *Note: you can permanently enable this by going to Favorites/Settings on the 
+ChimeraX menu, choosing the "Startup" tab and adding "isolde shorthand" to the box labelled
+"Execute these commands at startup".*
+
+The current list of shorthand commands is as follows:
+
+Alias  Equivalent full command
+=====  ===================================================
+st     isolde step {arguments}
+aw     isolde add water {arguments}
+awsf   isolde add water {arguments} sim false
+al     isolde add ligand {arguments}
+aa     isolde add aa $1 sel {arguments}
+ht     isolde mod his sel {arguments}
+so     setattr sel atoms occupancy {arguments}
+ab     isolde adjust bfactors {arguments}
+ss     isolde sim start sel
+rt     isolde release torsions sel {arguments}
+rd     isolde release distances sel {arguments}
+ra     rd; rt
+pf     isolde pepflip sel
+cf     isolde cisflip sel
+cbb    color bfactor {arguments}
+cbo    color byattr occupancy {arguments}
+cbc    color {arguments} bychain; color {arguments} byhet
+cs     clipper set contourSensitivity {arguments}
+=====  ===================================================
 
 ..
   Because Sphinx makes all anchors lowercase whereas the links in the ChimeraX log are camelCase.
@@ -519,6 +564,19 @@ The *distanceCutoff* argument specifies the maximum distance between atoms to be
 The default value is the same as that used by ProSMART. Note that the total number of restraints
 blows out **extremely** rapidly with increasing *distanceCutoff*, so increasing this value 
 substantially would be inadvisable.
+
+.. _`reset forcefield`:
+
+isolde reset forcefield
+=======================
+
+Syntax: isolde reset forcefield
+
+Reload ISOLDE's forcefield from scratch. This removes the cached version (stored as a pickle file
+for faster startup) and reloads everything from the original ffXML files. Any custom ligand 
+definitions loaded in this session will need to be re-loaded if you wish to continue using them.
+This command exists mostly for developer/debugging use and is primarily used when testing 
+modifications/additions to the core force field.
 
 .. _`restrain distances`:
 
