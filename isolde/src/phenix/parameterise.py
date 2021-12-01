@@ -104,7 +104,7 @@ def _run_elbow(session, coord_file):
     import os, subprocess
     cmd_args = [os.path.join(phenix_path, "phenix.elbow"), "--amber", coord_file]
     pipes = subprocess.Popen(cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
-        creationflags=subprocess.CREATE_NEW_CONSOLE)
+)
     std_out, std_err = pipes.communicate()
 
     if pipes.returncode !=0:

@@ -98,9 +98,9 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="~=1.3rc202110222254"/>
-    <Dependency name="ChimeraX-Atomic" version="~=1.30.2"/>
-    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=4.1.5"/>
+    <Dependency name="ChimeraX-Core" version="~=1.3rc202112010000"/>
+    <Dependency name="ChimeraX-Atomic" version="~=1.31.0"/>
+    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=4.2.0"/>
     <Dependency name="ChimeraX-Clipper" version="~=0.17.0"/>
     <Dependency name="ChimeraX-Arrays" build="true" version="~=1.0.0"/>
   </Dependencies>
