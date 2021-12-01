@@ -1,4 +1,4 @@
-rings = ('PHE','TYR') #,'TYS','PTR') <- non-standard amino acids current throw a RuntimeError (25/10/2021)
+rings = ('PHE','TYR') #,'TYS','PTR') <- non-standard amino acids currently throw a RuntimeError (25/10/2021)
 
 def correct_pseudosymmetric_sidechain_atoms(session, residues):
     '''
@@ -14,18 +14,18 @@ def correct_pseudosymmetric_sidechain_atoms(session, residues):
     from collections import defaultdict
     flipped = defaultdict(lambda: 0)
     for r in residues[numpy.in1d(residues.names, rings)]:
-        if flip_if_necessary(r, ('CA','CB','CG','CD1')):
+        if flip_if_necessary(r, ('CA','CB','CG',('CD1','CD2'))):
             flipped[r.structure] += 1
     for r in residues[residues.names=='ASP']:
         if not acid_is_substituted_or_protonated(r):
-            if flip_if_necessary(r, ('CA','CB','CG','OD1')):
+            if flip_if_necessary(r, ('CA','CB','CG',('OD1','OD2'))):
                 flipped[r.structure] += 1
     for r in residues[residues.names=='GLU']:
         if not acid_is_substituted_or_protonated(r):
-            if flip_if_necessary(r, ('CB','CG','CD','OE1')):
+            if flip_if_necessary(r, ('CB','CG','CD',('OE1','OE2'))):
                 flipped[r.structure] += 1
     for r in residues[residues.names=='ARG']:
-        if flip_if_necessary(r, ('CD','NE','CZ','NH2')):
+        if flip_if_necessary(r, ('CD','NE','CZ',('NH2','NH1'))):
             flipped[r.structure] += 1
     for m, count in flipped.items():
         session.logger.info(f'ISOLDE: Corrected atom nomenclature of {count} residues in model #{m.id_string} to IUPAC-IUB standards.')
@@ -56,12 +56,14 @@ def any_atom_restrained(model, atoms):
 def flip_if_necessary(residue, chi_atom_names):
     if residue.is_missing_heavy_template_atoms():
         return
-
-    atoms = [residue.find_atom(name) for name in chi_atom_names]
+    chis = [[*chi_atom_names[:3], chi_atom_names[3][i]] for i in range(2)]
+    dihedrals = []
     from chimerax.geometry import dihedral
-    angle = dihedral(*[a.coord for a in atoms])
-    if abs(angle) > 90:
-        if flip_sidechain_on_bond(atoms[1:3]):
+    for chi_atom_names in chis:
+        atoms = [residue.find_atom(name) for name in chi_atom_names]
+        dihedrals.append(dihedral(*[a.coord for a in atoms]))
+    if abs(dihedrals[1]) < abs(dihedrals[0]):
+        if swap_equivalent_atoms(residue):
             correct_dihedral_restraint(residue)
             correct_position_and_distance_restraints(residue)
             return True
@@ -82,25 +84,40 @@ def acid_is_substituted_or_protonated(residue):
             return True
     return False
 
-def flip_sidechain_on_bond(atoms):
-    a, b = atoms
-    for bond in a.bonds:
-        if b in bond.atoms:
-            break
-    else:
-        raise TypeError('Atoms must be bonded!')
-    moving_atom = bond.smaller_side
-    fixed_atom = bond.other_atom(moving_atom)
-    m, f = moving_atom.coord, fixed_atom.coord
-    moving_atoms = bond.side_atoms(moving_atom)
-    if len(moving_atoms.unique_residues) != 1:
-        # sidechain is bonded to another residue. Bail out.
-        return False
-    from chimerax.geometry import z_align, rotation
-    za = z_align(m, f)
-    tf = za.inverse() * rotation((0,0,-1), 180) * za
-    moving_atoms.transform(tf)
+equivalent_heavy_atoms = {
+    'aromatic': {'CD1':'CD2', 'CE1':'CE2'},
+    'ASP':  {'OD1': 'OD2'},
+    'GLU':  {'OE1': 'OE2'},
+    'ARG':  {'NH1': 'NH2'}
+}
+
+def swap_equivalent_atoms(residue):
+    rname = residue.name
+    if rname in rings:
+        rname = 'aromatic'
+    equivalent_pairs = equivalent_heavy_atoms[rname]
+    from chimerax.atomic import Atoms
+    paired_atoms = []
+    for a1name, a2name in equivalent_pairs.items():
+        a1, a2 = [residue.find_atom(name) for name in (a1name, a2name)]
+        if a1 is None or a2 is None:
+            # Bail out if any equivalent atom is missing
+            return False
+        pair = []
+        for a in (a1, a2):
+            group = [a]
+            for n in a.neighbors:
+                if n.residue != a.residue:
+                    # Don't flip if any equivalent atom is bonded to something else
+                    return False
+                if n.element.name == 'H':
+                    group.append(n)
+            pair.append(Atoms(group))
+        paired_atoms.append(pair)
+    for pair in paired_atoms:
+        pair[0].coords, pair[1].coords = pair[1].coords, pair[0].coords
     return True
+
 
 chi_names = {
     'aromatic': 'chi2',
@@ -111,6 +128,8 @@ chi_names = {
 
 def correct_dihedral_restraint(residue):
     from chimerax.isolde import session_extensions as sx
+    from math import radians
+    cutoff = radians(90)
     model = residue.structure
     from math import pi
     rname = residue.name
@@ -124,21 +143,16 @@ def correct_dihedral_restraint(residue):
     if pdrm is not None:
         pdr = pdrm.get_restraint_by_residue_and_name(residue, chi_name)
         if pdr is not None:
-            pdr.target += pi
+            # Only correct if it puts the current angle closer to the target
+            if abs(pdr.offset) > cutoff:
+                pdr.target += pi
     if apdrm is not None:
         apdr = apdrm.get_restraint_by_residue_and_name(residue, chi_name)
         if apdr is not None:
-            apdr.target += pi
+            if abs(apdr.offset) > cutoff:
+                apdr.target += pi
 
     
-
-equivalent_heavy_atoms = {
-    'aromatic': {'CD1':'CD2', 'CE1':'CE2'},
-    'ASP':  {'OD1': 'OD2'},
-    'GLU':  {'OE1': 'OE2'},
-    'ARG':  {'NH1': 'NH2'}
-}
-
 
 def correct_position_and_distance_restraints(residue):
     rname = residue.name
