@@ -39,9 +39,10 @@ class Peptide_Bond_Flipper:
             * residue:
                 - a currently-mobile :class:`chimerax.Residue`
         '''
+        from chimerax.core.errors import UserError
         self.isolde = isolde
         if not isolde.simulation_running:
-            raise TypeError('Simulation must be running!')
+            raise UserError('Simulation must be running!')
         session = self.session = isolde.session
         sim_params = self.sim_params = isolde.sim_params
         structure = self.structure = residue.structure
@@ -49,16 +50,18 @@ class Peptide_Bond_Flipper:
         pdr_m = self.pdr_m = get_proper_dihedral_restraint_mgr(structure)
         phi = self.phi = pdr_m.add_restraint_by_residue_and_name(residue, 'phi')
         if phi is None:
-            raise TypeError('Residue does not have an N-terminal peptide bond!')
+            raise UserError('Residue does not have an N-terminal peptide bond!')
         psi = self.psi = pdr_m.add_restraint_by_residue_and_name(
             phi.dihedral.atoms[0].residue, 'psi'
         )
+        if psi is None:
+            raise UserError('Preceding residue is not supported for peptide bond restraints!')
         from math import pi
         from ..molarray import ProperDihedralRestraints
         phipsi = self.phipsi = ProperDihedralRestraints([phi, psi])
         import numpy
         if numpy.any(phipsi.sim_indices == -1):
-            raise TypeError('Peptide bond must be mobile in the simulation!')
+            raise UserError('Peptide bond must be mobile in the simulation!')
         phipsi.targets = phipsi.dihedrals.angles + pi
         phipsi.spring_constants = \
             sim_params.peptide_bond_spring_constant.value_in_unit(
