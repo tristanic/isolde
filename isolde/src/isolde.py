@@ -2491,8 +2491,7 @@ class Isolde():
         
         if len(self._available_models) == 0 or mmcb.count() == 0:
             self._selected_model = None
-            self._update_iffy_rota_list()
-            self._update_iffy_peptide_lists()
+            self.triggers.activate_trigger('selected model changed', data=None)
             return
 
         with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'), \
