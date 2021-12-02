@@ -20,6 +20,8 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
     from chimerax.add_charge.charge import nonstd_charge, estimate_net_charge
     from chimerax.atomic import Residues
     if net_charge is None:
+        # Workaround - trigger recalculation of idatm_types if necessary to make sure rings are current
+        atom_types = residue.atoms.idatm_types
         net_charge = estimate_net_charge(residue.atoms)
     from chimerax.amber_info import amber_bin
     import tempfile
