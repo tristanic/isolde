@@ -9,4 +9,5 @@ GUI Details
     sim_settings
     rebuild
     validate
+    problem_regions
     menu
