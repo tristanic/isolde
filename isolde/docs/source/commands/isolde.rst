@@ -353,7 +353,7 @@ isolde parameterise
 ===================
 
 Syntax: isolde parameterise *residues* [**override** *true|FALSE*]
-[**netCharge** *integer*]
+[**netCharge** *integer*] [**alwaysRaiseErrors** *TRUE|false*]
 
 Parameterise one or more ligands for ISOLDE with the AMBER GAFF2 
 force field using ANTECHAMBER. Limitations:
@@ -390,6 +390,12 @@ the most likely explanations are:
 3. Your molecule is actually some form of stable radical. These are not supported by 
    ANTECHAMBER - you will need to turn to some more in-depth QM method to parameterise 
    it.
+  
+If *alwaysRaiseErrors* is true, then a failure to parameterise any given residue will 
+raise a UserError halting the pipeline at that point. If it is false then any errors 
+will be printed as warnings to the log, and parameterisation will still be attempted for 
+any remaining residues. 
+
 
 .. _`shorthand`:
 

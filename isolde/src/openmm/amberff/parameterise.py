@@ -35,7 +35,7 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         from .amber_convert import amber_to_ffxml
         amber_to_ffxml(frcmod_file, ante_out, output_name=residue.name+'.xml')
 
-def parameterise_cmd(session, residues, override=False, net_charge=None):
+def parameterise_cmd(session, residues, override=False, net_charge=None, always_raise_errors=True):
     from chimerax.core.errors import UserError
     unique_residue_types = [residues[residues.names==name][0] for name in residues.unique_names]
     for residue in unique_residue_types:
@@ -54,9 +54,12 @@ def parameterise_cmd(session, residues, override=False, net_charge=None):
         try:
             parameterise_ligand(session, residue, net_charge=net_charge)
         except Exception as e:
-            session.logger.warning(f'Parameterisation of {residue.name} failed with the following message:')
-            session.logger.warning(str(e))
-            continue
+            if always_raise_errors:
+                raise UserError(str(e))
+            else:
+                session.logger.warning(f'Parameterisation of {residue.name} failed with the following message:')
+                session.logger.warning(str(e))
+                continue
         session.logger.info(f'OpenMM ffXML file {residue.name} written to the current working directory.')
         if hasattr(session, 'isolde'):
             if len(templates):
@@ -73,7 +76,8 @@ def register_isolde_param(logger):
         required=[('residues', ResiduesArg)],
         keyword=[
             ('override', BoolArg),
-            ('net_charge', IntArg)
+            ('net_charge', IntArg),
+            ('always_raise_errors', BoolArg)
         ],
         synopsis=('Parameterise ligand(s) for use in ISOLDE. Supports most organic species; '
             'covalent bonds between residues are not supported. Hydrogens must be present and correct.')
