@@ -118,6 +118,7 @@ def amber_to_ffxml(frcmod_file, mol2_file, output_name=None):
     if output_name is None:
         output_name = os.path.splitext(os.path.basename(mol2_file))[0]+'.xml'
     ff.write(output_name)
+    return output_name
 
 
 
