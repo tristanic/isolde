@@ -384,13 +384,23 @@ if ANTECHAMBER fails with an error message in the Log mentioning an odd number o
 the most likely explanations are:
 
 1. There is something wrong with your molecule (too many/too few hydrogens). Double-check 
-   or, if necessary, load a trusted exemplar and parameterise against that.
+   or, if necessary, load a trusted exemplar and parameterise against that. Pay particular 
+   attention to ionisable groups and potential H-bonds with surrounding molecules. Note 
+   that some groups are capable of `tautomerisation`_:|tautomers|
+   Distinguishing between these should be done with great care and the application of 
+   chemical knowledge - in most such cases one tautomer is strongly preferred so alternatives
+   should be considered only in the presence of strong stabilisation by surrounding 
+   interactions.
 2. ChimeraX incorrectly guessed the charge. If you know what it *should* be, you can 
    specify it with the *netCharge* argument.
 3. Your molecule is actually some form of stable radical. These are not supported by 
    ANTECHAMBER - you will need to turn to some more in-depth QM method to parameterise 
    it.
   
+.. _`tautomerisation`: https://en.wikipedia.org/wiki/Tautomer
+
+.. |tautomers| image:: images/Tautomers.png  
+
 If *alwaysRaiseErrors* is true, then a failure to parameterise any given residue will 
 raise a UserError halting the pipeline at that point. If it is false then any errors 
 will be printed as warnings to the log, and parameterisation will still be attempted for 
