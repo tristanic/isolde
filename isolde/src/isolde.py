@@ -1698,7 +1698,8 @@ class Isolde():
 
     def _disable_rebuild_residue_frame(self):
         if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
-            self.selected_model.triggers.remove_handler(self._res_info_update_handler)
+            if self.selected_model is not None:
+                self.selected_model.triggers.remove_handler(self._res_info_update_handler)
             self._res_info_update_handler = None
         self._rebuild_residue = None
         self._rebuild_res_omega = None
