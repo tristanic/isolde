@@ -79,7 +79,7 @@ def acid_is_substituted_or_protonated(residue):
     for i in (1,2):
         o = residue.find_atom(f'O{pos}{i}')
         if o is None:
-            return False
+            return True
         if len(o.neighbors) > 1:
             return True
     return False
