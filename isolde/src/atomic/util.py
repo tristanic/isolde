@@ -115,6 +115,10 @@ def swap_equivalent_atoms(residue):
             pair.append(Atoms(group))
         paired_atoms.append(pair)
     for pair in paired_atoms:
+        if len(pair[0]) != len(pair[1]):
+            # Something weird going on - probably one of the atoms is missing a hydrogen. Bail out.
+            return False
+    for pair in paired_atoms:
         pair[0].coords, pair[1].coords = pair[1].coords, pair[0].coords
     return True
 
