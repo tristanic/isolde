@@ -285,18 +285,16 @@ class Isolde():
             from Qt.QtCore import Qt
             import os
 
+            self._gui = gui
+
             splash_pix = QPixmap(os.path.join(
                 self._root_dir,'resources/isolde_splash_screen.jpg'))
             splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
             splash.setMask(splash_pix.mask())
             splash.show()
-            # Make sure the splash screen is actually shown
-            from time import sleep, time
-            for i in range(5):
-                self.session.ui.processEvents()
-                sleep(0.01)
+            from time import time
             start_time = [time()]
-            def _splash_remove_cb(trigger_name, data, splash=splash, start_time=start_time, min_time=1):
+            def _splash_remove_cb(trigger_name, data, start_time=start_time, min_time=1):
                 from time import time
                 elapsed_time = time()-start_time[0]
                 if elapsed_time > min_time:
@@ -314,7 +312,7 @@ class Isolde():
                     return DEREGISTER
                 splash.setWindowOpacity(opacity)
             session.triggers.add_handler('new frame', _splash_remove_cb)
-            self._start_gui(gui)
+            session.triggers.add_handler('new frame', self._start_gui)
 
         session.isolde = self
         ffmgr.background_load_ff(sp.forcefield)
@@ -330,6 +328,10 @@ class Isolde():
         from chimerax.core.commands import run
         run(session, 'set selectionWidth {}'.format(self.params.selection_outline_width))
 
+    @property
+    def gui(self):
+        return self._gui
+    
     @property
     def forcefield_mgr(self):
         return self._ff_mgr
@@ -428,12 +430,12 @@ class Isolde():
     # GUI related functions
     ###################################################################
 
-    def _start_gui(self, gui):
+    def _start_gui(self, *_):
         '''
         Connect and initialise ISOLDE widget
         '''
 
-        self.gui = gui
+        gui = self._gui
         iw = self.iw = gui.iw
 
         # FIXME Remove 'Custom restraints' tab from the gui while I decide
