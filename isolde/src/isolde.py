@@ -490,6 +490,8 @@ class Isolde():
         st.setCurrentIndex(0)
         from .menu import prepare_isolde_menu
         prepare_isolde_menu(self.session)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
 
     def _populate_menus_and_update_params(self):
