@@ -22,6 +22,19 @@ def _find_help():
     # return pathlib.Path(os.path.abspath(fname)).as_uri()
     return 'help:user/tools/ISOLDE.html'
 
+class ISOLDE_NewToolUI(ToolInstance):
+    def __init__(self, session, tool_name):
+        super().__init__(session, tool_name)
+
+        self.display_name='ISOLDE'
+        from .ui.main_win import IsoldeMainWin
+        tw = self.tool_window = IsoldeMainWin(self)
+        tw.manage(placement=None)
+        tw.ui_area.parent().parent().resize(540, 850)
+
+
+
+
 class ISOLDE_ToolUI(ToolInstance):
 
     SESSION_ENDURING = True
@@ -185,7 +198,7 @@ class ISOLDE_ToolUI(ToolInstance):
             f.setAutoFillBackground(True)
 
         from . import isolde
-        self.isolde = isolde.Isolde(self)
+        self.isolde = isolde.Isolde(session, self)
 
 
 

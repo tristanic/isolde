@@ -135,7 +135,7 @@ class Isolde():
         'isolde closed'
         )
 
-    def __init__(self, gui=None):
+    def __init__(self, session, gui=None):
         '''
         Initialises the ISOLDE object and adds it to the ChimeraX session as
         ``session.isolde``.
@@ -146,7 +146,7 @@ class Isolde():
                   interface (i.e. when running from Tools/General/ISOLDE in the
                   ChimeraX GUI menu).
         '''
-        self.session = session = gui.session
+        self.session = session
 
 
         self.triggers = triggerset.TriggerSet()
@@ -279,13 +279,12 @@ class Isolde():
 
         self._ui_panels = []
 
-        if gui is not None:
+        if session.ui.is_gui:
             from Qt.QtGui import QPixmap
             from Qt.QtWidgets import QSplashScreen
             from Qt.QtCore import Qt
             import os
 
-            self._gui = gui
 
             splash_pix = QPixmap(os.path.join(
                 self._root_dir,'resources/isolde_splash_screen.jpg'))
@@ -312,6 +311,8 @@ class Isolde():
                     return DEREGISTER
                 splash.setWindowOpacity(opacity)
             session.triggers.add_handler('new frame', _splash_remove_cb)
+        if gui is not None:
+            self._gui = gui
             session.triggers.add_handler('new frame', self._start_gui)
 
         session.isolde = self
@@ -429,6 +430,13 @@ class Isolde():
     ###################################################################
     # GUI related functions
     ###################################################################
+
+    def start_gui(self, gui):
+        if self.gui_mode:
+            from chimerax.core.errors import UserError
+            raise UserError('ISOLDE GUI is already running!')
+        self._gui = gui
+        self._start_gui()
 
     def _start_gui(self, *_):
         '''
@@ -2470,7 +2478,7 @@ class Isolde():
             self._selected_model = model
             self.session.selection.clear()
             # self._selected_model.selected = True
-            self._initialize_maps(m)
+            self._initialize_maps(model)
 
     def _change_selected_model(self, *_, model=None, force=False):
         if self.simulation_running:
@@ -3449,7 +3457,7 @@ def load_crystal_demo(session):
     from chimerax.core.colors import Color
     set.set(session, bg_color=Color([255,255,255,255]))
 
-    if hasattr(session, 'isolde'):
+    if hasattr(session, 'isolde') and session.isolde.gui_mode:
         session.isolde._change_selected_model(model=before_struct, force=True)
     from chimerax.clipper.util import exclude_nonpolar_hydrogens
     before_struct.atoms[exclude_nonpolar_hydrogens(before_struct.atoms)].displays = True
