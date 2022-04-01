@@ -131,11 +131,11 @@ with the surroundings.
     <DataDir>ui</DataDir>
   </DataFiles>
 
-  <!-- <Providers manager="toolbar">
+  <Providers manager="toolbar">
     <Provider tab="ISOLDE" section="Main"
       name="isolde start" display_name="Start ISOLDE" icon="logo_small.png"
       description="Start the ISOLDE GUI"/>
-    <Provider tab="ISOLDE" section="Prep"
+    <!-- <Provider tab="ISOLDE" section="Prep"
       name="associate map" display_name="Add map" icon="spotlight.png"
       description="Associate a real-space map with the working model"/>
     <Provider tab="ISOLDE" section="Control"
@@ -155,7 +155,7 @@ with the surroundings.
       description="Stop the simulation and revert to the last checkpoint"/>
     <Provider tab="ISOLDE" section="Control"
       name="stop-discard" display_name="Stop (discard)" icon="stop_sign_red.png"
-      description="Stop the simulation and discard all changes since it was started"/>
+      description="Stop the simulation and discard all changes since it was started"/> -->
     <Provider tab="ISOLDE" section="Peptide bond"
       name="flip peptide" display_name = "Flip peptide" icon="pep-flip-icon.png"
       description="Flip the peptide bond N-terminal to the selection by 180 degrees"/>
@@ -165,7 +165,7 @@ with the surroundings.
 
 
 
-  </Providers> -->
+  </Providers>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->
     <PythonClassifier>Development Status :: 4 - Beta</PythonClassifier>
