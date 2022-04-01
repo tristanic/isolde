@@ -68,6 +68,8 @@ class _MyAPI(BundleAPI):
         settings.basic_settings = settings._IsoldeBasicSettings(session, 'isolde')
         settings.color_settings = settings._IsoldeColorSettings(session, 'isolde')
         settings.advanced_settings = settings._IsoldeAdvancedSettings(session, 'isolde')
+        from .toolbar import ToolbarButtonMgr
+        session._isolde_tb = ToolbarButtonMgr(session)
 
     @staticmethod
     def get_class(class_name):
