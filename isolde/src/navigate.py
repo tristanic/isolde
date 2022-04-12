@@ -201,17 +201,20 @@ class ResidueStepper(StateManager):
         new_fw = self._view_distance*2
 
         def interpolate_camera(session, f, cp=cp, np=np, oc=old_cofr, nc=new_cofr, fw=fw, nfw=new_fw, vr=self._view_distance, center=np.inverse()*centroid, frames=self._interpolate_frames):
+            import numpy
             frac = (f+1)/frames
             v = session.main_view
             c = v.camera
             p = np if f+1==frames else cp.interpolate(np, center, frac=frac)
             cofr = oc+frac*(nc-oc)
             c.position = p
+            origin = p.origin()
             vd = c.view_direction()
+            dist = numpy.linalg.norm(cofr-origin)
             cp = v.clip_planes
-            ncm, fcm = _get_clip_distances(session)
-            cp.set_clip_position('near', cofr-ncm*vr*vd, v)
-            cp.set_clip_position('far', cofr+fcm*vr*vd, v)
+            ncm, fcm = _get_clip_distances(session, dist)
+            cp.set_clip_position('near', origin + vd*dist*(1-ncm), v)
+            cp.set_clip_position('far', origin + vd*dist*(1+fcm), v)
             if c.name=='orthographic':
                 c.field_width = fw+frac*(nfw-fw)
 
@@ -343,10 +346,11 @@ class ResidueStepper(StateManager):
         self._max_interpolate_distance = data['interp_distance']
         self._view_distance = data['view_distance']
 
-def _get_clip_distances(session):
+def _get_clip_distances(session, dist):
     from chimerax.clipper.mousemodes import ZoomMouseMode
     mm = [b.mode for b in session.ui.mouse_modes.bindings if isinstance(b.mode, ZoomMouseMode)]
     if len(mm):
         zmm = mm[0]
-        return (zmm.near_clip_multiplier, zmm.far_clip_multiplier)
+        return (zmm.adjusted_clip_multiplier(zmm.near_clip_multiplier, dist),
+        zmm.adjusted_clip_multiplier(zmm.far_clip_multiplier, dist))
     return (0.5, 0.5)
