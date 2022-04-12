@@ -50,7 +50,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
 
     Parameters
     ----------
-    cmd: One of 'start', 'pause', 'checkpoint', 'revert' or 'stop'
+    cmd: One of 'start', 'pause', 'resume', 'checkpoint', 'revert' or 'stop'
         'pause' toggles between active and paused
         'checkpoint' saves a snapshot of the current simulation state
         'revert' reverts the simulation to the last saved checkpoint (or the
@@ -64,7 +64,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         'checkpoint'. Discards all changes since the chosen state when stopping
         the simulation.
     '''
-    valid_commands = ('start', 'pause', 'checkpoint', 'revert', 'stop')
+    valid_commands = ('start', 'pause', 'resume', 'checkpoint', 'revert', 'stop')
     log = session.logger
     if cmd not in valid_commands:
         raise UserError('Unrecognised command! Should be one of {}'.format(
@@ -108,7 +108,10 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         return
 
     if cmd == 'pause':
-        isolde.pause_sim_toggle()
+        isolde.pause()
+    
+    elif cmd == 'resume':
+        isolde.resume()
 
     elif cmd == 'checkpoint':
         if not isolde.sim_running:
@@ -293,7 +296,7 @@ def register_isolde(logger):
     def register_isolde_sim():
         desc = CmdDesc(
             optional=[('atoms', AtomsArg)],
-            required=[('cmd', EnumOf(('start', 'pause', 'checkpoint', 'revert', 'stop')))],
+            required=[('cmd', EnumOf(('start', 'pause', 'resume', 'checkpoint', 'revert', 'stop')))],
             keyword=[('discard_to', EnumOf(('start', 'checkpoint')))],
             synopsis='Start, stop or pause an interactive simulation'
             )
