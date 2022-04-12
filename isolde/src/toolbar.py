@@ -13,10 +13,14 @@ def toolbar_command(session, name):
     from chimerax.core.commands import run
     if name == 'isolde start':
         run(session, 'isolde start')
-    elif name == 'associate map':
-        pass
-    elif name == 'start-pause':
-        start_pause_resume(session)
+    elif name == 'start sim':
+        run(session, 'isolde sim start sel')
+    elif name == 'pause sim':
+        run(session, 'isolde sim pause')
+    elif name == 'resume sim':
+        run(session, 'isolde sim resume')
+    
+    
     elif name == 'checkpoint save':
         session.isolde.checkpoint()
     elif name == 'checkpoint revert':
@@ -36,11 +40,25 @@ class ToolbarButtonMgr:
     # (tab, section, name, display_name)
     all_buttons = {
         'Start ISOLDE': ('ISOLDE', 'Main', 'isolde start', 'Start ISOLDE'),
+        'Start simulation': ('ISOLDE', 'Control', 'start sim', 'Start simulation'),
+        'Pause simulation': ('ISOLDE', 'Control', 'pause sim', 'Pause simulation'),
+        'Resume simulation': ('ISOLDE', 'Control', 'resume sim', 'Resume simulation'),
+        'Store checkpoint': ('ISOLDE', 'Control', 'checkpoint save', 'Store checkpoint'),
+        'Revert to checkpoint': ('ISOLDE', 'Control', 'checkpoint revert', 'Revert to checkpoint'),
+        'Stop (keep)': ('ISOLDE', 'Control', 'stop-keep', 'Stop (keep)'),
+        'Stop (revert)': ('ISOLDE', 'Control', 'stop-revert', 'Stop (revert)'),
+        'Stop (discard)': ('ISOLDE', 'Control', 'stop-discard', 'Stop (discard)'),
+
         'flip peptide': ('ISOLDE', 'Peptide bond', 'flip peptide', 'Flip peptide'),
-        'flip cis-trans': ('ISOLDE', 'Peptide bond', 'flip cis-trans', 'cis<->trans'),
+        'flip cis-trans': ('ISOLDE', 'Peptide bond', 'flip cis-trans', 'Flip cis<->trans'),
+
     }
 
     enable_if_single_peptide_selected=('flip peptide', 'flip cis-trans')
+
+    def set_enabled(self, key, enabled):
+        tab, section, name, display_name = self.all_buttons[key]
+        self.session.toolbar.set_enabled(enabled, tab, section, display_name)
 
     def __init__(self, session):
         self.session = session
@@ -51,47 +69,88 @@ class ToolbarButtonMgr:
         self._initialize_callbacks()
 
     def _set_button_starting_states(self, *_):
-        tb = self.session.toolbar
         for key, (tab, section, name, display_name) in self.all_buttons.items():
             if key != 'Start ISOLDE':
-                tb.set_enabled(False, tab, section, display_name)
+                self.set_enabled(key, False)
+            else:
+                self.set_enabled(key, True)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
 
     def isolde_started(self):
         isolde = self.session.isolde
-        tab, section, name, display_name = self.all_buttons['Start ISOLDE']
-        self.session.toolbar.set_enabled(False, tab, section, display_name)
+        self.set_enabled('Start ISOLDE', False)
         isolde.triggers.add_handler('isolde closed', self._isolde_close_cb)
+        isolde.triggers.add_handler('simulation started', self._sim_start_cb)
+        isolde.triggers.add_handler('simulation paused', self._sim_pause_cb)
+        isolde.triggers.add_handler('simulation resumed', self._sim_resume_cb)
+        isolde.triggers.add_handler('simulation terminated', self._sim_end_cb)
 
+    def _sim_start_cb(self, *_):
+        self.set_enabled('Start simulation', False)
+        self.set_enabled('Pause simulation', True)
+        self.set_enabled('Resume simulation', False)
+        self.set_enabled('Store checkpoint', True)
+        self.set_enabled('Revert to checkpoint', True)
+        self.set_enabled('Stop (keep)', True)
+        self.set_enabled('Stop (revert)', True)
+        self.set_enabled('Stop (discard)', True)
+
+
+    def _sim_pause_cb(self, *_):
+        self.set_enabled('Pause simulation', False)
+        self.set_enabled('Resume simulation', True)
     
+    def _sim_resume_cb(self, *_):
+        self.set_enabled('Resume simulation', False)
+        self.set_enabled('Pause simulation', True)
+
+    def _sim_end_cb(self, *_):
+        self.set_enabled('Pause simulation', False)
+        self.set_enabled('Resume simulation', False)
+        self._enable_sim_start_button_if_necessary()
+        self.set_enabled('Store checkpoint', False)
+        self.set_enabled('Revert to checkpoint', False)
+        self.set_enabled('Stop (keep)', False)
+        self.set_enabled('Stop (revert)', False)
+        self.set_enabled('Stop (discard)', False)
+
+
     def _initialize_callbacks(self):
         session = self.session
         st = session.triggers
+        st.add_handler('selection changed', self._selection_changed_cb)
+
+    def _enable_if_single_peptide_selected_cb(self):
+        enable=False
+        isolde = getattr(self.session, 'isolde', None)
+        if isolde is not None:
+            m = isolde.selected_model
+            if m is not None and not m.was_deleted:
+                sel_res = m.atoms[m.atoms.selecteds].unique_residues
+                if len(sel_res)==1:
+                    from chimerax.atomic import Residue
+                    r = sel_res[0]
+                    if r.polymer_type==Residue.PT_AMINO:
+                        enable=True
         for key in self.enable_if_single_peptide_selected:
-            tab, section, name, display_name = self.all_buttons[key]
-            cb = self._create_cb_enable_if_peptide_selected(session, tab, section, display_name)
-            st.add_handler('selection changed', cb)
-            cb()
+            self.set_enabled(key, enable)
 
+    def _enable_sim_start_button_if_necessary(self):
+        enable = False
+        isolde = getattr(self.session, 'isolde', None)
+        if isolde is not None and not isolde.simulation_running:
+            m = isolde.selected_model
+            if m is not None and not m.was_deleted:
+                import numpy
+                if numpy.any(m.atoms.selected):
+                    enable = True
+        self.set_enabled('Start simulation', enable)
 
-
-    def _create_cb_enable_if_peptide_selected(self, session, tab, section, display_name):
-        def button_cb(*_,session=session, tab=tab, section=section, display_name=display_name):
-            enable=False
-            isolde = getattr(session, 'isolde', None)
-            if isolde is not None:
-                m = session.isolde.selected_model
-                if m is not None:
-                    sel_res = m.atoms[m.atoms.selecteds].unique_residues
-                    if len(sel_res)==1:
-                        from chimerax.atomic import Residue
-                        r = sel_res[0]
-                        if r.polymer_type==Residue.PT_AMINO:
-                            enable=True
-            session.toolbar.set_enabled(enable, tab, section, display_name)
-        return button_cb
+    def _selection_changed_cb(self, *_):
+        self._enable_if_single_peptide_selected_cb()
+        self._enable_sim_start_button_if_necessary()
     
     def _isolde_close_cb(self, *_):
         for triggerset, handlers in zip(self._handlers.items()):

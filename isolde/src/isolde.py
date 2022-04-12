@@ -311,11 +311,13 @@ class Isolde():
                     return DEREGISTER
                 splash.setWindowOpacity(opacity)
             session.triggers.add_handler('new frame', _splash_remove_cb)
+
         if gui is not None:
             self._gui = gui
             session.triggers.add_handler('new frame', self._start_gui)
 
         session.isolde = self
+        session._isolde_tb.isolde_started()
         ffmgr.background_load_ff(sp.forcefield)
 
     def _prepare_environment(self):
@@ -2978,6 +2980,21 @@ class Isolde():
         '''
         if self.simulation_running:
             self.sim_manager.toggle_pause()
+
+    def pause(self):
+        '''
+        If simulation is currently running, pause it. Otherwise, do nothing.
+        '''
+        if self.simulation_running and not self.sim_paused:
+            self.pause_sim_toggle()
+    
+    def resume(self):
+        '''
+        If an active simulation is currently paused, resume it. Otherwise, do nothing.
+        '''
+        if self.simulation_running and self.sim_paused:
+            self.pause_sim_toggle()
+
 
     @property
     def sim_paused(self):
