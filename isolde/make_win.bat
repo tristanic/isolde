@@ -17,7 +17,6 @@ IF "%%A" == "clean" (
 for %%A in (%*) DO (
 IF "%%A" == "app-install" (
 	@echo on
-	%CHIMERAX_EXE% -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc
 	%CHIMERAX_EXE% --nogui --safemode --exit --cmd "devel install ."
 	BREAK
 )
