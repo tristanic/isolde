@@ -282,7 +282,7 @@ class RamaPlot:
     @selection_mode.setter
     def selection_mode(self, mode):
         if mode not in self.mode_dict.keys():
-            raise TypeError('Unrecognised mode!')
+            raise TypeError(f'Unrecognised mode: {mode}!')
         self._selection_mode = mode
         if self.current_model is None:
             self.set_target_residues(None)
