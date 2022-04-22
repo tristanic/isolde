@@ -3,38 +3,24 @@ from chimerax.ui.gui import MainToolWindow
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QFrame, QLayout, 
     QLabel, QSizePolicy, QComboBox, QSpacerItem,
-    QPushButton, QTabWidget, QWidget
+    QPushButton, QTabWidget, QWidget, QScrollArea
 )
 from Qt import QtCore
 from Qt.QtGui import QPixmap
+
+from .ui_base import DefaultVLayout, DefaultHLayout, DefaultSpacerItem
 
 from .util import slot_disconnected
 
 import os
 icon_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','icons'))
 
-class DefaultVLayout(QVBoxLayout):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setContentsMargins(0,0,0,0)
-        self.setSpacing(3)
-
-class DefaultHLayout(QHBoxLayout):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setContentsMargins(0,0,0,0)
-        self.setSpacing(3)
-
-class DefaultSpacerItem(QSpacerItem):
-    def __init__(self, width=100):
-        super().__init__(width, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
 
 class IsoldeMainWin(MainToolWindow):
     def __init__(self, tool_instance, **kw):
         super().__init__(tool_instance, **kw)
         if hasattr(self.session, 'isolde'):
-            self.isolde = isolde
+            self.isolde = self.session.isolde
         else:
             from ..isolde import Isolde
             self.isolde = Isolde(self.session)
@@ -51,8 +37,12 @@ class IsoldeMainWin(MainToolWindow):
         tabw.setElideMode(QtCore.Qt.ElideNone)
         tabw.setUsesScrollButtons(True)
         tabw.setDocumentMode(False)
-        tabw.addTab(QWidget(), 'Sim settings')
         main_layout.addWidget(tabw)
+        from .ui_base import IsoldeTab
+        from .general_tab import GeneralTab
+        self.general_tab = GeneralTab(self.isolde, self.session, tabw, "General")
+        self.validate_tab = IsoldeTab(tabw, "Validate")
+        self.problems_tab = IsoldeTab(tabw, "Problem Zones")
 
 
 
@@ -169,6 +159,17 @@ class IsoldeMainWin(MainToolWindow):
 
 
 
+
+
+def test_collapse_button(tab, duration=300):
+    layout = DefaultVLayout()
+
+    layout.addWidget(QLabel('Test'))
+    from .collapse_button import CollapsibleArea
+    a = CollapsibleArea(tab, f'Test button (duration={duration})', duration=duration)
+    a.setContentLayout(layout)   
+    tab.addWidget(a)
+    return a
 
 
 

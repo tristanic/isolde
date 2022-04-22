@@ -22,6 +22,10 @@ def _find_help():
     # return pathlib.Path(os.path.abspath(fname)).as_uri()
     return 'help:user/tools/ISOLDE.html'
 
+def test_new_ui(session):
+    from chimerax.core.tools import get_singleton
+    return get_singleton(session, ISOLDE_NewToolUI, 'ISOLDE', create=True)
+
 class ISOLDE_NewToolUI(ToolInstance):
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)

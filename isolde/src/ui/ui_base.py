@@ -6,7 +6,26 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
+from Qt.QtWidgets import (
+    QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy,
+    QScrollArea, QWidget
+    )
 
+class DefaultVLayout(QVBoxLayout):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setContentsMargins(0,0,0,0)
+        self.setSpacing(3)
+
+class DefaultHLayout(QHBoxLayout):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setContentsMargins(0,0,0,0)
+        self.setSpacing(3)
+
+class DefaultSpacerItem(QSpacerItem):
+    def __init__(self, width=100):
+        super().__init__(width, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
 class UI_Panel_Base:
     def __init__(self, session, isolde, main_frame, sim_sensitive=True):
@@ -65,3 +84,21 @@ class UI_Panel_Base:
             self.session.triggers.remove_handler(h)
         for h in self._isolde_trigger_handlers:
             self.isolde.triggers.remove_handler(h)
+
+class IsoldeTab(QWidget):
+    def __init__(self, tab_widget, tab_name):
+        super().__init__()
+        self.tab_widget = tab_widget
+        tab_widget.addTab(self, tab_name)
+        hl = DefaultHLayout()
+        self.setLayout(hl)
+        sa = self.scroll_area = QScrollArea(self)
+        hl.addWidget(sa)
+        sa.setWidgetResizable(True)
+        ml = self.main_layout = DefaultVLayout()
+        ml.addStretch()
+        sa.setLayout(ml)
+    
+    def addWidget(self, widget):
+        # Last position is the spacer, so we always want to go just before that.
+        self.main_layout.insertWidget(self.main_layout.count()-1, widget)
