@@ -321,7 +321,8 @@ class Isolde():
         #     session.triggers.add_handler('new frame', self._start_gui)
 
         session.isolde = self
-        session._isolde_tb.isolde_started()
+        if session.ui.is_gui:
+            session._isolde_tb.isolde_started()
         ffmgr.background_load_ff(sp.forcefield)
 
     def _prepare_environment(self):
