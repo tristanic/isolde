@@ -52,7 +52,7 @@ class WinAutoResizeQComboBox(QComboBox):
 
 
 
-def fix_combo_box_view_width(combobox):
+def fix_combo_box_view_width(combobox, pad=20):
     cb = combobox
     num_entries = cb.count()
     if num_entries <= cb.maxVisibleItems():
@@ -65,11 +65,11 @@ def fix_combo_box_view_width(combobox):
     fm = v.fontMetrics()
     max_width = 0
     for i in range(num_entries):
-        width = fm.width(cb.itemText(i))
+        width = fm.horizontalAdvance(cb.itemText(i))
         if max_width < width:
             max_width = width
 
-    v.setMinimumWidth(max_width+scroll_width)
+    v.setMinimumWidth(max_width+scroll_width+pad)
 
 @contextmanager
 def slot_disconnected(signal, slot):
@@ -90,3 +90,16 @@ def slot_disconnected(signal, slot):
         pass
     yield
     signal.connect(slot)
+
+def block_triggers(triggers, *trigger_names):
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            from contextlib import ExitStack
+            with ExitStack() as stack:
+                for name in trigger_names:
+                    stack.enter_context(triggers.block_trigger(name))
+                return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+

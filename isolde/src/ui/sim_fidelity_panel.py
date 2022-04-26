@@ -20,8 +20,8 @@ class SimFidelityPanel(UI_Panel_Base):
 
     }
 
-    def __init__(self, session, isolde, main_frame, buttons):
-        super().__init__(session, isolde, main_frame)
+    def __init__(self, session, isolde, gui, main_frame, buttons):
+        super().__init__(session, isolde, gui, main_frame)
         self._buttons = buttons
         for b in buttons:
             b.clicked.connect(self._button_click_cb)

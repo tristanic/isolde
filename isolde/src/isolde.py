@@ -286,6 +286,10 @@ class Isolde():
             import os
 
 
+            self._prepare_environment()
+            from .menu import prepare_isolde_menu
+            prepare_isolde_menu(self.session)
+
             splash_pix = QPixmap(os.path.join(
                 self._root_dir,'resources/isolde_splash_screen.jpg'))
             splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
@@ -312,9 +316,9 @@ class Isolde():
                 splash.setWindowOpacity(opacity)
             session.triggers.add_handler('new frame', _splash_remove_cb)
 
-        if gui is not None:
-            self._gui = gui
-            session.triggers.add_handler('new frame', self._start_gui)
+        # if gui is not None:
+        #     self._gui = gui
+        #     session.triggers.add_handler('new frame', self._start_gui)
 
         session.isolde = self
         session._isolde_tb.isolde_started()
@@ -993,6 +997,15 @@ class Isolde():
     # Menu control functions to run on key events
     ##############################################################
 
+    @property
+    def available_models(self):
+        from chimerax.atomic import AtomicStructure
+        models = {}
+        for m in self.session.models.list():
+            if type(m)==AtomicStructure:
+                models[f'{m.id_string}. {m.name}'] = m
+        return models
+
 
     # TODO: This function has become somewhat monolithic and has expanded well
     #       beyond its original remit. Needs some rethinking.
@@ -1178,8 +1191,8 @@ class Isolde():
                 get_triggers().add_handler('changes done', self._changes_done_cb)
 
     def _changes_done_cb(self, *_):
-        self._update_iffy_rota_list()
-        self._update_iffy_peptide_lists()
+        # self._update_iffy_rota_list()
+        # self._update_iffy_peptide_lists()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
@@ -1436,7 +1449,7 @@ class Isolde():
             # No maps associated with this model.
             return False
 
-        recalc_cb = self.iw._sim_basic_xtal_settings_live_recalc_checkbox
+        # recalc_cb = self.iw._sim_basic_xtal_settings_live_recalc_checkbox
 
         from chimerax.clipper.maps import XmapHandler_Live, XmapHandler_Static
         from .session_extensions import get_mdff_mgr
@@ -1474,7 +1487,7 @@ class Isolde():
                 # explicitly enable it.
                 mgr.enabled = False
             mdff_mgrs.append(mgr)
-        recalc_cb.setVisible(live_maps)
+        # recalc_cb.setVisible(live_maps)
         if len(mdff_mgrs):
             return True
         return False
@@ -1555,22 +1568,6 @@ class Isolde():
             return
         for v in mgr.all_maps:
             cb.addItem(v.name, v)
-
-    def _displayed_decimal_places_and_step(self, number, sig_figs=3):
-        from math import log, ceil, floor
-        if number <= 0:
-            return 2, 0.1
-        places = max(ceil(-log(number, 10)+sig_figs-1), 0)
-        step = 10**(floor(log(number, 10)-1))
-        return places, step
-
-    def _update_map_weight_box_settings(self, *_):
-        sb = self.iw._sim_basic_xtal_map_weight_spin_box
-        v = sb.value()
-        dps, step = self._displayed_decimal_places_and_step(v)
-        sb.setDecimals(dps)
-        sb.setSingleStep(step)
-
 
     def _populate_xtal_map_params(self, *_):
         cb = self.iw._sim_basic_xtal_settings_map_combo_box
@@ -2475,55 +2472,43 @@ class Isolde():
         if self.gui_mode:
             self._change_selected_model(self, model=model, force=True)
         else:
-            from .citation import add_isolde_citation
-            add_isolde_citation(model)
             self._selected_model = model
             self.session.selection.clear()
-            # self._selected_model.selected = True
-            self._initialize_maps(model)
+            if model is not None:
+                from .citation import add_isolde_citation
+                add_isolde_citation(model)
+                # self._selected_model.selected = True
+                self._initialize_maps(model)
 
     def _change_selected_model(self, *_, model=None, force=False):
+        m = model
         if self.simulation_running:
             return
         if not hasattr(self, '_model_changes_handler'):
             self._model_changes_handler = None
-        from .ui.util import slot_disconnected
+        # from .ui.util import slot_disconnected
         session = self.session
-        iw = self.iw
-        mmcb = iw._master_model_combo_box
+        # iw = self.iw
+        # mmcb = iw._master_model_combo_box
 
         sm = self._selected_model
 
-        if sm is not None:
-            if sm == model:
-                with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
-                    mmcb.setCurrentIndex(mmcb.findData(model))
-                return
-            else:
-                if self._model_changes_handler is not None:
-                    sm.triggers.remove_handler(self._model_changes_handler)
-                    self._model_changes_handler = None
+        # if sm is not None:
+        #     if sm == model:
+        #         with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
+        #             mmcb.setCurrentIndex(mmcb.findData(model))
+        #         return
+        #     else:
+        #         if self._model_changes_handler is not None:
+        #             sm.triggers.remove_handler(self._model_changes_handler)
+        #             self._model_changes_handler = None
         
-        if len(self._available_models) == 0 or mmcb.count() == 0:
+        if len(self.available_models) == 0:
             self._selected_model = None
             self.triggers.activate_trigger('selected model changed', data=None)
             return
 
-        with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'), \
-                slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
-
-            if model is not None:
-                index = mmcb.findData(model)
-                if index == -1 and mmcb.count():
-                    index = 0
-                mmcb.setCurrentIndex(index)
-            if mmcb.currentIndex() == -1:
-                mmcb.setCurrentIndex(0)
-            m = mmcb.currentData()
-            if m == sm:
-                # I don't *think* this can happen, but may as well be safe
-                return
-            
+        with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'):
             if not getattr(m, 'isolde_initialized', False):
                 atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
                 if len(atoms_with_alt_locs):
@@ -2547,20 +2532,13 @@ class Isolde():
                 self._model_changes_cb)
             self.session.selection.clear()
             # m.selected = True
-            has_maps = self._initialize_maps(m)
-            if has_maps:
-                iw._map_masking_frame.setEnabled(True)
-            else:
-                iw._map_masking_frame.setEnabled(False)
 
             # Load/create validation managers
             from . import session_extensions as sx
             sx.get_rota_annotator(m)
             sx.get_RamaAnnotator(m)
-            self._populate_rot_mdff_target_combo_box()
+            self._initialize_maps(m)
             self.triggers.activate_trigger('selected model changed', data=m)
-            self._update_iffy_rota_list()
-            self._update_iffy_peptide_lists()
 
 
     def _change_b_and_a_padding(self, *_):

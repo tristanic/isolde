@@ -22,11 +22,11 @@ def _find_help():
     # return pathlib.Path(os.path.abspath(fname)).as_uri()
     return 'help:user/tools/ISOLDE.html'
 
-def test_new_ui(session):
-    from chimerax.core.tools import get_singleton
-    return get_singleton(session, ISOLDE_NewToolUI, 'ISOLDE', create=True)
+# def test_new_ui(session):
+#     from chimerax.core.tools import get_singleton
+#     return get_singleton(session, ISOLDE_NewToolUI, 'ISOLDE', create=True)
 
-class ISOLDE_NewToolUI(ToolInstance):
+class ISOLDE_ToolUI(ToolInstance):
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)
 
@@ -35,11 +35,14 @@ class ISOLDE_NewToolUI(ToolInstance):
         tw = self.tool_window = IsoldeMainWin(self)
         tw.manage(placement=None)
         tw.ui_area.parent().parent().resize(540, 850)
+    
+    def delete(self):
+        self.tool_window.cleanup()
 
 
 
 
-class ISOLDE_ToolUI(ToolInstance):
+class ISOLDE_ToolUI_Old(ToolInstance):
 
     SESSION_ENDURING = True
     # if SESSION_ENDURING is True, tool instance not deleted at session closure

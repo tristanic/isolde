@@ -3,8 +3,8 @@ from ..ui.ui_base import UI_Panel_Base
 
 class ProblemAggregatorGUI(UI_Panel_Base):
 
-    def __init__(self, session, isolde, main_frame, category_grid, region_table, bottom_layout, update_button):
-        super().__init__(session, isolde, main_frame, sim_sensitive=True)
+    def __init__(self, session, isolde, gui, main_frame, category_grid, region_table, bottom_layout, update_button):
+        super().__init__(session, isolde, gui, main_frame, sim_sensitive=True)
         from Qt.QtCore import Qt
         self._data_role = Qt.ItemDataRole.UserRole
         cg = self.category_grid = category_grid

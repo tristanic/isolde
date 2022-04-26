@@ -1,11 +1,14 @@
-from Qt.QtWidgets import QToolButton, QWidget, QScrollArea, QFrame, QGridLayout
-from Qt.QtCore import QSize, Qt, QParallelAnimationGroup, QPropertyAnimation
+from Qt.QtWidgets import QToolButton, QWidget, QFrame, QGridLayout
+from Qt.QtCore import Qt, QParallelAnimationGroup, QPropertyAnimation, Signal
 from Qt.QtWidgets import QSizePolicy
 
 
 class CollapsibleArea(QWidget):
-    def __init__(self, parent=None, title='', duration=100):
+    collapsed = Signal()
+    expanded = Signal()
+    def __init__(self, parent=None, title='', duration=100, start_collapsed=True):
         super().__init__(parent=parent)
+        self._is_collapsed = start_collapsed
         self.animation_duration=duration
         anim = self._animator = QParallelAnimationGroup()
         ca = self.content_area = QFrame()
@@ -15,10 +18,14 @@ class CollapsibleArea(QWidget):
 
         tb.setStyleSheet('QToolButton: {border: none; }')
         tb.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        tb.setArrowType(Qt.RightArrow)
         tb.setText(title)
         tb.setCheckable(True)
-        tb.setChecked(False)
+        if start_collapsed:
+            tb.setArrowType(Qt.RightArrow)
+            tb.setChecked(False)
+        else:
+            tb.setArrowType(Qt.DownArrow)
+            tb.setChecked(True)
         tb.setVisible(True)
         tb.toggled.connect(self._do_animation)
 
@@ -27,14 +34,15 @@ class CollapsibleArea(QWidget):
         hl.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
 
         ca.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        # Start out collapsed
-        ca.setMaximumHeight(0)
-        ca.setMinimumHeight(0)
+        if start_collapsed:
+            ca.setMaximumHeight(0)
+            ca.setMinimumHeight(0)
         #ca.setVisible(False)
 
         anim.addAnimation(QPropertyAnimation(self, b'minimumHeight'))
         anim.addAnimation(QPropertyAnimation(self, b'maximumHeight'))
         anim.addAnimation(QPropertyAnimation(ca, b'maximumHeight'))
+        anim.finished.connect(self._animation_finished_cb)
         
         ml.setVerticalSpacing(0)
         ml.setContentsMargins(0,0,0,0)
@@ -45,6 +53,10 @@ class CollapsibleArea(QWidget):
 
         self.setLayout(ml)
 
+    @property
+    def is_collapsed(self):
+        return not self.toggle_button.isChecked()
+
     def _do_animation(self, checked):
         from Qt.QtCore import QAbstractAnimation
         arrow_type = Qt.DownArrow if checked else Qt.RightArrow
@@ -54,6 +66,12 @@ class CollapsibleArea(QWidget):
         self._animator.setDirection(direction)
         self._animator.start()
     
+    def _animation_finished_cb(self, *_):
+        if self.is_collapsed:
+            self.collapsed.emit()
+        else:
+            self.expanded.emit()
+
     def setContentLayout(self, layout):
         ca = self.content_area
         ca.setLayout(layout)

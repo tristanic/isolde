@@ -1,8 +1,15 @@
+from contextlib import contextmanager
 from chimerax.ui.gui import MainToolWindow
+
+import sys
+if 'win' in sys.platform.lower():
+    from .util import WinAutoResizeQComboBox as QComboBox
+else:
+    from Qt.QtWidgets import QComboBox
 
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QFrame, QLayout, 
-    QLabel, QSizePolicy, QComboBox, QSpacerItem,
+    QLabel, QSizePolicy, QSpacerItem,
     QPushButton, QTabWidget, QWidget, QScrollArea
 )
 from Qt import QtCore
@@ -21,9 +28,12 @@ class IsoldeMainWin(MainToolWindow):
         super().__init__(tool_instance, **kw)
         if hasattr(self.session, 'isolde'):
             self.isolde = self.session.isolde
+            self.isolde._gui = self
         else:
             from ..isolde import Isolde
-            self.isolde = Isolde(self.session)
+            self.isolde = Isolde(self.session, gui=self)
+        self.isolde.gui_mode = True
+        self._gui_panels = []
 
         self._session_trigger_handlers = []
         parent = self.ui_area
@@ -40,11 +50,16 @@ class IsoldeMainWin(MainToolWindow):
         main_layout.addWidget(tabw)
         from .ui_base import IsoldeTab
         from .general_tab import GeneralTab
-        self.general_tab = GeneralTab(self.isolde, self.session, tabw, "General")
-        self.validate_tab = IsoldeTab(tabw, "Validate")
-        self.problems_tab = IsoldeTab(tabw, "Problem Zones")
+        self.general_tab = GeneralTab(self.session, self.isolde, self, tabw, "General")
+        self.validate_tab = IsoldeTab(self, tabw, "Validate")
+        self.problems_tab = IsoldeTab(self, tabw, "Problem Zones")
 
-
+    def register_panel(self, panel):
+        '''
+        Register a GUI subpanel to be managed by this one. At a minimum, the panel *must* implement
+        a `cleanup()` method to remove its callbacks when the GUI is destroyed.
+        '''
+        self._gui_panels.append(panel)
 
     def _prepare_top_frame(self, main_layout):
         tf = self._top_frame = QFrame()
@@ -63,37 +78,37 @@ class IsoldeMainWin(MainToolWindow):
         tw = QWidget()
         l1 = DefaultHLayout()
         tw.setLayout(l1)
-        tcb = self.tutorials_combo_box = QComboBox(tw)
-        tcb.setToolTip("Start an interactive tutorial")
-        tcb.addItem('Tutorials')
-        from ..tutorials import populate_tutorial_combo_box
-        populate_tutorial_combo_box(tcb)
-        tcb.currentIndexChanged.connect(self._show_tutorial_cb)
 
-
-        l1.addWidget(tcb)
-        l1.addItem(DefaultSpacerItem(200))
-        li.addWidget(tw)
-
-        bw = QWidget()
-        l2 = DefaultHLayout()
-        bw.setLayout(l2)
-
-        wol = QLabel(bw)
+        wol = QLabel(tw)
         wol.setText('Working on: ')
-        l2.addWidget(wol)
-        mmcb = self.master_model_combo_box = QComboBox(bw)
+        l1.addWidget(wol)
+        mmcb = self.master_model_combo_box = QComboBox(tw)
         mmcb.setMinimumSize(QtCore.QSize(150,0))
         mmcb.setToolTip('Select the model to work on in ISOLDE')
-        l2.addWidget(mmcb)
+        l1.addWidget(mmcb)
+        l1.addItem(DefaultSpacerItem(200))
 
         from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
         for event_type in (ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS):
             self._session_trigger_handlers.append(
                 self.session.triggers.add_handler(event_type, self._update_model_list_cb)
             )
+        mmcb.currentIndexChanged.connect(self._change_selected_model_cb)
+
+        li.addWidget(tw)
+
+        bw = QWidget()
+        l2 = DefaultHLayout()
+        bw.setLayout(l2)
+
 
         l2.addItem(DefaultSpacerItem())
+
+        tcb = self.tutorials_button = QPushButton('Tutorials', parent=bw)
+        tcb.setToolTip("Start an interactive tutorial")
+        from chimerax.core.commands import run
+        tcb.clicked.connect(lambda *_:run(self.session, 'isolde tut'))
+        l2.addWidget(tcb)
 
         hb = self.main_help_button = QPushButton(bw)
         hb.setText('Help')
@@ -104,22 +119,24 @@ class IsoldeMainWin(MainToolWindow):
         layout.addWidget(inner)
 
         main_layout.addWidget(tf)
-    
-    def _show_tutorial_cb(self, *_):
-        tcb = self.tutorials_combo_box
-        tpath = tcb.currentData()
-        from ..tutorials import show_tutorial
-        show_tutorial(self.session, tpath)
-        with slot_disconnected(tcb.currentIndexChanged, self._show_tutorial_cb):
-            tcb.setCurrentIndex(0)
-    
+
+
     def _change_selected_model_cb(self, *_):
         mmcb = self.master_model_combo_box
         with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
             m = mmcb.currentData()
             self.isolde.change_selected_model(m)
     
+    @contextmanager
+    def _block_update_model_list_cb(self):
+        self._update_model_list_cb_blocked = True
+        yield
+        self._update_model_list_cb_blocked = False
+
     def _update_model_list_cb(self, trigger_name, models):
+        blocked = getattr(self, '_update_model_list_cb_blocked', False)
+        if blocked:
+            return
         mmcb = self.master_model_combo_box
         from chimerax.core.models import Model
         if isinstance(models, Model):
@@ -140,7 +157,7 @@ class IsoldeMainWin(MainToolWindow):
             structures_need_update = True
         
         if structures_need_update:
-            with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
+            with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb), self._block_update_model_list_cb():
                 mmcb.clear()
                 models = [m for m in self.session.models.list() if type(m) == AtomicStructure]
                 models = sorted(models, key=lambda m: m.id)
@@ -150,14 +167,15 @@ class IsoldeMainWin(MainToolWindow):
                     mmcb.addItem(id_str, m)
                 if cm is not None:
                     mmcb.setCurrentIndex(mmcb.findData(cm))
+                else:
+                    mmcb.setCurrentIndex(0)
+                    self._change_selected_model_cb()
 
     def cleanup(self):
         for h in self._session_trigger_handlers:
-            self.session.triggers.remove_handler(h)
-
-
-
-
+            h.remove()
+        for panel in self._gui_panels:
+            panel.cleanup()
 
 
 

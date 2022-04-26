@@ -28,7 +28,8 @@ class DefaultSpacerItem(QSpacerItem):
         super().__init__(width, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
 class UI_Panel_Base:
-    def __init__(self, session, isolde, main_frame, sim_sensitive=True):
+    def __init__(self, session, isolde, gui, main_frame, sim_sensitive=True):
+        self.gui = gui
         self.isolde = isolde
         self.session = session
         self.main_frame = main_frame
@@ -39,6 +40,7 @@ class UI_Panel_Base:
                 isolde.triggers.add_handler('simulation started', self.sim_start_cb),
                 isolde.triggers.add_handler('simulation terminated', self.sim_end_cb)
             ])
+        gui.register_panel(self)
 
     def sim_start_cb(self, trigger_name, data):
         '''
@@ -61,7 +63,7 @@ class UI_Panel_Base:
         changes.
         '''
         pass
-
+    
 
     def enable(self):
         self.main_frame.setEnabled(True)
@@ -79,15 +81,22 @@ class UI_Panel_Base:
         else:
             self.disable()
 
-    def remove_trigger_handlers(self):
+    def cleanup(self):
+        '''
+        Called when the GUI is closed to clean up all callbacks.
+        '''
+        self._remove_trigger_handlers()
+
+    def _remove_trigger_handlers(self):
         for h in self._chimerax_trigger_handlers:
-            self.session.triggers.remove_handler(h)
+            h.remove()
         for h in self._isolde_trigger_handlers:
-            self.isolde.triggers.remove_handler(h)
+            h.remove()
 
 class IsoldeTab(QWidget):
-    def __init__(self, tab_widget, tab_name):
+    def __init__(self, gui, tab_widget, tab_name):
         super().__init__()
+        self.gui = gui
         self.tab_widget = tab_widget
         tab_widget.addTab(self, tab_name)
         hl = DefaultHLayout()
