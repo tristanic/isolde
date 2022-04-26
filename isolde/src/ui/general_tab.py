@@ -28,7 +28,6 @@ def populate_general_tab(session, isolde, tab):
     msd = MapSettingsDialog(session, isolde, map_settings_panel.content_area)
     map_settings_panel.content = msd
     map_settings_panel.setContentLayout(msd.main_layout)
-    
     tab.addWidget(map_settings_panel)
 
 class GeneralTab(IsoldeTab):
@@ -55,6 +54,14 @@ class MapSettingsDialog(UI_Panel_Base):
         mcb = self.map_selector_combo_box = QComboBox(mf)
         msl.addWidget(mcb)
         mcb.currentIndexChanged.connect(self._map_chosen_cb)
+        
+        from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
+        for event_type in (ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS):
+            self._chimerax_trigger_handlers.append(
+                self.session.triggers.add_handler(event_type, self._maps_changed_cb)
+            )
+        
+        
         msl.addItem(DefaultSpacerItem())
         dmcb = self.is_difference_map_checkbox = QCheckBox(mf)
         dmcb.stateChanged.connect(self._is_difference_map_cb)
@@ -240,7 +247,22 @@ class MapSettingsDialog(UI_Panel_Base):
         super().cleanup()
 
     def _maps_changed_cb(self, *_):
-        pass
+        if self.container.is_collapsed:
+            return
+        cm = self.current_map
+        self._update_map_selector_combo_box()
+        mscb = self.map_selector_combo_box
+        with slot_disconnected(mscb.currentIndexChanged, self._map_chosen_cb):
+            i = mscb.findData(cm)
+            if i != -1:
+                mscb.setCurrentIndex(i)
+                return
+            if mscb.count() > 0:
+                mscb.setCurrentIndex(0)
+            self._map_chosen_cb()
+
+            
+
 
         
 
