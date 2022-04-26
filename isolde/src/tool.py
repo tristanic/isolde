@@ -26,16 +26,60 @@ def _find_help():
 #     from chimerax.core.tools import get_singleton
 #     return get_singleton(session, ISOLDE_NewToolUI, 'ISOLDE', create=True)
 
+
 class ISOLDE_ToolUI(ToolInstance):
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)
+        from .isolde import Isolde
+        isolde = Isolde(session)
 
         self.display_name='ISOLDE'
+        self._show_splash()
+        self.session.triggers.add_handler('new frame', self._launch_main_gui)
+    
+    def _launch_main_gui(self, *_):
         from .ui.main_win import IsoldeMainWin
         tw = self.tool_window = IsoldeMainWin(self)
         tw.manage(placement=None)
         tw.ui_area.parent().parent().resize(540, 850)
-    
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+    def _show_splash(self):
+        from Qt.QtGui import QPixmap
+        from Qt.QtWidgets import QSplashScreen
+        from Qt.QtCore import Qt
+        import os
+        session = self.session
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        splash_pix = QPixmap(os.path.join(
+            root_dir,'resources/isolde_splash_screen.jpg'))
+        splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+        splash.setMask(splash_pix.mask())
+        splash.show()
+        from time import time
+        start_time = [time()]
+        def _splash_remove_cb(trigger_name, data, start_time=start_time, min_time=1):
+            from time import time
+            elapsed_time = time()-start_time[0]
+            if elapsed_time > min_time:
+                start_time[0] = time()
+                session.triggers.add_handler('new frame', _splash_fade_cb)
+                from chimerax.core.triggerset import DEREGISTER
+                return DEREGISTER
+        def _splash_fade_cb(trigger_name, data, splash=splash, start_time=start_time, fade_time=0.25):
+            from time import time
+            et = time()-start_time[0]
+            opacity = 1-et/fade_time
+            if opacity <= 0:
+                splash.close()
+                from chimerax.core.triggerset import DEREGISTER
+                return DEREGISTER
+            splash.setWindowOpacity(opacity)
+        session.triggers.add_handler('new frame', _splash_remove_cb)
+
+
+
     def delete(self):
         self.tool_window.cleanup()
 

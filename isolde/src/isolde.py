@@ -147,6 +147,7 @@ class Isolde():
                   ChimeraX GUI menu).
         '''
         self.session = session
+        self._gui = gui
 
 
         self.triggers = triggerset.TriggerSet()
@@ -276,49 +277,14 @@ class Isolde():
         ####
 
         self.gui_mode = False
+        self._menu_prepared = False
 
         self._ui_panels = []
 
         if session.ui.is_gui:
-            from Qt.QtGui import QPixmap
-            from Qt.QtWidgets import QSplashScreen
-            from Qt.QtCore import Qt
-            import os
-
-
             self._prepare_environment()
             from .menu import prepare_isolde_menu
             prepare_isolde_menu(self.session)
-
-            splash_pix = QPixmap(os.path.join(
-                self._root_dir,'resources/isolde_splash_screen.jpg'))
-            splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
-            splash.setMask(splash_pix.mask())
-            splash.show()
-            from time import time
-            start_time = [time()]
-            def _splash_remove_cb(trigger_name, data, start_time=start_time, min_time=1):
-                from time import time
-                elapsed_time = time()-start_time[0]
-                if elapsed_time > min_time:
-                    start_time[0] = time()
-                    session.triggers.add_handler('new frame', _splash_fade_cb)
-                    from chimerax.core.triggerset import DEREGISTER
-                    return DEREGISTER
-            def _splash_fade_cb(trigger_name, data, splash=splash, start_time=start_time, fade_time=0.25):
-                from time import time
-                et = time()-start_time[0]
-                opacity = 1-et/fade_time
-                if opacity <= 0:
-                    splash.close()
-                    from chimerax.core.triggerset import DEREGISTER
-                    return DEREGISTER
-                splash.setWindowOpacity(opacity)
-            session.triggers.add_handler('new frame', _splash_remove_cb)
-
-        # if gui is not None:
-        #     self._gui = gui
-        #     session.triggers.add_handler('new frame', self._start_gui)
 
         session.isolde = self
         if session.ui.is_gui:
@@ -339,6 +305,14 @@ class Isolde():
     @property
     def gui(self):
         return self._gui
+    
+    @gui.setter
+    def gui(self, gui):
+        self._gui = gui
+        if gui is None:
+            self.gui_mode = False
+        else:
+            self.gui_mode = True
     
     @property
     def forcefield_mgr(self):
@@ -1455,7 +1429,6 @@ class Isolde():
         from chimerax.clipper.maps import XmapHandler_Live, XmapHandler_Static
         from .session_extensions import get_mdff_mgr
         mdff_mgrs = []
-        live_maps = False
         for xmapset in mgr.xmapsets:
             if xmapset.live_xmap_mgr is not None:
                 # Need to make absolutely sure the MDFF potential map is created.
@@ -1467,13 +1440,9 @@ class Isolde():
                     mdff_mgrs.append(get_mdff_mgr(model, mdff_p, create=True))
 
         for v in mgr.all_maps:
-            # Only XmapHandler_Live objects specifically created to exclude the
-            # free set are allowed to act as MDFF potentials
             if isinstance(v, XmapHandler_Live):
-                live_maps = True
-                continue
-            # Difference maps are excluded from MDFF by default
-            if v.is_difference_map:
+                # Only XmapHandler_Live objects specifically created to exclude the
+                # free set are allowed to act as MDFF potentials
                 continue
             new_mgr = False
             mgr = get_mdff_mgr(model, v)
@@ -1486,6 +1455,10 @@ class Isolde():
                 # able to use them if they really want to. So, we create the
                 # manager but leave it disabled by default so the user has to
                 # explicitly enable it.
+                mgr.enabled = False
+            if v.is_difference_map:
+                # Similar reasoning for difference maps: there may be occasion to 
+                # use them, but this decision should be left up to the user.
                 mgr.enabled = False
             mdff_mgrs.append(mgr)
         # recalc_cb.setVisible(live_maps)
@@ -2503,11 +2476,16 @@ class Isolde():
         #         if self._model_changes_handler is not None:
         #             sm.triggers.remove_handler(self._model_changes_handler)
         #             self._model_changes_handler = None
-        
-        if len(self.available_models) == 0:
-            self._selected_model = None
-            self.triggers.activate_trigger('selected model changed', data=None)
-            return
+        if model is None:
+            avail = self.available_models
+            if len(avail) == 0:
+                self._selected_model = None
+                self.triggers.activate_trigger('selected model changed', data=None)
+                return
+            else:
+                # Take the first available model
+                for m in avail.values():
+                    break
 
         with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'):
             if not getattr(m, 'isolde_initialized', False):
@@ -2628,53 +2606,6 @@ class Isolde():
         from chimerax.clipper.symmetry import get_symmetry_handler
         sh = get_symmetry_handler(m)
         sh.spotlight_mode = True
-
-    def _set_map_to_solid_surface(self, *_):
-        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
-        if v is None:
-            return
-        from .visualisation import map_styles, map_style_settings
-        from chimerax.map import volumecommand
-        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.solid_opaque])
-
-    def _set_map_to_transparent_surface(self, *_):
-        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
-        if v is None:
-            return
-        from .visualisation import map_styles, map_style_settings
-        from chimerax.map import volumecommand
-        if v.is_difference_map:
-            style = map_styles.solid_t40
-        else:
-            style = map_styles.solid_t20
-        volumecommand.volume(self.session, [v], **map_style_settings[style])
-
-    def _set_map_to_mesh(self, *_):
-        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
-        if v is None:
-            return
-        from .visualisation import map_styles, map_style_settings
-        from chimerax.map import volumecommand
-        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.mesh_triangle])
-
-    def _choose_map_color(self, *_):
-        v = self.iw._sim_basic_xtal_settings_map_combo_box.currentData()
-        from Qt.QtWidgets import QColorDialog
-        cd = QColorDialog(self.iw._map_settings_color_button)
-        sa = cd.ShowAlphaChannel
-        colors = []
-        if v.is_difference_map:
-            colors.append(cd.getColor(title="Colour for negative contour", options=sa))
-            colors.append(cd.getColor(title="Colour for positive contour", options=sa))
-        else:
-            colors.append(cd.getColor(options=sa))
-
-        import numpy
-        carg = [
-            numpy.array([c.red(), c.green(), c.blue(), c.alpha()], dtype=numpy.double)/255
-                for c in colors
-        ]
-        v.set_parameters(surface_colors=carg)
 
     def _change_smoothing_state_from_gui(self, *_):
         flag = self.iw._trajectory_smooth_button.isChecked()

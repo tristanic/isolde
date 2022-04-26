@@ -19,9 +19,7 @@ from .ui_base import DefaultVLayout, DefaultHLayout, DefaultSpacerItem
 
 from .util import slot_disconnected
 
-import os
-icon_dir = os.path.abspath(os.path.join(os.path.dirname(__file__),'..','icons'))
-
+from . import icon_dir
 
 class IsoldeMainWin(MainToolWindow):
     def __init__(self, tool_instance, **kw):
@@ -62,6 +60,7 @@ class IsoldeMainWin(MainToolWindow):
         self._gui_panels.append(panel)
 
     def _prepare_top_frame(self, main_layout):
+        import os
         tf = self._top_frame = QFrame()
         layout = DefaultHLayout()
         tf.setLayout(layout)
@@ -93,6 +92,7 @@ class IsoldeMainWin(MainToolWindow):
             self._session_trigger_handlers.append(
                 self.session.triggers.add_handler(event_type, self._update_model_list_cb)
             )
+        self._update_model_list_cb(None, None)
         mmcb.currentIndexChanged.connect(self._change_selected_model_cb)
 
         li.addWidget(tw)
@@ -133,7 +133,8 @@ class IsoldeMainWin(MainToolWindow):
         yield
         self._update_model_list_cb_blocked = False
 
-    def _update_model_list_cb(self, trigger_name, models):
+    def _update_model_list_cb(self, _, models=None):
+        from chimerax.atomic import AtomicStructure
         blocked = getattr(self, '_update_model_list_cb_blocked', False)
         if blocked:
             return
@@ -141,20 +142,22 @@ class IsoldeMainWin(MainToolWindow):
         from chimerax.core.models import Model
         if isinstance(models, Model):
             models = [models]
-        from chimerax.atomic import AtomicStructure
-        structures_need_update = False
-        for m in models:
-            # Use explicit type equality rather than isInstance because some previews 
-            # are AtomicStructure subclasses
-            if type(m) == AtomicStructure:
-                structures_need_update = True
-                break
-        
         cm = self.isolde.selected_model
-        if cm is not None and cm not in self.session.models.list():
-            # Model has been deleted
-            cm = None
+        if models is None:
             structures_need_update = True
+        else:
+            structures_need_update = False
+            for m in models:
+                # Use explicit type equality rather than isInstance because some previews 
+                # are AtomicStructure subclasses
+                if type(m) == AtomicStructure:
+                    structures_need_update = True
+                    break
+            
+            if cm is not None and cm not in self.session.models.list():
+                # Model has been deleted
+                cm = None
+                structures_need_update = True
         
         if structures_need_update:
             with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb), self._block_update_model_list_cb():
