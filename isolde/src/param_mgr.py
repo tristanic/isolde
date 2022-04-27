@@ -15,14 +15,7 @@ def _property_factory(name):
     def fget(self):
         return self._params[name]
     def fset(self, val):
-        units = self._default_params[name][1]
-        if type(units) == Unit:
-            if type(val) == Quantity:
-                self._params[name] = val.in_units_of(units)
-            else:
-                self._params[name] = val*units
-        else:
-            self._params[name] = val
+        self.set_param(name, val)
     return property(fget, fset)
 
 def autodoc(cls):
@@ -75,6 +68,7 @@ class Param_Mgr:
 
     `val = obj[name]`
     '''
+    PARAMETER_CHANGED = 'parameter changed'
     # In the derived class, fill _default_params with entries of the form:
     #    'parameter_name': (default_value, units)
     # where units is either a simtk.unit or None. In the former case, the
@@ -83,6 +77,9 @@ class Param_Mgr:
     # none are provided with the replacement value).
     _default_params = {}
     def __init__(self, **kw):
+        from chimerax.core.triggerset import TriggerSet
+        self.triggers = TriggerSet()
+        self.triggers.add_trigger(self.PARAMETER_CHANGED)
         self._params = {}
         for key, item in self._default_params.items():
             if type(item[1]) == Unit:
@@ -137,7 +134,10 @@ class Param_Mgr:
                 self._params[key] = value * units
         elif type(value) == Quantity:
             raise TypeError('Tried to set a unitless quantity with units!')
-
+        else:
+            self._params[key] = value
+        self.triggers.activate_trigger(self.PARAMETER_CHANGED, (key, value))
+    
     def set_to_default(self, key):
         '''Set one parameter back to the default value.'''
         self.set_param(key, self._defaults[key][0])
