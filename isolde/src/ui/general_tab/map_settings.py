@@ -30,8 +30,8 @@ class MapSettingsPanel(CollapsibleArea):
 
 class MapSettingsDialog(UI_Panel_Base):
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
-        import os
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
+        import os
         self.container = collapse_area
         mf = self.main_frame
         ml = self.main_layout = DefaultVLayout()
