@@ -15,3 +15,5 @@ class GeneralTab(IsoldeTab):
         gui = self.gui
         from .map_settings import MapSettingsPanel
         self.addWidget(MapSettingsPanel(session, isolde, parent, gui))
+        from .sim_fidelity import SimFidelityPanel
+        self.addWidget(SimFidelityPanel(session, isolde, parent, gui))
