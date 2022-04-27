@@ -1592,15 +1592,6 @@ class Isolde():
         mgr = get_mdff_mgr(self.selected_model, this_map)
         mgr.enabled = flag
 
-    def _apply_xtal_map_params(self, *_):
-        cb = self.iw._sim_basic_xtal_settings_map_combo_box
-        this_map = cb.currentData()
-        if this_map is None:
-            return
-        from .session_extensions import get_mdff_mgr
-        mgr = get_mdff_mgr(self.selected_model, this_map)
-        mgr.global_k = self.iw._sim_basic_xtal_map_weight_spin_box.value()
-
 
     # Update button states after a simulation has finished
     def _update_menu_after_sim(self):

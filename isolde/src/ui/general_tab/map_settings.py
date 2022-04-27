@@ -1,13 +1,13 @@
-from .util import slot_disconnected
-from .collapse_button import CollapsibleArea
-from .ui_base import (
-    UI_Panel_Base, IsoldeTab,
+from ..util import slot_disconnected
+from ..collapse_button import CollapsibleArea
+from ..ui_base import (
+    UI_Panel_Base, 
     DefaultHLayout, DefaultVLayout, DefaultSpacerItem
 )
 
 import sys
 if 'win' in sys.platform.lower():
-    from .util import WinAutoResizeQComboBox as QComboBox
+    from ..util import WinAutoResizeQComboBox as QComboBox
 else:
     from Qt.QtWidgets import QComboBox
 
@@ -20,26 +20,13 @@ from Qt.QtGui import QIcon
 
 from Qt.QtCore import Qt
 
-from . import icon_dir, DEFAULT_ICON_SIZE
+from .. import icon_dir, DEFAULT_ICON_SIZE
 
-def populate_general_tab(session, isolde, tab):
-    parent = tab.scroll_area
-    map_settings_panel = CollapsibleArea(parent, title='Map settings')
-    msd = MapSettingsDialog(session, isolde, map_settings_panel.content_area)
-    map_settings_panel.content = msd
-    map_settings_panel.setContentLayout(msd.main_layout)
-    tab.addWidget(map_settings_panel)
-
-class GeneralTab(IsoldeTab):
-    def __init__(self, session, isolde, gui, tab_widget, tab_name):
-        super().__init__(gui, tab_widget, tab_name)
-        self.session = session
-        self.isolde = isolde
-        msp = self.map_settings_panel = CollapsibleArea(parent=self.scroll_area, title='Map settings')
-        msd = self.map_settings_dialog = MapSettingsDialog(session, isolde, gui, msp)
-        msp.setContentLayout(msd.main_layout)
-        self.addWidget(msp)
-
+class MapSettingsPanel(CollapsibleArea):
+    def __init__(self, session, isolde, parent, gui):
+        super().__init__(parent, title='Map Settings')
+        msd = self.content = MapSettingsDialog(session, isolde, gui, self)
+        self.setContentLayout(msd.main_layout)
 
 class MapSettingsDialog(UI_Panel_Base):
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
@@ -88,6 +75,7 @@ class MapSettingsDialog(UI_Panel_Base):
         mwl.addItem(DefaultSpacerItem())
         mwb = self.map_weight_set_button = QPushButton(mf)
         mwb.setText('Set')
+        mwb.clicked.connect(self.set_map_weight)
         mwb.setToolTip('Click to apply any changes made to the weight box on left')
         mwl.addWidget(mwb)
         mwf.setLayout(mwl)
@@ -151,6 +139,12 @@ class MapSettingsDialog(UI_Panel_Base):
         for v in mgr.all_maps:
             mcb.addItem(v.name, v)
 
+    def set_map_weight(self, *_):
+        weight = self.map_weight_spin_box.value()
+        from chimerax.isolde.session_extensions import get_mdff_mgr
+        mgr = get_mdff_mgr(self.isolde.selected_model, self.current_map)
+        mgr.global_k = weight
+
     def _is_difference_map_cb(self, checked):
         self.current_map.is_difference_map = checked
 
@@ -178,7 +172,7 @@ class MapSettingsDialog(UI_Panel_Base):
         mwsb = self.map_weight_spin_box
         mdcb = self.enable_mdff_checkbox
         bf = self.button_frame
-        dmcb = self.is_difference_map_checkbox #TODO: this currently does nothing
+        dmcb = self.is_difference_map_checkbox
 
         mgr = None
         this_map = self.current_map
@@ -250,9 +244,9 @@ class MapSettingsDialog(UI_Panel_Base):
         if self.container.is_collapsed:
             return
         cm = self.current_map
-        self._update_map_selector_combo_box()
         mscb = self.map_selector_combo_box
         with slot_disconnected(mscb.currentIndexChanged, self._map_chosen_cb):
+            self._update_map_selector_combo_box()
             i = mscb.findData(cm)
             if i != -1:
                 mscb.setCurrentIndex(i)
@@ -260,11 +254,6 @@ class MapSettingsDialog(UI_Panel_Base):
             if mscb.count() > 0:
                 mscb.setCurrentIndex(0)
             self._map_chosen_cb()
-
-            
-
-
-        
 
 
 class MapWeightSpinBox(QDoubleSpinBox):
