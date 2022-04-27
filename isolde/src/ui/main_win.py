@@ -22,6 +22,7 @@ from .util import slot_disconnected
 from . import icon_dir
 
 class IsoldeMainWin(MainToolWindow):
+
     def __init__(self, tool_instance, **kw):
         super().__init__(tool_instance, **kw)
         if hasattr(self.session, 'isolde'):
@@ -51,6 +52,8 @@ class IsoldeMainWin(MainToolWindow):
         self.general_tab = GeneralTab(self.session, self.isolde, self, tabw, "General")
         self.validate_tab = IsoldeTab(self, tabw, "Validate")
         self.problems_tab = IsoldeTab(self, tabw, "Problem Zones")
+
+
 
     def register_panel(self, panel):
         '''
@@ -180,6 +183,18 @@ class IsoldeMainWin(MainToolWindow):
         for panel in self._gui_panels:
             panel.cleanup()
 
+
+class ExpertModeSelector(QComboBox):
+    _expert_modes = ('default', 'advanced', 'developer')
+    expertModeChanged = QtCore.Signal()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for mode in self._expert_modes:
+            self.addItem(mode, mode)
+        self.currentIndexChanged.connect(self._index_changed_cb)
+    
+    def _index_changed_cb(self):
+        self.expertModeChanged.emit(self.currentData())
 
 
 def test_collapse_button(tab, duration=300):
