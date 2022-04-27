@@ -632,7 +632,7 @@ class Isolde():
         iw._sim_basic_xtal_settings_spotlight_radius_spinbox.valueChanged.connect(
             self._change_spotlight_radius
         )
-        from .ui.sim_fidelity_panel import SimFidelityPanel
+        from .ui.general_tab.sim_fidelity import SimFidelityPanel
         self._sim_fidelity_panel = SimFidelityPanel(self.session, self, iw._sim_fidelity_frame,
             [
                 iw._sim_fidelity_low_rb,
@@ -2509,15 +2509,6 @@ class Isolde():
             sx.get_RamaAnnotator(m)
             self._initialize_maps(m)
             self.triggers.activate_trigger('selected model changed', data=m)
-
-
-    def _change_b_and_a_padding(self, *_):
-        self.params.num_selection_padding_residues = self.iw._sim_basic_mobile_b_and_a_spinbox.value()
-
-    def _change_soft_shell_cutoff_from_sel_menu(self, *_):
-        iw = self.iw
-        val = iw._sim_basic_mobile_sel_within_spinbox.value()
-        self.params.soft_shell_cutoff_distance = val
 
     def _change_sim_platform(self, *_):
         self.sim_platform = self.iw._sim_platform_combo_box.currentText()
