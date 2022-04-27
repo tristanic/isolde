@@ -66,7 +66,7 @@ class MapSettingsDialog(UI_Panel_Base):
         mwl = DefaultHLayout()
         mwl.addWidget(QLabel('Weight', parent=mf))
         mwsb = self.map_weight_spin_box = MapWeightSpinBox(mf)
-        mwsb.setToolTip('Adjust how strongly this map "pulls" on atoms')
+        mwsb.setToolTip('Adjust how strongly this map "pulls" on atoms. Changes will not take effect until you click "Set"')
         mwl.addWidget(mwsb)
         units_label = QLabel(mf)
         units_label.setTextFormat(Qt.RichText)
