@@ -17,6 +17,7 @@ class CollapsibleArea(QWidget):
         ml = self.main_layout = QGridLayout()
 
         tb.setStyleSheet('QToolButton: {border: none; }')
+        tb.setAutoRaise(True)
         tb.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         tb.setText(title)
         tb.setCheckable(True)
