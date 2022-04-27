@@ -10,6 +10,20 @@
 
 import numpy
 from chimerax.atomic import Residue, AtomicStructure
+from contextlib import contextmanager
+
+@contextmanager
+def block_trigger_handler(handler):
+    name = handler._name
+    func = handler._func
+    triggerset = handler._trigger_set
+    triggerset.remove_handler(handler)
+    try:
+        yield
+    finally:
+        triggerset.add_handler(name, func)
+
+
 def is_continuous_protein_chain(sel, allow_single = False):
     '''
     Checks if the residues in a selection are all protein, and form a
