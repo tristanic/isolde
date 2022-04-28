@@ -236,7 +236,7 @@ class MapSettingsDialog(UI_Panel_Base):
 
 
     def cleanup(self):
-        if self._selected_model_changed_handler is not None:
+        if getattr(self, '_selected_model_changed_handler', None) is not None:
             self._selected_model_changed_handler.remove()
         super().cleanup()
 
