@@ -8,8 +8,13 @@
 
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy,
-    QScrollArea, QWidget
+    QScrollArea, QWidget, QComboBox
     )
+from Qt import QtCore
+from Qt.QtGui import QColor
+
+import os
+_base_path = os.path.dirname(os.path.abspath(__file__))
 
 class DefaultVLayout(QVBoxLayout):
     def __init__(self, *args, **kwargs):
@@ -27,12 +32,42 @@ class DefaultSpacerItem(QSpacerItem):
     def __init__(self, width=100):
         super().__init__(width, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
 
+class ExpertModeSelector(QComboBox):
+    DEFAULT=0
+    ADVANCED=1
+    DEVELOPER=2
+    _expert_modes = {
+        DEFAULT: ['Default', [230,230,230]], 
+        ADVANCED: ['Advanced', [215, 237, 255]], 
+        DEVELOPER: ['Developer', [255, 215, 215]],
+    }
+    with open(os.path.join(_base_path, 'intermediate.qss'), 'rt') as intfile, open(os.path.join(_base_path, 'developer.qss'), 'rt') as devfile:
+        stylesheets = {
+            DEFAULT: "",
+            ADVANCED: intfile.read(),
+            DEVELOPER: devfile.read()
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for val, (mode, color) in self._expert_modes.items():
+            self.addItem(mode, val)
+        self.currentIndexChanged.connect(self._update_stylesheet)
+        self._update_stylesheet(0)
+    
+    def _update_stylesheet(self, index):
+        self.setStyleSheet(self.stylesheets[index])
+        for val, (mode, color) in self._expert_modes.items():
+            if color is not None:
+                self.setItemData(val, QColor(*color), QtCore.Qt.BackgroundRole)
+
 class UI_Panel_Base:
-    def __init__(self, session, isolde, gui, main_frame, sim_sensitive=True):
+    def __init__(self, session, isolde, gui, main_frame, sim_sensitive=True, expert_level = ExpertModeSelector.DEFAULT):
         self.gui = gui
         self.isolde = isolde
         self.session = session
         self.main_frame = main_frame
+        self.expert_level = expert_level
+        self._set_expert_level()
         self._chimerax_trigger_handlers = []
         self._isolde_trigger_handlers = []
         if sim_sensitive:
@@ -41,6 +76,23 @@ class UI_Panel_Base:
                 isolde.triggers.add_handler('simulation terminated', self.sim_end_cb)
             ])
         gui.register_panel(self)
+
+    def _set_expert_level(self):
+        el = self.expert_level
+        emcb = self.gui.expert_mode_combo_box
+        if el > ExpertModeSelector.DEFAULT:
+            self.main_frame.setStyleSheet(ExpertModeSelector.stylesheets[el])
+            emcb.currentIndexChanged.connect(self._expert_level_changed_cb)
+            self._expert_level_changed_cb()
+    
+    def _expert_level_changed_cb(self, *_):
+        emcb = self.gui.expert_mode_combo_box
+        el = emcb.currentData()
+        display = (el >= self.expert_level)
+        self.main_frame.setVisible(display)
+        
+
+
 
     def sim_start_cb(self, trigger_name, data):
         '''
@@ -92,6 +144,8 @@ class UI_Panel_Base:
             h.remove()
         for h in self._isolde_trigger_handlers:
             h.remove()
+
+
 
 class IsoldeTab(QWidget):
     def __init__(self, gui, tab_widget, tab_name):

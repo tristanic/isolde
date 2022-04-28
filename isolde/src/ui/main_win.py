@@ -13,7 +13,7 @@ from Qt.QtWidgets import (
     QPushButton, QTabWidget, QWidget, QScrollArea
 )
 from Qt import QtCore
-from Qt.QtGui import QPixmap
+from Qt.QtGui import QPixmap, QColor
 
 from .ui_base import DefaultVLayout, DefaultHLayout, DefaultSpacerItem
 
@@ -89,6 +89,10 @@ class IsoldeMainWin(MainToolWindow):
         mmcb.setToolTip('Select the model to work on in ISOLDE')
         l1.addWidget(mmcb)
         l1.addItem(DefaultSpacerItem(200))
+        l1.addWidget(QLabel('Experience level: ', parent=tw))
+        from .ui_base import ExpertModeSelector
+        elcb = self.expert_mode_combo_box = ExpertModeSelector(tw)
+        l1.addWidget(elcb)
 
         from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
         for event_type in (ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS):
@@ -183,29 +187,6 @@ class IsoldeMainWin(MainToolWindow):
         for panel in self._gui_panels:
             panel.cleanup()
 
-
-class ExpertModeSelector(QComboBox):
-    _expert_modes = ('default', 'advanced', 'developer')
-    expertModeChanged = QtCore.Signal()
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for mode in self._expert_modes:
-            self.addItem(mode, mode)
-        self.currentIndexChanged.connect(self._index_changed_cb)
-    
-    def _index_changed_cb(self):
-        self.expertModeChanged.emit(self.currentData())
-
-
-def test_collapse_button(tab, duration=300):
-    layout = DefaultVLayout()
-
-    layout.addWidget(QLabel('Test'))
-    from .collapse_button import CollapsibleArea
-    a = CollapsibleArea(tab, f'Test button (duration={duration})', duration=duration)
-    a.setContentLayout(layout)   
-    tab.addWidget(a)
-    return a
 
 
 

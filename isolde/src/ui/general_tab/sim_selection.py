@@ -11,7 +11,7 @@ from Qt.QtWidgets import (
 
 class SimSelectionPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui):
-        super().__init__(parent, title='Mobilisation behaviour')
+        super().__init__(gui, parent, title='Mobilisation behaviour', expert_level=1)
         self.setToolTip('Control how the mobile portion of a simulation is defined based on your selection')
         ssd = self.content = SimSelectionDialog(session, isolde, gui, self)
         self.setContentLayout(ssd.main_layout)

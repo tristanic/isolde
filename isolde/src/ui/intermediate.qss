@@ -1,0 +1,11 @@
+
+QWidget { 
+    background: rgb(176, 220, 255);
+    color: rgb(30, 40, 80)
+}
+
+QRadioButton {background: rgb(196, 240, 255)}
+QRadioButton::indicator::unchecked{ border: 1px solid darkgray; border-radius: 6px; background-color: white; width: 10px; height: 10px; margin-left: 5px;}
+QRadioButton::indicator::checked{ border: 1px solid darkgray; border-radius: 6px; background-color: rgb(50, 70, 120); width: 10px; height: 10px; margin-left: 5px;}
+
+QAbstractSpinBox { background: white }

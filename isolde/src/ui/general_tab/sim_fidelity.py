@@ -5,7 +5,7 @@ from Qt.QtWidgets import QGroupBox, QRadioButton, QWidget
 
 class SimFidelityPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui):
-        super().__init__(parent, "Sim Fidelity/Speed")
+        super().__init__(gui, parent, "Sim Fidelity/Speed")
         sfd = self.content = SimFidelityDialog(session, isolde, gui, self.content_area)
         self.setContentLayout(sfd.main_layout)
 

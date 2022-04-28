@@ -24,7 +24,7 @@ from .. import icon_dir, DEFAULT_ICON_SIZE
 
 class MapSettingsPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui):
-        super().__init__(parent, title='Map Settings')
+        super().__init__(gui, parent, title='Map Settings')
         msd = self.content = MapSettingsDialog(session, isolde, gui, self)
         self.setContentLayout(msd.main_layout)
 
