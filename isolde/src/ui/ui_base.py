@@ -116,12 +116,6 @@ class UI_Panel_Base:
         '''
         pass
 
-    def selected_model_changed_cb(self, selected_model):
-        '''
-        Override in derived class if panel needs to respond when the 
-        selected model changes.
-        '''
-        pass
 
     def chimerax_models_changed(self, selected_model):
         '''
