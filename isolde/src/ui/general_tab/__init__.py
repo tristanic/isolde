@@ -23,3 +23,5 @@ class GeneralTab(IsoldeTab):
         self.addWidget(SimFidelityPanel(session, isolde, parent, gui))
         from .platform import ComputationalPlatformPanel
         self.addWidget(ComputationalPlatformPanel(session, isolde, parent, gui))
+        from .mask_settings import MaskAndSpotlightSettingsPanel
+        self.addWidget(MaskAndSpotlightSettingsPanel(session, isolde, parent, gui, start_collapsed=False))
