@@ -126,7 +126,8 @@ class IsoldeMainWin(MainToolWindow):
         mmcb = self.master_model_combo_box
         with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
             m = mmcb.currentData()
-            self.isolde.change_selected_model(m)
+            if m is not None:
+                self.isolde.change_selected_model(m)
     
     @contextmanager
     def _block_update_model_list_cb(self):
@@ -165,6 +166,8 @@ class IsoldeMainWin(MainToolWindow):
                 mmcb.clear()
                 models = [m for m in self.session.models.list() if type(m) == AtomicStructure]
                 models = sorted(models, key=lambda m: m.id)
+                if cm is None:
+                    mmcb.addItem('Choose a model...', None)
 
                 for m in models:
                     id_str = f'{m.id_string}. {m.name}'
