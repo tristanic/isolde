@@ -2,14 +2,9 @@ from ..util import slot_disconnected
 from ..collapse_button import CollapsibleArea
 from ..ui_base import (
     UI_Panel_Base, 
-    DefaultHLayout, DefaultVLayout, DefaultSpacerItem
+    DefaultHLayout, DefaultVLayout, DefaultSpacerItem,
+    QComboBox
 )
-
-import sys
-if 'win' in sys.platform.lower():
-    from ..util import WinAutoResizeQComboBox as QComboBox
-else:
-    from Qt.QtWidgets import QComboBox
 
 from Qt.QtWidgets import (
     QLabel, QToolButton, QPushButton, QCheckBox,

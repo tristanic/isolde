@@ -1,12 +1,6 @@
 from contextlib import contextmanager
 from chimerax.ui.gui import MainToolWindow
 
-import sys
-if 'win' in sys.platform.lower():
-    from .util import WinAutoResizeQComboBox as QComboBox
-else:
-    from Qt.QtWidgets import QComboBox
-
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QFrame, QLayout, 
     QLabel, QSizePolicy, QSpacerItem,
@@ -15,7 +9,7 @@ from Qt.QtWidgets import (
 from Qt import QtCore
 from Qt.QtGui import QPixmap, QColor
 
-from .ui_base import DefaultVLayout, DefaultHLayout, DefaultSpacerItem
+from .ui_base import DefaultVLayout, DefaultHLayout, DefaultSpacerItem, QComboBox
 
 from .util import slot_disconnected
 

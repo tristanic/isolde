@@ -8,10 +8,17 @@
 
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy,
-    QScrollArea, QWidget, QComboBox
+    QScrollArea, QWidget
     )
 from Qt import QtCore
 from Qt.QtGui import QColor
+
+import sys
+if 'win' in sys.platform.lower():
+    from ..util import WinAutoResizeQComboBox as QComboBox
+else:
+    from Qt.QtWidgets import QComboBox
+
 
 import os
 _base_path = os.path.dirname(os.path.abspath(__file__))
@@ -106,6 +113,13 @@ class UI_Panel_Base:
         '''
         Override in derived class if panel behaviour should change on
         simulation end.
+        '''
+        pass
+
+    def selected_model_changed_cb(self, selected_model):
+        '''
+        Override in derived class if panel needs to respond when the 
+        selected model changes.
         '''
         pass
 
