@@ -501,33 +501,6 @@ class Isolde():
         cb.addItems(self.forcefield_mgr.available_forcefields)
         cb.setCurrentIndex(cb.findText(self.sim_params.forcefield))
 
-        # Populate OpenMM platform combo box with available platforms
-        cb = iw._sim_platform_combo_box
-        cb.clear()
-
-        from .openmm.openmm_interface import get_available_platforms
-        platform_names = get_available_platforms()
-        cb.addItems(platform_names)
-
-        if "CUDA" not in platform_names and "OpenCL" not in platform_names:
-            self.session.logger.warning('WARNING: no OpenCL or compatible CUDA '
-                'drivers detected! While it is theoretically possible to run '
-                'ISOLDE using CPU only, in practice it is prohibitively slow. '
-                'If you have a suitable GPU in your machine, please check that you '
-                'have the recommended drivers from the manufacturer installed. '
-                'The current required CUDA version is 10.1 - if installed, please '
-                'make sure this is on your library path before starting ChimeraX.')
-
-        # Set to the preferred or, failing that, the fastest available platform
-        if sim_params.platform in platform_names:
-            cb.setCurrentIndex(cb.findText(sim_params.platform))
-        else:
-            for p in sim_params.platforms:
-                if p in platform_names:
-                    cb.setCurrentIndex(cb.findText(p))
-                    sim_params.platform = p
-                    break
-
         from .tutorials import populate_tutorial_combo_box
         populate_tutorial_combo_box(iw._tutorials_combo_box)
 
@@ -1262,23 +1235,6 @@ class Isolde():
                 log.warning('Failed to add {}: {}'.format(f, str(e)))
             except:
                 raise
-
-    def _choose_mtz_file(self, *_):
-        options = QFileDialog.Options()
-        caption = 'Choose a file containing map structure factors'
-        filetypes = 'MTZ files (*.mtz)'
-        dlg = QFileDialog(caption=caption)
-        dlg.setAcceptMode(QFileDialog.AcceptOpen)
-        dlg.setNameFilter(filetypes)
-        dlg.setFileMode(QFileDialog.ExistingFile)
-        import os
-        dlg.setDirectory(os.getcwd())
-
-        #filename, _ = QFileDialog.getOpenFileName(None, caption, '', filetypes, options = options)
-        if dlg.exec():
-            return dlg.selectedFiles()[0]
-        # self.iw._sim_basic_xtal_init_reflections_file_name.setText(filename)
-        # self._check_for_valid_xtal_init()
 
     def _initialize_xtal_structure(self, *_):
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
