@@ -18,8 +18,8 @@ from Qt.QtCore import Qt
 from .. import icon_dir, DEFAULT_ICON_SIZE
 
 class MapSettingsPanel(CollapsibleArea):
-    def __init__(self, session, isolde, parent, gui):
-        super().__init__(gui, parent, title='Map Settings')
+    def __init__(self, session, isolde, parent, gui, **kwargs):
+        super().__init__(gui, parent, title='Map Settings', **kwargs)
         msd = self.content = MapSettingsDialog(session, isolde, gui, self)
         self.setContentLayout(msd.main_layout)
 

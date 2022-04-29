@@ -9,8 +9,8 @@ from ..collapse_button import CollapsibleArea
 from Qt.QtWidgets import QLabel, QComboBox
 
 class ComputationalPlatformPanel(CollapsibleArea):
-    def __init__(self, session, isolde, parent, gui):
-        super().__init__(gui, parent, title='Computational Platform', expert_level=ExpertModeSelector.ADVANCED)
+    def __init__(self, session, isolde, parent, gui, **kwargs):
+        super().__init__(gui, parent, title='Computational Platform', expert_level=ExpertModeSelector.ADVANCED, **kwargs)
         cpd = self.content = ComputationalPlatformDialog(session, isolde, gui, self)
         self.setContentLayout(cpd.main_layout)
 
