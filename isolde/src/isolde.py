@@ -77,6 +77,7 @@ class IsoldeParams(Param_Mgr):
         'rounds_per_map_remask':                (defaults.ROUNDS_PER_MAP_REMASK, None),
             # Radius of mask when isolating a selection
         'map_mask_radius':                      (defaults.STANDARD_MAP_MASK_RADIUS, None),
+        'spotlight_radius':                     (defaults.SPOTLIGHT_RADIUS, None),
         'map_shannon_rate':                     (defaults.MAP_SHANNON_RATE, None),
             # Width of the green outline surrounding a selection
         'selection_outline_width':              (defaults.SELECTION_OUTLINE_WIDTH, None),

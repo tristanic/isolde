@@ -164,6 +164,7 @@ class _Defaults:
         'USE_HAPTIC_DEVICE_IF_AVAIL':   True,
 
         'STANDARD_MAP_MASK_RADIUS':     4.0, # Angstroms
+        'SPOTLIGHT_RADIUS':             13.0, # Angstroms
 
         'COMMS_TIMEOUT':                10.0, # seconds
         # Time for threads to sleep when paused or no input, to avoid
