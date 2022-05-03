@@ -27,8 +27,6 @@ def toolbar_command(session, name):
         session.isolde.revert_to_checkpoint()
     elif name == 'stop-keep':
         run(session, 'isolde sim stop')
-    elif name == 'stop-revert':
-        run(session, 'isolde sim stop discardTo checkpoint')
     elif name == 'stop-discard':
         run(session, 'isolde sim stop discardTo start')
     elif name == 'flip peptide':
@@ -46,7 +44,6 @@ class ToolbarButtonMgr:
         'Store checkpoint': ('ISOLDE', 'Control', 'checkpoint save', 'Store checkpoint'),
         'Revert to checkpoint': ('ISOLDE', 'Control', 'checkpoint revert', 'Revert to checkpoint'),
         'Stop (keep)': ('ISOLDE', 'Control', 'stop-keep', 'Stop (keep)'),
-        'Stop (revert)': ('ISOLDE', 'Control', 'stop-revert', 'Stop (revert)'),
         'Stop (discard)': ('ISOLDE', 'Control', 'stop-discard', 'Stop (discard)'),
 
         'flip peptide': ('ISOLDE', 'Peptide bond', 'flip peptide', 'Flip peptide'),
@@ -94,7 +91,6 @@ class ToolbarButtonMgr:
         self.set_enabled('Store checkpoint', True)
         self.set_enabled('Revert to checkpoint', True)
         self.set_enabled('Stop (keep)', True)
-        self.set_enabled('Stop (revert)', True)
         self.set_enabled('Stop (discard)', True)
 
 
@@ -113,7 +109,6 @@ class ToolbarButtonMgr:
         self.set_enabled('Store checkpoint', False)
         self.set_enabled('Revert to checkpoint', False)
         self.set_enabled('Stop (keep)', False)
-        self.set_enabled('Stop (revert)', False)
         self.set_enabled('Stop (discard)', False)
 
 

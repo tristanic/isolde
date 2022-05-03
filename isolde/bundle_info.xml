@@ -158,9 +158,6 @@ with the surroundings.
       name="stop-keep" display_name="Stop (keep)" icon="stop_sign_green.png"
       description="Stop the simulation and keep the current coordinates"/>
     <Provider tab="ISOLDE" section="Control"
-      name="stop-revert" display_name="Stop (revert)" icon="checkpoint_stop_red.png"
-      description="Stop the simulation and revert to the last checkpoint"/>
-    <Provider tab="ISOLDE" section="Control"
       name="stop-discard" display_name="Stop (discard)" icon="stop_sign_red.png"
       description="Stop the simulation and discard all changes since it was started"/>
 
