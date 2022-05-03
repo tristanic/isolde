@@ -1176,25 +1176,6 @@ class Isolde():
             self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
             self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
 
-    def _add_ff_files_gui(self, *_):
-        files = self._choose_ff_files(self)
-        if files is not None and len(files):
-            ff = self.forcefield_mgr[self.sim_params.forcefield]
-            self.add_ffxml_files(ff, files)
-
-    def _choose_ff_files(self, *_):
-        options = QFileDialog.Options()
-        caption = 'Choose one or more ffXML files'
-        filetypes = 'ffXML files (*.xml)'
-        dlg = QFileDialog(caption=caption)
-        dlg.setAcceptMode(QFileDialog.AcceptOpen)
-        dlg.setNameFilter(filetypes)
-        dlg.setFileMode(QFileDialog.ExistingFiles)
-        import os
-        dlg.setDirectory(os.getcwd())
-        if dlg.exec():
-            return dlg.selectedFiles()
-
     def _add_cif_template_files_gui(self, *_):
         files = self._choose_cif_template_files(self)
         if files is not None and len(files):
@@ -1219,23 +1200,6 @@ class Isolde():
         dlg.setDirectory(os.getcwd())
         if dlg.exec():
             return dlg.selectedFiles()
-
-
-
-    def add_ffxml_files(self, forcefield, file_list):
-        log = self.session.logger
-        # from openmm.app import ForceField
-        # temp_ff = ForceField(tuple(file_list))
-        # for tname, template in temp_ff._templates.items():
-        #
-        #
-        for f in file_list:
-            try:
-                forcefield.loadFile(f, resname_prefix="USER_")
-            except ValueError as e:
-                log.warning('Failed to add {}: {}'.format(f, str(e)))
-            except:
-                raise
 
     def _initialize_xtal_structure(self, *_):
         fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
@@ -2480,14 +2444,6 @@ class Isolde():
                 mmgr.zone_mgr.radius = rad
             if self.simulation_running:
                 mmgr.zone_mgr.update_needed(resize_box=False)
-
-
-
-
-    def _change_spotlight_radius(self, *_):
-        from chimerax.core.commands import run
-        radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
-        run(self.session, 'clipper spotlight radius {:.2f}'.format(radius))
 
 
     ##############################################################
