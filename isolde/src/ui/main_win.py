@@ -2,14 +2,16 @@ from contextlib import contextmanager
 from chimerax.ui.gui import MainToolWindow
 
 from Qt.QtWidgets import (
-    QVBoxLayout, QHBoxLayout, QFrame, QLayout, 
-    QLabel, QSizePolicy, QSpacerItem,
-    QPushButton, QTabWidget, QWidget, QScrollArea
+    QFrame, QLabel,
+    QPushButton, QTabWidget, QWidget,
 )
 from Qt import QtCore
-from Qt.QtGui import QPixmap, QColor
+from Qt.QtGui import QPixmap, QFont
 
-from .ui_base import DefaultVLayout, DefaultHLayout, DefaultSpacerItem, QComboBox
+from .ui_base import (
+    DefaultVLayout, DefaultHLayout, DefaultSpacerItem, QComboBox,
+    UI_Panel_Base
+)
 
 from .util import slot_disconnected
 
@@ -102,6 +104,9 @@ class IsoldeMainWin(MainToolWindow):
         l2 = DefaultHLayout()
         bw.setLayout(l2)
 
+        status_frame = QWidget(tw)
+        self.sim_status_indicator = SimStatusIndicator(self.session, self.isolde, self, status_frame)
+        l2.addWidget(status_frame)
 
         l2.addItem(DefaultSpacerItem())
 
@@ -120,6 +125,9 @@ class IsoldeMainWin(MainToolWindow):
         layout.addWidget(inner)
 
         main_layout.addWidget(tf)
+
+
+
 
 
     def _change_selected_model_cb(self, *_):
@@ -185,7 +193,45 @@ class IsoldeMainWin(MainToolWindow):
             panel.cleanup()
 
 
+class SimStatusIndicator(UI_Panel_Base):
+    def __init__(self, session, isolde, gui, main_frame):
+        super().__init__(session, isolde, gui, main_frame, sim_sensitive=True)
+        font = QFont()
+        font.setFamily('Carlito')
+        font.setPointSize(14)
+        font.setBold(True)
+        layout = DefaultVLayout()
+        self.main_frame.setLayout(layout)
+        sl = self.status_label = QLabel(self.main_frame)
+        sl.setFont(font)
+        layout.addWidget(sl)
+        self._isolde_trigger_handlers.append(isolde.triggers.add_handler(
+            'simulation resumed', self.sim_resume_cb
+        ))
+        self._isolde_trigger_handlers.append(isolde.triggers.add_handler(
+            'simulation paused', self.sim_pause_cb
+        ))
+    
+    def sim_start_cb(self, *_):
+        self.status_label.setText("<font color='red'>SIMULATION RUNNING</font>")
+    
+    def sim_pause_cb(self, *_):
+        self.status_label.setText("<font color='blue'>SIMULATION PAUSED</font>")
+    
+    def sim_resume_cb(self, *_):
+        return self.sim_start_cb()
+    
+    def sim_end_cb(self, *_):
+        self.status_label.setText('')
 
+
+        
+            
+    
+
+
+    
+    
 
 
 
