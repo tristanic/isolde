@@ -1,5 +1,9 @@
 
-_supported_elements = ('C','N','O','S','P','H','F','Cl','Br','I')
+supported_elements = ('C','N','O','S','P','H','F','Cl','Br','I')
+
+def residue_qualifies(residue):
+    unsupported_elements = set(residue.atoms.element_names).difference(set(supported_elements))
+    return len(unsupported_elements==0)
 
 def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bcc'):
     from chimerax.core.errors import UserError
@@ -7,11 +11,11 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         raise UserError(f"Residue is covalently bound to {len(residue.neighbors)} other residues. "
             "ISOLDE currenly only supports parameterising new non-covalent ligands.")
     import numpy
-    element_check = numpy.isin(residue.atoms.element_names, _supported_elements)
+    element_check = numpy.isin(residue.atoms.element_names, supported_elements)
     if not numpy.all(element_check):
         unsupported = residue.atoms[numpy.logical_not(element_check)]
         raise UserError('Automatic ligand parameterisation currently only supports the following elements:\n'
-            f'{", ".join(_supported_elements)}\n'
+            f'{", ".join(supported_elements)}\n'
             f'Residue type {residue.name} contains the unsupported elements {", ".join(unsupported.element_names.unique())}.'
             'If you wish to work with this residue you will need to parameterise it using an external package.')
     import os
