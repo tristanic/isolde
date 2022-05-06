@@ -15,7 +15,7 @@ from Qt.QtGui import QColor
 
 import sys
 if 'win' in sys.platform.lower():
-    from ..util import WinAutoResizeQComboBox as QComboBox
+    from .util import WinAutoResizeQComboBox as QComboBox
 else:
     from Qt.QtWidgets import QComboBox
 
