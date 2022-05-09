@@ -8,14 +8,14 @@
 
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy,
-    QScrollArea, QWidget
+    QScrollArea, QWidget, QFrame
     )
 from Qt import QtCore
 from Qt.QtGui import QColor
 
 import sys
 if 'win' in sys.platform.lower():
-    from ..util import WinAutoResizeQComboBox as QComboBox
+    from .util import WinAutoResizeQComboBox as QComboBox
 else:
     from Qt.QtWidgets import QComboBox
 
@@ -26,7 +26,7 @@ _base_path = os.path.dirname(os.path.abspath(__file__))
 class DefaultVLayout(QVBoxLayout):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.setContentsMargins(0,0,0,0)
+        self.setContentsMargins(0,2,0,0)
         self.setSpacing(3)
 
 class DefaultHLayout(QHBoxLayout):
@@ -166,10 +166,13 @@ class IsoldeTab(QWidget):
         sa = self.scroll_area = QScrollArea(self)
         hl.addWidget(sa)
         sa.setWidgetResizable(True)
+        mf = self.main_frame = QFrame(sa)
         ml = self.main_layout = DefaultVLayout()
         ml.addStretch()
-        sa.setLayout(ml)
+        mf.setLayout(ml)
+        sa.setWidget(mf)
     
     def addWidget(self, widget):
         # Last position is the spacer, so we always want to go just before that.
         self.main_layout.insertWidget(self.main_layout.count()-1, widget)
+    

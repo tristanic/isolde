@@ -64,10 +64,21 @@ class CollapsibleArea(QWidget):
         return not self.toggle_button.isChecked()
 
     def _do_animation(self, checked):
+        ca = self.content_area
+        collapsed_height = self.sizeHint().height() - ca.height()
+        content_height = ca.sizeHint().height()
+        anim = self._animator
+        for i in range(anim.animationCount()-1):
+            a = anim.animationAt(i)
+            a.setStartValue(collapsed_height)
+            a.setEndValue(collapsed_height+content_height)
+        a = anim.animationAt(anim.animationCount()-1)
+        a.setStartValue(0)
+        a.setEndValue(content_height)        
+
         from Qt.QtCore import QAbstractAnimation
         arrow_type = Qt.DownArrow if checked else Qt.RightArrow
         direction = QAbstractAnimation.Forward if checked else QAbstractAnimation.Backward
-        #self.content_area.setVisible(checked)
         self.toggle_button.setArrowType(arrow_type)
         self._animator.setDirection(direction)
         self._animator.start()
@@ -81,18 +92,10 @@ class CollapsibleArea(QWidget):
     def setContentLayout(self, layout):
         ca = self.content_area
         ca.setLayout(layout)
-        collapsed_height = self.sizeHint().height() - ca.maximumHeight()
-        content_height = ca.sizeHint().height()
         anim = self._animator
-        for i in range(anim.animationCount()-1):
+        for i in range(anim.animationCount()):
             a = anim.animationAt(i)
             a.setDuration(self.animation_duration)
-            a.setStartValue(collapsed_height)
-            a.setEndValue(collapsed_height+content_height)
-        a = anim.animationAt(anim.animationCount()-1)
-        a.setDuration(self.animation_duration)
-        a.setStartValue(0)
-        a.setEndValue(content_height)        
 
 
     def _set_expert_level(self):
