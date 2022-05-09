@@ -9,29 +9,19 @@
 
 import numpy
 
-from Qt.QtWidgets import QWidget
+from Qt.QtWidgets import QWidget, QHBoxLayout
 
 class RamaPlot(QWidget):
-    WHOLE_MODEL = 0
-    SELECTED_ONLY = 1
-    MOBILE_ONLY = 2
-
-    mode_dict = {
-        WHOLE_MODEL: 'All residues',
-        SELECTED_ONLY: 'Selection',
-        MOBILE_ONLY: 'Mobile atoms only'
-    }
-    def __init__(self, session, isolde, parent, rama_case):
-        super().__init__(parent=parent)
+    def __init__(self, session, manager, rama_case):
+        super().__init__(parent=manager.ui_area)
         self._debug=False
         self.session = session
-        self.isolde = isolde
+        self.manager = manager
         from chimerax.isolde import session_extensions as sx
-        mgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
-        cenum = self._case_enum = mgr.RamaCase
-        self.container = parent
-        self.current_case = rama_case
-        self._selection_mode = self.WHOLE_MODEL
+        rmgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
+        cenum = self._case_enum = rmgr.RamaCase
+        self.container = manager.ui_area
+        self.case = rama_case
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -39,22 +29,21 @@ class RamaPlot(QWidget):
             NavigationToolbar2QT as NavigationToolbar
             )
 
-        self._current_model = None
         self._current_residues = None
         self._all_current_ramas = None
         self._case_ramas = None
 
+        layout = self.main_layout = QHBoxLayout(self)
         fig = self.figure = Figure()
 
         axes = self.axes = fig.add_subplot(111, aspect='equal')
 
 
         canvas = self.canvas = FigureCanvas(fig)
-        self.resize_cid = self.canvas.mpl_connect('resize_event', self.on_resize)
-        self.on_pick_cid = self.canvas.mpl_connect('pick_event', self.on_pick)
-        container.addWidget(canvas)
+        self.resize_cid = canvas.mpl_connect('resize_event', self.on_resize)
+        self.on_pick_cid = canvas.mpl_connect('pick_event', self.on_pick)
+        layout.addWidget(canvas)
 
-        self.contours = {}
 
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
@@ -66,44 +55,42 @@ class RamaPlot(QWidget):
             edgecolors='black', linewidths = 0.5)
         scatter.set_cmap('RdYlGn_r')
 
-        self.change_case(cenum.GENERAL)
 
-        self._isolde_switch_model_handler = isolde.triggers.add_handler(
-            'selected model changed',
-            self._isolde_switch_model_cb
-        )
+        self._prepare_contours()
 
-        self._selection_changed_handler = self.session.triggers.add_handler(
-            'selection changed',
-            self._selection_changed_cb
-        )
+        self._prepare_tooltip()
+
+        self.on_resize()
+
 
         self._model_changes_handler = None
-        self.current_model = isolde.selected_model
-        #self.on_resize()
 
-        self._sel_restrict_button = restrict_button
-        restrict_button.clicked.connect(
-            self._restrict_sel_cb
-        )
+    @property
+    def restricted(self):
+        from .tool import RamaMainWin
+        R = RamaMainWin.Restrictions
+        return bool(self.display_mode&R.RESTRICTED)
+    
+    @property
+    def hide_favored(self):
+        from .tool import RamaMainWin
+        R = RamaMainWin.Restrictions
+        return bool(self.display_mode&(R.DISFAVORED_ONLY|R.OUTLIERS_ONLY))
+    
+    @property
+    def outliers_only(self):
+        from .tool import RamaMainWin
+        R = RamaMainWin.Restrictions
+        return bool(self.display_mode&R.OUTLIERS_ONLY)
 
-        self._mode_menu = mode_menu
-        self._populate_mode_menu(mode_menu)
-        mode_menu.currentIndexChanged.connect(
-            self._mode_change_cb
-        )
 
-        self._case_menu = case_menu
-        self._populate_case_menu(case_menu)
-        case_menu.currentIndexChanged.connect(self._case_change_cb)
-
-        itr = self.isolde.triggers
-        itr.add_handler('simulation started', self._sim_start_cb)
-        itr.add_handler('simulation terminated', self._sim_end_cb)
-        itr.add_handler('simulation paused', self._sim_pause_cb)
-        itr.add_handler('simulation resumed', self._sim_resume_cb)
-
-        tab_widget.currentChanged.connect(self._tab_change_cb)
+    @property
+    def display_mode(self):
+        return self.manager.display_mode
+    
+    @property
+    def current_model(self):
+        return self.manager.current_model
 
     def _selection_changed_cb(self, *_):
         if not self.visible or not self.current_model:
@@ -121,11 +108,22 @@ class RamaPlot(QWidget):
         case = cenum.GENERAL
         if len(unique_cases) == 1:
             case = cenum(unique_cases[0])
-        if case != self.current_case:
+        if case != self.case:
             cm = self._case_menu
             cm.setCurrentIndex(cm.findData(case))
         else:
             self.update_scatter()
+
+    def _display_mode_changed_cb(self, _, mode):
+        from .tool import RamaMainWin
+
+
+    def block_tooltip(self):
+        self._tooltip_blocked = True
+    
+    def unblock_tooltip(self):
+        self._tooltip_blocked = False
+    
 
 
 
@@ -139,11 +137,11 @@ class RamaPlot(QWidget):
             arrowprops=dict(arrowstyle='->'))
         annot.set_visible(False)
         self._annot_cid = None
-        if (not self.isolde.simulation_running) or self.isolde.sim_paused:
-            self._start_tooltip()
 
     def _hover(self, event):
         if self._current_model is None or self._current_model.was_deleted:
+            return
+        if not getattr(self, '_tooltip_blocked', False):
             return
         sp = self.scatter
         annot = self._hover_annotation
@@ -211,22 +209,6 @@ class RamaPlot(QWidget):
         self.set_target_residues(selres)
         self.update_scatter()
 
-    def _populate_mode_menu(self, menu):
-        menu.clear()
-        shown_modes = [
-            self.WHOLE_MODEL,
-            self.SELECTED_ONLY
-        ]
-        for mode in shown_modes:
-            menu.addItem(self.mode_dict[mode])
-
-    def _populate_case_menu(self, menu):
-        menu.clear()
-        rm = self._rama_mgr
-        keys = list(rm.RamaCase)[1:]
-        for key in reversed(keys):
-            menu.addItem(rm.RAMA_CASE_DETAILS[key]['name'], key)
-
     def _mode_change_cb(self, *_):
         mode = self._mode_menu.currentIndex()
         self.selection_mode = mode
@@ -239,13 +221,6 @@ class RamaPlot(QWidget):
         # TODO: rework UI into a consistent framework
         pass
 
-    def remove_trigger_handlers(self):
-        if self._selection_changed_handler is not None:
-            self.session.triggers.remove_handler(self._selection_changed_handler)
-            self._selection_changed_handler = None
-        if self._model_changes_handler is not None and self.current_model is not None:
-            self.current_model.triggers.remove_handler(self._model_changes_handler)
-            self._model_changes_handler = None
 
     @property
     def current_model(self):
@@ -337,31 +312,29 @@ class RamaPlot(QWidget):
         axes.autoscale(enable=False)
         fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
-    def cache_contour_plots(self, key):
+    def _prepare_contours(self):
         import numpy
+        from math import log
+        key = self.case
         mgr = self._rama_mgr
         grid = numpy.degrees(mgr.interpolator_axes(int(key)))
         values = numpy.rot90(numpy.fliplr(mgr.interpolator_values(key))).astype(float)
         contours = mgr.RAMA_CASE_DETAILS[key]['cutoffs']
+        self.P_limits = [0, -log(contours[0])]
         logvalues = numpy.log(values)
-        contour_plot = self.axes.contour(*grid, values, contours)
-        pcolor_plot = self.axes.pcolormesh(*grid, logvalues, cmap = 'Greys', shading='auto')
-        for coll in contour_plot.collections:
-           coll.remove()
-        pcolor_plot.remove()
-        self.contours[key] = (contour_plot, pcolor_plot)
-
+        self.contour_plot = self.axes.contour(*grid, values, contours)
+        self.pcolor_plot = self.axes.pcolormesh(*grid, logvalues, cmap = 'Greys', shading='auto')
 
     def on_resize(self, *_):
         axes = self.axes
         f = self.figure
         c = self.canvas
+        self._hover_annotation.set_visible(False)
         self._format_axes()
         self.scatter.set_offsets(self.default_coords)
-        f.patch.set_facecolor('0.5')
+        f.patch.set_facecolor('black')
         c.draw()
         self.background = c.copy_from_bbox(axes.bbox)
-        #self.update_scatter()
         self.session.triggers.add_handler('new frame', self._resize_next_frame_cb)
 
     def _resize_next_frame_cb(self, *_):
@@ -374,7 +347,7 @@ class RamaPlot(QWidget):
         picked_rama = self._case_ramas[ind]
         self.session.selection.clear()
         picked_rama.residue.atoms.selected=True
-        from ..navigate import get_stepper
+        from chimerax.isolde.navigate import get_stepper
         get_stepper(self.current_model).step_to(picked_rama.residue)
         # from .. import view
         # view.focus_on_selection(self.session, picked_rama.residue.atoms, pad=1.0)
@@ -382,7 +355,7 @@ class RamaPlot(QWidget):
     def change_case(self, case_key):
         import numpy
         mgr = self._rama_mgr
-        self.current_case = case_key
+        self.case = case_key
         ax = self.axes
         ax.clear()
         contourplots = self.contours.get(case_key, None)
@@ -397,7 +370,6 @@ class RamaPlot(QWidget):
         contours = mgr.RAMA_CASE_DETAILS[case_key]['cutoffs']
         self.P_limits = [0, -log(contours[0])]
         self.set_target_residues(self._current_residues)
-        self._prepare_tooltip()
         self.on_resize()
 
     def clear(self):
@@ -406,7 +378,7 @@ class RamaPlot(QWidget):
 
     def set_target_residues(self, residues):
         self._current_residues = residues
-        case = self.current_case
+        case = self.case
         mgr = self._rama_mgr
         cenum = self._case_enum
         if residues is not None and len(residues):
@@ -425,7 +397,7 @@ class RamaPlot(QWidget):
         if residues is not None:
             self.set_target_residues(residues)
         import numpy
-        case = self.current_case
+        case = self.case
         mgr = self._rama_mgr
         cenum = self._case_enum
         r = self._case_ramas
