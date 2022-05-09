@@ -14,16 +14,14 @@ from Qt.QtWidgets import (
 class Rama_ToolUI(ToolInstance):
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)
-        from .ui import RamaMainWin
         tw = self.tool_window=RamaMainWin(self)
         tw.manage(placement=None, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
-
-        parent = self.ui_area
-        main_layout = self.main_layout = QGridLayout(parent)
-        parent.setLayout(main_layout)
-        
 
 
 class RamaMainWin(MainToolWindow):
     def __init__(self, tool_instance, **kw):
         super().__init__(tool_instance, **kw)
+    
+        parent = self.ui_area
+        main_layout = self.main_layout = QGridLayout(parent)
+        parent.setLayout(main_layout)
