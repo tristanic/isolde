@@ -178,6 +178,7 @@ with the surroundings.
     <PythonClassifier>License :: Free for non-commercial use.</PythonClassifier>
 ]
     <ChimeraXClassifier>ChimeraX :: Tool :: ISOLDE :: General :: Interactive Molecular Dynamics Flexible Fitting (iMDFF)</ChimeraXClassifier>
+    <ChimeraXClassifier>ChimeraX :: Tool :: RamaPlot :: General :: Interactive Ramachandran plot</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Command :: isolde :: General :: Command-line control of ISOLDE simulations</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Command :: rama :: General :: Live Ramachandran validation of models</ChimeraXClassifier>
     <ChimeraXClassifier>ChimeraX :: Command :: rota :: General :: Live rotamer validation of models</ChimeraXClassifier>

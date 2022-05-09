@@ -9,7 +9,9 @@
 
 import numpy
 
-class RamaPlot:
+from Qt.QtWidgets import QWidget
+
+class RamaPlot(QWidget):
     WHOLE_MODEL = 0
     SELECTED_ONLY = 1
     MOBILE_ONLY = 2
@@ -19,19 +21,16 @@ class RamaPlot:
         SELECTED_ONLY: 'Selection',
         MOBILE_ONLY: 'Mobile atoms only'
     }
-    def __init__(self, session, isolde, tab_widget, container, mode_menu, case_menu,
-            restrict_button):
+    def __init__(self, session, isolde, parent, rama_case):
+        super().__init__(parent=parent)
         self._debug=False
-        self._tab_widget = tab_widget
-        import numpy
         self.session = session
+        self.isolde = isolde
         from chimerax.isolde import session_extensions as sx
         mgr = self._rama_mgr = sx.get_ramachandran_mgr(session)
-        self.isolde = isolde
-        isolde._ui_panels.append(self)
         cenum = self._case_enum = mgr.RamaCase
-        self.container = container
-        self.current_case = None
+        self.container = parent
+        self.current_case = rama_case
         self._selection_mode = self.WHOLE_MODEL
 
         from matplotlib.figure import Figure

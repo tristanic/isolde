@@ -15,17 +15,10 @@
 #   "delete" - called to clean up before instance is deleted
 #
 from chimerax.core.tools import ToolInstance
+from Qt.QtCore import Qt 
 
 def _find_help():
-    # import os, pathlib
-    # fname = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'doc', 'index.html')
-    # return pathlib.Path(os.path.abspath(fname)).as_uri()
     return 'help:user/tools/ISOLDE.html'
-
-# def test_new_ui(session):
-#     from chimerax.core.tools import get_singleton
-#     return get_singleton(session, ISOLDE_NewToolUI, 'ISOLDE', create=True)
-
 
 class ISOLDE_ToolUI(ToolInstance):
     def __init__(self, session, tool_name):
@@ -40,8 +33,14 @@ class ISOLDE_ToolUI(ToolInstance):
     def _launch_main_gui(self, *_):
         from .ui.main_win import IsoldeMainWin
         tw = self.tool_window = IsoldeMainWin(self)
-        tw.manage(placement=None)
-        tw.ui_area.parent().parent().resize(540, 850)
+        from chimerax.log.tool import Log
+        log_instances = self.session.tools.find_by_class(Log)
+        if len(log_instances):
+            placement = log_instances[0].tool_window
+        else:
+            placement='side'
+        tw.manage(placement=placement, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        #tw.ui_area.parent().parent().resize(540, 850)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 

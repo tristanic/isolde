@@ -153,9 +153,13 @@ class _MyAPI(BundleAPI):
     @staticmethod
     def start_tool(session, tool_name):
         # 'start_tool' is called to start an instance of the tool
-        from .tool import ISOLDE_ToolUI
         from chimerax.core import tools
-        return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=True)
+        if tool_name=='ISOLDE':
+            from .tool import ISOLDE_ToolUI
+            return tools.get_singleton(session, ISOLDE_ToolUI, tool_name, create=True)
+        elif tool_name=='RamaPlot':
+            from .validation.ramaplot import Rama_ToolUI
+            return tools.get_singleton(session, Rama_ToolUI, tool_name, create=True)
 
 
     @staticmethod
