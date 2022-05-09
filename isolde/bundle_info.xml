@@ -169,7 +169,12 @@ with the surroundings.
       name="flip cis-trans" display_name = "Flip cis&lt;-&gt;trans" icon="cis-trans-icon.png"
       description="Flip the peptide bond N-terminal to the selection from cis to trans or vice versa (select a single amino acid residue to activate)"/>
 
-
+    <Provider tab="ISOLDE" section="Map"
+      name="spotlight" display_name="Spotlight mode" icon="spotlight.png"
+      description="Display map(s) and atoms in a sphere around the centre of rotation" />
+    <Provider tab="ISOLDE" section="Map"
+      name="mask" display_name="Mask to selection" icon="mask_to_sel.png"
+      description="Mask map(s) to surround the selected atom(s)"/>
 
   </Providers>
   <Classifiers>

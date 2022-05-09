@@ -74,6 +74,7 @@ class IsoldeParams(Param_Mgr):
             # Update map masking at regular intervals, to account for large
             # atom movements
         'remask_maps_during_sim':               (defaults.REMASK_MAPS_DURING_SIM, None),
+        'center_on_sel_when_masking':           (defaults.CENTER_ON_SEL_WHEN_MASKING, None),
         'rounds_per_map_remask':                (defaults.ROUNDS_PER_MAP_REMASK, None),
             # Radius of mask when isolating a selection
         'map_mask_radius':                      (defaults.STANDARD_MAP_MASK_RADIUS, None),
