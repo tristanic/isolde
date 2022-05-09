@@ -33,6 +33,16 @@ def toolbar_command(session, name):
         run(session, 'isolde pepflip sel')
     elif name == 'flip cis-trans':
         run(session, 'isolde cisflip sel')
+    elif name == 'spotlight':
+        run(session, 'clipper spotlight')
+    elif name == 'mask':
+        if hasattr(session, 'isolde'):
+            radius = session.isolde.params.map_mask_radius
+            focus = session.isolde.params.center_on_sel_when_masking
+        else:
+            radius = 4.0
+            focus = True
+        run(session, f'clipper isolate sel mask {radius} focus {focus}')
 
 class ToolbarButtonMgr:
     # (tab, section, name, display_name)
@@ -49,6 +59,8 @@ class ToolbarButtonMgr:
         'flip peptide': ('ISOLDE', 'Peptide bond', 'flip peptide', 'Flip peptide'),
         'flip cis-trans': ('ISOLDE', 'Peptide bond', 'flip cis-trans', 'Flip cis<->trans'),
 
+        'spotlight': ('ISOLDE', 'Map', 'spotlight', 'Spotlight mode'),
+        'mask': ('ISOLDE', 'Map', 'mask', 'Mask to selection'),
     }
 
     enable_if_single_peptide_selected=('flip peptide', 'flip cis-trans')
