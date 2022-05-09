@@ -37,12 +37,21 @@ class ISOLDE_ToolUI(ToolInstance):
         log_instances = self.session.tools.find_by_class(Log)
         if len(log_instances):
             placement = log_instances[0].tool_window
+            # Make sure it appears as the front-most tab
+            self.session.triggers.add_handler('new frame', self._raise_tab_to_front)
         else:
             placement='side'
         tw.manage(placement=placement, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
-        #tw.ui_area.parent().parent().resize(540, 850)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
+    
+    def _raise_tab_to_front(self, *_):
+        tw = self.tool_window
+        tw.ui_area.parent().parent().raise_()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
+
 
     def _show_splash(self):
         from Qt.QtGui import QPixmap
@@ -58,7 +67,7 @@ class ISOLDE_ToolUI(ToolInstance):
         splash.show()
         from time import time
         start_time = [time()]
-        def _splash_remove_cb(trigger_name, data, start_time=start_time, min_time=1):
+        def _splash_remove_cb(trigger_name, data, start_time=start_time, min_time=2):
             from time import time
             elapsed_time = time()-start_time[0]
             if elapsed_time > min_time:
