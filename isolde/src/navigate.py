@@ -198,6 +198,8 @@ class ResidueStepper(StateManager):
         new_cofr = centroid
         if c.name=='orthographic':
             fw = c.field_width
+        else:
+            fw = None
         new_fw = self._view_distance*2
 
         def interpolate_camera(session, f, cp=cp, np=np, oc=old_cofr, nc=new_cofr, fw=fw, nfw=new_fw, vr=self._view_distance, center=np.inverse()*centroid, frames=self._interpolate_frames):
