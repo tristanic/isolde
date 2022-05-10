@@ -9,7 +9,8 @@
 
 import numpy
 
-from Qt.QtWidgets import QWidget, QHBoxLayout
+from Qt.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy
+from Qt.QtCore import Qt
 
 class RamaPlot(QWidget):
     def __init__(self, session, manager, rama_case):
@@ -22,6 +23,7 @@ class RamaPlot(QWidget):
         cenum = self._case_enum = rmgr.RamaCase
         self.container = manager.ui_area
         self.case = rama_case
+        self.name=rmgr.RAMA_CASE_DETAILS[rama_case]['name']
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -32,14 +34,27 @@ class RamaPlot(QWidget):
         self._current_residues = None
         self._all_current_ramas = None
         self._case_ramas = None
+        self._displayed_ramas = None
 
-        layout = self.main_layout = QHBoxLayout(self)
+        self.setStyleSheet('color: white; background-color: black;')
+        self.setAutoFillBackground(True)
+
+        layout = self.main_layout = QVBoxLayout(self)
+        layout.setContentsMargins(0,0,0,0)
+        layout.setSpacing(0)
+
+        t = self.title = QLabel(self.name, parent=self)
+        layout.addWidget(t)
+        t.setAlignment(Qt.AlignHCenter)
+        
+
         fig = self.figure = Figure()
 
         axes = self.axes = fig.add_subplot(111, aspect='equal')
-
+        axes.autoscale(enable=False)
 
         canvas = self.canvas = FigureCanvas(fig)
+
         self.resize_cid = canvas.mpl_connect('resize_event', self.on_resize)
         self.on_pick_cid = canvas.mpl_connect('pick_event', self.on_pick)
         layout.addWidget(canvas)
@@ -61,6 +76,7 @@ class RamaPlot(QWidget):
         self._prepare_tooltip()
 
         self.on_resize()
+        self._start_tooltip()
 
 
         self._model_changes_handler = None
@@ -139,9 +155,9 @@ class RamaPlot(QWidget):
         self._annot_cid = None
 
     def _hover(self, event):
-        if self._current_model is None or self._current_model.was_deleted:
+        if self.current_model is None or self.current_model.was_deleted:
             return
-        if not getattr(self, '_tooltip_blocked', False):
+        if getattr(self, '_tooltip_blocked', False):
             return
         sp = self.scatter
         annot = self._hover_annotation
@@ -155,7 +171,7 @@ class RamaPlot(QWidget):
                     print('In scatter')
                 indices = ind['ind']
                 text = []
-                ramas = self._case_ramas[indices]
+                ramas = self._displayed_ramas[indices]
                 phipsi = numpy.degrees(ramas.phipsis)
                 x = phipsi[:,0].mean()
                 y = phipsi[:,1].mean()
@@ -224,30 +240,28 @@ class RamaPlot(QWidget):
 
     @property
     def current_model(self):
-        if self._current_model is not None and self._current_model.was_deleted:
-            self._current_model = None
-        return self._current_model
+        return self.manager.current_model
 
-    @current_model.setter
-    def current_model(self, model):
-        if self._model_changes_handler is not None and self.current_model is not None:
-            self.current_model.triggers.remove_handler(
-                self._model_changes_handler
-            )
-            self._model_changes_handler = None
-        if model:
-            self._model_changes_handler = model.triggers.add_handler(
-                'changes', self._model_changed_cb
-            )
-        self._current_model=model
-        if model is None:
-            residues = None
-        elif self.selection_mode == self.WHOLE_MODEL:
-            residues = model.residues
-        else:
-            residues = model.atoms[model.atoms.selected].unique_residues
-        self.set_target_residues(residues)
-        self.update_scatter()
+    # @current_model.setter
+    # def current_model(self, model):
+    #     if self._model_changes_handler is not None and self.current_model is not None:
+    #         self.current_model.triggers.remove_handler(
+    #             self._model_changes_handler
+    #         )
+    #         self._model_changes_handler = None
+    #     if model:
+    #         self._model_changes_handler = model.triggers.add_handler(
+    #             'changes', self._model_changed_cb
+    #         )
+    #     self.current_model=model
+    #     if model is None:
+    #         residues = None
+    #     elif self.selection_mode == self.WHOLE_MODEL:
+    #         residues = model.residues
+    #     else:
+    #         residues = model.atoms[model.atoms.selected].unique_residues
+    #     self.set_target_residues(residues)
+    #     self.update_scatter()
 
     @property
     def selection_mode(self):
@@ -309,7 +323,6 @@ class RamaPlot(QWidget):
         axes.set_ylim(-180,180)
         axes.minorticks_on()
         axes.tick_params(direction='in')
-        axes.autoscale(enable=False)
         fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
     def _prepare_contours(self):
@@ -323,7 +336,7 @@ class RamaPlot(QWidget):
         self.P_limits = [0, -log(contours[0])]
         logvalues = numpy.log(values)
         self.contour_plot = self.axes.contour(*grid, values, contours)
-        self.pcolor_plot = self.axes.pcolormesh(*grid, logvalues, cmap = 'Greys', shading='auto')
+        self.pcolor_plot = self.axes.pcolorfast(*grid, logvalues, cmap = 'Greys')
 
     def on_resize(self, *_):
         axes = self.axes
@@ -344,7 +357,7 @@ class RamaPlot(QWidget):
 
     def on_pick(self, event):
         ind = event.ind[0]
-        picked_rama = self._case_ramas[ind]
+        picked_rama = self._displayed_ramas[ind]
         self.session.selection.clear()
         picked_rama.residue.atoms.selected=True
         from chimerax.isolde.navigate import get_stepper
@@ -402,19 +415,31 @@ class RamaPlot(QWidget):
         cenum = self._case_enum
         r = self._case_ramas
         if r is None or len(r) == 0:
+            self._displayed_ramas = None
             phipsi = self.default_coords
             logscores = self.default_logscores
             edge_colors='black'
             line_widths=0.5
         else:
+            scores = r.scores
+            if self.outliers_only or self.hide_favored:
+                bins = mgr.bin_scores(r.scores, r.cases)
+                if self.outliers_only:
+                    mask = (bins == mgr.RamaBin.OUTLIER)
+                else:
+                    mask = (bins > mgr.RamaBin.FAVORED)
+                r = r[mask]
+                scores = scores[mask]
+            self._displayed_ramas = r
             selecteds = r.ca_atoms.selecteds
             if numpy.any(selecteds):
                 # Put the selected residues last so they show on top
                 sort_order = numpy.lexsort((r.residues.numbers, r.residues.chain_ids, selecteds))
-                r = self._case_ramas = self._case_ramas[sort_order]
+                r = self._displayed_ramas = r[sort_order]
+                scores = scores[sort_order]
                 selecteds = selecteds[sort_order]
             phipsi = numpy.degrees(r.phipsis)
-            logscores = numpy.log(r.scores)
+            logscores = numpy.log(scores)
             edge_colors = numpy.zeros((len(phipsi),3))
             edge_colors[selecteds] = [0,1,0]
             line_widths = numpy.ones(len(phipsi))*0.5

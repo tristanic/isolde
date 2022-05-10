@@ -70,7 +70,7 @@ class RamaMainWin(MainToolWindow):
         self._handlers.append(self.session.triggers.add_handler('selection changed', self._selection_changed_cb))
 
         menu_layout.addWidget(QLabel('Showing: ', parent=parent))
-        dmb = self.display_mode_menu_button = QPushButton('All', parent)
+        dmb = self.display_mode_menu_button = QPushButton('All protein', parent)
         dmm = self.display_mode_menu = QMenu(dmb)
         self._populate_display_modes_menu()
         dmb.setMenu(dmm)
@@ -87,6 +87,8 @@ class RamaMainWin(MainToolWindow):
         menu_layout.addItem(DefaultSpacerItem())
 
         plot_layout = self.plot_layout = QGridLayout()
+        plot_layout.setContentsMargins(1,0,1,0)
+        plot_layout.setSpacing(0)
 
         self._plots = {}
         from .ramaplot_new import RamaPlot
@@ -108,27 +110,28 @@ class RamaMainWin(MainToolWindow):
     def _show_one_plot(self, case):
         for c, p in self._plots.items():
             p.setVisible(c==case)
+        self._visible_plots = [self._plots[case]]
     
     def _show_all_plots(self):
         for c, p in self._plots.items():
             p.setVisible(True)
-
-
+        self._visible_plots = list(self._plots.values())
+        self.rama_case_menu_button.setText('All')
 
     def _populate_rama_cases_menu(self):
         from chimerax.isolde.molobject import RamaMgr
         case_dict = RamaMgr.RAMA_CASE_DETAILS
+        cmb = self.rama_case_menu_button
         menu = self.rama_case_menu
         for case in self._plots.keys():
             details = case_dict[case]
-            def select_case(*_,c=case):
+            def select_case(*_,c=case, d=details):
                 self._show_one_plot(c)
+                cmb.setText(d['short name'])
             action = menu.addAction(details['name'])
             action.triggered.connect(select_case)
         a = menu.addAction('All')
         a.triggered.connect(self._show_all_plots)
-
-
 
     def _populate_models_menu(self):
         menu = self.model_select_menu
@@ -164,13 +167,19 @@ class RamaMainWin(MainToolWindow):
                 from chimerax.atomic import Residue
                 chains = cm.chains[cm.chains.polymer_types==Residue.PT_AMINO]
             chain_menu.clear()
+            if not len(chains):
+                dummy = chain_menu.addAction('No protein chains found')
+                dummy.setEnabled(False)
             for c in chains:
                 def restrict_to_chain(*_, chain=c):
-                    self.restrict_to = cm.residues[cm.residues.chain_ids==c.chain_id]
+                    self.restrict_to = cm.residues[cm.residues.chain_ids==chain.chain_id]
                     dmb.setText(f'Chain {chain.chain_id}')
                 ca = chain_menu.addAction(c.chain_id)
                 ca.triggered.connect(restrict_to_chain)
         chain_menu.aboutToShow.connect(populate_chain_menu)
+        
+
+
         def restrict_to_selection():
             from chimerax.atomic import selected_residues
             self.restrict_to = selected_residues(self.session)
@@ -178,10 +187,54 @@ class RamaMainWin(MainToolWindow):
         a = self._restrict_to_selection_action = dmm.addAction('Current selection')
         a.triggered.connect(restrict_to_selection)
         
+        options_menu = dmm.addMenu('Options')
+        def _hide_favored(flag):
+            if flag:
+                self.display_mode |= self.Restrictions.DISFAVORED_ONLY
+            else:
+                self.display_mode &= ~self.Restrictions.DISFAVORED_ONLY
+            self.update_scatter()
+        a1 = options_menu.addAction('Hide favoured')
+        a1.setCheckable(True)
+        a1.toggled.connect(_hide_favored)
+        def _outliers_only(flag):
+            if flag:
+                a1.setChecked(True)
+                self.display_mode |= self.Restrictions.OUTLIERS_ONLY
+            else:
+                self.display_mode &= ~self.Restrictions.OUTLIERS_ONLY
+            self.update_scatter()
+        a2 = options_menu.addAction('Outliers only')
+        a2.setCheckable(True)
+        a2.toggled.connect(_outliers_only)
+        def _show_markup(flag):
+            self.show_markup = flag
+        a3 = options_menu.addAction('Show markup on model')
+        a3.setCheckable(True)
+        a3.toggled.connect(_show_markup)
+
+
                 
 
-
+    @property
+    def show_markup(self):
+        return getattr(self, '_show_markup', False)
+    
+    @show_markup.setter
+    def show_markup(self, show):
+        if show != self.show_markup:
+            self._show_markup = show
+            self._show_or_hide_model_markup(show)
         
+    def _show_or_hide_model_markup(self, show):
+        if self.current_model is not None:
+            from chimerax.core.commands import run
+            if show:
+                cmd = 'rama'
+            else:
+                cmd = '~rama'
+            run(self.session, f'{cmd} #{self.current_model.id_string}', log=False)
+
 
     @property
     def current_model(self):
@@ -189,14 +242,34 @@ class RamaMainWin(MainToolWindow):
     
     @current_model.setter
     def current_model(self, structure):
+        if self._current_model == structure:
+            return
         self._current_model = structure
         if structure is None:
             self.model_select_button.setText('Choose a model')
+            residues = None
         else:
+            if self.show_markup:
+                self._show_or_hide_model_markup(True)
             self.model_select_button.setText(f'#{structure.id_string}')
+            residues = structure.residues
+            ch = getattr(self, '_model_changes_handler', None)
+            if ch is not None:
+                ch.remove()
+            self._model_changes_handler = structure.triggers.add_handler('changes', self._model_changes_cb)
+        for plot in self._plots.values():
+            plot.set_target_residues(residues)
+        self.update_scatter()
         self.triggers.activate_trigger(SELECTED_MODEL_CHANGED, structure)
-        self.update()
-    
+
+    def _model_changes_cb(self, trigger_name, changes):
+        for p in self._visible_plots:
+            p._model_changed_cb(trigger_name, changes)
+
+    def update_scatter(self):
+        for p in self._visible_plots:
+            p.update_scatter()
+
     @property
     def restrict_to(self):
         return getattr(self, '_restrict_to', None)
@@ -216,8 +289,14 @@ class RamaMainWin(MainToolWindow):
         self._restrict_to = residues
         if residues is not None:
             self.display_mode |= self.Restrictions.RESTRICTED
+            for p in self._plots.values():
+                p.set_target_residues(residues)
         else:
             self.display_mode &= ~self.Restrictions.RESTRICTED
+            if self.current_model is not None:
+                for p in self._plots.values():
+                    p.set_target_residues(self.current_model.residues)
+        self.update_scatter()
 
     @property
     def display_mode(self):
@@ -228,9 +307,6 @@ class RamaMainWin(MainToolWindow):
         if mode != self._display_mode:
             self._display_mode = mode
             self.triggers.activate_trigger(DISPLAY_MODE_CHANGED, mode)
-
-    def update(self):
-        pass
 
 
     def _session_models_changed_cb(self, trigger_name, *_):
@@ -253,12 +329,16 @@ class RamaMainWin(MainToolWindow):
             sel = sel[sel.polymer_types==Residue.PT_AMINO]
             if len(sel)>0:
                 sel_contains_protein = True
+        self.update_scatter()
         self._restrict_to_selection_action.setEnabled(sel_contains_protein)
             
 
     def cleanup(self):
         for h in self._handlers:
             h.remove()
+        ch = getattr(self, '_model_changes_handler', None)
+        if ch is not None:
+            ch.remove()
         super().cleanup()
 
 
