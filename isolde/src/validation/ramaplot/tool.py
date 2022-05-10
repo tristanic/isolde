@@ -56,7 +56,7 @@ class RamaMainWin(MainToolWindow):
         main_layout.addLayout(menu_layout)
         parent.setLayout(main_layout)
 
-        menu_layout.addWidget(QLabel('Current model: ', parent=parent))
+        menu_layout.addWidget(QLabel('Model: ', parent=parent))
         msb = self.model_select_button = QPushButton(parent)
         msm = self.model_select_menu = QMenu(msb)
         msm.aboutToShow.connect(self._populate_models_menu)
@@ -69,14 +69,14 @@ class RamaMainWin(MainToolWindow):
         self._handlers.append(self.session.triggers.add_handler(REMOVE_MODELS, self._session_models_changed_cb))
         self._handlers.append(self.session.triggers.add_handler('selection changed', self._selection_changed_cb))
 
-        menu_layout.addWidget(QLabel('Showing: ', parent=parent))
+        menu_layout.addWidget(QLabel('Display: ', parent=parent))
         dmb = self.display_mode_menu_button = QPushButton('All protein', parent)
         dmm = self.display_mode_menu = QMenu(dmb)
         self._populate_display_modes_menu()
         dmb.setMenu(dmm)
         menu_layout.addWidget(dmb)
 
-        menu_layout.addWidget(QLabel('Rama case(s): ', parent=parent))
+        menu_layout.addWidget(QLabel('Case(s): ', parent=parent))
         cmb = self.rama_case_menu_button = QPushButton('General', parent=parent)
         cmm = self.rama_case_menu = QMenu(cmb)
         cmb.setMenu(cmm)
