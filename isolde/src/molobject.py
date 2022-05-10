@@ -784,36 +784,43 @@ class RamaMgr:
     RAMA_CASE_DETAILS = {
         RamaCase.NONE: {
             'name': 'Not applicable',
+            'short name': 'N/A',
             'file_prefix': None,
             'cutoffs': None
         },
         RamaCase.CISPRO: {
             'name': 'Cis-proline residues',
+            'short name': 'cis-Pro',
             'file_prefix': 'rama8000-cispro',
             'cutoffs': [val_defaults.CISPRO_OUTLIER, val_defaults.CISPRO_ALLOWED]
         },
         RamaCase.TRANSPRO: {
             'name': 'Trans-proline residues',
+            'short name': 'trans-Pro',
             'file_prefix': 'rama8000-transpro',
             'cutoffs': [val_defaults.TRANSPRO_OUTLIER, val_defaults.TRANSPRO_ALLOWED]
         },
         RamaCase.GLYCINE: {
             'name': 'Glycine residues',
+            'short name': 'Gly',
             'file_prefix': 'rama8000-gly-sym',
             'cutoffs': [val_defaults.GLYCINE_OUTLIER,val_defaults.GLYCINE_ALLOWED]
         },
         RamaCase.PREPRO: {
             'name': 'Residues preceding proline',
+            'short name': 'pre-Pro',
             'file_prefix': 'rama8000-prepro-noGP',
             'cutoffs': [val_defaults.PREPRO_OUTLIER, val_defaults.PREPRO_ALLOWED]
         },
         RamaCase.ILEVAL: {
             'name': 'Isoleucine or valine residues',
+            'short name': 'Ile/Val',
             'file_prefix': 'rama8000-ileval-nopreP',
             'cutoffs': [val_defaults.ILEVAL_OUTLIER, val_defaults.ILEVAL_ALLOWED]
         },
         RamaCase.GENERAL: {
             'name': 'General amino acid residues',
+            'short name': 'General',
             'file_prefix': 'rama8000-general-noGPIVpreP',
             'cutoffs': [val_defaults.GENERAL_OUTLIER, val_defaults.GENERAL_ALLOWED]
         }
