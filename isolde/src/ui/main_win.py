@@ -30,7 +30,8 @@ class IsoldeMainWin(MainToolWindow):
         self.isolde.gui_mode = True
         self._gui_panels = []
 
-        self._session_trigger_handlers = []
+        sth = self._session_trigger_handlers = []
+        ith = self._isolde_trigger_handlers = []
         parent = self.ui_area
 
         main_layout = DefaultVLayout()
@@ -60,6 +61,7 @@ class IsoldeMainWin(MainToolWindow):
 
     def _prepare_top_frame(self, main_layout):
         import os
+        session = self.session
         tf = self._top_frame = QFrame()
         layout = DefaultHLayout()
         tf.setLayout(layout)
@@ -93,9 +95,13 @@ class IsoldeMainWin(MainToolWindow):
         from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
         for event_type in (ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS):
             self._session_trigger_handlers.append(
-                self.session.triggers.add_handler(event_type, self._update_model_list_cb)
+                session.triggers.add_handler(event_type, self._update_model_list_cb)
             )
+        
         self._update_model_list_cb(None, None)
+        self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler('simulation started', self._sim_start_cb))
+        self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler('simulation terminated', self._sim_end_cb))
+
         mmcb.currentIndexChanged.connect(self._change_selected_model_cb)
 
         li.addWidget(tw)
@@ -105,7 +111,7 @@ class IsoldeMainWin(MainToolWindow):
         bw.setLayout(l2)
 
         status_frame = QWidget(tw)
-        self.sim_status_indicator = SimStatusIndicator(self.session, self.isolde, self, status_frame)
+        self.sim_status_indicator = SimStatusIndicator(session, self.isolde, self, status_frame)
         l2.addWidget(status_frame)
 
         l2.addItem(DefaultSpacerItem())
@@ -113,7 +119,7 @@ class IsoldeMainWin(MainToolWindow):
         tcb = self.tutorials_button = QPushButton('Tutorials', parent=bw)
         tcb.setToolTip("Start an interactive tutorial")
         from chimerax.core.commands import run
-        tcb.clicked.connect(lambda *_:run(self.session, 'isolde tut'))
+        tcb.clicked.connect(lambda *_:run(session, 'isolde tut'))
         l2.addWidget(tcb)
 
         hb = self.main_help_button = QPushButton(bw)
@@ -127,16 +133,19 @@ class IsoldeMainWin(MainToolWindow):
         main_layout.addWidget(tf)
 
 
-
-
-
     def _change_selected_model_cb(self, *_):
         mmcb = self.master_model_combo_box
         with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
             m = mmcb.currentData()
             if m is not None:
                 self.isolde.change_selected_model(m)
+
+    def _sim_start_cb(self, *_):
+        self.master_model_combo_box.setEnabled(False)
     
+    def _sim_end_cb(self, *_):
+        self.master_model_combo_box.setEnabled(True)
+
     @contextmanager
     def _block_update_model_list_cb(self):
         self._update_model_list_cb_blocked = True
@@ -189,6 +198,8 @@ class IsoldeMainWin(MainToolWindow):
     def cleanup(self):
         for h in self._session_trigger_handlers:
             h.remove()
+        for h in self._isolde_trigger_handlers:
+            h.remove()
         for panel in self._gui_panels:
             panel.cleanup()
 
@@ -205,10 +216,11 @@ class SimStatusIndicator(UI_Panel_Base):
         sl = self.status_label = QLabel(self.main_frame)
         sl.setFont(font)
         layout.addWidget(sl)
-        self._isolde_trigger_handlers.append(isolde.triggers.add_handler(
+        ith = self._isolde_trigger_handlers
+        ith.append(isolde.triggers.add_handler(
             'simulation resumed', self.sim_resume_cb
         ))
-        self._isolde_trigger_handlers.append(isolde.triggers.add_handler(
+        ith.append(isolde.triggers.add_handler(
             'simulation paused', self.sim_pause_cb
         ))
     

@@ -149,12 +149,10 @@ class Isolde():
                   ChimeraX GUI menu).
         '''
         self.session = session
-        self._gui = gui
-
-
         self.triggers = triggerset.TriggerSet()
         for t in self.trigger_names:
             self.triggers.add_trigger(t)
+        self._gui = gui
 
         self._isolde_events = EventHandler(self)
         self._logging = False
@@ -2596,7 +2594,6 @@ class Isolde():
         self.session.logger.status(
             'Initialising simulation. Please be patient...',
             color='red')
-        self.sim_params.platform = self.iw._sim_platform_combo_box.currentText()
         from .openmm.openmm_interface import Sim_Manager
         sm = self.selected_model
         main_sel = self._last_main_sel = sm.atoms[sm.atoms.selected]
@@ -2722,10 +2719,10 @@ class Isolde():
         simulation.
         '''
         self.session.logger.status('')
-        self.iw._master_model_combo_box.setEnabled(False)
+        # self.iw._master_model_combo_box.setEnabled(False)
         # self.iw._sim_running_indicator.setVisible(True)
-        self._update_sim_status_indicator()
-        self._update_sim_control_button_states()
+        # self._update_sim_status_indicator()
+        # self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.triggers.activate_trigger('simulation started', None)
         sh = self.sim_handler
@@ -2735,7 +2732,6 @@ class Isolde():
         self.session.logger.info('ISOLDE: started sim')
 
     def _sim_end_cb(self, *_):
-        self._update_menu_after_sim()
         for d in self._haptic_devices:
             d.cleanup()
         from chimerax.mouse_modes import TranslateMouseMode
@@ -2750,7 +2746,6 @@ class Isolde():
                     self.session.logger.info('Updating bulk solvent parameters...')
                     xmapset.live_xmap_mgr.bulk_solvent_optimization_needed()
                     xmapset.recalc_needed()
-        self._update_sim_status_indicator()
         from .atomic.util import correct_pseudosymmetric_sidechain_atoms
         if self.sim_manager is not None:
             correct_pseudosymmetric_sidechain_atoms(self.session, self.sim_manager.sim_construct.mobile_residues)
@@ -2813,15 +2808,9 @@ class Isolde():
         return True
 
     def _sim_pause_cb(self, *_):
-        self.session.logger.info('ISOLDE: paused sim')
-        self._update_sim_control_button_states()
-        self._update_sim_status_indicator()
         self.triggers.activate_trigger('simulation paused', None)
 
     def _sim_resume_cb(self, *_):
-        self.session.logger.info('ISOLDE: resumed sim')
-        self._update_sim_control_button_states()
-        self._update_sim_status_indicator()
         self.triggers.activate_trigger('simulation resumed', None)
 
     def _stop_sim_and_revert_to_checkpoint(self, *_):
@@ -2859,7 +2848,6 @@ class Isolde():
                 ok = result.lower()=='y'
             if not ok:
                 return
-        self._release_register_shifter()
         self.sim_manager.stop_sim(revert=revert_to)
 
     def commit_sim(self):
