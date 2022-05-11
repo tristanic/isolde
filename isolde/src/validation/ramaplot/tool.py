@@ -8,18 +8,27 @@ from chimerax.isolde.ui.ui_base import (
 )
 
 from Qt.QtWidgets import (
-    QGridLayout, QFrame, QLabel, QCheckBox, QPushButton, QMenu
+    QGridLayout, QFrame, QLabel, QCheckBox, QPushButton, QMenu,
+    QSizePolicy
 )
 
 from chimerax.isolde.ui.ui_base import QComboBox, DefaultHLayout, DefaultVLayout, DefaultSpacerItem
 
 
 class Rama_ToolUI(ToolInstance):
+    TOOL_CLOSED = 'tool closed'
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)
         tw = self.tool_window=RamaMainWin(self)
         tw.manage(placement=None, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
 
+        from chimerax.core.triggerset import TriggerSet
+        triggers = self.triggers=TriggerSet()
+        triggers.add_trigger(self.TOOL_CLOSED)
+
+    def delete(self):
+        self.triggers.activate_trigger(self.TOOL_CLOSED, None)
+        super().delete()
 
 SELECTED_MODEL_CHANGED = 'selected model changed'
 DISPLAY_MODE_CHANGED = 'display mode changed'
@@ -32,6 +41,11 @@ class RamaMainWin(MainToolWindow):
         RESTRICTED = 1
         DISFAVORED_ONLY = 2
         OUTLIERS_ONLY = 4
+
+    SINGLE_PLOT_WINDOW_SIZE = (484,504)
+    ALL_PLOT_WINDOW_SIZE = (300,320)
+    SINGLE_PLOT_SCATTER_SIZE = 10
+    ALL_PLOT_SCATTER_SIZE = 6
 
 
     def __init__(self, tool_instance, **kw):
@@ -49,8 +63,12 @@ class RamaMainWin(MainToolWindow):
         self._display_mode = self.Restrictions.ALL_PROTEIN
         self._current_model = None
         self._handlers = []
+        self.manage(placement=None)
 
         parent = self.ui_area
+        # self._dock_widget.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        # parent.parent().parent()y.resize(*self.SINGLE_PLOT_WINDOW_SIZE)
+        self.base_scatter_size = self.SINGLE_PLOT_SCATTER_SIZE
         main_layout = self.main_layout = DefaultVLayout()
         menu_layout = self.menu_layout = DefaultHLayout()
         main_layout.addLayout(menu_layout)
@@ -102,36 +120,61 @@ class RamaMainWin(MainToolWindow):
         main_layout.addLayout(plot_layout)
         
         self._populate_rama_cases_menu()
+        self._visible_plots=[]
         self._show_one_plot(cenum.GENERAL)
 
         self._selection_changed_cb()
 
 
     def _show_one_plot(self, case):
+        # self.ui_area.parent().parent().resize(*self.SINGLE_PLOT_WINDOW_SIZE)
+        was_showing_single_plot = (len(self._visible_plots)==1)
+        self.base_scatter_size = self.SINGLE_PLOT_SCATTER_SIZE
         for c, p in self._plots.items():
+            p.setMinimumSize(*self.SINGLE_PLOT_WINDOW_SIZE)
+            p.resize(*self.SINGLE_PLOT_WINDOW_SIZE)
             p.setVisible(c==case)
+        case_dict = self._rama_mgr.RAMA_CASE_DETAILS
+        details = case_dict[case]
+        self.rama_case_menu_button.setText(details['short name'])
         self._visible_plots = [self._plots[case]]
-    
+        # Doesn't resize properly unless delayed to next frame
+        if not was_showing_single_plot:
+            self.session.triggers.add_handler('new frame', self._shrink_to_fit)
+        self.update_scatter()
+
+    def _shrink_to_fit(self, *_):
+        self.shrink_to_fit()
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+
     def _show_all_plots(self):
+        # self.ui_area.parent().parent().resize(*self.SINGLE_PLOT_WINDOW_SIZE)
+        self.base_scatter_size = self.ALL_PLOT_SCATTER_SIZE
         for c, p in self._plots.items():
+            p.setMinimumSize(*self.ALL_PLOT_WINDOW_SIZE)
+            p.resize(*self.ALL_PLOT_WINDOW_SIZE)
             p.setVisible(True)
         self._visible_plots = list(self._plots.values())
         self.rama_case_menu_button.setText('All')
+        self.shrink_to_fit()
+        self.update_scatter()
 
     def _populate_rama_cases_menu(self):
-        from chimerax.isolde.molobject import RamaMgr
-        case_dict = RamaMgr.RAMA_CASE_DETAILS
+        case_dict = self._rama_mgr.RAMA_CASE_DETAILS
         cmb = self.rama_case_menu_button
         menu = self.rama_case_menu
         for case in self._plots.keys():
             details = case_dict[case]
-            def select_case(*_,c=case, d=details):
+            def select_case(*_,c=case):
                 self._show_one_plot(c)
-                cmb.setText(d['short name'])
             action = menu.addAction(details['name'])
             action.triggered.connect(select_case)
-        a = menu.addAction('All')
-        a.triggered.connect(self._show_all_plots)
+        # Unfortunately the Qt window system makes it *really* hard to 
+        # reliably adjust the window size to fit, particularly when 
+        # redrawing is slow. Disabling the "all" option for now.
+        # a = menu.addAction('All')
+        # a.triggered.connect(self._show_all_plots)
 
     def _populate_models_menu(self):
         menu = self.model_select_menu
@@ -322,6 +365,27 @@ class RamaMainWin(MainToolWindow):
 
     def _selection_changed_cb(self, *_):
         cm = self.current_model
+        if cm is not None:
+            sel = cm.residues[cm.residues.selected]
+            ramas = self._rama_mgr.get_ramas(sel)
+            ramas = ramas[ramas.valids]
+            if not len(ramas):
+                self._restrict_to_selection_action.setEnabled(False)
+                self.update_scatter()
+                return
+            if len(self._visible_plots)==1:
+                cenum = self._case_enum
+                import numpy
+                unique_cases = numpy.unique(ramas.cases)
+                case = cenum.GENERAL
+                if len(unique_cases) == 1:
+                    case = cenum(unique_cases[0])
+                if case != self._visible_plots[0].case:
+                    self._show_one_plot(case)
+            self.update_scatter()
+            self._restrict_to_selection_action.setEnabled(True)
+
+
         sel_contains_protein = False
         if cm is not None:
             sel = cm.atoms[cm.atoms.selecteds].unique_residues
@@ -329,6 +393,8 @@ class RamaMainWin(MainToolWindow):
             sel = sel[sel.polymer_types==Residue.PT_AMINO]
             if len(sel)>0:
                 sel_contains_protein = True
+                import numpy
+
         self.update_scatter()
         self._restrict_to_selection_action.setEnabled(sel_contains_protein)
             

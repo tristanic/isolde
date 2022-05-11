@@ -15,6 +15,7 @@ from Qt.QtCore import Qt
 class RamaPlot(QWidget):
     def __init__(self, session, manager, rama_case):
         super().__init__(parent=manager.ui_area)
+        self._background_cache = {}
         self._debug=False
         self.session = session
         self.manager = manager
@@ -24,6 +25,7 @@ class RamaPlot(QWidget):
         self.container = manager.ui_area
         self.case = rama_case
         self.name=rmgr.RAMA_CASE_DETAILS[rama_case]['name']
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -63,7 +65,7 @@ class RamaPlot(QWidget):
         # Scatter plot needs to always have at least one point, so we'll
         # define a point off the scale for when there's nothing to plot
         self.default_coords = numpy.array([200,200])
-        base_size = self.base_scatter_size = 10
+        base_size = self.base_scatter_size
         self.default_logscores = numpy.ones(1)
         scatter = self.scatter = self.axes.scatter(
             (200),(200), picker = 2.0, s=base_size,
@@ -80,6 +82,10 @@ class RamaPlot(QWidget):
 
 
         self._model_changes_handler = None
+
+    @property
+    def base_scatter_size(self):
+        return self.manager.base_scatter_size
 
     @property
     def restricted(self):
@@ -200,96 +206,32 @@ class RamaPlot(QWidget):
         self.canvas.mpl_disconnect(self._annot_cid)
         self._annot_cid = None
 
-    def _sim_start_cb(self, *_):
-        sc = self.isolde.sim_manager.sim_construct
-        self.set_target_residues(sc.mobile_residues)
-        self.selection_mode = self.MOBILE_ONLY
-        self._stop_tooltip()
-
-    def _sim_end_cb(self, *_):
-        self._mode_change_cb()
-        self._start_tooltip()
-
-    def _sim_pause_cb(self, *_):
-        self._start_tooltip()
-
-    def _sim_resume_cb(self, *_):
-        self._stop_tooltip()
-
-    def _restrict_sel_cb(self, *_):
-        m = self.current_model
-        if m is None:
-            self.clear()
-            return
-        selres = m.atoms[m.atoms.selected].unique_residues
-        self.set_target_residues(selres)
-        self.update_scatter()
-
-    def _mode_change_cb(self, *_):
-        mode = self._mode_menu.currentIndex()
-        self.selection_mode = mode
-
-    def _case_change_cb(self, *_):
-        case_key = self._case_menu.currentData()
-        self.change_case(case_key)
-
-    def chimerax_models_changed(self, model):
-        # TODO: rework UI into a consistent framework
-        pass
-
 
     @property
     def current_model(self):
         return self.manager.current_model
 
-    # @current_model.setter
-    # def current_model(self, model):
-    #     if self._model_changes_handler is not None and self.current_model is not None:
-    #         self.current_model.triggers.remove_handler(
-    #             self._model_changes_handler
-    #         )
-    #         self._model_changes_handler = None
-    #     if model:
-    #         self._model_changes_handler = model.triggers.add_handler(
-    #             'changes', self._model_changed_cb
-    #         )
-    #     self.current_model=model
-    #     if model is None:
-    #         residues = None
-    #     elif self.selection_mode == self.WHOLE_MODEL:
-    #         residues = model.residues
-    #     else:
-    #         residues = model.atoms[model.atoms.selected].unique_residues
-    #     self.set_target_residues(residues)
+    # @property
+    # def selection_mode(self):
+    #     return self._selection_mode
+
+    # @selection_mode.setter
+    # def selection_mode(self, mode):
+    #     if mode not in self.mode_dict.keys():
+    #         raise TypeError(f'Unrecognised mode: {mode}!')
+    #     self._selection_mode = mode
+    #     if self.current_model is None:
+    #         self.set_target_residues(None)
+    #     elif mode == self.WHOLE_MODEL:
+    #         self.set_target_residues(self.current_model.residues)
+
+    #     sflag = (mode == self.SELECTED_ONLY)
+    #     self._sel_restrict_button.setEnabled(sflag)
+
+    #     mflag = (mode != self.MOBILE_ONLY)
+    #     self._mode_menu.setEnabled(mflag)
+
     #     self.update_scatter()
-
-    @property
-    def selection_mode(self):
-        return self._selection_mode
-
-    @selection_mode.setter
-    def selection_mode(self, mode):
-        if mode not in self.mode_dict.keys():
-            raise TypeError(f'Unrecognised mode: {mode}!')
-        self._selection_mode = mode
-        if self.current_model is None:
-            self.set_target_residues(None)
-        elif mode == self.WHOLE_MODEL:
-            self.set_target_residues(self.current_model.residues)
-
-        sflag = (mode == self.SELECTED_ONLY)
-        self._sel_restrict_button.setEnabled(sflag)
-
-        mflag = (mode != self.MOBILE_ONLY)
-        self._mode_menu.setEnabled(mflag)
-
-        self.update_scatter()
-
-    def _tab_change_cb(self, *_):
-        self.update_scatter()
-
-    def _isolde_switch_model_cb(self, trigger_name, model):
-        self.current_model = model
 
     def _model_changed_cb(self, trigger_name, changes):
         changes = changes[1]
@@ -310,7 +252,7 @@ class RamaPlot(QWidget):
 
     @property
     def visible(self):
-        return self.parent.isVisible()
+        return self.isVisible()
 
     def _format_axes(self):
         axes = self.axes
@@ -339,15 +281,18 @@ class RamaPlot(QWidget):
         self.pcolor_plot = self.axes.pcolorfast(*grid, logvalues, cmap = 'Greys')
 
     def on_resize(self, *_):
-        axes = self.axes
-        f = self.figure
-        c = self.canvas
-        self._hover_annotation.set_visible(False)
-        self._format_axes()
-        self.scatter.set_offsets(self.default_coords)
-        f.patch.set_facecolor('black')
-        c.draw()
-        self.background = c.copy_from_bbox(axes.bbox)
+        background = self._background_cache.get(self.size(), None)
+        if background is None:
+            axes = self.axes
+            f = self.figure
+            c = self.canvas
+            self._hover_annotation.set_visible(False)
+            self._format_axes()
+            self.scatter.set_offsets(self.default_coords)
+            f.patch.set_facecolor('black')
+            c.draw()
+            background = self._background_cache[self.size()] = c.copy_from_bbox(axes.bbox)
+        self.background = background
         self.session.triggers.add_handler('new frame', self._resize_next_frame_cb)
 
     def _resize_next_frame_cb(self, *_):
@@ -364,26 +309,6 @@ class RamaPlot(QWidget):
         get_stepper(self.current_model).step_to(picked_rama.residue)
         # from .. import view
         # view.focus_on_selection(self.session, picked_rama.residue.atoms, pad=1.0)
-
-    def change_case(self, case_key):
-        import numpy
-        mgr = self._rama_mgr
-        self.case = case_key
-        ax = self.axes
-        ax.clear()
-        contourplots = self.contours.get(case_key, None)
-        if contourplots is None:
-            self.cache_contour_plots(case_key)
-            contourplots = self.contours[case_key]
-        for coll in contourplots[0].collections:
-            ax.add_artist(coll)
-        ax.add_artist(contourplots[1])
-        ax.add_artist(self.scatter)
-        from math import log
-        contours = mgr.RAMA_CASE_DETAILS[case_key]['cutoffs']
-        self.P_limits = [0, -log(contours[0])]
-        self.set_target_residues(self._current_residues)
-        self.on_resize()
 
     def clear(self):
         self.set_target_residues(None)
