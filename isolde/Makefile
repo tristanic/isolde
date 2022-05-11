@@ -88,11 +88,9 @@ SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
 
 
 wheel $(WHEEL): bundle_info.xml $(SRCS)
-	$(CHIMERAX_EXE) -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc; \
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel build . ; exit"
 
 install app-install: $(WHEEL)
-	$(CHIMERAX_EXE) -m PyQt5.pyrcc_main -o src/resources/resources_rc.py src/resources/resources.qrc; \
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel install . ; exit"
 
 uninstall app-uninstall:	$(WHEEL)
