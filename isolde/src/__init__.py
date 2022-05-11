@@ -157,7 +157,7 @@ class _MyAPI(BundleAPI):
         if tool_name=='ISOLDE':
             from .tool import ISOLDE_ToolUI
             return tools.get_singleton(session, ISOLDE_ToolUI, tool_name, create=True)
-        elif tool_name=='RamaPlot':
+        elif tool_name=='Ramachandran Plot':
             from .validation.ramaplot import Rama_ToolUI
             return tools.get_singleton(session, Rama_ToolUI, tool_name, create=True)
 
