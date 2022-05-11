@@ -26,6 +26,11 @@ class ISOLDE_ToolUI(ToolInstance):
         from .isolde import Isolde
         isolde = Isolde(session)
 
+        from chimerax.toolbar.tool import get_toolbar_singleton
+        tb = get_toolbar_singleton(session, create=False)
+        if tb is not None:
+            tb.ttb.show_tab('ISOLDE')
+
         self.display_name='ISOLDE'
         self._show_splash()
         self.session.triggers.add_handler('new frame', self._launch_main_gui)
