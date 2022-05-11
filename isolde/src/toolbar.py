@@ -104,15 +104,21 @@ class ToolbarButtonMgr:
         self.set_enabled('Revert to checkpoint', True)
         self.set_enabled('Stop (keep)', True)
         self.set_enabled('Stop (discard)', True)
+        bd = self.all_buttons['Pause simulation']
+        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
 
 
     def _sim_pause_cb(self, *_):
         self.set_enabled('Pause simulation', False)
         self.set_enabled('Resume simulation', True)
+        bd = self.all_buttons['Resume simulation']
+        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
     
     def _sim_resume_cb(self, *_):
         self.set_enabled('Resume simulation', False)
         self.set_enabled('Pause simulation', True)
+        bd = self.all_buttons['Pause simulation']
+        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
 
     def _sim_end_cb(self, *_):
         self.set_enabled('Pause simulation', False)
@@ -122,6 +128,8 @@ class ToolbarButtonMgr:
         self.set_enabled('Revert to checkpoint', False)
         self.set_enabled('Stop (keep)', False)
         self.set_enabled('Stop (discard)', False)
+        bd = self.all_buttons['Start simulation']
+        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
 
 
     def _initialize_callbacks(self):

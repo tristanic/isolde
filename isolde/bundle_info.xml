@@ -137,13 +137,13 @@ with the surroundings.
       description="Start the ISOLDE GUI"/>
 
 
-    <Provider tab="ISOLDE" section="Control"
+    <Provider tab="ISOLDE" section="Control" group="playpause"
       name="start sim" display_name="Start simulation" icon="play_icon.png"
       description="Start a simulation based on the current selection"/>
-    <Provider tab="ISOLDE" section="Control"
+    <Provider tab="ISOLDE" section="Control" group="playpause"
       name="pause sim" display_name="Pause simulation" icon="pause_icon.png"
       description="Pause the currently running simulation"/>
-    <Provider tab="ISOLDE" section="Control"
+    <Provider tab="ISOLDE" section="Control" group="playpause"
       name="resume sim" display_name="Resume simulation" icon="play_icon_red.png"
       description="Resume the currently paused simulation"/>
 
