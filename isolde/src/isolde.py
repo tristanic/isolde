@@ -2421,7 +2421,7 @@ class Isolde():
             self._model_changes_handler = m.triggers.add_handler('changes',
                 self._model_changes_cb)
             self.session.selection.clear()
-            # m.selected = True
+            m.selected = True
 
             # Load/create validation managers
             from . import session_extensions as sx
