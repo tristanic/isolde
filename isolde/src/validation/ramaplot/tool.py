@@ -42,8 +42,6 @@ class RamaMainWin(MainToolWindow):
         DISFAVORED_ONLY = 2
         OUTLIERS_ONLY = 4
 
-    SINGLE_PLOT_WINDOW_SIZE = (484,504)
-    ALL_PLOT_WINDOW_SIZE = (300,320)
     SINGLE_PLOT_SCATTER_SIZE = 10
     ALL_PLOT_SCATTER_SIZE = 6
 
@@ -66,8 +64,6 @@ class RamaMainWin(MainToolWindow):
         self.manage(placement=None)
 
         parent = self.ui_area
-        # self._dock_widget.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-        # parent.parent().parent()y.resize(*self.SINGLE_PLOT_WINDOW_SIZE)
         self.base_scatter_size = self.SINGLE_PLOT_SCATTER_SIZE
         main_layout = self.main_layout = DefaultVLayout()
         menu_layout = self.menu_layout = DefaultHLayout()
@@ -127,37 +123,22 @@ class RamaMainWin(MainToolWindow):
 
 
     def _show_one_plot(self, case):
-        # self.ui_area.parent().parent().resize(*self.SINGLE_PLOT_WINDOW_SIZE)
-        was_showing_single_plot = (len(self._visible_plots)==1)
         self.base_scatter_size = self.SINGLE_PLOT_SCATTER_SIZE
         for c, p in self._plots.items():
-            p.setMinimumSize(*self.SINGLE_PLOT_WINDOW_SIZE)
-            p.resize(*self.SINGLE_PLOT_WINDOW_SIZE)
             p.setVisible(c==case)
         case_dict = self._rama_mgr.RAMA_CASE_DETAILS
         details = case_dict[case]
         self.rama_case_menu_button.setText(details['short name'])
         self._visible_plots = [self._plots[case]]
-        # Doesn't resize properly unless delayed to next frame
-        if not was_showing_single_plot:
-            self.session.triggers.add_handler('new frame', self._shrink_to_fit)
         self.update_scatter()
 
-    def _shrink_to_fit(self, *_):
-        self.shrink_to_fit()
-        from chimerax.core.triggerset import DEREGISTER
-        return DEREGISTER
 
     def _show_all_plots(self):
-        # self.ui_area.parent().parent().resize(*self.SINGLE_PLOT_WINDOW_SIZE)
         self.base_scatter_size = self.ALL_PLOT_SCATTER_SIZE
         for c, p in self._plots.items():
-            p.setMinimumSize(*self.ALL_PLOT_WINDOW_SIZE)
-            p.resize(*self.ALL_PLOT_WINDOW_SIZE)
             p.setVisible(True)
         self._visible_plots = list(self._plots.values())
         self.rama_case_menu_button.setText('All')
-        self.shrink_to_fit()
         self.update_scatter()
 
     def _populate_rama_cases_menu(self):
@@ -173,8 +154,8 @@ class RamaMainWin(MainToolWindow):
         # Unfortunately the Qt window system makes it *really* hard to 
         # reliably adjust the window size to fit, particularly when 
         # redrawing is slow. Disabling the "all" option for now.
-        # a = menu.addAction('All')
-        # a.triggered.connect(self._show_all_plots)
+        a = menu.addAction('All')
+        a.triggered.connect(self._show_all_plots)
 
     def _populate_models_menu(self):
         menu = self.model_select_menu

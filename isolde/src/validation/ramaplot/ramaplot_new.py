@@ -15,7 +15,6 @@ from Qt.QtCore import Qt
 class RamaPlot(QWidget):
     def __init__(self, session, manager, rama_case):
         super().__init__(parent=manager.ui_area)
-        self._background_cache = {}
         self._debug=False
         self.session = session
         self.manager = manager
@@ -25,7 +24,6 @@ class RamaPlot(QWidget):
         self.container = manager.ui_area
         self.case = rama_case
         self.name=rmgr.RAMA_CASE_DETAILS[rama_case]['name']
-        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qt5agg import (
@@ -195,7 +193,10 @@ class RamaPlot(QWidget):
                 annot.set_visible(True)
             else:
                 annot.set_visible(False)
-            self.canvas.draw()
+            self.canvas.restore_region(self.background)
+            ax.draw_artist(self.scatter)
+            ax.draw_artist(annot)
+            self.canvas.blit(ax.bbox)
 
     def _start_tooltip(self, *_):
         if self._annot_cid is not None:
@@ -278,21 +279,19 @@ class RamaPlot(QWidget):
         self.P_limits = [0, -log(contours[0])]
         logvalues = numpy.log(values)
         self.contour_plot = self.axes.contour(*grid, values, contours)
-        self.pcolor_plot = self.axes.pcolorfast(*grid, logvalues, cmap = 'Greys')
+        self.pcolor_plot = self.axes.pcolormesh(*grid, logvalues, cmap = 'Greys', shading='auto')
 
     def on_resize(self, *_):
-        background = self._background_cache.get(self.size(), None)
-        if background is None:
-            axes = self.axes
-            f = self.figure
-            c = self.canvas
-            self._hover_annotation.set_visible(False)
-            self._format_axes()
-            self.scatter.set_offsets(self.default_coords)
-            f.patch.set_facecolor('black')
-            c.draw()
-            background = self._background_cache[self.size()] = c.copy_from_bbox(axes.bbox)
-        self.background = background
+        #background = self._background_cache.get(self.size(), None)
+        axes = self.axes
+        f = self.figure
+        c = self.canvas
+        self._hover_annotation.set_visible(False)
+        self._format_axes()
+        self.scatter.set_offsets(self.default_coords)
+        f.patch.set_facecolor('black')
+        c.draw()
+        self.background = c.copy_from_bbox(axes.bbox)
         self.session.triggers.add_handler('new frame', self._resize_next_frame_cb)
 
     def _resize_next_frame_cb(self, *_):
