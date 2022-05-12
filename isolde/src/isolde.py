@@ -3284,9 +3284,8 @@ def load_cryo_em_demo(session, model_only=True):
     m = provider_open(session, [os.path.join(data_dir, '6out.pdb')])[0]
     if not model_only:
         mmap = provider_open(session, ['20205'], from_database='emdb')[0]
-        from chimerax.clipper import get_symmetry_handler
-        sh = get_symmetry_handler(m, create=True)
-        sh.map_mgr.nxmapset.add_nxmap_handler_from_volume(mmap)
+        from chimerax.core.commands import run
+        run(session, f'clipper assoc #{mmap.id_string} to #{m.id_string}', log=False)
 
 
 
