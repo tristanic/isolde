@@ -32,6 +32,12 @@ class IsoldeMainWin(MainToolWindow):
 
         sth = self._session_trigger_handlers = []
         ith = self._isolde_trigger_handlers = []
+
+        smch = self._selected_model_changed_handler = self.isolde.triggers.add_handler(
+            'selected model changed', self._selected_model_changed_cb
+        )
+        self._isolde_trigger_handlers.append(smch)
+
         parent = self.ui_area
 
         main_layout = DefaultVLayout()
@@ -49,6 +55,7 @@ class IsoldeMainWin(MainToolWindow):
         self.general_tab = GeneralTab(self.session, self.isolde, self, tabw, "General")
         self.validate_tab = IsoldeTab(self, tabw, "Validate")
         self.problems_tab = IsoldeTab(self, tabw, "Problem Zones")
+
 
 
 
@@ -135,7 +142,9 @@ class IsoldeMainWin(MainToolWindow):
 
     def _change_selected_model_cb(self, *_):
         mmcb = self.master_model_combo_box
-        with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
+        from ..util import block_managed_trigger_handler
+        with block_managed_trigger_handler(self, '_selected_model_changed_handler'):
+        # with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
             m = mmcb.currentData()
             if m is not None:
                 self.isolde.change_selected_model(m)
@@ -202,6 +211,19 @@ class IsoldeMainWin(MainToolWindow):
             h.remove()
         for panel in self._gui_panels:
             panel.cleanup()
+
+    ###
+    # ISOLDE event callbacks
+    ###
+
+    def _selected_model_changed_cb(self, trigger_name, m):
+        if m is None:
+            self._update_model_list_cb()
+            return
+        mmcb = self.master_model_combo_box
+        with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
+            mmcb.setCurrentIndex(mmcb.findData(m))
+
 
 
 class SimStatusIndicator(UI_Panel_Base):
