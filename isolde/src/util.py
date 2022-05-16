@@ -23,6 +23,22 @@ def block_trigger_handler(handler):
     finally:
         triggerset.add_handler(name, func)
 
+@contextmanager
+def block_managed_trigger_handler(object, handler_name):
+    '''
+    `object.handler_name` should be a ChimeraX trigger handler. The original handler 
+    will be deleted, and replaced with an identical new one on exit of the context.
+    '''
+    h = getattr(object, handler_name)
+    name = h._name
+    func = h._func
+    triggerset = h._trigger_set
+    triggerset.remove_handler(h)
+    try:
+        yield
+    finally:
+        setattr(object, handler_name, triggerset.add_handler(name, func))
+
 
 def is_continuous_protein_chain(sel, allow_single = False):
     '''
