@@ -3271,7 +3271,8 @@ class Isolde():
         view.focus_on_selection(self.session, model.atoms)
 
     def load_crystal_demo(self):
-        load_crystal_demo(self.session)
+        m = load_crystal_demo(self.session)
+        self.selected_model = m
 
 def load_crystal_demo(session):
     '''
@@ -3310,6 +3311,7 @@ def load_crystal_demo(session):
     before_struct.atoms[exclude_nonpolar_hydrogens(before_struct.atoms)].displays = True
     from . import view
     view.focus_on_selection(session, before_struct.atoms)
+    return before_struct
 
 def load_cryo_em_demo(session, model_only=True):
     '''
