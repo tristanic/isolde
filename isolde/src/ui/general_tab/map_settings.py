@@ -151,6 +151,7 @@ class MapSettingsDialog(UI_Panel_Base):
         self._update_map_selector_combo_box()
         self._selected_model_changed_handler = self.isolde.triggers.add_handler(
             'selected model changed', self._selected_model_changed_cb)
+        self._map_chosen_cb()
 
     def _selected_model_changed_cb(self, *_):
         self._update_map_selector_combo_box()
