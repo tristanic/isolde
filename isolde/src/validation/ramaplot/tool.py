@@ -105,7 +105,7 @@ class RamaMainWin(MainToolWindow):
         plot_layout.setSpacing(0)
 
         self._plots = {}
-        from .ramaplot_new import RamaPlot
+        from .ramaplot import RamaPlot
         from math import floor
         for i, case in enumerate(reversed(cenum)):
             row = floor(i/3)
@@ -121,6 +121,13 @@ class RamaMainWin(MainToolWindow):
 
         self._selection_changed_cb()
 
+    def add_callback(self, triggerset, trigger_name, callback):
+        '''
+        Add a handler to a `chimerax.core.triggerset.TriggerSet` instance. The handler
+        will be automatically removed when the Ramachandran plot is closed. If you need
+        to remove it earlier, use `remove_callback()`.
+        '''
+        self._handlers.append(triggerset.add_handler(trigger_name, callback))
 
     def _show_one_plot(self, case):
         self.base_scatter_size = self.SINGLE_PLOT_SCATTER_SIZE
@@ -169,6 +176,8 @@ class RamaMainWin(MainToolWindow):
                 self.current_model = structure
             action.triggered.connect(set_structure)
 
+
+
     def _populate_display_modes_menu(self):
         labels = {
             'All protein': self.Restrictions.ALL_PROTEIN,
@@ -177,12 +186,8 @@ class RamaMainWin(MainToolWindow):
         }
         dmb = self.display_mode_menu_button
         dmm = self.display_mode_menu
-        def show_all():
-            label = 'All protein'
-            dmb.setText(label)
-            self.restrict_to = None
         a = dmm.addAction('All protein')
-        a.triggered.connect(show_all)
+        a.triggered.connect(self.display_all_residues)
         chain_menu = dmm.addMenu('Chain')
         def populate_chain_menu(*_):
             chains = []
@@ -196,8 +201,7 @@ class RamaMainWin(MainToolWindow):
                 dummy.setEnabled(False)
             for c in chains:
                 def restrict_to_chain(*_, chain=c):
-                    self.restrict_to = cm.residues[cm.residues.chain_ids==chain.chain_id]
-                    dmb.setText(f'Chain {chain.chain_id}')
+                    self.restrict_to_chain(c.chain_id)
                 ca = chain_menu.addAction(c.chain_id)
                 ca.triggered.connect(restrict_to_chain)
         chain_menu.aboutToShow.connect(populate_chain_menu)
@@ -206,8 +210,7 @@ class RamaMainWin(MainToolWindow):
 
         def restrict_to_selection():
             from chimerax.atomic import selected_residues
-            self.restrict_to = selected_residues(self.session)
-            dmb.setText('Custom selection')
+            self.restrict_to_selection(selected_residues(self.session))
         a = self._restrict_to_selection_action = dmm.addAction('Current selection')
         a.triggered.connect(restrict_to_selection)
         
@@ -294,8 +297,39 @@ class RamaMainWin(MainToolWindow):
         for p in self._visible_plots:
             p.update_scatter()
 
+    def restrict_to_selection(self, residues, display_text = 'Custom selection'):
+        dmb = self.display_mode_menu_button
+        self.restrict_to = residues
+        if residues is not None:
+            dmb.setText(display_text)
+    
+    def restrict_to_chain(self, chain_id):
+        from chimerax.core.errors import UserError
+        m = self.current_model
+        if m is None:
+            return
+        residues = m.residues[m.residues.chain_ids == chain_id]
+        from chimerax.atomic import Residue
+        residues = residues[residues.polymer_types==Residue.PT_AMINO]
+        if not len(residues):
+            raise UserError(f'Chain {chain_id} of model #{m.id_string} contains no protein!')
+        dmb = self.display_mode_menu_button
+        self.restrict_to = residues
+        dmb.setText(f'Chain {chain_id}')
+    
+    def display_all_residues(self):
+        self.restrict_to = None
+        self.display_mode_menu_button.setText('All protein')
+
+
     @property
     def restrict_to(self):
+        '''
+        Get/set the list of residues to be shown on the Ramachandran plot. Note that setting 
+        via this property is mostly for internal use and *does not* update the text on the 
+        display menu button - instead you should use `restrict_to_selection()`, 
+        `restrict_to_chain()` or `display_all_residues()`.
+        '''
         return getattr(self, '_restrict_to', None)
     
     @restrict_to.setter

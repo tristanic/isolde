@@ -291,6 +291,10 @@ class Isolde():
             session._isolde_tb.isolde_started()
         ffmgr.background_load_ff(sp.forcefield)
 
+        self._event_handler.add_event_handler('ramaplot', 'add tool instance', self._register_ramaplot_callbacks)
+        # In case RamaPlot is already open
+        self._register_ramaplot_callbacks('', session.tools.list())
+
     def _prepare_environment(self):
         session = self.session
         from chimerax.std_commands import cofr, camera
@@ -2175,6 +2179,38 @@ class Isolde():
     ####
     # Validation tab
     ####
+
+    def _register_ramaplot_callbacks(self, trigger_name, tools):
+        # Need to delay this to the next 
+        def register_next_frame(*_, tools=tools):
+            from chimerax.isolde.validation.ramaplot.tool import Rama_ToolUI
+            for tool in tools:
+                if isinstance(tool, Rama_ToolUI):
+                    break
+            else:
+                return
+            rplot = tool.tool_window
+            print('Registering ISOLDERamaPlot callbacks')
+            if rplot.current_model is None:
+                rplot.current_model = self.selected_model
+            def model_changed_cb(*_, rp=rplot):
+                rp.current_model = self.selected_model
+            rplot.add_callback(self.triggers, 'selected model changed', model_changed_cb)
+            def sim_start_cb(*_, rp=rplot):
+                if rp.current_model == self.selected_model:
+                    rp.restrict_to_selection(self.sim_manager.sim_construct.mobile_residues, display_text='Mobile residues')
+            rplot.add_callback(self.triggers, 'simulation started', sim_start_cb)
+            def sim_end_cb(*_, rp=rplot):
+                if rp.current_model == self.selected_model:
+                    rp.display_all_residues()
+            rplot.add_callback(self.triggers, 'simulation terminated', sim_end_cb)
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        self.session.triggers.add_handler('new frame', register_next_frame)
+
+
+
+
     def _prepare_ramachandran_plot(self):
         '''
         Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
