@@ -46,7 +46,7 @@ class SimRuntimeDialog(UI_Panel_Base):
 _temperature_stylesheet = '''
 QSlider::groove:horizontal {
     height: 10px;
-    background-color: qlineargradient(x1:0, y1:0, x2:1, y1:0, stop: 0 #b465da, stop:0.4 #cf6cc9, stop:0.5 #ee609c, stop:1.0 #ff5040)
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y1:0, stop: 0 #1030ff, stop: 0.2 #b465da, stop:0.4 #cf6cc9, stop:0.5 #ee609c, stop:1.0 #ff5040);
     border-radius: 5px;
     position: absolute;
     left: 10px;
