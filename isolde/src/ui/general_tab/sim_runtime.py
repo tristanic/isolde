@@ -30,20 +30,20 @@ class SimRuntimeDialog(UI_Panel_Base):
         
         tl = DefaultHLayout()
         tl.addWidget(QLabel('Temperature: ', parent=mf))
-        tsl = self.temperature_slider = QSlider(Qt.Orientation.Horizontal, parent=mf)
-        tsl.setTickPosition(QSlider.TickPosition.NoTicks)
-        tsl.setStyleSheet(_temperature_stylesheet)
-        tsl.setMinimum(0)
-        tsl.setMaximum(100)
-        tsl.setSingleStep(0)
+        tsl = self.temperature_slider = TemperatureSlider(isolde, Qt.Orientation.Horizontal, parent=mf)
         tl.addWidget(tsl)
-        tsb = self.temperature_spinbox = QDoubleSpinBox(mf)
+        tsb = self.temperature_spinbox = TemperatureSpinBox(isolde, mf)
         tl.addWidget(tsb)
         tl.addWidget(QLabel(' K', parent=mf))
         ml.addLayout(tl)
+    
+    def cleanup(self):
+        self.temperature_slider.cleanup()
+        super().cleanup()
 
 
-_temperature_stylesheet = '''
+class TemperatureSlider(QSlider):
+    _stylesheet = '''
 QSlider::groove:horizontal {
     height: 10px;
     background-color: qlineargradient(x1:0, y1:0, x2:1, y1:0, stop: 0 #1030ff, stop: 0.2 #b465da, stop:0.4 #cf6cc9, stop:0.5 #ee609c, stop:1.0 #ff5040);
@@ -63,4 +63,79 @@ QSlider::handle:horizontal:hover {
     background-color: #46992b;
 }
 '''
+    def __init__(self, isolde, orientation, parent=None):
+        super().__init__(orientation, parent=parent)
+        self.setStyleSheet(self._stylesheet)
+        self.setMinimum(0)
+        self.setMaximum(200)
+        self.setSingleStep(1)
+        self.setTickPosition(QSlider.TickPosition.NoTicks)
+        self.isolde = isolde
+
+        self._exponent_multiplier = 0.031073 # gives T=500 at position 200
+        self.valueChanged.connect(self._slider_changed_cb)
+        self._temperature_changed_handler = isolde.sim_params.triggers.add_handler(
+            isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb
+        )
+        # Initialize to ISOLDE's current value
+        self._parameter_changed_cb('', ('temperature', isolde.sim_params.temperature))
+    
+    def _slider_changed_cb(self, value):
+        if value==0:
+            t = 0
+        else:
+            from math import exp, floor
+            t = floor(exp(self._exponent_multiplier*value))
+        with block_managed_trigger_handler(self, '_temperature_changed_handler'):
+            self.isolde.sim_params.temperature = t
+
+    def _parameter_changed_cb(self, trigger_name, data):
+        param, value = data
+        if param != 'temperature':
+            return
+        from openmm import unit
+        value = value.value_in_unit(unit.kelvin)
+        with slot_disconnected(self.valueChanged, self._slider_changed_cb):
+            if value<1:
+                self.setValue(0)
+            else:
+                from math import log, floor
+                tick = floor(log(value)/self._exponent_multiplier)
+                self.setValue(tick)
+
+    def cleanup(self):
+        self._tempreature_changed_handler.remove()    
+        
+        
+class TemperatureSpinBox(QDoubleSpinBox):
+    def __init__(self, isolde, parent):
+        super().__init__(parent)
+        self.isolde = isolde
+        self.valueChanged.connect(self._value_changed_cb)
+        self.setKeyboardTracking(False)
+        self.setDecimals(0)
+        self.setMaximum(500)
+        self._param_changed_handler = isolde.sim_params.triggers.add_handler(
+            isolde.sim_params.PARAMETER_CHANGED, 
+            self._parameter_changed_cb
+        )
+        # Initialize to ISOLDE's current value
+        self._parameter_changed_cb('', ('temperature', isolde.sim_params.temperature))
+    
+    def _value_changed_cb(self, value):
+        with block_managed_trigger_handler(self, '_param_changed_handler'):
+            self.isolde.sim_params.temperature = value
+    
+    def _parameter_changed_cb(self, trigger_name, data):
+        param, val = data
+        if param != 'temperature':
+            return
+        from openmm import unit
+        val = val.value_in_unit(unit.kelvin)
+        with slot_disconnected(self.valueChanged, self._value_changed_cb):
+            self.setValue(val)
+        
+
+
+
 
