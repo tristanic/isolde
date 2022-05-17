@@ -136,7 +136,7 @@ class Param_Mgr:
             raise TypeError('Tried to set a unitless quantity with units!')
         else:
             self._params[key] = value
-        self.triggers.activate_trigger(self.PARAMETER_CHANGED, (key, value))
+        self.triggers.activate_trigger(self.PARAMETER_CHANGED, (key, self._params[key]))
     
     def set_to_default(self, key):
         '''Set one parameter back to the default value.'''
