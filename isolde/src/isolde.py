@@ -170,6 +170,7 @@ class Isolde():
         simulation.
         '''
         sp = self.sim_params = SimParams()
+        sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr
         ffmgr = self._ff_mgr = ForcefieldMgr(self.session)
@@ -542,6 +543,7 @@ class Isolde():
         self._problem_aggregator_ui = ProblemAggregatorGUI(self.session, self, 
             iw.problem_zones, iw._problem_category_grid_layout, iw._problem_region_table, iw._problem_zones_bottom_layout, iw._problem_zones_update_button)
 
+
     def _connect_functions(self):
         '''
         Connect PyQt events from the ISOLDE gui widget to functions.
@@ -891,6 +893,23 @@ class Isolde():
             self.equilibrate
         )
 
+    def _sim_param_changed_cb(self, _, data):
+        update_methods = {
+            'mouse_tug_spring_constant': self._update_mouse_tug_spring_constant,
+            'temperature': self._update_sim_temperature,
+            'trajectory_smoothing': self._update_smoothing_state,
+            'smoothing_alpha': self._update_smoothing_amount,
+        }
+        param, value = data
+        f = update_methods.get(param, None)
+        if f is not None:
+            f(value)
+    
+    def _update_mouse_tug_spring_constant(self, k):
+        if self.simulation_running:
+            self._tugger.spring_constant=k
+
+
     def _disable_chimerax_mouse_mode_panel(self, *_):
         self._set_chimerax_mouse_mode_panel_enabled(False)
 
@@ -939,11 +958,9 @@ class Isolde():
     #     else:
     #         self._use_haptics = False
 
-    def _update_sim_temperature(self):
-        t = self.iw._sim_temp_spin_box.value()
+    def _update_sim_temperature(self, t):
         if self.simulation_running:
             self.sim_handler.temperature = t
-        self.sim_params.temperature = t
 
     ##############################################################
     # Menu control functions to run on key events
@@ -1530,13 +1547,13 @@ class Isolde():
         from .tugging import TugAtomsMode
         sm = self.sim_manager
         sc = sm.sim_construct
-        t = TugAtomsMode(self.session, sm.tuggable_atoms_mgr, sc.mobile_atoms,
+        t = self._tugger = TugAtomsMode(self.session, sm.tuggable_atoms_mgr, sc.mobile_atoms,
                 spring_constant = self.sim_params.mouse_tug_spring_constant,
                 mode=mode)
         return t
 
     def _set_right_mouse_tug_mode(self, mode):
-        t = self._mouse_tug_mode(mode)
+        t = self._tugger = self._mouse_tug_mode(mode)
         mm = self.session.ui.mouse_modes
         mm.bind_mouse_mode('right', [], t)
 
@@ -2537,21 +2554,17 @@ class Isolde():
         sh = get_symmetry_handler(m)
         sh.spotlight_mode = True
 
-    def _change_smoothing_state_from_gui(self, *_):
-        flag = self.iw._trajectory_smooth_button.isChecked()
-        self.sim_params.trajectory_smoothing = flag
+    def _update_smoothing_state(self, flag):
         if self.simulation_running:
             self.sim_handler.smoothing = flag
 
-    def _change_smoothing_amount_from_gui(self, *_):
-        sval = self.iw._smoothing_amount_dial.value()
-        alpha = 10**-(sval/100)
-        mina, maxa = defaults.SMOOTHING_ALPHA_MIN, defaults.SMOOTHING_ALPHA_MAX
-        if alpha < mina:
-            alpha = mina
-        elif alpha > maxa:
-            alpha = maxa
-        self.sim_params.smoothing_alpha = alpha
+    def _update_smoothing_amount(self, alpha):
+        # sval = self.iw._smoothing_amount_dial.value()
+        # alpha = 10**-(sval/100)
+        # # Clamp to valid range
+        # mina, maxa = defaults.SMOOTHING_ALPHA_MIN, defaults.SMOOTHING_ALPHA_MAX
+        # alpha = max(mina, min(maxa, alpha))
+        # self.sim_params.smoothing_alpha = alpha
         if self.simulation_running:
             self.sim_handler.smoothing_alpha = alpha
 
