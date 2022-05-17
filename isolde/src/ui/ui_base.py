@@ -168,6 +168,7 @@ class IsoldeTab(QWidget):
         sa.setWidgetResizable(True)
         mf = self.main_frame = QFrame(sa)
         ml = self.main_layout = DefaultVLayout()
+        ml.setContentsMargins(1,1,3,1)
         ml.addStretch()
         mf.setLayout(ml)
         sa.setWidget(mf)
