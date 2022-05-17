@@ -1,3 +1,5 @@
+import os
+
 from ..util import slot_disconnected
 from ...util import block_managed_trigger_handler
 
@@ -8,8 +10,10 @@ from ..ui_base import (
     QComboBox
 )
 
+from .. import icon_dir
+
 from Qt.QtWidgets import (
-    QLabel, QSlider, QDoubleSpinBox
+    QLabel, QSlider, QDoubleSpinBox, QCheckBox, QWidget
 )
 
 from Qt.QtCore import Qt
@@ -36,9 +40,13 @@ class SimRuntimeDialog(UI_Panel_Base):
         tl.addWidget(tsb)
         tl.addWidget(QLabel(' K', parent=mf))
         ml.addLayout(tl)
+        sw = self.smoothing_widget = SmoothingWidget(isolde, mf)
+        ml.addWidget(sw)
     
     def cleanup(self):
         self.temperature_slider.cleanup()
+        self.temperature_spinbox.cleanup()
+        self.smoothing_widget.cleanup()
         super().cleanup()
 
 
@@ -66,6 +74,7 @@ QSlider::handle:horizontal:hover {
     def __init__(self, isolde, orientation, parent=None):
         super().__init__(orientation, parent=parent)
         self.setStyleSheet(self._stylesheet)
+        self.setMinimumHeight(20)
         self.setMinimum(0)
         self.setMaximum(200)
         self.setSingleStep(1)
@@ -134,7 +143,77 @@ class TemperatureSpinBox(QDoubleSpinBox):
         val = val.value_in_unit(unit.kelvin)
         with slot_disconnected(self.valueChanged, self._value_changed_cb):
             self.setValue(val)
+    
+    def cleanup(self):
+        self._param_changed_handler.remove()
         
+
+class SmoothingWidget(QWidget):
+    _stylesheet = f'''
+QSlider::groove:horizontal {{
+    border-image: url({os.path.join(icon_dir,'smoothing.png').replace(os.sep, '/')}) 0 0 0 0 stretch stretch;
+    border: 1px solid black;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+}}
+QSlider::handle:horizontal {{
+    width: 10px;
+    background: #0b1707;
+    border: 1px solid #46992b;
+    margin: 0px -10px;
+    border-radius: 5px;
+}}
+QSlider::handle:horizontal:hover {{
+    background-color: #46992b;
+}}
+'''
+    def __init__(self, isolde, parent=None):
+        super().__init__(parent=parent)
+        self.isolde = isolde
+        ml = self.main_layout = DefaultHLayout()
+        ml.addWidget(QLabel('Trajectory smoothing: ', parent=self))
+        ssl = self.slider = QSlider(Qt.Orientation.Horizontal, parent=self)
+        ssl.setStyleSheet(self._stylesheet)
+        ssl.setMinimumHeight(20)
+        ssl.setMinimum(1)
+        ssl.setMaximum(100)
+        ssl.setValue(round(isolde.sim_params.smoothing_alpha*100))
+        ssl.valueChanged.connect(self._value_changed_cb)
+        ml.addWidget(ssl)
+        scb = self.enable_smoothing_checkbox = QCheckBox(parent=self)
+        scb.setChecked(isolde.sim_params.trajectory_smoothing)
+        scb.toggled.connect(self._smoothing_checkbox_cb)
+        ml.addWidget(scb)
+        self._param_changed_handler = isolde.sim_params.triggers.add_handler(
+            isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb
+        )
+        self.setLayout(ml)
+
+
+
+    
+    def _value_changed_cb(self, value):
+        with block_managed_trigger_handler(self, '_param_changed_handler'):
+            self.isolde.sim_params.smoothing_alpha = value/100
+    
+    def _parameter_changed_cb(self, trigger_name, data):
+        param, val = data
+        if param == 'trajectory_smoothing':
+            with slot_disconnected(self.enable_smoothing_checkbox, self._smoothing_checkbox_cb):
+                self.enable_smoothing_checkbox.setChecked(val)
+        elif param == 'smoothing_alpha':
+            with slot_disconnected(self.slider, self._value_changed_cb):
+                from chimerax.isolde.constants import defaults
+                val = max(defaults.SMOOTHING_ALPHA_MIN, max(val, defaults.SMOOTHING_ALPHA_MAX))
+                self.slider.setValue(round(val*100))
+
+    def _smoothing_checkbox_cb(self, flag):
+        with block_managed_trigger_handler(self, '_param_changed_handler'):
+            self.isolde.sim_params.trajectory_smoothing = flag
+
+    def cleanup(self):
+        self._param_changed_handler.remove()
 
 
 
