@@ -3318,8 +3318,8 @@ def load_crystal_demo(session):
     from chimerax.core.colors import Color
     set.set(session, bg_color=Color([255,255,255,255]))
 
-    if hasattr(session, 'isolde') and session.isolde.gui_mode:
-        session.isolde._change_selected_model(model=before_struct, force=True)
+    if hasattr(session, 'isolde'):
+        session.isolde.selected_model = before_struct
     from chimerax.clipper.util import exclude_nonpolar_hydrogens
     before_struct.atoms[exclude_nonpolar_hydrogens(before_struct.atoms)].displays = True
     from . import view
@@ -3337,7 +3337,8 @@ def load_cryo_em_demo(session, model_only=True):
         mmap = provider_open(session, ['20205'], from_database='emdb')[0]
         from chimerax.core.commands import run
         run(session, f'clipper assoc #{mmap.id_string} to #{m.id_string}', log=False)
-
+    if hasattr(session, 'isolde'):
+        session.isolde.selected_model = m
 
 
 class Logger:
