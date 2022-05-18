@@ -34,11 +34,11 @@ class SimRuntimeDialog(UI_Panel_Base):
         
         tl = DefaultHLayout()
         tl.addWidget(QLabel('Temperature: ', parent=mf))
-        tsl = self.temperature_slider = TemperatureSlider(isolde, Qt.Orientation.Horizontal, parent=mf)
-        tl.addWidget(tsl)
         tsb = self.temperature_spinbox = TemperatureSpinBox(isolde, mf)
         tl.addWidget(tsb)
-        tl.addWidget(QLabel(' K', parent=mf))
+        tl.addWidget(QLabel(' K ', parent=mf))
+        tsl = self.temperature_slider = TemperatureSlider(isolde, Qt.Orientation.Horizontal, parent=mf)
+        tl.addWidget(tsl)
         ml.addLayout(tl)
         sw = self.smoothing_widget = SmoothingWidget(isolde, mf)
         ml.addWidget(sw)
@@ -173,6 +173,10 @@ QSlider::handle:horizontal:hover {{
         self.isolde = isolde
         ml = self.main_layout = DefaultHLayout()
         ml.addWidget(QLabel('Trajectory smoothing: ', parent=self))
+        scb = self.enable_smoothing_checkbox = QCheckBox(parent=self)
+        scb.setChecked(isolde.sim_params.trajectory_smoothing)
+        scb.toggled.connect(self._smoothing_checkbox_cb)
+        ml.addWidget(scb)
         ssl = self.slider = QSlider(Qt.Orientation.Horizontal, parent=self)
         ssl.setStyleSheet(self._stylesheet)
         ssl.setMinimumHeight(20)
@@ -181,10 +185,6 @@ QSlider::handle:horizontal:hover {{
         ssl.setValue(round(isolde.sim_params.smoothing_alpha*100))
         ssl.valueChanged.connect(self._value_changed_cb)
         ml.addWidget(ssl)
-        scb = self.enable_smoothing_checkbox = QCheckBox(parent=self)
-        scb.setChecked(isolde.sim_params.trajectory_smoothing)
-        scb.toggled.connect(self._smoothing_checkbox_cb)
-        ml.addWidget(scb)
         self._param_changed_handler = isolde.sim_params.triggers.add_handler(
             isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb
         )
