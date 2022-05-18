@@ -57,6 +57,8 @@ def _rota_command(session, cmd):
         rrmgr.next_preview(rota)
     elif cmd == 'commit rotamer':
         rrmgr.commit_preview(rota)
+        if session.isolde.simulation_running:
+            session.isolde.sim_handler.push_coords_to_sim()
     elif cmd == 'restrain rotamer':
         rrmgr.set_targets(rota)
         restr = rrmgr.get_restraint(rota)
@@ -189,28 +191,29 @@ class ToolbarButtonMgr:
         session = self.session
         if hasattr(session, 'isolde') and session.isolde.selected_model is not None:
             m = session.isolde.selected_model
-            from chimerax.isolde import session_extensions as sx
-            rmgr = sx.get_rotamer_mgr(session)
-            rrmgr = sx.get_rotamer_restraint_mgr(m)
-            sel_res = m.residues[m.residues.selected]
-            if len(sel_res)==1:
-                r = sel_res[0]
-                rota = rmgr.get_rotamer(r)
-                if rota != self._last_selected_rotamer:
+            if m is not None and not m.was_deleted:
+                from chimerax.isolde import session_extensions as sx
+                rmgr = sx.get_rotamer_mgr(session)
+                rrmgr = sx.get_rotamer_restraint_mgr(m)
+                sel_res = m.residues[m.residues.selected]
+                if len(sel_res)==1:
+                    r = sel_res[0]
+                    rota = rmgr.get_rotamer(r)
+                    if rota != self._last_selected_rotamer:
+                        rrmgr.remove_preview()
+                        self._last_selected_rotamer = rota
+                    if rota is not None:
+                        enableds['rotamer preview'] = True
+                        rr = rrmgr.get_restraint(rota)
+                        if rr is not None:
+                            if rr.enabled:
+                                enableds['rotamer release']=True
+                        if rrmgr.showing_preview():
+                            enableds['rotamer commit'] = True
+                            enableds['rotamer restrain'] = True
+                else:
                     rrmgr.remove_preview()
-                    self._last_selected_rotamer = rota
-                if rota is not None:
-                    enableds['rotamer preview'] = True
-                    rr = rrmgr.get_restraint(rota)
-                    if rr is not None:
-                        if rr.enabled:
-                            enableds['rotamer release']=True
-                    if rrmgr.showing_preview():
-                        enableds['rotamer commit'] = True
-                        enableds['rotamer restrain'] = True
-            else:
-                rrmgr.remove_preview()
-                self._last_selected_rotamer = None
+                    self._last_selected_rotamer = None
         for key, flag in enableds.items():
             self.set_enabled(key, flag)
                         
