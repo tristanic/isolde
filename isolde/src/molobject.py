@@ -4401,7 +4401,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         from chimerax.atomic import Residue, Residues
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = get_rotamer_mgr(self.session)
-            r = rota_mgr.get_rotamer(r)
+            r = rota_mgr.get_rotamer(rotamer_or_residue)
         elif isinstance(rotamer_or_residue, Rotamer):
             r = rotamer_or_residue
         else:
@@ -4412,6 +4412,12 @@ class RotamerRestraintMgr(_RestraintMgr):
         if not len(rr):
             return None
         return rr[0]
+
+    def showing_preview(self):
+        for m in self.child_models():
+            if isinstance(m, _RotamerPreview):
+                return True
+            return False
 
     def _incr_preview(self, rotamer, incr):
         rr = self.add_restraint(rotamer)
@@ -4546,6 +4552,9 @@ class RotamerRestraintMgr(_RestraintMgr):
             center = matrix.project_to_axis(coords[3], axis, coords[1])
             tf = rotation(axis, rot_angles[i], center)
             ma.coords = tf.transform_points(ma.coords)
+        from chimerax.core.commands import run
+        run(self.session, f'label #{pm.id_string} residues text \"{target_def["Name"]} ({target_def["Frequency"]:0.2f}% \" ', log=False)
+        
 
     def remove_preview(self):
         pm = self._preview_model

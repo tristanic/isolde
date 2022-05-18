@@ -169,6 +169,19 @@ with the surroundings.
       name="flip cis-trans" display_name = "Flip cis&lt;-&gt;trans" icon="cis-trans-icon.png"
       description="Flip the peptide bond N-terminal to the selection from cis to trans or vice versa (select a single amino acid residue to activate)"/>
 
+    <Provider tab="ISOLDE" section="Rotamer"
+      name="next rotamer" display_name="Preview next" icon="rotamer_preview.png"
+      description="Cycle through rotamers from most to least common" />
+    <Provider tab="ISOLDE" section="Rotamer"
+      name="commit rotamer" display_name="Set coords" icon="rotamer_commit.png"
+      description="Set sidechain atom positions to match the current preview" />
+    <Provider tab="ISOLDE" section="Rotamer"
+      name="restrain rotamer" display_name="Restrain" icon="rotamer_restrain.png"
+      description="Restrain sidechain torsions to match the current preview" />
+    <Provider tab="ISOLDE" section="Rotamer"
+      name="release rotamer" display_name="Release" icon="rotamer_release.png"
+      description="Release torsion restraints on the current sidechain" />
+
     <Provider tab="ISOLDE" section="Map"
       name="spotlight" display_name="Spotlight mode" icon="spotlight.png"
       description="Display map(s) and atoms in a sphere around the centre of rotation" />

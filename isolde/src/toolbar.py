@@ -33,6 +33,8 @@ def toolbar_command(session, name):
         run(session, 'isolde pepflip sel')
     elif name == 'flip cis-trans':
         run(session, 'isolde cisflip sel')
+    elif 'rotamer' in name:
+        _rota_command(session, name)
     elif name == 'spotlight':
         run(session, 'clipper spotlight')
     elif name == 'mask':
@@ -43,6 +45,30 @@ def toolbar_command(session, name):
             radius = 4.0
             focus = True
         run(session, f'clipper isolate sel mask {radius} focus {focus}')
+
+def _rota_command(session, cmd):
+    from chimerax.atomic import selected_residues
+    r = selected_residues(session)[0]
+    from chimerax.isolde import session_extensions as sx
+    rmgr = sx.get_rotamer_mgr(session)
+    rrmgr = sx.get_rotamer_restraint_mgr(session.isolde.selected_model)
+    rota = rmgr.get_rotamer(r)
+    if cmd == 'next rotamer':
+        rrmgr.next_preview(rota)
+    elif cmd == 'commit rotamer':
+        rrmgr.commit_preview(rota)
+    elif cmd == 'restrain rotamer':
+        rrmgr.set_targets(rota)
+        restr = rrmgr.get_restraint(rota)
+        restr.enabled = True
+        from .isolde import OPENMM_RADIAL_SPRING_UNIT
+        restr.set_spring_constant(session.isolde.sim_params.rotamer_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT))
+    elif cmd == 'release rotamer':
+        restr = rrmgr.get_restraint(rota)
+        restr.enabled=False
+    session._isolde_tb._update_rotamer_buttons()
+
+
 
 class ToolbarButtonMgr:
     # (tab, section, name, display_name)
@@ -59,6 +85,11 @@ class ToolbarButtonMgr:
         'flip peptide': ('ISOLDE', 'Peptide bond', 'flip peptide', 'Flip peptide'),
         'flip cis-trans': ('ISOLDE', 'Peptide bond', 'flip cis-trans', 'Flip cis<->trans'),
 
+        'rotamer preview': ('ISOLDE', 'Rotamer', 'next rotamer', 'Preview next'),
+        'rotamer commit':   ('ISOLDE', 'Rotamer', 'commit rotamer', 'Set coords'),
+        'rotamer restrain': ('ISOLDE', 'Rotamer', 'restrain rotamer', 'Restrain'),
+        'rotamer release':  ('ISOLDE', 'Rotamer', 'release rotamer', 'Release'),
+
         'spotlight': ('ISOLDE', 'Map', 'spotlight', 'Spotlight mode'),
         'mask': ('ISOLDE', 'Map', 'mask', 'Mask to selection'),
     }
@@ -74,15 +105,16 @@ class ToolbarButtonMgr:
         tb = session.toolbar
         from collections import defaultdict
         self._handlers = defaultdict(list)
+        self._last_selected_rotamer = None
         session.triggers.add_handler('new frame', self._set_button_starting_states)
         self._initialize_callbacks()
 
     def _set_button_starting_states(self, *_):
         for key, (tab, section, name, display_name) in self.all_buttons.items():
-            if key != 'Start ISOLDE':
-                self.set_enabled(key, False)
-            else:
+            if key == 'Start ISOLDE':
                 self.set_enabled(key, True)
+            else:
+                self.set_enabled(key, False)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
@@ -95,6 +127,7 @@ class ToolbarButtonMgr:
         isolde.triggers.add_handler('simulation paused', self._sim_pause_cb)
         isolde.triggers.add_handler('simulation resumed', self._sim_resume_cb)
         isolde.triggers.add_handler('simulation terminated', self._sim_end_cb)
+        isolde.triggers.add_handler('selected model changed', self._update_map_buttons)
 
     def _sim_start_cb(self, *_):
         self.set_enabled('Start simulation', False)
@@ -104,6 +137,7 @@ class ToolbarButtonMgr:
         self.set_enabled('Revert to checkpoint', True)
         self.set_enabled('Stop (keep)', True)
         self.set_enabled('Stop (discard)', True)
+        self._update_map_buttons()
         bd = self.all_buttons['Pause simulation']
         self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
 
@@ -128,9 +162,61 @@ class ToolbarButtonMgr:
         self.set_enabled('Revert to checkpoint', False)
         self.set_enabled('Stop (keep)', False)
         self.set_enabled('Stop (discard)', False)
+        self._update_map_buttons()
         bd = self.all_buttons['Start simulation']
         self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
 
+
+    def _update_map_buttons(self, *_):
+        enable_spotlight = False
+        enable_mask = False
+        if _selected_model_has_maps(self.session):
+            isolde = self.session.isolde
+            if not isolde.simulation_running:
+                enable_spotlight = True
+                if isolde.selected_model.residues.selected.sum() > 0:
+                    enable_mask = True
+        self.set_enabled('spotlight', enable_spotlight)
+        self.set_enabled('mask', enable_mask)
+
+    def _update_rotamer_buttons(self, *_):
+        enableds = {
+            'rotamer preview': False,
+            'rotamer commit':  False,
+            'rotamer restrain': False,
+            'rotamer release': False
+        }
+        session = self.session
+        if hasattr(session, 'isolde') and session.isolde.selected_model is not None:
+            m = session.isolde.selected_model
+            from chimerax.isolde import session_extensions as sx
+            rmgr = sx.get_rotamer_mgr(session)
+            rrmgr = sx.get_rotamer_restraint_mgr(m)
+            sel_res = m.residues[m.residues.selected]
+            if len(sel_res)==1:
+                r = sel_res[0]
+                rota = rmgr.get_rotamer(r)
+                if rota != self._last_selected_rotamer:
+                    rrmgr.remove_preview()
+                    self._last_selected_rotamer = rota
+                if rota is not None:
+                    enableds['rotamer preview'] = True
+                    rr = rrmgr.get_restraint(rota)
+                    if rr is not None:
+                        if rr.enabled:
+                            enableds['rotamer release']=True
+                    if rrmgr.showing_preview():
+                        enableds['rotamer commit'] = True
+                        enableds['rotamer restrain'] = True
+            else:
+                rrmgr.remove_preview()
+                self._last_selected_rotamer = None
+        for key, flag in enableds.items():
+            self.set_enabled(key, flag)
+                        
+
+
+            
 
     def _initialize_callbacks(self):
         session = self.session
@@ -143,7 +229,7 @@ class ToolbarButtonMgr:
         if isolde is not None:
             m = isolde.selected_model
             if m is not None and not m.was_deleted:
-                sel_res = m.atoms[m.atoms.selecteds].unique_residues
+                sel_res = m.residues[m.residues.selected]
                 if len(sel_res)==1:
                     from chimerax.atomic import Residue
                     r = sel_res[0]
@@ -166,6 +252,8 @@ class ToolbarButtonMgr:
     def _selection_changed_cb(self, *_):
         self._enable_if_single_peptide_selected_cb()
         self._enable_sim_start_button_if_necessary()
+        self._update_rotamer_buttons()
+        self._update_map_buttons()
     
     def _isolde_close_cb(self, *_):
         for triggerset, handlers in zip(self._handlers.items()):
@@ -174,7 +262,18 @@ class ToolbarButtonMgr:
         self._set_button_starting_states()
 
 
-
+def _selected_model_has_maps(session):
+    isolde = getattr(session, 'isolde', None)
+    if isolde is None:
+        return False
+    m = session.isolde.selected_model
+    if m is None:
+        return False
+    from chimerax.clipper import get_map_mgr
+    mgr = get_map_mgr(m)
+    if mgr is None:
+        return False
+    return (len(mgr.all_maps)>0)
 
 
 
