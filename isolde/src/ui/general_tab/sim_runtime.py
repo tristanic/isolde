@@ -71,6 +71,7 @@ QSlider::handle:horizontal:hover {
     background-color: #46992b;
 }
 '''
+    EXPONENT_COEFFICIENT=0.031073 # gives T=500 at position 200
     def __init__(self, isolde, orientation, parent=None):
         super().__init__(orientation, parent=parent)
         self.setStyleSheet(self._stylesheet)
@@ -81,22 +82,32 @@ QSlider::handle:horizontal:hover {
         self.setTickPosition(QSlider.TickPosition.NoTicks)
         self.isolde = isolde
 
-        self._exponent_multiplier = 0.031073 # gives T=500 at position 200
         self.valueChanged.connect(self._slider_changed_cb)
         self._temperature_changed_handler = isolde.sim_params.triggers.add_handler(
             isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb
         )
         # Initialize to ISOLDE's current value
-        self._parameter_changed_cb('', ('temperature', isolde.sim_params.temperature))
-    
-    def _slider_changed_cb(self, value):
+        self.setValue(self._temperature_to_slider_value(isolde.sim_params.temperature))
+
+    def _slider_value_to_temperature(self, value):
         if value==0:
-            t = 0
+            return 0
+        from math import exp
+        return round(exp(self.EXPONENT_COEFFICIENT*value))
+    
+    def _temperature_to_slider_value(self, t):
+        from openmm import unit
+        if isinstance(t, unit.Quantity):
+            t = t.value_in_unit(unit.kelvin)
+        if t<1:
+            return 0
         else:
-            from math import exp, floor
-            t = floor(exp(self._exponent_multiplier*value))
+            from math import log, floor
+            return floor(log(t)/self.EXPONENT_COEFFICIENT)
+
+    def _slider_changed_cb(self, value):
         with block_managed_trigger_handler(self, '_temperature_changed_handler'):
-            self.isolde.sim_params.temperature = t
+            self.isolde.sim_params.temperature = self._slider_value_to_temperature(value)
 
     def _parameter_changed_cb(self, trigger_name, data):
         param, value = data
@@ -105,12 +116,7 @@ QSlider::handle:horizontal:hover {
         from openmm import unit
         value = value.value_in_unit(unit.kelvin)
         with slot_disconnected(self.valueChanged, self._slider_changed_cb):
-            if value<1:
-                self.setValue(0)
-            else:
-                from math import log, floor
-                tick = floor(log(value)/self._exponent_multiplier)
-                self.setValue(tick)
+            self.setValue(self._temperature_to_slider_value(value))
 
     def cleanup(self):
         self._tempreature_changed_handler.remove()    
@@ -149,6 +155,7 @@ class TemperatureSpinBox(QDoubleSpinBox):
         
 
 class SmoothingWidget(QWidget):
+    EXPONENT_COEFFICIENT=-4.60517/100
     _stylesheet = f'''
 QSlider::groove:horizontal {{
     border-image: url({os.path.join(icon_dir,'smoothing.png').replace(os.sep, '/')}) 0 0 0 0 stretch stretch;
@@ -180,9 +187,9 @@ QSlider::handle:horizontal:hover {{
         ssl = self.slider = QSlider(Qt.Orientation.Horizontal, parent=self)
         ssl.setStyleSheet(self._stylesheet)
         ssl.setMinimumHeight(20)
-        ssl.setMinimum(1)
-        ssl.setMaximum(100)
-        ssl.setValue(round(isolde.sim_params.smoothing_alpha*100))
+        ssl.setMinimum(0)
+        ssl.setMaximum(99)
+        ssl.setValue(self._alpha_to_slider_value(isolde.sim_params.smoothing_alpha))
         ssl.valueChanged.connect(self._value_changed_cb)
         ml.addWidget(ssl)
         self._param_changed_handler = isolde.sim_params.triggers.add_handler(
@@ -191,11 +198,18 @@ QSlider::handle:horizontal:hover {{
         self.setLayout(ml)
 
 
+    def _slider_value_to_alpha(self, value):
+        from math import exp
+        return exp(value*self.EXPONENT_COEFFICIENT)
+    
+    def _alpha_to_slider_value(self, value):
+        from math import log
+        return round(log(value)/self.EXPONENT_COEFFICIENT)
 
     
     def _value_changed_cb(self, value):
         with block_managed_trigger_handler(self, '_param_changed_handler'):
-            self.isolde.sim_params.smoothing_alpha = value/100
+            self.isolde.sim_params.smoothing_alpha = self._slider_value_to_alpha(value)
     
     def _parameter_changed_cb(self, trigger_name, data):
         param, val = data
@@ -206,7 +220,7 @@ QSlider::handle:horizontal:hover {{
             with slot_disconnected(self.slider, self._value_changed_cb):
                 from chimerax.isolde.constants import defaults
                 val = max(defaults.SMOOTHING_ALPHA_MIN, max(val, defaults.SMOOTHING_ALPHA_MAX))
-                self.slider.setValue(round(val*100))
+                self.slider.setValue(self._alpha_to_slider_value(val))
 
     def _smoothing_checkbox_cb(self, flag):
         with block_managed_trigger_handler(self, '_param_changed_handler'):
