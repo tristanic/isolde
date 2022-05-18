@@ -165,7 +165,7 @@ class _Defaults:
 
         'STANDARD_MAP_MASK_RADIUS':     4.0, # Angstroms
         'SPOTLIGHT_RADIUS':             13.0, # Angstroms
-        'CENTER_ON_SEL_WHEN_MASKING':   True,
+        'CENTER_ON_SEL_WHEN_MASKING':   False,
 
         'COMMS_TIMEOUT':                10.0, # seconds
         # Time for threads to sleep when paused or no input, to avoid
