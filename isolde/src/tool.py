@@ -39,14 +39,14 @@ class ISOLDE_ToolUI(ToolInstance):
         from .ui.main_win import IsoldeMainWin
         tw = self.tool_window = IsoldeMainWin(self)
         from chimerax.log.tool import Log
-        log_instances = self.session.tools.find_by_class(Log)
-        if len(log_instances):
-            placement = log_instances[0].tool_window
-            # Make sure it appears as the front-most tab
-            self.session.triggers.add_handler('new frame', self._raise_tab_to_front)
-        else:
-            placement='side'
-        tw.manage(placement=placement, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        # log_instances = self.session.tools.find_by_class(Log)
+        # if len(log_instances):
+        #     placement = log_instances[0].tool_window
+        #     # Make sure it appears as the front-most tab
+        #     self.session.triggers.add_handler('new frame', self._raise_tab_to_front)
+        # else:
+        #     placement='side'
+        tw.manage(placement=None, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
     
