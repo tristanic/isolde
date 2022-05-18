@@ -39,13 +39,13 @@ class IsoldeMainWin(MainToolWindow):
         self._isolde_trigger_handlers.append(smch)
 
         parent = self.ui_area
-
         main_layout = DefaultVLayout()
         parent.setLayout(main_layout)
 
         self._prepare_top_frame(main_layout)
 
         tabw = self.main_tab_widget = QTabWidget(parent)
+        tabw.setMinimumHeight(350)
         tabw.setElideMode(QtCore.Qt.ElideNone)
         tabw.setUsesScrollButtons(True)
         tabw.setDocumentMode(False)

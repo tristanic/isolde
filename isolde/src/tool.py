@@ -47,6 +47,7 @@ class ISOLDE_ToolUI(ToolInstance):
         # else:
         #     placement='side'
         tw.manage(placement=None, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
+        tw.shrink_to_fit()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
     
