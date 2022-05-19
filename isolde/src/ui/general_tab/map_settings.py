@@ -161,9 +161,10 @@ class MapSettingsDialog(UI_Panel_Base):
             return rebuild_needed
         from chimerax.clipper import get_map_mgr
         mmgr = get_map_mgr(m)
-        if (mmgr is None or not len(mmgr.all_maps)) and not len(self._current_maps):
-            rebuild_needed = True
-            self._current_maps = []
+        if (mmgr is None or not len(mmgr.all_maps)):
+            if len(self._current_maps):
+                rebuild_needed = True
+                self._current_maps = []
             return rebuild_needed
         maps = list(sorted(mmgr.all_maps, key=lambda m: m.id))
         if maps != self._current_maps:
