@@ -1,19 +1,23 @@
+import os
+
 from ..util import slot_disconnected
 from ..collapse_button import CollapsibleArea
 from ..ui_base import (
     UI_Panel_Base, 
-    DefaultHLayout, DefaultVLayout, DefaultSpacerItem,
+    DefaultHLayout, DefaultVLayout, DefaultHLayout, DefaultSpacerItem,
     QComboBox
 )
 
 from Qt.QtWidgets import (
     QLabel, QToolButton, QPushButton, QCheckBox,
-    QDoubleSpinBox, QWidget
+    QDoubleSpinBox, QWidget, 
+    QTreeWidget, QTreeWidgetItem, QPushButton, QMenu, QAbstractItemView,
+    QSizePolicy
 )
 
 from Qt.QtGui import QIcon
 
-from Qt.QtCore import Qt
+from Qt.QtCore import Qt, QSize
 
 from .. import icon_dir, DEFAULT_ICON_SIZE
 
@@ -24,6 +28,186 @@ class MapSettingsPanel(CollapsibleArea):
         self.setContentLayout(msd.main_layout)
 
 class MapSettingsDialog(UI_Panel_Base):
+    NAME_COLUMN=    0
+    ID_COLUMN=      1
+    STYLE_COLUMN=   2
+    COLOR_COLUMN=   3
+    DIFF_COLUMN=    4
+    MDFF_COLUMN=    5
+    WEIGHT_COLUMN=  6
+
+    _labels = {
+        NAME_COLUMN:    'Name',
+        ID_COLUMN:      'ID',
+        STYLE_COLUMN:   'Style',
+        COLOR_COLUMN:   'Colour',
+        DIFF_COLUMN:    'Diff Map?',
+        MDFF_COLUMN:    'MDFF?',
+        WEIGHT_COLUMN:  'Weight'
+    }
+
+    _style_icons = {
+        'solid':     os.path.join(icon_dir, 'mapsurf.png'),
+        'mesh':    os.path.join(icon_dir, 'mesh.png'),
+        'transparent': os.path.join(icon_dir, 'icecube.png')
+    }
+
+    ICON_SIZE = (16,16)
+    def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
+        super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
+        import os
+        self.container = collapse_area
+        mf = self.main_frame
+        self._current_maps = []
+        ml = self.main_layout = DefaultHLayout()
+
+        self.tree = tree = QTreeWidget(mf)
+        ml.addWidget(tree)
+        tree.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        tree.setHeaderLabels(self._labels.values())
+        tree.setColumnWidth(self.NAME_COLUMN, 200)
+        tree.setSelectionBehavior(QAbstractItemView.SelectRows)
+        tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        tree.setAnimated(True)
+        tree.setUniformRowHeights(True)
+        tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        tree.expanded.connect(lambda *_: tree.resizeColumnToContents(self.ID_COLUMN))
+
+        from chimerax.core.models import (
+            ADD_MODELS, REMOVE_MODELS, MODEL_DISPLAY_CHANGED, MODEL_ID_CHANGED,
+            MODEL_NAME_CHANGED
+        )
+        cxh = self._chimerax_trigger_handlers
+        for trigger_name in (ADD_MODELS, REMOVE_MODELS, MODEL_DISPLAY_CHANGED, MODEL_ID_CHANGED,
+            MODEL_NAME_CHANGED):
+            cxh.append(session.triggers.add_handler(trigger_name, self._rebuild_tree_if_necessary))
+        
+        ith = self._isolde_trigger_handlers
+        ith.append(isolde.triggers.add_handler('selected model changed', self._rebuild_tree_if_necessary))
+        self._rebuild_tree_if_necessary()
+
+
+    def _rebuild_tree_if_necessary(self, *_):
+        rebuild_needed = self._compare_maps_to_current()
+        if not rebuild_needed:
+            return
+        tree = self.tree
+        tree.clear()
+        if not len(self._current_maps):
+            return
+        from chimerax.clipper import get_map_mgr
+        mgr = get_map_mgr(self.isolde.selected_model)
+        xmapsets = mgr.xmapsets
+        nxmapset = mgr.nxmapset
+
+        if len(xmapsets):
+            xtal_parent = QTreeWidgetItem(tree.invisibleRootItem())
+            xtal_parent.setText(self.NAME_COLUMN, 'Crystal maps')
+            for xmapset in xmapsets:
+                xms = QTreeWidgetItem(xtal_parent)
+                xms.setText(self.NAME_COLUMN, xmapset.name)
+                xms.setText(self.ID_COLUMN, xmapset.id_string)
+                for xmap in xmapset.all_maps:
+                    self._add_tree_entry(xms, xmap)
+
+
+    def _add_tree_entry(self, parent, map):
+        import os
+        item = QTreeWidgetItem(parent)
+        item.setText(self.NAME_COLUMN, map.name)
+        item.setText(self.ID_COLUMN, map.id_string)
+        def style_menu_button(map):
+            b = QPushButton()
+            menu = QMenu(b)
+            b.setIconSize(QSize(*self.ICON_SIZE))
+            b.setFixedSize(QSize(*self.ICON_SIZE))
+            b.setIcon(self._get_icon_for_volume(map))
+            b.setStyleSheet('QPushButton::menu-indicator {width:0px;}')
+            b.setMenu(menu)
+            a = menu.addAction(QIcon(self._style_icons['solid']), 'Opaque surface')
+            def set_solid(*_, button=b, volume=map):
+                self._solid_map_button_cb(button, volume)
+            a.triggered.connect(set_solid)
+            a = menu.addAction(QIcon(self._style_icons['transparent']), 'Transparent surface')
+            def set_transparent(*_, button=b, volume=map):
+                self._transparent_map_button_cb(button, volume)
+            a.triggered.connect(set_transparent)
+            a = menu.addAction(QIcon(self._style_icons['mesh']), 'Mesh')
+            def set_mesh(*_, button=b, volume=map):
+                self._mesh_map_button_cb(button, volume)
+            a.triggered.connect(set_mesh)
+            return b
+        self.tree.setItemWidget(item, self.STYLE_COLUMN, style_menu_button(map))
+        
+
+    def _get_icon_for_volume(self, v):
+        s = v.surfaces[0]
+        style = s.style
+        if style=='surface':
+            if s.color[-1] < 255:
+                style='transparent'
+            else:
+                style='solid'
+        return QIcon(self._style_icons[style])
+
+    
+    def _compare_maps_to_current(self):
+        m = self.isolde.selected_model
+        rebuild_needed = False
+        if m is None:
+            if len(self._current_maps):
+                rebuild_needed = True
+                self._current_maps = []
+            return rebuild_needed
+        from chimerax.clipper import get_map_mgr
+        mmgr = get_map_mgr(m)
+        if (mmgr is None or not len(mmgr.all_maps)) and not len(self._current_maps):
+            rebuild_needed = True
+            self._current_maps = []
+            return rebuild_needed
+        maps = list(sorted(mmgr.all_maps, key=lambda m: m.id))
+        if maps != self._current_maps:
+            rebuild_needed = True
+            self._current_maps = maps      
+        return rebuild_needed
+            
+    def _solid_map_button_cb(self, button, v):
+        import os
+        from chimerax.isolde.visualisation import map_styles, map_style_settings
+        from chimerax.map import volumecommand
+        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.solid_opaque])
+        button.setIcon(QIcon(self._style_icons['solid']))
+
+    def _transparent_map_button_cb(self, button, v):
+        import os
+        from chimerax.isolde.visualisation import map_styles, map_style_settings
+        from chimerax.map import volumecommand
+        if v.is_difference_map:
+            style = map_styles.solid_t40
+        else:
+            style = map_styles.solid_t20
+        volumecommand.volume(self.session, [v], **map_style_settings[style])
+        button.setIcon(QIcon(self._style_icons['transparent']))
+
+    def _mesh_map_button_cb(self, button, v):
+        import os
+        from chimerax.isolde.visualisation import map_styles, map_style_settings
+        from chimerax.map import volumecommand
+        volumecommand.volume(self.session, [v], **map_style_settings[map_styles.mesh_triangle])
+        button.setIcon(QIcon(self._style_icons['mesh']))
+
+                
+
+
+
+
+
+
+
+
+
+
+class MapSettingsDialogOld(UI_Panel_Base):
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
         import os
