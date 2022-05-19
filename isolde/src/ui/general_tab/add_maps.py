@@ -5,7 +5,7 @@ from Qt.QtWidgets import QPushButton, QLabel, QMenu, QFileDialog, QDoubleSpinBox
 
 class MapAddPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui, **kwargs):
-        super().__init__(gui, parent, 'Add map(s) to model', **kwargs)
+        super().__init__(gui, parent, 'Add map(s) to working model', **kwargs)
         mad = self.content = MapAddDialog(session, isolde, gui, self.content_area)
         self.setContentLayout(mad.main_layout)
 
