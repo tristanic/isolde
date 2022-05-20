@@ -109,20 +109,35 @@ class MapSettingsDialog(UI_Panel_Base):
                 xms.setText(self.ID_COLUMN, xmapset.id_string)
                 for xmap in xmapset.all_maps:
                     self._add_tree_entry(xms, xmap)
+        for column in list(self._labels.keys())[1:]:
+            tree.resizeColumnToContents(column)
+        tree.itemClicked.connect(self._row_clicked_cb)
+        tree.expandAll()
 
+    def _row_clicked_cb(self, item, column):
+        v = getattr(item, '_volume', None)
+        if v is not None:
+            from chimerax.core.commands import run
+            run(self.session, f'sel #{v.id_string}', log=False)
 
     def _add_tree_entry(self, parent, map):
         import os
         item = QTreeWidgetItem(parent)
+        item._volume = map
         item.setText(self.NAME_COLUMN, map.name)
         item.setText(self.ID_COLUMN, map.id_string)
         def style_menu_button(map):
+            w = QWidget()
+            l = DefaultHLayout()
+            w.setLayout(l)
+            l.addStretch()
             b = QPushButton()
             menu = QMenu(b)
             b.setIconSize(QSize(*self.ICON_SIZE))
             b.setFixedSize(QSize(*self.ICON_SIZE))
             b.setIcon(self._get_icon_for_volume(map))
-            b.setStyleSheet('QPushButton::menu-indicator {width:0px;}')
+            b.setStyleSheet('QPushButton::menu-indicator {width:0px;}'
+                'QPushButton {border:2px black;}')
             b.setMenu(menu)
             a = menu.addAction(QIcon(self._style_icons['solid']), 'Opaque surface')
             def set_solid(*_, button=b, volume=map):
@@ -136,7 +151,9 @@ class MapSettingsDialog(UI_Panel_Base):
             def set_mesh(*_, button=b, volume=map):
                 self._mesh_map_button_cb(button, volume)
             a.triggered.connect(set_mesh)
-            return b
+            l.addWidget(b)
+            l.addStretch()
+            return w
         self.tree.setItemWidget(item, self.STYLE_COLUMN, style_menu_button(map))
         
 
