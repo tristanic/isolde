@@ -1,4 +1,5 @@
 import os
+import numpy
 
 from ..util import slot_disconnected
 from ..collapse_button import CollapsibleArea
@@ -65,6 +66,7 @@ class MapSettingsDialog(UI_Panel_Base):
         ml.addWidget(tree)
         tree.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         tree.setHeaderLabels(self._labels.values())
+        tree.header().setMinimumSectionSize(20)
         tree.setColumnWidth(self.NAME_COLUMN, 200)
         tree.setSelectionBehavior(QAbstractItemView.SelectRows)
         tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -89,8 +91,10 @@ class MapSettingsDialog(UI_Panel_Base):
 
     def _rebuild_tree_if_necessary(self, *_):
         rebuild_needed = self._compare_maps_to_current()
-        if not rebuild_needed:
-            return
+        if rebuild_needed:
+            self.rebuild_tree()
+
+    def rebuild_tree(self):
         tree = self.tree
         tree.clear()
         if not len(self._current_maps):
@@ -101,14 +105,14 @@ class MapSettingsDialog(UI_Panel_Base):
         nxmapset = mgr.nxmapset
 
         if len(xmapsets):
-            xtal_parent = QTreeWidgetItem(tree.invisibleRootItem())
-            xtal_parent.setText(self.NAME_COLUMN, 'Crystal maps')
+            parent = tree.invisibleRootItem()
             for xmapset in xmapsets:
-                xms = QTreeWidgetItem(xtal_parent)
-                xms.setText(self.NAME_COLUMN, xmapset.name)
+                xms = QTreeWidgetItem(parent)
+                name = xmapset.name.split('(')[1].split(')')[0]
+                xms.setText(self.NAME_COLUMN, name)
                 xms.setText(self.ID_COLUMN, xmapset.id_string)
                 for xmap in xmapset.all_maps:
-                    self._add_tree_entry(xms, xmap)
+                    self.add_tree_entry(xms, xmap, strip_name_prefix='(LIVE) ')
         for column in list(self._labels.keys())[1:]:
             tree.resizeColumnToContents(column)
         tree.itemClicked.connect(self._row_clicked_cb)
@@ -120,42 +124,99 @@ class MapSettingsDialog(UI_Panel_Base):
             from chimerax.core.commands import run
             run(self.session, f'sel #{v.id_string}', log=False)
 
-    def _add_tree_entry(self, parent, map):
+    def add_tree_entry(self, parent, map, strip_name_prefix=None):
         import os
         item = QTreeWidgetItem(parent)
         item._volume = map
-        item.setText(self.NAME_COLUMN, map.name)
+        if strip_name_prefix is not None:
+            name = map.name.replace(strip_name_prefix, '')
+        else:
+            name = map.name
+        item.setText(self.NAME_COLUMN, name)
         item.setText(self.ID_COLUMN, map.id_string)
-        def style_menu_button(map):
-            w = QWidget()
-            l = DefaultHLayout()
-            w.setLayout(l)
-            l.addStretch()
-            b = QPushButton()
-            menu = QMenu(b)
-            b.setIconSize(QSize(*self.ICON_SIZE))
-            b.setFixedSize(QSize(*self.ICON_SIZE))
-            b.setIcon(self._get_icon_for_volume(map))
-            b.setStyleSheet('QPushButton::menu-indicator {width:0px;}'
-                'QPushButton {border:2px black;}')
-            b.setMenu(menu)
-            a = menu.addAction(QIcon(self._style_icons['solid']), 'Opaque surface')
-            def set_solid(*_, button=b, volume=map):
-                self._solid_map_button_cb(button, volume)
-            a.triggered.connect(set_solid)
-            a = menu.addAction(QIcon(self._style_icons['transparent']), 'Transparent surface')
-            def set_transparent(*_, button=b, volume=map):
-                self._transparent_map_button_cb(button, volume)
-            a.triggered.connect(set_transparent)
-            a = menu.addAction(QIcon(self._style_icons['mesh']), 'Mesh')
-            def set_mesh(*_, button=b, volume=map):
-                self._mesh_map_button_cb(button, volume)
-            a.triggered.connect(set_mesh)
-            l.addWidget(b)
-            l.addStretch()
-            return w
-        self.tree.setItemWidget(item, self.STYLE_COLUMN, style_menu_button(map))
+        self.add_style_menu_button(item, self.STYLE_COLUMN, map)
+        self.add_color_menu_button(item, self.COLOR_COLUMN, map)
+        self.add_difference_map_checkbox(item, self.DIFF_COLUMN, map)
+    
+    def add_style_menu_button(self, item, column, map):
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        b = QPushButton()
+        menu = QMenu(b)
+        b.setIconSize(QSize(*self.ICON_SIZE))
+        b.setFixedSize(QSize(*self.ICON_SIZE))
+        b.setIcon(self._get_icon_for_volume(map))
+        b.setStyleSheet('QPushButton::menu-indicator {width:0px;}')
+        b.setMenu(menu)
+        a = menu.addAction(QIcon(self._style_icons['solid']), 'Opaque surface')
+        def set_solid(*_, button=b, volume=map):
+            self._solid_map_button_cb(button, volume)
+        a.triggered.connect(set_solid)
+        a = menu.addAction(QIcon(self._style_icons['transparent']), 'Transparent surface')
+        def set_transparent(*_, button=b, volume=map):
+            self._transparent_map_button_cb(button, volume)
+        a.triggered.connect(set_transparent)
+        a = menu.addAction(QIcon(self._style_icons['mesh']), 'Mesh')
+        def set_mesh(*_, button=b, volume=map):
+            self._mesh_map_button_cb(button, volume)
+        a.triggered.connect(set_mesh)
+        l.addWidget(b)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
+    
+    def add_color_menu_button(self, item, column, map):
+        from chimerax.ui.widgets import ColorButton
+        from ..color_button import TwoColorButton
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        # Difference maps have negative contour first, but show positive first in 
+        # picker.
+        if map.is_difference_map:
+            b = TwoColorButton(w, max_size=self.ICON_SIZE, has_alpha_channel=False,
+                titles=('Positive contour', 'Negative contour'))
+            b.color = [s.color for s in map.surfaces][::-1]
+        else:
+            b = ColorButton(w, max_size=self.ICON_SIZE, has_alpha_channel=False)
+            b.color = map.surfaces[0].color
+        def _color_changed_cb(*args, v=map):
+            colors = [*args][::-1]
+            # Keep existing transparency values
+            existing_colors = [s.color for s in v.surfaces]
+            for i, e in enumerate(existing_colors):
+                colors[i][-1] = e[-1]
+            for s, c in zip(v.surfaces, colors):
+                s.color = c
+        b.color_changed.connect(_color_changed_cb)
+        l.addWidget(b)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
+
+    def add_difference_map_checkbox(self, item, column, map):
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        cb = QCheckBox(w)
+        l.addWidget(cb)
+        cb.setChecked(map.is_difference_map)
+        l.addStretch()
+        def dcb_checked_cb(checked, i=item, v=map):
+            v.is_difference_map = checked
+            # Need to replace the color picker button
+            self.tree.removeItemWidget(i, self.COLOR_COLUMN)
+            self.add_color_menu_button(i, self.COLOR_COLUMN, v)
+        cb.toggled.connect(dcb_checked_cb)
+        self.tree.setItemWidget(item, column, w)
+
+
+
         
+        
+
 
     def _get_icon_for_volume(self, v):
         s = v.surfaces[0]
