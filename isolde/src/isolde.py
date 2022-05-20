@@ -408,7 +408,7 @@ class Isolde():
     @selected_model.setter
     def selected_model(self, model):
         from chimerax.atomic import AtomicStructure
-        if not isinstance(model, AtomicStructure):
+        if model is not None and not isinstance(model, AtomicStructure):
             raise TypeError('Selection must be a single AtomicStructure model!')
         self.change_selected_model(model)
 
@@ -2417,6 +2417,7 @@ class Isolde():
                 add_isolde_citation(model)
                 # self._selected_model.selected = True
                 self._initialize_maps(model)
+            self.triggers.activate_trigger('selected model changed', model)
 
     def _change_selected_model(self, *_, model=None, force=False):
         m = model
@@ -2424,32 +2425,15 @@ class Isolde():
             return
         if not hasattr(self, '_model_changes_handler'):
             self._model_changes_handler = None
-        # from .ui.util import slot_disconnected
         session = self.session
-        # iw = self.iw
-        # mmcb = iw._master_model_combo_box
 
         sm = self._selected_model
 
-        # if sm is not None:
-        #     if sm == model:
-        #         with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
-        #             mmcb.setCurrentIndex(mmcb.findData(model))
-        #         return
-        #     else:
-        #         if self._model_changes_handler is not None:
-        #             sm.triggers.remove_handler(self._model_changes_handler)
-        #             self._model_changes_handler = None
         if model is None:
-            avail = self.available_models
-            if len(avail) == 0:
-                self._selected_model = None
+            self._selected_model = None
+            if sm is not None:
                 self.triggers.activate_trigger('selected model changed', data=None)
-                return
-            else:
-                # Take the first available model
-                for m in avail.values():
-                    break
+            return
 
         with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'):
             if not getattr(m, 'isolde_initialized', False):

@@ -144,9 +144,10 @@ class IsoldeMainWin(MainToolWindow):
         mmcb = self.master_model_combo_box
         from ..util import block_managed_trigger_handler
         with block_managed_trigger_handler(self, '_selected_model_changed_handler'):
-        # with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
             m = mmcb.currentData()
             if m is not None:
+                if mmcb.itemData(0) is None:
+                    mmcb.removeItem(0)
                 self.isolde.change_selected_model(m)
 
     def _sim_start_cb(self, *_):
@@ -171,7 +172,7 @@ class IsoldeMainWin(MainToolWindow):
         if isinstance(models, Model):
             models = [models]
         cm = self.isolde.selected_model
-        if models is None:
+        if models is None or cm is None:
             structures_need_update = True
         else:
             structures_need_update = False
@@ -218,7 +219,7 @@ class IsoldeMainWin(MainToolWindow):
 
     def _selected_model_changed_cb(self, trigger_name, m):
         if m is None:
-            self._update_model_list_cb()
+            self._update_model_list_cb(None)
             return
         mmcb = self.master_model_combo_box
         with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
