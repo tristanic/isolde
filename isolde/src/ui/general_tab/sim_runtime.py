@@ -119,7 +119,7 @@ QSlider::handle:horizontal:hover {
             self.setValue(self._temperature_to_slider_value(value))
 
     def cleanup(self):
-        self._tempreature_changed_handler.remove()    
+        self._temperature_changed_handler.remove()    
         
         
 class TemperatureSpinBox(QDoubleSpinBox):
