@@ -13,12 +13,12 @@ from Qt.QtWidgets import (
     QLabel, QToolButton, QPushButton, QCheckBox,
     QDoubleSpinBox, QWidget, 
     QTreeWidget, QTreeWidgetItem, QPushButton, QMenu, QAbstractItemView,
-    QSizePolicy
+    QSizePolicy, QHeaderView
 )
 
-from Qt.QtGui import QIcon
+from Qt.QtGui import QIcon, QFontMetrics
 
-from Qt.QtCore import Qt, QSize
+from Qt.QtCore import Qt, QSize, QRect, QRectF
 
 from .. import icon_dir, DEFAULT_ICON_SIZE
 
@@ -65,15 +65,17 @@ class MapSettingsDialog(UI_Panel_Base):
         self.tree = tree = QTreeWidget(mf)
         ml.addWidget(tree)
         tree.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        tree.setHeader(WordWrapHeader(Qt.Orientation.Horizontal))
         tree.setHeaderLabels(self._labels.values())
         tree.header().setMinimumSectionSize(20)
-        tree.setColumnWidth(self.NAME_COLUMN, 200)
+        tree.setColumnWidth(self.NAME_COLUMN, 150)
         tree.setSelectionBehavior(QAbstractItemView.SelectRows)
         tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         tree.setAnimated(True)
         tree.setUniformRowHeights(True)
         tree.setEditTriggers(QAbstractItemView.NoEditTriggers)
         tree.expanded.connect(lambda *_: tree.resizeColumnToContents(self.ID_COLUMN))
+        tree.itemClicked.connect(self._row_clicked_cb)
 
         from chimerax.core.models import (
             ADD_MODELS, REMOVE_MODELS, MODEL_DISPLAY_CHANGED, MODEL_ID_CHANGED,
@@ -86,15 +88,23 @@ class MapSettingsDialog(UI_Panel_Base):
         
         ith = self._isolde_trigger_handlers
         ith.append(isolde.triggers.add_handler('selected model changed', self._rebuild_tree_if_necessary))
-        self._rebuild_tree_if_necessary()
+        self.container.expanded.connect(self._rebuild_tree_if_necessary)
+        self._temporary_isolde_handlers = []
+        self.rebuild_tree()
 
 
     def _rebuild_tree_if_necessary(self, *_):
+        if self.container.is_collapsed:
+            return
         rebuild_needed = self._compare_maps_to_current()
         if rebuild_needed:
             self.rebuild_tree()
 
     def rebuild_tree(self):
+        th = self._temporary_isolde_handlers
+        while len(th):
+            th.pop().remove()
+
         tree = self.tree
         tree.clear()
         if not len(self._current_maps):
@@ -113,10 +123,9 @@ class MapSettingsDialog(UI_Panel_Base):
                 xms.setText(self.ID_COLUMN, xmapset.id_string)
                 for xmap in xmapset.all_maps:
                     self.add_tree_entry(xms, xmap, strip_name_prefix='(LIVE) ')
+        tree.expandAll()
         for column in list(self._labels.keys())[1:]:
             tree.resizeColumnToContents(column)
-        tree.itemClicked.connect(self._row_clicked_cb)
-        tree.expandAll()
 
     def _row_clicked_cb(self, item, column):
         v = getattr(item, '_volume', None)
@@ -137,6 +146,8 @@ class MapSettingsDialog(UI_Panel_Base):
         self.add_style_menu_button(item, self.STYLE_COLUMN, map)
         self.add_color_menu_button(item, self.COLOR_COLUMN, map)
         self.add_difference_map_checkbox(item, self.DIFF_COLUMN, map)
+        self.add_mdff_checkbox(item, self.MDFF_COLUMN, map)
+        self.add_weight_spinbox(item, self.WEIGHT_COLUMN, map)
     
     def add_style_menu_button(self, item, column, map):
         w = QWidget()
@@ -212,6 +223,53 @@ class MapSettingsDialog(UI_Panel_Base):
         cb.toggled.connect(dcb_checked_cb)
         self.tree.setItemWidget(item, column, w)
 
+    def add_mdff_checkbox(self, item, column, map):
+        from chimerax.isolde import session_extensions as sx
+        mgr = sx.get_mdff_mgr(self.isolde.selected_model, map)
+        if mgr is None:
+            cb = QLabel('X')
+            cb.setStyleSheet('color:red; font-weight:bold;')
+            cb.setToolTip('This map is not suitable for MDFF')
+        else:
+            cb = QCheckBox()
+            cb.setChecked(mgr.enabled)
+            cb.setToolTip('<span>Allow this map to "pull" on atoms (cannot be set during simulations)</span>')
+            def enable_mdff(flag, m=mgr):
+                m.enabled=flag
+            cb.toggled.connect(enable_mdff)
+            self._temporary_isolde_handlers.append(self.isolde.triggers.add_handler('simulation started',
+                lambda *_: cb.setEnabled(False)))
+            self._temporary_isolde_handlers.append(self.isolde.triggers.add_handler('simulation terminated',
+                lambda *_: cb.setEnabled(True)))
+
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        l.addWidget(cb)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
+
+    def add_weight_spinbox(self, item, column, map):
+        from chimerax.isolde import session_extensions as sx
+        mgr = sx.get_mdff_mgr(self.isolde.selected_model, map)
+        if mgr is None:
+            return
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        sb = MapWeightSpinBox()
+        sb.setValue(mgr.global_k)
+        def set_weight(value, m=mgr):
+            mgr.global_k = value
+        sb.valueChanged.connect(set_weight)
+        l.addWidget(sb)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
+
+         
+        
 
 
         
@@ -232,7 +290,7 @@ class MapSettingsDialog(UI_Panel_Base):
     def _compare_maps_to_current(self):
         m = self.isolde.selected_model
         rebuild_needed = False
-        if m is None:
+        if m is None or m.was_deleted:
             if len(self._current_maps):
                 rebuild_needed = True
                 self._current_maps = []
@@ -274,14 +332,31 @@ class MapSettingsDialog(UI_Panel_Base):
         from chimerax.map import volumecommand
         volumecommand.volume(self.session, [v], **map_style_settings[map_styles.mesh_triangle])
         button.setIcon(QIcon(self._style_icons['mesh']))
+    
+    def cleanup(self):
+        for h in self._temporary_isolde_handlers:
+            h.remove()
+        super().cleanup()
 
                 
 
-
-
-
-
-
+class WordWrapHeader(QHeaderView):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setDefaultAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag(Qt.TextFlag.TextWordWrap))
+    
+    def sectionSizeFromContents(self, logicalIndex):
+        if self.model():
+            headerText = self.model().headerData(logicalIndex, self.orientation(),Qt.ItemDataRole.DisplayRole)
+            metrics = self.fontMetrics()
+            max_width = max(self.sectionSize(logicalIndex) - 10, 10)
+            rect = metrics.boundingRect(QRect(0,0,max_width,5000),
+                self.defaultAlignment(), headerText)
+            buffer = QSize(6, 6)
+            return rect.size() + buffer
+        else:
+            return super().sectionSizeFromContents(logicalIndex)
+    
 
 
 
