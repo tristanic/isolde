@@ -8,7 +8,9 @@
 
 from Qt.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QSpacerItem, QSizePolicy,
-    QScrollArea, QWidget, QFrame
+    QScrollArea, QWidget, QFrame,
+    QDoubleSpinBox as QDoubleSpinBox_Base,
+    QSpinBox as QSpinBox_Base
     )
 from Qt import QtCore
 from Qt.QtGui import QColor
@@ -22,6 +24,25 @@ else:
 
 import os
 _base_path = os.path.dirname(os.path.abspath(__file__))
+
+class QDoubleSpinBox(QDoubleSpinBox_Base):
+    def event(self, event):
+        # Prevent return key presses from being forwarded on and triggering the command line
+        ret = super().event(event)
+        if event.type() in [event.Type.KeyPress, event.Type.KeyRelease]:
+            event.accept()
+            return True
+        return ret
+
+class QSpinBox(QSpinBox_Base):
+    def event(self, event):
+        # Prevent return key presses from being forwarded on and triggering the command line
+        ret = super().event(event)
+        if event.type() in [event.Type.KeyPress, event.Type.KeyRelease]:
+            event.accept()
+            return True
+        return ret
+
 
 class DefaultVLayout(QVBoxLayout):
     def __init__(self, *args, **kwargs):

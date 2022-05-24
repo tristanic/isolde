@@ -2,12 +2,13 @@ from ..util import slot_disconnected
 from ..ui_base import (
     DefaultSpacerItem,
     UI_Panel_Base,
-    DefaultHLayout, DefaultVLayout
+    DefaultHLayout, DefaultVLayout,
+    QDoubleSpinBox
 )
 
 from ..collapse_button import CollapsibleArea
 
-from Qt.QtWidgets import QLabel, QDoubleSpinBox, QCheckBox
+from Qt.QtWidgets import QLabel, QCheckBox
 
 class MaskAndSpotlightSettingsPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui, **kwargs):

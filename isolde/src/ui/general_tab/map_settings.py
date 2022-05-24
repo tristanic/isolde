@@ -6,14 +6,13 @@ from ..collapse_button import CollapsibleArea
 from ..ui_base import (
     UI_Panel_Base, 
     DefaultHLayout, DefaultVLayout, DefaultHLayout, DefaultSpacerItem,
-    QComboBox
+    QComboBox, QDoubleSpinBox
 )
 
 from Qt.QtWidgets import (
-    QLabel, QToolButton, QPushButton, QCheckBox,
-    QDoubleSpinBox, QWidget, 
+    QLabel, QToolButton, QPushButton, QCheckBox, QWidget, 
     QTreeWidget, QTreeWidgetItem, QPushButton, QMenu, QAbstractItemView,
-    QSizePolicy, QHeaderView
+    QSizePolicy, QHeaderView, QItemDelegate
 )
 
 from Qt.QtGui import QIcon, QFontMetrics
@@ -22,24 +21,46 @@ from Qt.QtCore import Qt, QSize, QRect, QRectF
 
 from .. import icon_dir, DEFAULT_ICON_SIZE
 
-class MapSettingsPanel(CollapsibleArea):
+class XmapLiveSettingsPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui, **kwargs):
-        super().__init__(gui, parent, title='Map Settings', **kwargs)
-        msd = self.content = MapSettingsDialog(session, isolde, gui, self)
+        super().__init__(gui, parent, title='Dynamic Crystallographic Map Settings', **kwargs)
+        msd = self.content = XmapLiveSettingsDialog(session, isolde, gui, self)
         self.setContentLayout(msd.main_layout)
 
+class XmapStaticSettingsPanel(CollapsibleArea):
+    def __init__(self, session, isolde, parent, gui, **kwargs):
+        super().__init__(gui, parent, title='Precalculated Crystallographic Map Settings', **kwargs)
+        msd = self.content = XmapStaticSettingsDialog(session, isolde, gui, self)
+        self.setContentLayout(msd.main_layout)
+
+class NXmapSettingsPanel(CollapsibleArea):
+    def __init__(self, session, isolde, parent, gui, **kwargs):
+        super().__init__(gui, parent, title='Non-crystallographic Map Settings', **kwargs)
+        msd = self.content = NXmapSettingsDialog(session, isolde, gui, self)
+        self.setContentLayout(msd.main_layout)
+
+
 class MapSettingsDialog(UI_Panel_Base):
+    '''
+    Base class for different map settings dialogues. Not to be instantiated directly.
+    '''
+    MAP_TYPE=None
+    MAP_SET_TYPE=None
+    MAP_NAME_PREFIX=None
+
     NAME_COLUMN=    0
     ID_COLUMN=      1
-    STYLE_COLUMN=   2
-    COLOR_COLUMN=   3
-    DIFF_COLUMN=    4
-    MDFF_COLUMN=    5
-    WEIGHT_COLUMN=  6
+    DISPLAY_COLUMN= 2
+    STYLE_COLUMN=   3
+    COLOR_COLUMN=   4
+    DIFF_COLUMN=    5
+    MDFF_COLUMN=    6
+    WEIGHT_COLUMN=  7
 
     _labels = {
         NAME_COLUMN:    'Name',
         ID_COLUMN:      'ID',
+        DISPLAY_COLUMN: 'Show',
         STYLE_COLUMN:   'Style',
         COLOR_COLUMN:   'Colour',
         DIFF_COLUMN:    'Diff Map?',
@@ -68,7 +89,6 @@ class MapSettingsDialog(UI_Panel_Base):
         tree.setHeader(WordWrapHeader(Qt.Orientation.Horizontal))
         tree.setHeaderLabels(self._labels.values())
         tree.header().setMinimumSectionSize(20)
-        tree.setColumnWidth(self.NAME_COLUMN, 150)
         tree.setSelectionBehavior(QAbstractItemView.SelectRows)
         tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
         tree.setAnimated(True)
@@ -78,22 +98,27 @@ class MapSettingsDialog(UI_Panel_Base):
         tree.itemClicked.connect(self._row_clicked_cb)
 
         from chimerax.core.models import (
-            ADD_MODELS, REMOVE_MODELS, MODEL_DISPLAY_CHANGED, MODEL_ID_CHANGED,
+            ADD_MODELS, REMOVE_MODELS, MODEL_ID_CHANGED,
             MODEL_NAME_CHANGED
         )
         cxh = self._chimerax_trigger_handlers
-        for trigger_name in (ADD_MODELS, REMOVE_MODELS, MODEL_DISPLAY_CHANGED, MODEL_ID_CHANGED,
+        for trigger_name in (ADD_MODELS, REMOVE_MODELS, MODEL_ID_CHANGED,
             MODEL_NAME_CHANGED):
             cxh.append(session.triggers.add_handler(trigger_name, self._rebuild_tree_if_necessary))
         
         ith = self._isolde_trigger_handlers
         ith.append(isolde.triggers.add_handler('selected model changed', self._rebuild_tree_if_necessary))
-        self.container.expanded.connect(self._rebuild_tree_if_necessary)
-        self._temporary_isolde_handlers = []
+        self.container.expanded.connect(lambda: self._rebuild_tree_if_necessary(None, None))
+        self._temporary_handlers = []
         self.rebuild_tree()
 
 
-    def _rebuild_tree_if_necessary(self, *_):
+    def _rebuild_tree_if_necessary(self, trigger_name, data):
+        from chimerax.core.models import MODEL_NAME_CHANGED, MODEL_ID_CHANGED
+        if trigger_name in (MODEL_NAME_CHANGED, MODEL_ID_CHANGED):
+            if self.isolde.selected_model is not None:
+                if data in self.isolde.selected_model.parent.all_models():
+                    return self.rebuild_tree()
         if self.container.is_collapsed:
             return
         rebuild_needed = self._compare_maps_to_current()
@@ -101,7 +126,7 @@ class MapSettingsDialog(UI_Panel_Base):
             self.rebuild_tree()
 
     def rebuild_tree(self):
-        th = self._temporary_isolde_handlers
+        th = self._temporary_handlers
         while len(th):
             th.pop().remove()
 
@@ -111,20 +136,23 @@ class MapSettingsDialog(UI_Panel_Base):
             return
         from chimerax.clipper import get_map_mgr
         mgr = get_map_mgr(self.isolde.selected_model)
-        xmapsets = mgr.xmapsets
-        nxmapset = mgr.nxmapset
+        mapsets = [c for c in mgr.child_models() if isinstance(c, self.MAP_SET_TYPE)]
 
-        if len(xmapsets):
+        if len(mapsets):
             parent = tree.invisibleRootItem()
-            for xmapset in xmapsets:
-                xms = QTreeWidgetItem(parent)
-                name = xmapset.name.split('(')[1].split(')')[0]
-                xms.setText(self.NAME_COLUMN, name)
-                xms.setText(self.ID_COLUMN, xmapset.id_string)
-                for xmap in xmapset.all_maps:
-                    self.add_tree_entry(xms, xmap, strip_name_prefix='(LIVE) ')
+            for mapset in mapsets:
+                maps = [map for map in mapset.all_maps if isinstance(map, self.MAP_TYPE)]
+                if not len(maps):
+                    continue
+                ms = QTreeWidgetItem(parent)
+                name = getattr(mapset, 'data_name', mapset.name)
+                ms.setText(self.NAME_COLUMN, name)
+                ms.setText(self.ID_COLUMN, mapset.id_string)
+                self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
+                for map in maps:
+                    self.add_tree_entry(ms, map, strip_name_prefix=self.MAP_NAME_PREFIX)
         tree.expandAll()
-        for column in list(self._labels.keys())[1:]:
+        for column in self._labels.keys():
             tree.resizeColumnToContents(column)
 
     def _row_clicked_cb(self, item, column):
@@ -143,12 +171,34 @@ class MapSettingsDialog(UI_Panel_Base):
             name = map.name
         item.setText(self.NAME_COLUMN, name)
         item.setText(self.ID_COLUMN, map.id_string)
+        self.add_display_menu_checkbox(item, self.DISPLAY_COLUMN, map)
         self.add_style_menu_button(item, self.STYLE_COLUMN, map)
         self.add_color_menu_button(item, self.COLOR_COLUMN, map)
         self.add_difference_map_checkbox(item, self.DIFF_COLUMN, map)
         self.add_mdff_checkbox(item, self.MDFF_COLUMN, map)
         self.add_weight_spinbox(item, self.WEIGHT_COLUMN, map)
     
+    def add_display_menu_checkbox(self, item, column, map):
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        cb = QCheckBox()
+        cb.setChecked(map.display)
+        def set_display(flag):
+            map.display = flag
+        cb.toggled.connect(set_display)
+        th = self._temporary_handlers
+        from chimerax.core.models import MODEL_DISPLAY_CHANGED
+        from ..util import slot_disconnected
+        def display_changed_cb(*_):
+            with slot_disconnected(cb.toggled, set_display):
+                cb.setChecked(map.display)
+        th.append(self.session.triggers.add_handler(MODEL_DISPLAY_CHANGED, display_changed_cb))
+        l.addWidget(cb)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
+
     def add_style_menu_button(self, item, column, map):
         w = QWidget()
         l = DefaultHLayout()
@@ -237,9 +287,9 @@ class MapSettingsDialog(UI_Panel_Base):
             def enable_mdff(flag, m=mgr):
                 m.enabled=flag
             cb.toggled.connect(enable_mdff)
-            self._temporary_isolde_handlers.append(self.isolde.triggers.add_handler('simulation started',
+            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation started',
                 lambda *_: cb.setEnabled(False)))
-            self._temporary_isolde_handlers.append(self.isolde.triggers.add_handler('simulation terminated',
+            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation terminated',
                 lambda *_: cb.setEnabled(True)))
 
         w = QWidget()
@@ -268,14 +318,6 @@ class MapSettingsDialog(UI_Panel_Base):
         l.addStretch()
         self.tree.setItemWidget(item, column, w)
 
-         
-        
-
-
-        
-        
-
-
     def _get_icon_for_volume(self, v):
         s = v.surfaces[0]
         style = s.style
@@ -302,10 +344,11 @@ class MapSettingsDialog(UI_Panel_Base):
                 rebuild_needed = True
                 self._current_maps = []
             return rebuild_needed
-        maps = list(sorted(mmgr.all_maps, key=lambda m: m.id))
-        if maps != self._current_maps:
+        all_maps = list(sorted(mmgr.all_maps, key=lambda m: m.id))
+        filtered_maps = [m for m in all_maps if isinstance(m, self.MAP_TYPE)]
+        if filtered_maps != self._current_maps:
             rebuild_needed = True
-            self._current_maps = maps      
+            self._current_maps = filtered_maps      
         return rebuild_needed
             
     def _solid_map_button_cb(self, button, v):
@@ -334,11 +377,29 @@ class MapSettingsDialog(UI_Panel_Base):
         button.setIcon(QIcon(self._style_icons['mesh']))
     
     def cleanup(self):
-        for h in self._temporary_isolde_handlers:
+        for h in self._temporary_handlers:
             h.remove()
         super().cleanup()
 
-                
+class XmapLiveSettingsDialog(MapSettingsDialog):
+    from chimerax.clipper.maps import XmapHandler_Live, XmapSet
+    MAP_TYPE=XmapHandler_Live
+    MAP_SET_TYPE=XmapSet
+    MAP_NAME_PREFIX='(LIVE) '
+
+class XmapStaticSettingsDialog(MapSettingsDialog):
+    from chimerax.clipper.maps import XmapHandler_Static, XmapSet
+    MAP_TYPE=XmapHandler_Static
+    MAP_SET_TYPE=XmapSet
+    MAP_NAME_PREFIX='(STATIC) '
+
+class NXmapSettingsDialog(MapSettingsDialog):
+    from chimerax.clipper.maps import NXmapHandler, NXmapSet
+    MAP_TYPE=NXmapHandler
+    MAP_SET_TYPE=NXmapSet
+    MAP_NAME_PREFIX=''
+
+
 
 class WordWrapHeader(QHeaderView):
     def __init__(self, *args, **kwargs):
@@ -348,12 +409,17 @@ class WordWrapHeader(QHeaderView):
     def sectionSizeFromContents(self, logicalIndex):
         if self.model():
             headerText = self.model().headerData(logicalIndex, self.orientation(),Qt.ItemDataRole.DisplayRole)
-            metrics = self.fontMetrics()
-            max_width = max(self.sectionSize(logicalIndex) - 10, 10)
-            rect = metrics.boundingRect(QRect(0,0,max_width,5000),
-                self.defaultAlignment(), headerText)
-            buffer = QSize(6, 6)
-            return rect.size() + buffer
+            words = headerText.split()
+            if len(words) == 1:
+                return super().sectionSizeFromContents(logicalIndex)
+            else:
+                longest_word = max(words, key=lambda w:len(w))
+                metrics = self.fontMetrics()
+                max_width = metrics.boundingRect(longest_word).width()
+                rect = metrics.boundingRect(QRect(0,0,max_width,5000),
+                    self.defaultAlignment(), headerText)
+                buffer = QSize(3, 3)
+                return rect.size() + buffer
         else:
             return super().sectionSizeFromContents(logicalIndex)
     
@@ -594,8 +660,9 @@ class MapWeightSpinBox(QDoubleSpinBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setKeyboardTracking(False)
-        self.setMinimumWidth(50)
-        self.setMaximum(1e5)
+        self.setMinimumWidth(40)
+        self.setMinimumHeight(20)
+        self.setMaximum(1e5-1)
         self.setMinimum(1e-6)
         self.valueChanged.connect(self.update_display_and_step)
 
@@ -612,3 +679,5 @@ class MapWeightSpinBox(QDoubleSpinBox):
         dps, step = self._displayed_decimal_places_and_step(v)
         self.setDecimals(dps)
         self.setSingleStep(step)
+    
+

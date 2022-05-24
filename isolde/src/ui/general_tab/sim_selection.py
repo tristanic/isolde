@@ -3,11 +3,12 @@ from ..collapse_button import CollapsibleArea
 from ..ui_base import (
     UI_Panel_Base, 
     DefaultHLayout, DefaultVLayout, DefaultSpacerItem,
-    ExpertModeSelector
+    ExpertModeSelector,
+    QDoubleSpinBox
 )
 
 from Qt.QtWidgets import (
-    QLabel, QGroupBox, QRadioButton, QSpinBox, QDoubleSpinBox
+    QLabel, QSpinBox
 )
 
 class SimSelectionPanel(CollapsibleArea):

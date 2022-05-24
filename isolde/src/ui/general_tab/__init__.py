@@ -19,8 +19,10 @@ class GeneralTab(IsoldeTab):
         self.addWidget(MapAddPanel(session, isolde, parent, gui))
         from .param import ParameterisePanel
         self.addWidget(ParameterisePanel(session, isolde, parent, gui))
-        from .map_settings import MapSettingsPanel
-        self.addWidget(MapSettingsPanel(session, isolde, parent, gui))
+        from .map_settings import XmapLiveSettingsPanel, XmapStaticSettingsPanel, NXmapSettingsPanel
+        self.addWidget(XmapLiveSettingsPanel(session, isolde, parent, gui))
+        self.addWidget(XmapStaticSettingsPanel(session, isolde, parent, gui))
+        self.addWidget(NXmapSettingsPanel(session, isolde, parent, gui))
         from .sim_fidelity import SimFidelityPanel
         self.addWidget(SimFidelityPanel(session, isolde, parent, gui))
         from .platform import ComputationalPlatformPanel

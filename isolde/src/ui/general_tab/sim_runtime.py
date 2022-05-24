@@ -6,14 +6,14 @@ from ...util import block_managed_trigger_handler
 from ..collapse_button import CollapsibleArea
 from ..ui_base import (
     UI_Panel_Base, 
-    DefaultHLayout, DefaultVLayout, DefaultSpacerItem,
-    QComboBox
+    DefaultHLayout, DefaultVLayout, 
+    QDoubleSpinBox
 )
 
 from .. import icon_dir
 
 from Qt.QtWidgets import (
-    QLabel, QSlider, QDoubleSpinBox, QCheckBox, QWidget
+    QLabel, QSlider, QCheckBox, QWidget
 )
 
 from Qt.QtCore import Qt

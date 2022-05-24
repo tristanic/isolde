@@ -1,7 +1,10 @@
-from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout, DefaultSpacerItem
+from ..ui_base import (
+    UI_Panel_Base, DefaultHLayout, DefaultVLayout, DefaultSpacerItem,
+    QDoubleSpinBox
+)
 from ..collapse_button import CollapsibleArea
 
-from Qt.QtWidgets import QPushButton, QLabel, QMenu, QFileDialog, QDoubleSpinBox
+from Qt.QtWidgets import QPushButton, QLabel, QMenu, QFileDialog
 
 class MapAddPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui, **kwargs):

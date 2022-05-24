@@ -15,7 +15,8 @@ class ProblemAggregatorGUI(UI_Panel_Base):
 
         from .problems import ProblemAggregator
         pa = self.problem_aggregator = ProblemAggregator(session)
-        from Qt.QtWidgets import QCheckBox, QLabel, QSpinBox, QDoubleSpinBox, QLabel
+        from ..ui.ui_base import QSpinBox, QDoubleSpinBox
+        from Qt.QtWidgets import QCheckBox, QLabel
         cg.addWidget(QLabel("Unsatisfied restraints"),0,0)
         cg.addWidget(QLabel("Validation issues"),0,1)
         ocb = self.outliers_only_checkbox = QCheckBox("Outliers only")
