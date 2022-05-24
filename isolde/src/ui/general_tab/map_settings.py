@@ -48,6 +48,8 @@ class MapSettingsDialog(UI_Panel_Base):
     MAP_SET_TYPE=None
     MAP_NAME_PREFIX=None
 
+    MAX_COLUMN_WIDTH=200
+
     NAME_COLUMN=    0
     ID_COLUMN=      1
     DISPLAY_COLUMN= 2
@@ -82,6 +84,7 @@ class MapSettingsDialog(UI_Panel_Base):
         mf = self.main_frame
         self._current_maps = []
         ml = self.main_layout = DefaultHLayout()
+        self._first_rebuild=True
 
         self.tree = tree = QTreeWidget(mf)
         ml.addWidget(tree)
@@ -152,8 +155,12 @@ class MapSettingsDialog(UI_Panel_Base):
                 for map in maps:
                     self.add_tree_entry(ms, map, strip_name_prefix=self.MAP_NAME_PREFIX)
         tree.expandAll()
-        for column in self._labels.keys():
-            tree.resizeColumnToContents(column)
+        if self._first_rebuild:
+            for column in self._labels.keys():
+                tree.resizeColumnToContents(column)
+                if tree.columnWidth(column) > self.MAX_COLUMN_WIDTH:
+                    tree.setColumnWidth(column, self.MAX_COLUMN_WIDTH)
+            self._first_rebuild=False
 
     def _row_clicked_cb(self, item, column):
         v = getattr(item, '_volume', None)
