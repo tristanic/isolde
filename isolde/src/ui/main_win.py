@@ -194,6 +194,11 @@ class IsoldeMainWin(MainToolWindow):
                 models = [m for m in self.session.models.list() if type(m) == AtomicStructure]
                 models = sorted(models, key=lambda m: m.id)
                 if cm is None:
+                    # If any models are already initialised with Clipper, choose the first. Otherwise, leave it
+                    # up to the user
+                    from chimerax.clipper import get_symmetry_handler
+                    handlers = [get_symmetry_handler(m) for m in models]
+                    handlers = [h for h in handlers if h is not None]
                     mmcb.addItem('Choose a model...', None)
 
                 for m in models:
@@ -202,7 +207,11 @@ class IsoldeMainWin(MainToolWindow):
                 if cm is not None:
                     mmcb.setCurrentIndex(mmcb.findData(cm))
                 else:
-                    mmcb.setCurrentIndex(0)
+                    if len(handlers):
+                        cm = handlers[0].structure
+                        mmcb.setCurrentIndex(mmcb.findData(cm))
+                    else:
+                        mmcb.setCurrentIndex(0)
                     self._change_selected_model_cb()
 
     def cleanup(self):
