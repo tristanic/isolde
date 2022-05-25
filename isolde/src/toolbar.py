@@ -45,6 +45,12 @@ def toolbar_command(session, name):
             radius = 4.0
             focus = True
         run(session, f'clipper isolate sel mask {radius} focus {focus}')
+    elif name == 'tug atom':
+        run(session, 'ui mousemode right "isolde tug atom"')
+    elif name == 'tug residue':
+        run(session, 'ui mousemode right "isolde tug residue"')
+    elif name == 'tug selection':
+        run(session, 'ui mousemode right "isolde tug selection"')
 
 def _rota_command(session, cmd):
     from chimerax.atomic import selected_residues
@@ -94,6 +100,10 @@ class ToolbarButtonMgr:
 
         'spotlight': ('ISOLDE', 'Map', 'spotlight', 'Spotlight mode'),
         'mask': ('ISOLDE', 'Map', 'mask', 'Mask to selection'),
+
+        'tug atom': ('ISOLDE', 'Tugging mode', 'tug atom', 'Tug atom'),
+        'tug residue': ('ISOLDE', 'Tugging mode', 'tug residue', 'Tug residue'),
+        'tug selection': ('ISOLDE', 'Tugging mode', 'tug selecction', 'Tug selection'),
     }
 
     enable_if_single_peptide_selected=('flip peptide', 'flip cis-trans')
@@ -139,22 +149,37 @@ class ToolbarButtonMgr:
         self.set_enabled('Revert to checkpoint', True)
         self.set_enabled('Stop (keep)', True)
         self.set_enabled('Stop (discard)', True)
+        self.set_enabled('tug atom', True)
+        self.set_enabled('tug residue', True)
+        self.set_enabled('tug selection', True)
         self._update_map_buttons()
         bd = self.all_buttons['Pause simulation']
-        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+        def _cb(*_):
+            self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        self.session.triggers.add_handler('new frame', _cb)
 
 
     def _sim_pause_cb(self, *_):
         self.set_enabled('Pause simulation', False)
         self.set_enabled('Resume simulation', True)
         bd = self.all_buttons['Resume simulation']
-        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+        def _cb(*_):
+            self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        self.session.triggers.add_handler('new frame', _cb)
     
     def _sim_resume_cb(self, *_):
         self.set_enabled('Resume simulation', False)
         self.set_enabled('Pause simulation', True)
         bd = self.all_buttons['Pause simulation']
-        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+        def _cb(*_):
+            self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        self.session.triggers.add_handler('new frame', _cb)
 
     def _sim_end_cb(self, *_):
         self.set_enabled('Pause simulation', False)
@@ -164,9 +189,16 @@ class ToolbarButtonMgr:
         self.set_enabled('Revert to checkpoint', False)
         self.set_enabled('Stop (keep)', False)
         self.set_enabled('Stop (discard)', False)
+        self.set_enabled('tug atom', False)
+        self.set_enabled('tug residue', False)
+        self.set_enabled('tug selection', False)
         self._update_map_buttons()
         bd = self.all_buttons['Start simulation']
-        self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+        def _cb(*_):
+            self.session.toolbar.show_group_button(bd[0],bd[1],bd[3])
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        self.session.triggers.add_handler('new frame', _cb)
 
 
     def _update_map_buttons(self, *_):

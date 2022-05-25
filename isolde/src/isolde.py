@@ -289,6 +289,7 @@ class Isolde():
 
         session.isolde = self
         if session.ui.is_gui:
+            self._register_tug_modes()
             session._isolde_tb.isolde_started()
         ffmgr.background_load_ff(sp.forcefield)
 
@@ -416,6 +417,12 @@ class Isolde():
     ###################################################################
     # GUI related functions
     ###################################################################
+
+    def _register_tug_modes(self):
+        from .tugging import TugSingleAtomMode, TugResidueMode, TugSelectionMode
+        for mode in (TugSingleAtomMode, TugResidueMode, TugSelectionMode):
+            if mode not in self.session.ui.mouse_modes.modes:
+                self.session.ui.mouse_modes.add_mode(mode(self.session))
 
     def start_gui(self, gui):
         if self.gui_mode:
@@ -906,8 +913,10 @@ class Isolde():
             f(value)
     
     def _update_mouse_tug_spring_constant(self, k):
-        if self.simulation_running:
-            self._tugger.spring_constant=k
+        from .tugging import TugAtomsMode
+        for mode in self.session.ui.mouse_modes.modes:
+            if isinstance(mode, TugAtomsMode):
+                mode.spring_constant = k
 
 
     def _disable_chimerax_mouse_mode_panel(self, *_):
@@ -1547,24 +1556,21 @@ class Isolde():
         from .tugging import TugAtomsMode
         sm = self.sim_manager
         sc = sm.sim_construct
-        t = self._tugger = TugAtomsMode(self.session, sm.tuggable_atoms_mgr, sc.mobile_atoms,
-                spring_constant = self.sim_params.mouse_tug_spring_constant,
-                mode=mode)
-        return t
-
-    def _set_right_mouse_tug_mode(self, mode):
-        t = self._tugger = self._mouse_tug_mode(mode)
-        mm = self.session.ui.mouse_modes
-        mm.bind_mouse_mode('right', [], t)
+        from chimerax.core.commands import run
+        run(self.session, 'ui mousemode right "isolde tug atom', log=False)
 
     def _set_right_mouse_mode_tug_atom(self, *_):
-        self._set_right_mouse_tug_mode('atom')
+        from chimerax.core.commands import run
+        run(self.session, 'ui mousemode right "isolde tug atom"', log=False)
+
 
     def _set_right_mouse_mode_tug_residue(self, *_):
-        self._set_right_mouse_tug_mode('residue')
+        from chimerax.core.commands import run
+        run(self.session, 'ui mousemode right "isolde tug residue"', log=False)
 
     def _set_right_mouse_mode_tug_selection(self, *_):
-        self._set_right_mouse_tug_mode('selection')
+        from chimerax.core.commands import run
+        run(self.session, 'ui mousemode right "isolde tug selection"', log=False)
 
 
 

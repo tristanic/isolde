@@ -189,6 +189,16 @@ with the surroundings.
       name="mask" display_name="Mask to selection" icon="mask_to_sel.png"
       description="Mask map(s) to surround the selected atom(s)"/>
 
+    <Provider tab="ISOLDE" section="Tugging mode" mouse_mode="isolde tug atom"
+      name="tug atom" display_name="Tug atom" icon="tug_atom.png"
+      description="Right mouse tugs a single atom during simulations" />
+    <Provider tab="ISOLDE" section="Tugging mode" mouse_mode="isolde tug residue"
+      name="tug residue" display_name="Tug residue" icon="tug_residue.png"
+      description="Right mouse tugs all atoms in a residue during simulations" />
+    <Provider tab="ISOLDE" section="Tugging mode" mouse_mode="isolde tug selection"
+      name="tug selection" display_name="Tug selection" icon="tug_selection.png"
+      description="Right mouse tugs all selected atoms during simulations" />
+
   </Providers>
   <Classifiers>
     <!-- Development Status should be compatible with bundle version number -->

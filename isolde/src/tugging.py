@@ -14,38 +14,49 @@ from chimerax.mouse_modes import MouseMode
 from .constants import defaults
 _CARBON_MASS = defaults.CARBON_MASS
 
+import os
+base_dir = os.path.abspath(os.path.dirname(__file__))
+icon_dir = os.path.join(base_dir, 'icons')
+
 class TugAtomsMode(MouseMode):
     name = 'tug'
     #icon_file = 'tug.png'
 
     _modes = ('atom', 'residue', 'selection')
 
-    def __init__(self, session, tug_mgr, atoms, spring_constant = None,
+    def __init__(self, session, spring_constant = None,
         mode = 'atom'):
         MouseMode.__init__(self, session)
         self.tug_mode = mode
         self._tugging = False
         self._last_xy = None
-        self.name = 'ISOLDE_mouse_tug'
+        # self.name = 'ISOLDE_mouse_tug'
         self._focal_atom = None
         self._picked_atoms = None
         self._picked_tuggables = None
         self._pull_vector = None
         self._xyz0 = None
         self._xy = None
-        # Atomic array to pick from
-        self._atoms = atoms
-        # Tuggable atoms manager
-        self._tug_mgr = tug_mgr
         if spring_constant is None:
             from .constants import defaults
             spring_constant = defaults.MOUSE_TUG_SPRING_CONSTANT
         self.spring_constant = spring_constant
-        self.structure = atoms.unique_structures[0]
 
         # Variables to be set by the caller
         self.last_tugged_atom = None
         self.already_tugging = False
+
+    @property
+    def tug_mgr(self):
+        return self.session.isolde.sim_manager.tuggable_atoms_mgr
+    
+    @property
+    def atoms(self):
+        return self.session.isolde.sim_manager.sim_construct.mobile_atoms
+
+    @property
+    def structure(self):
+        return self.session.isolde.selected_model
 
     @property
     def tug_mode(self):
@@ -104,7 +115,7 @@ class TugAtomsMode(MouseMode):
         self._xy = (x,y)
         v = self.session.main_view
         if self.tug_mode == 'selection':
-            pa = self._atoms[self._atoms.selecteds]
+            pa = self.atoms[self.atoms.selecteds]
             self._reference_point = v.clip_plane_points(x,y)[0]
         else:
             # from . import picking
@@ -140,19 +151,22 @@ class TugAtomsMode(MouseMode):
 
         # Tug heavy atoms instead of hydrogens
         if a:
-            if a.element.name=='H':
-                h_mode = self._tug_mgr.allow_hydrogens
-                if h_mode == 'no':
-                    self.session.logger.warning('Tugging of hydrogens is not enabled. '
-                        'Applying tug to the nearest bonded heavy atom.')
-                    a = a.neighbors[0]
-                elif h_mode == 'polar':
-                    for n in a.neighbors:
-                        if n.element.name == 'C':
-                            self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
-                                'Applying tug to the nearest bonded heavy atom.')
-                            a = n
-                            break
+            if self.atoms.index(a) != -1:
+                if a.element.name=='H':
+                    h_mode = self.tug_mgr.allow_hydrogens
+                    if h_mode == 'no':
+                        self.session.logger.warning('Tugging of hydrogens is not enabled. '
+                            'Applying tug to the nearest bonded heavy atom.')
+                        a = a.neighbors[0]
+                    elif h_mode == 'polar':
+                        for n in a.neighbors:
+                            if n.element.name == 'C':
+                                self.session.logger.warning('Tugging of non-polar hydrogens is not enabled. '
+                                    'Applying tug to the nearest bonded heavy atom.')
+                                a = n
+                                break
+            else:
+                a = None
             self._focal_atom = a #a = self._focal_atom = pick
 
         tm = self.tug_mode
@@ -171,7 +185,7 @@ class TugAtomsMode(MouseMode):
         return pa
 
     def _start_tugging_atoms(self, atoms):
-        tugs = self._picked_tuggables = self._tug_mgr.get_tuggables(atoms)
+        tugs = self._picked_tuggables = self.tug_mgr.get_tuggables(atoms)
         n = len(tugs)
         if n == 0:
             self.tugging = False
@@ -245,7 +259,7 @@ class TugAtomsMode(MouseMode):
     def vr_press(self, event):
         # Virtual reality hand controller button press.
         if self.tug_mode == 'selection':
-            pa = self._atoms[self._atoms.selecteds]
+            pa = self.atoms[self.atoms.selecteds]
             self._reference_point = event.tip_position
             self._last_picked_atom_center = None
         else:
@@ -270,6 +284,27 @@ class TugAtomsMode(MouseMode):
         # Virtual reality hand controller button release.
         self.tugging = False
 
+
+class TugSingleAtomMode(TugAtomsMode):
+    name = 'isolde tug atom'
+    icon_file = os.path.join(icon_dir, 'tug_atom.png')
+
+    def __init__(self, session, spring_constant=None):
+        super().__init__(session, spring_constant=spring_constant, mode='atom')
+
+class TugResidueMode(TugAtomsMode):
+    name = 'isolde tug residue'
+    icon_file = os.path.join(icon_dir, 'tug_residue.png')
+
+    def __init__(self, session, spring_constant=None):
+        super().__init__(session, spring_constant=spring_constant, mode='residue')
+
+class TugSelectionMode(TugAtomsMode):
+    name = 'isolde tug selection'
+    icon_file = os.path.join(icon_dir, 'tug_selection.png')
+
+    def __init__(self, session, spring_constant=None):
+        super().__init__(session, spring_constant=spring_constant, mode='selection')
 
 
 class HapticTugger():
