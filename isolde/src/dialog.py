@@ -20,7 +20,7 @@ def generic_warning(message):
     msg.setStandardButtons(QMessageBox.Ok)
     msg.exec()
 
-def choice_warning(message):
+def choice_warning(message, allow_dont_ask_again=False):
     '''
     Pop up a warning dialog box with the given message, and return True
     if the user wants to go ahead.
@@ -30,7 +30,15 @@ def choice_warning(message):
     msg.setIcon(QMessageBox.Warning)
     msg.setText(message)
     msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
+    if allow_dont_ask_again:
+        dag_button = msg.addButton("Don't ask again", QMessageBox.ButtonRole.YesRole)
     reply = msg.exec()
+    if allow_dont_ask_again:
+        if msg.clickedButton()==dag_button:
+            return True, True
+        elif reply==QMessageBox.Ok:
+            return True, False
+        return False, False
     if reply == QMessageBox.Ok:
         return True
     return False
