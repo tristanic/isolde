@@ -128,6 +128,13 @@ class MapSettingsDialog(UI_Panel_Base):
         if rebuild_needed:
             self.rebuild_tree()
 
+    def init_tree_structure(self, mapsets):
+        '''
+        Override in derived classes. Should return a dict of {parent TreeWidgetItem: child models}
+        '''
+        pass
+
+
     def rebuild_tree(self):
         th = self._temporary_handlers
         while len(th):
@@ -140,20 +147,11 @@ class MapSettingsDialog(UI_Panel_Base):
         from chimerax.clipper import get_map_mgr
         mgr = get_map_mgr(self.isolde.selected_model)
         mapsets = [c for c in mgr.child_models() if isinstance(c, self.MAP_SET_TYPE)]
-
         if len(mapsets):
-            parent = tree.invisibleRootItem()
-            for mapset in mapsets:
-                maps = [map for map in mapset.all_maps if isinstance(map, self.MAP_TYPE)]
-                if not len(maps):
-                    continue
-                ms = QTreeWidgetItem(parent)
-                name = getattr(mapset, 'data_name', mapset.name)
-                ms.setText(self.NAME_COLUMN, name)
-                ms.setText(self.ID_COLUMN, mapset.id_string)
-                self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
+            tree_dict = self.init_tree_structure(mapsets)
+            for name, (p, maps) in tree_dict.items():
                 for map in maps:
-                    self.add_tree_entry(ms, map, strip_name_prefix=self.MAP_NAME_PREFIX)
+                    self.add_tree_entry(p, map, strip_name_prefix=self.MAP_NAME_PREFIX)                    
         tree.expandAll()
         if self._first_rebuild:
             for column in self._labels.keys():
@@ -169,21 +167,8 @@ class MapSettingsDialog(UI_Panel_Base):
             run(self.session, f'sel #{v.id_string}', log=False)
 
     def add_tree_entry(self, parent, map, strip_name_prefix=None):
-        import os
-        item = QTreeWidgetItem(parent)
-        item._volume = map
-        if strip_name_prefix is not None:
-            name = map.name.replace(strip_name_prefix, '')
-        else:
-            name = map.name
-        item.setText(self.NAME_COLUMN, name)
-        item.setText(self.ID_COLUMN, map.id_string)
-        self.add_display_menu_checkbox(item, self.DISPLAY_COLUMN, map)
-        self.add_style_menu_button(item, self.STYLE_COLUMN, map)
-        self.add_color_menu_button(item, self.COLOR_COLUMN, map)
-        self.add_difference_map_checkbox(item, self.DIFF_COLUMN, map)
-        self.add_mdff_checkbox(item, self.MDFF_COLUMN, map)
-        self.add_weight_spinbox(item, self.WEIGHT_COLUMN, map)
+        ''' Override in derived classes '''
+        pass
     
     def add_display_menu_checkbox(self, item, column, map):
         w = QWidget()
@@ -388,23 +373,125 @@ class MapSettingsDialog(UI_Panel_Base):
             h.remove()
         super().cleanup()
 
-class XmapLiveSettingsDialog(MapSettingsDialog):
+class XmapSettingsDialogBase(MapSettingsDialog):
+    def init_tree_structure(self, mapsets):
+        ret = {}
+        tree = self.tree
+        parent = tree.invisibleRootItem()
+        for mapset in mapsets:
+            maps = [map for map in mapset.all_maps if isinstance(map, self.MAP_TYPE)]
+            if not len(maps):
+                continue
+            ms = QTreeWidgetItem(parent)
+            ms.setText(self.NAME_COLUMN, mapset.base_name)
+            ms.setText(self.ID_COLUMN, mapset.id_string)
+            self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
+            ret[mapset.name] = (ms, maps)
+        return ret            
+
+    def add_tree_entry(self, parent, map, strip_name_prefix=None):
+        import os
+        item = QTreeWidgetItem(parent)
+        item._volume = map
+        if strip_name_prefix is not None:
+            name = map.name.replace(strip_name_prefix, '')
+        else:
+            name = map.name
+        item.setText(self.NAME_COLUMN, name)
+        item.setText(self.ID_COLUMN, map.id_string)
+        self.add_display_menu_checkbox(item, self.DISPLAY_COLUMN, map)
+        self.add_style_menu_button(item, self.STYLE_COLUMN, map)
+        self.add_color_menu_button(item, self.COLOR_COLUMN, map)
+        self.add_difference_map_checkbox(item, self.DIFF_COLUMN, map)
+        self.add_mdff_checkbox(item, self.MDFF_COLUMN, map)
+        self.add_weight_spinbox(item, self.WEIGHT_COLUMN, map)
+
+
+class XmapLiveSettingsDialog(XmapSettingsDialogBase):
     from chimerax.clipper.maps import XmapHandler_Live, XmapSet
     MAP_TYPE=XmapHandler_Live
     MAP_SET_TYPE=XmapSet
     MAP_NAME_PREFIX='(LIVE) '
 
-class XmapStaticSettingsDialog(MapSettingsDialog):
+        
+
+class XmapStaticSettingsDialog(XmapSettingsDialogBase):
     from chimerax.clipper.maps import XmapHandler_Static, XmapSet
     MAP_TYPE=XmapHandler_Static
     MAP_SET_TYPE=XmapSet
     MAP_NAME_PREFIX='(STATIC) '
+
+    dont_ask_again=False
+
+    def add_mdff_checkbox(self, item, column, map):
+        from chimerax.isolde import session_extensions as sx
+        mgr = sx.get_mdff_mgr(self.isolde.selected_model, map)
+        if mgr is None:
+            cb = QLabel('X')
+            cb.setStyleSheet('color:red; font-weight:bold;')
+            cb.setToolTip('This map is not suitable for MDFF')
+        else:
+            cb = QCheckBox()
+            cb.setChecked(mgr.enabled)
+            cb.setToolTip('<span>Allow this map to "pull" on atoms (cannot be set during simulations)</span>')
+            def enable_mdff(flag, m=mgr):
+                if flag and not self.dont_ask_again:
+                    from ...dialog import choice_warning
+                    go, dag = choice_warning('Since this map was generated from precalculated '
+                    'amplitudes and phases, ISOLDE has no way of determining '
+                    'whether it is suitable for fitting simulations. If generated '
+                    'from crystallographic data, you should ensure that it is a'
+                    '2Fo-Fc (or similar) map calculated with the free reflections '
+                    'excluded. Are you sure you want to continue?', allow_dont_ask_again=True)
+                    if not go:
+                        flag = False
+                        with slot_disconnected(cb.toggled, enable_mdff):
+                            cb.setChecked(False)
+                    self.dont_ask_again=dag
+                m.enabled=flag
+                
+            cb.toggled.connect(enable_mdff)
+            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation started',
+                lambda *_: cb.setEnabled(False)))
+            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation terminated',
+                lambda *_: cb.setEnabled(True)))
+
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        l.addWidget(cb)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
+
+
 
 class NXmapSettingsDialog(MapSettingsDialog):
     from chimerax.clipper.maps import NXmapHandler, NXmapSet
     MAP_TYPE=NXmapHandler
     MAP_SET_TYPE=NXmapSet
     MAP_NAME_PREFIX=''
+    
+    def init_tree_structure(self, mapsets):
+        # Should just be one mapset according to current design, but let's future-proof
+        tree = self.tree
+        ret = {}
+        if not any(len(mapset.all_maps) for mapset in mapsets):
+            return ret
+        parent = tree.invisibleRootItem()
+        if len(mapsets)==1:
+            return {'null': (parent, mapsets[0].all_maps)}
+        for mapset in mapsets:
+            if not len(mapset.all_maps):
+                continue
+            ms = QTreeWidgetItem(parent)
+            ms.setText(self.NAME_COLUMN, mapset.name)
+            ms.setText(self.ID_COLUMN, mapset.id_string)
+            self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
+            ret[mapset.name] = (ms, mapset.all_maps)
+        return ret
+        
+
 
 
 
