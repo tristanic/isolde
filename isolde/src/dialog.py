@@ -18,7 +18,7 @@ def generic_warning(message):
     msg.setIcon(QMessageBox.Warning)
     msg.setText(message)
     msg.setStandardButtons(QMessageBox.Ok)
-    msg.exec_()
+    msg.exec()
 
 def choice_warning(message):
     '''
@@ -30,7 +30,7 @@ def choice_warning(message):
     msg.setIcon(QMessageBox.Warning)
     msg.setText(message)
     msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
-    reply = msg.exec_()
+    reply = msg.exec()
     if reply == QMessageBox.Ok:
         return True
     return False
@@ -56,7 +56,7 @@ def failed_template_warning(residue):
     msg.addButton(exclude, QMessageBox.RejectRole)
     abort = QPushButton('Abort')
     msg.addButton(abort, QMessageBox.NoRole)
-    msg.exec_()
+    msg.exec()
     btn = msg.clickedButton()
     # print("Button: {}".format(btn))
     if btn == addh:
