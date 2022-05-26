@@ -177,8 +177,10 @@ class UI_Panel_Base:
 
 
 class IsoldeTab(QWidget):
-    def __init__(self, gui, tab_widget, tab_name):
+    def __init__(self, session, isolde, gui, tab_widget, tab_name):
         super().__init__()
+        self.session = session
+        self.isolde = isolde
         self.gui = gui
         self.tab_widget = tab_widget
         tab_widget.addTab(self, tab_name)
@@ -193,8 +195,12 @@ class IsoldeTab(QWidget):
         ml.addStretch()
         mf.setLayout(ml)
         sa.setWidget(mf)
+        self.populate()
     
     def addWidget(self, widget):
         # Last position is the spacer, so we always want to go just before that.
         self.main_layout.insertWidget(self.main_layout.count()-1, widget)
     
+    def populate(self):
+        ''' Override in derived classes to populate self.main_frame with widgets'''
+        pass

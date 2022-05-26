@@ -53,8 +53,9 @@ class IsoldeMainWin(MainToolWindow):
         from .ui_base import IsoldeTab
         from .general_tab import GeneralTab
         self.general_tab = GeneralTab(self.session, self.isolde, self, tabw, "General")
-        self.validate_tab = IsoldeTab(self, tabw, "Validate")
-        self.problems_tab = IsoldeTab(self, tabw, "Problem Zones")
+        from .validation_tab import ValidationTab
+        self.validate_tab = ValidationTab(self.session, self.isolde, self, tabw, "Validate")
+        self.problems_tab = IsoldeTab(self.session, self.isolde, self, tabw, "Problem Zones")
 
 
 

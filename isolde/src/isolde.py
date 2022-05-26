@@ -830,26 +830,6 @@ class Isolde():
         # Validation tab
         ####
 
-        iw._validate_rama_show_button.clicked.connect(
-            self._show_rama_plot
-            )
-        iw._validate_rama_hide_button.clicked.connect(
-            self._hide_rama_plot
-            )
-
-        iw._validate_pep_show_button.clicked.connect(
-            self._show_peptide_validation_frame
-            )
-        iw._validate_pep_hide_button.clicked.connect(
-            self._hide_peptide_validation_frame
-            )
-        iw._validate_pep_update_button.clicked.connect(
-            self._update_iffy_peptide_lists
-            )
-        iw._validate_pep_iffy_table.itemClicked.connect(
-            self._show_selected_iffy_peptide
-            )
-
         iw._validate_rota_show_button.clicked.connect(
             self._show_rota_validation_frame
             )
@@ -1633,12 +1613,6 @@ class Isolde():
         self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
         self.iw._rebuild_sel_residue_frame.setDisabled(True)
 
-    def _enable_peptide_bond_manipulation_frame(self):
-        self.iw._rebuild_sel_res_pep_frame.setEnabled(True)
-
-    def _disable_peptide_bond_manipulation_frame(self):
-        self.iw._rebuild_sel_res_pep_frame.setEnabled(False)
-
     def _enable_atom_position_restraints_frame(self):
         self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(True)
         self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(True)
@@ -2204,7 +2178,7 @@ class Isolde():
     ####
 
     def _register_ramaplot_callbacks(self, trigger_name, tools):
-        # Need to delay this to the next 
+        # Need to delay this to the next frame
         def register_next_frame(*_, tools=tools):
             from chimerax.isolde.validation.ramaplot.tool import Rama_ToolUI
             for tool in tools:
@@ -2213,7 +2187,6 @@ class Isolde():
             else:
                 return
             rplot = tool.tool_window
-            print('Registering ISOLDERamaPlot callbacks')
             if rplot.current_model is None:
                 rplot.current_model = self.selected_model
             def model_changed_cb(*_, rp=rplot):
@@ -2232,108 +2205,6 @@ class Isolde():
         self.session.triggers.add_handler('new frame', register_next_frame)
 
 
-
-
-    def _prepare_ramachandran_plot(self):
-        '''
-        Prepare an empty MatPlotLib figure to put the Ramachandran plots in.
-        '''
-        iw = self.iw
-        iw._validate_rama_go_button.setEnabled(False)
-        container = self._rama_plot_window = iw._validate_rama_plot_layout
-        from .validation.ramaplot import RamaPlot
-        mode_menu = iw._validate_rama_sel_combo_box
-        case_menu = iw._validate_rama_case_combo_box
-        restrict_button = iw._validate_rama_go_button
-        self._rama_plot = RamaPlot(self.session, self, iw._sim_tab_widget,
-            container, mode_menu, case_menu, restrict_button)
-
-    def _show_rama_plot(self, *_):
-        self.iw._validate_rama_stub_frame.hide()
-        self.iw._validate_rama_main_frame.show()
-        if self._rama_plot is None:
-            # Create the basic MatPlotLib canvas for the Ramachandran plot
-            self._prepare_ramachandran_plot()
-
-    def _hide_rama_plot(self, *_):
-        self.iw._validate_rama_main_frame.hide()
-        self.iw._validate_rama_stub_frame.show()
-
-    def _show_peptide_validation_frame(self, *_):
-        self.iw._validate_pep_stub_frame.hide()
-        self.iw._validate_pep_main_frame.show()
-        self._update_iffy_peptide_lists()
-
-    def _hide_peptide_validation_frame(self, *_):
-        self.iw._validate_pep_main_frame.hide()
-        self.iw._validate_pep_stub_frame.show()
-
-    def _update_iffy_peptide_lists(self, *_):
-        table = self.iw._validate_pep_iffy_table
-        if not table.isVisible():
-            return
-        from .session_extensions import get_proper_dihedral_mgr
-        pd_mgr = get_proper_dihedral_mgr(self.session)
-        model = self.selected_model
-        table.setRowCount(0)
-        if model is None:
-            return
-        if self.simulation_running:
-            residues = self.sim_manager.sim_construct.mobile_residues
-        else:
-            residues = model.residues
-        omegas = pd_mgr.get_dihedrals(residues, 'omega')
-        abs_angles = numpy.abs(omegas.angles)
-        from math import pi
-        from .constants import defaults
-        cc = defaults.CIS_PEPTIDE_BOND_CUTOFF
-        tc = defaults.TWISTED_PEPTIDE_BOND_DELTA
-        cis_mask = abs_angles < cc
-        twisted_mask = numpy.logical_and(abs_angles >= cc, abs_angles < pi-tc)
-
-        iffy_mask = numpy.logical_or(cis_mask, twisted_mask)
-        iffy = omegas[iffy_mask]
-        angles = numpy.degrees(iffy.angles)
-        cis_mask = cis_mask[iffy_mask]
-
-        table.setRowCount(len(iffy))
-        from Qt.QtGui import QColor, QBrush
-        from Qt.QtCore import Qt
-        cis_nonpro_color = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
-        cis_pro_color = QBrush(QColor(100,255,100), Qt.SolidPattern)
-        twisted_color = QBrush(QColor(240, 200, 160), Qt.SolidPattern)
-        from Qt.QtWidgets import QTableWidgetItem
-        for i, (omega, angle, cis) in enumerate(zip(iffy, angles, cis_mask)):
-            res1, res2 = omega.atoms.unique_residues
-            if cis:
-                conf_text = 'cis'
-            else:
-                conf_text = 'twisted'
-            data = (
-                res1.chain_id,
-                '{}-{}'.format(res1.number, res2.number),
-                '{}-{}'.format(res1.name, res2.name),
-                '{:.0f}° ({})'.format(angle, conf_text)
-            )
-            for j, d in enumerate(data):
-                item = QTableWidgetItem(d)
-                item.data = res2
-                if cis:
-                    if res2.name == 'PRO':
-                        color = cis_pro_color
-                    else:
-                        color = cis_nonpro_color
-                else:
-                    color = twisted_color
-                item.setBackground(color)
-                table.setItem(i, j, item)
-
-    def _show_selected_iffy_peptide(self, item):
-        res = item.data
-        self.session.selection.clear()
-        res.atoms.selected=True
-        from .navigate import get_stepper
-        get_stepper(self.selected_model).step_to(res)
 
     def _show_rota_validation_frame(self, *_):
         self.iw._validate_rota_stub_frame.hide()
