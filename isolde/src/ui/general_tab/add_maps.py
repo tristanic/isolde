@@ -57,6 +57,7 @@ class MapAddDialog(UI_Panel_Base):
         from chimerax.map import Volume
         # Only use explicit Volume instances, not subclasses
         volumes = [v for v in self.session.models.list() if type(v)==Volume]
+        rsmm.clear()
         for v in volumes:
             action = rsmm.addAction(f'#{v.id_string}: {v.name}')
             def add_map_cb(*_, session=self.session, volume=v):
