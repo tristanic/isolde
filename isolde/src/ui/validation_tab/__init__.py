@@ -16,3 +16,5 @@ class ValidationTab(IsoldeTab):
 
         from .peptide_bond import PeptideBondPanel
         self.addWidget(PeptideBondPanel(session, isolde, parent, gui))
+        from .rotamer import RotamerPanel
+        self.addWidget(RotamerPanel(session, isolde, parent, gui))
