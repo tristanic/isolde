@@ -830,19 +830,6 @@ class Isolde():
         # Validation tab
         ####
 
-        iw._validate_rota_show_button.clicked.connect(
-            self._show_rota_validation_frame
-            )
-        iw._validate_rota_hide_button.clicked.connect(
-            self._hide_rota_validation_frame
-            )
-        iw._validate_rota_update_button.clicked.connect(
-            self._update_iffy_rota_list
-            )
-        iw._validate_rota_table.itemClicked.connect(
-            self._show_selected_iffy_rota
-        )
-
         from .validation.clashes import Clash_Table_Mgr
         self._clash_mgr = Clash_Table_Mgr(self)
 
@@ -2203,65 +2190,6 @@ class Isolde():
             from chimerax.core.triggerset import DEREGISTER
             return DEREGISTER
         self.session.triggers.add_handler('new frame', register_next_frame)
-
-
-
-    def _show_rota_validation_frame(self, *_):
-        self.iw._validate_rota_stub_frame.hide()
-        self.iw._validate_rota_main_frame.show()
-        self._update_iffy_rota_list()
-
-    def _hide_rota_validation_frame(self, *_):
-        self.iw._validate_rota_stub_frame.show()
-        self.iw._validate_rota_main_frame.hide()
-
-
-    def _update_iffy_rota_list(self, *_):
-        table = self.iw._validate_rota_table
-        if not table.isVisible():
-            return
-        from .session_extensions import get_rotamer_mgr
-        rota_m = get_rotamer_mgr(self.session)
-        table.setRowCount(0)
-        if self.selected_model is None:
-            return
-        if self.simulation_running:
-            residues = self.sim_manager.sim_construct.mobile_residues
-        else:
-            residues = self.selected_model.residues
-        rotas = rota_m.get_rotamers(residues)
-        iffy, scores = rota_m.non_favored_rotamers(rotas)
-        order = numpy.argsort(scores)
-        outlier_cutoff = rota_m.cutoffs[1]
-        from Qt.QtGui import QColor, QBrush
-        from Qt.QtCore import Qt
-        badColor = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
-        table.setRowCount(len(iffy))
-        from Qt.QtWidgets import QTableWidgetItem
-        for i, index in enumerate(order):
-            r = iffy[index]
-            score = scores[index]
-            res = r.residue
-            data = (
-                res.chain_id,
-                str(res.number),
-                res.name,
-                '{:.4f}'.format(score*100)
-            )
-            for j, d in enumerate(data):
-                item = QTableWidgetItem(d)
-                item.data = res
-                if score < outlier_cutoff:
-                    item.setBackground(badColor)
-                table.setItem(i, j, item)
-        table.resizeColumnsToContents()
-
-    def _show_selected_iffy_rota(self, item):
-        res = item.data
-        self.session.selection.clear()
-        res.atoms.selected=True
-        from .navigate import get_stepper
-        get_stepper(self.selected_model).step_to(res)
 
 
     ##############################################################
