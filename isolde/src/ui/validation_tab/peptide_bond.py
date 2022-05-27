@@ -19,6 +19,7 @@ class PeptideBondDialog(UI_Panel_Base):
         mf = self.main_frame
         ml = self.main_layout=DefaultVLayout()
         self._first_rebuild = True
+        self._temporary_isolde_handlers = []
         
         table = self.table = QTableWidget(mf)
         ml.addWidget(table)
@@ -113,6 +114,12 @@ class PeptideBondDialog(UI_Panel_Base):
             self._populate_table()
     
     def selected_model_changed_cb(self, trigger_name, data):
+        tih = self._temporary_isolde_handlers
+        while len(tih):
+            tih.pop().remove()
+        m = data
+        if m is not None:
+            tih.append(m.triggers.add_handler('changes', self._model_changes_cb))
         if not self.container.is_collapsed:
             self._populate_table()
 
@@ -123,8 +130,22 @@ class PeptideBondDialog(UI_Panel_Base):
         run(self.session, f'isolde step #{m.id_string}/{res.chain_id}:{res.number}', log=False)
 
 
+    def _model_changes_cb(self, trigger_name, changes):
+        if changes[1].num_deleted_atoms():
+            # Rebuild table to purge any deleted residues
+            def changes_done_cb(*_):
+                if not self.container.is_collapsed:
+                    self._populate_table()
+                from chimerax.core.triggerset import DEREGISTER
+                return DEREGISTER
+            from chimerax.atomic import get_triggers
+            get_triggers().add_handler('changes done', changes_done_cb)
 
-
+    def cleanup(self):
+        tih = self._temporary_isolde_handlers
+        while len(tih):
+            tih.pop().remove()
+        super().cleanup()
 
     
 
