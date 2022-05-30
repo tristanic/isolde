@@ -62,6 +62,16 @@ class CollapsibleArea(QWidget):
     @property
     def is_collapsed(self):
         return not self.toggle_button.isChecked()
+    
+    def expand(self):
+        if not self.is_collapsed:
+            return
+        self.toggle_button.toggle()
+    
+    def collapse(self):
+        if self.is_collapsed:
+            return
+        self.toggle_button.toggle()
 
     def _do_animation(self, checked):
         ca = self.content_area
