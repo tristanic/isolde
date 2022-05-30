@@ -11,7 +11,7 @@ class RotamerPanel(CollapsibleArea):
         self.setContentLayout(rd.main_layout)
 
 class RotamerDialog(UI_Panel_Base):
-    NUM_COLUMNS = 4
+    COLUMN_LABELS = ('Chain', 'Residue', 'Resname', 'Prior probability (%)')
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=True):
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
 
@@ -29,8 +29,8 @@ class RotamerDialog(UI_Panel_Base):
         b.clicked.connect(self._populate_table)
         hl.addWidget(b)
         ml.addLayout(hl)
-        table.setColumnCount(self.NUM_COLUMNS)
-        table.setHorizontalHeaderLabels(['Chain', 'Residue', 'Resname', 'Prior probability (%)'])
+        table.setColumnCount(len(self.COLUMN_LABELS))
+        table.setHorizontalHeaderLabels(self.COLUMN_LABELS)
         table.itemClicked.connect(self._item_clicked_cb)
 
         self._isolde_trigger_handlers.append(isolde.triggers.add_handler('selected model changed', self.selected_model_changed_cb))
