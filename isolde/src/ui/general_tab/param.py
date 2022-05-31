@@ -13,6 +13,7 @@ class ParameterisePanel(CollapsibleArea):
 class ParameteriseDialog(UI_Panel_Base):
     def __init__(self, session, isolde, gui, collapse_area):
         super().__init__(session, isolde, gui, collapse_area.content_area)
+        self._dont_warn_again = False
         self.container = collapse_area
         mf = self.main_frame
         ml = self.main_layout = DefaultVLayout()
@@ -67,8 +68,24 @@ class ParameteriseDialog(UI_Panel_Base):
             return dlg.selectedFiles()
     
     def _parameterise_sel_cb(self, *_):
-        from chimerax.core.commands import run
-        run(self.session, f'isolde param sel override {self.parameterise_override_checkbox.isChecked()}')
+        from chimerax.isolde.dialog import choice_warning
+        go = True
+        if not self._dont_warn_again:
+            from chimerax.atomic import selected_residues
+            r = selected_residues(self.session)[0]
+            from chimerax.isolde.dialog import choice_warning
+            go, dont_ask_again = choice_warning('This will run ANTECHAMBER to perform a semi-empirical parameterisation on the '
+                'selected residue. It is critically important that you make sure that all atoms are present and '
+                'hydrogens are correct before going forward. Note that this can take a long time (many minutes) '
+                'for very large ligands. If automatic charge assignment fails, try manually running '
+                f'the command "isolde param #{r.structure.id_string}{r.atomspec}". \n'
+                'Would you like to continue?', allow_dont_ask_again=True
+                )
+            self._dont_warn_again = dont_ask_again
+            
+        if go:
+            from chimerax.core.commands import run
+            run(self.session, f'isolde param sel override {self.parameterise_override_checkbox.isChecked()}')
 
     def _selection_changed_cb(self, *_):
         from chimerax.atomic import selected_residues
