@@ -1,7 +1,6 @@
 from ..collapse_button import CollapsibleArea
 from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout
 from Qt.QtWidgets import QTableWidget, QTableWidgetItem, QPushButton
-from Qt.QtGui import QColor, QBrush
 from Qt.QtCore import Qt
 
 class ClashesPanel(CollapsibleArea):
@@ -101,7 +100,6 @@ class ClashesDialog(UI_Panel_Base):
         # Sort clashes in decreasing order of overlap
         clash_list = sorted(clash_list, key=lambda x: x[1], reverse=True)
 
-        from Qt.QtWidgets import QTableWidgetItem
         for i, (catoms, overlap) in enumerate(clash_list):
             a1, a2 = catoms
             r1, r2 = catoms.residues
