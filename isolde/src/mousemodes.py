@@ -173,13 +173,13 @@ class AtomPicker_Old(MouseMode):
             self.pick_from_any()
         else:
             self._isolde_model_handler = isolde.triggers.add_handler(
-                'selected model changed', self._isolde_changed_model)
+                isolde.SELECTED_MODEL_CHANGED, self._isolde_changed_model)
         # While a simulation is running, we only want to pick from the
         # mobile atoms
         self._sim_start_handler = isolde.triggers.add_handler(
-            'simulation started', self._on_sim_start)
+            isolde.SIMULATION_STARTED, self._on_sim_start)
         self._sim_end_handler = isolde.triggers.add_handler(
-            'simulation terminated', self._on_sim_end)
+            isolde.SIMULATION_TERMINATED, self._on_sim_end)
 
     @property
     def atoms(self):

@@ -33,7 +33,7 @@ class RotamerDialog(UI_Panel_Base):
         table.setHorizontalHeaderLabels(self.COLUMN_LABELS)
         table.itemClicked.connect(self._item_clicked_cb)
 
-        self._isolde_trigger_handlers.append(isolde.triggers.add_handler('selected model changed', self.selected_model_changed_cb))
+        self._isolde_trigger_handlers.append(isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self.selected_model_changed_cb))
         self.container.expanded.connect(self._populate_table)
         
 

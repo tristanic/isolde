@@ -20,7 +20,7 @@ class UI_Live_Map_Controls(UI_Panel_Base):
         self._update_sim_button = update_sim_potential_button
         self.set_enabled(self._enable_check(isolde.selected_model))
         self._isolde_trigger_handlers.append(
-            isolde.triggers.add_handler('selected model changed',
+            isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED,
                 self._model_changed_cb)
         )
 

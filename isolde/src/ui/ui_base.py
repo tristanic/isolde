@@ -100,8 +100,8 @@ class UI_Panel_Base:
         self._isolde_trigger_handlers = []
         if sim_sensitive:
             self._isolde_trigger_handlers.extend( [
-                isolde.triggers.add_handler('simulation started', self.sim_start_cb),
-                isolde.triggers.add_handler('simulation terminated', self.sim_end_cb)
+                isolde.triggers.add_handler(isolde.SIMULATION_STARTED, self.sim_start_cb),
+                isolde.triggers.add_handler(isolde.SIMULATION_TERMINATED, self.sim_end_cb)
             ])
         gui.register_panel(self)
 

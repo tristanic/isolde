@@ -134,12 +134,12 @@ class ToolbarButtonMgr:
     def isolde_started(self):
         isolde = self.session.isolde
         self.set_enabled('Start ISOLDE', False)
-        isolde.triggers.add_handler('isolde closed', self._isolde_close_cb)
-        isolde.triggers.add_handler('simulation started', self._sim_start_cb)
-        isolde.triggers.add_handler('simulation paused', self._sim_pause_cb)
-        isolde.triggers.add_handler('simulation resumed', self._sim_resume_cb)
-        isolde.triggers.add_handler('simulation terminated', self._sim_end_cb)
-        isolde.triggers.add_handler('selected model changed', self._update_map_buttons)
+        isolde.triggers.add_handler(isolde.ISOLDE_CLOSED, self._isolde_close_cb)
+        isolde.triggers.add_handler(isolde.SIMULATION_STARTED, self._sim_start_cb)
+        isolde.triggers.add_handler(isolde.SIMULATION_PAUSED, self._sim_pause_cb)
+        isolde.triggers.add_handler(isolde.SIMULATION_RESUMED, self._sim_resume_cb)
+        isolde.triggers.add_handler(isolde.SIMULATION_TERMINATED, self._sim_end_cb)
+        isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self._update_map_buttons)
 
     def _sim_start_cb(self, *_):
         self.set_enabled('Start simulation', False)

@@ -107,8 +107,8 @@ class IsoldeMainWin(MainToolWindow):
             )
         
         self._update_model_list_cb(None, None)
-        self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler('simulation started', self._sim_start_cb))
-        self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler('simulation terminated', self._sim_end_cb))
+        self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler(self.isolde.SIMULATION_STARTED, self._sim_start_cb))
+        self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler(self.isolde.SIMULATION_TERMINATED, self._sim_end_cb))
 
         mmcb.currentIndexChanged.connect(self._change_selected_model_cb)
 

@@ -118,8 +118,8 @@ class MapSettingsDialog(UI_Panel_Base):
             cxh.append(session.triggers.add_handler(trigger_name, _model_changes_cb))
         
         ith = self._isolde_trigger_handlers
-        ith.append(isolde.triggers.add_handler('selected model changed', self._rebuild_tree_if_necessary))
-        self.container.expanded.connect(lambda: self._rebuild_tree_if_necessary(None, None))
+        ith.append(isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self._rebuild_tree_if_necessary))
+        self.container.expanded.connect(self.rebuild_tree)
         self._temporary_handlers = []
         self.rebuild_tree()
 
@@ -291,9 +291,9 @@ class MapSettingsDialog(UI_Panel_Base):
             def enable_mdff(flag, m=mgr):
                 m.enabled=flag
             cb.toggled.connect(enable_mdff)
-            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation started',
+            self._temporary_handlers.append(self.isolde.triggers.add_handler(self.isolde.SIMULATION_STARTED,
                 lambda *_: cb.setEnabled(False)))
-            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation terminated',
+            self._temporary_handlers.append(self.isolde.triggers.add_handler(self.isolde.SIMULATION_TERMINATED,
                 lambda *_: cb.setEnabled(True)))
 
         w = QWidget()
@@ -463,9 +463,9 @@ class XmapStaticSettingsDialog(XmapSettingsDialogBase):
                 m.enabled=flag
                 
             cb.toggled.connect(enable_mdff)
-            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation started',
+            self._temporary_handlers.append(self.isolde.triggers.add_handler(self.isolde.SIMULATION_STARTED,
                 lambda *_: cb.setEnabled(False)))
-            self._temporary_handlers.append(self.isolde.triggers.add_handler('simulation terminated',
+            self._temporary_handlers.append(self.isolde.triggers.add_handler(self.isolde.SIMULATION_TERMINATED,
                 lambda *_: cb.setEnabled(True)))
 
         w = QWidget()

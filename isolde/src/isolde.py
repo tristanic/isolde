@@ -128,13 +128,21 @@ class Isolde():
     functionality could be achieved without too much trouble using the
     PyQt signal/slot system.
     '''
+    SELECTED_MODEL_CHANGED = 'selected model changed'
+    SIMULATION_STARTED = 'simulation started'
+    SIMULATION_TERMINATED = 'simulation terminated'
+    SIMULATION_PAUSED = 'simulation paused'
+    SIMULATION_RESUMED = 'simulation resumed'
+    UNPARAMETERISED_RESIDUE = 'unparameterised residue'
+    ISOLDE_CLOSED = 'isolde closed'
     trigger_names = (
-        'selected model changed', # Changed the master model selection
-        'simulation started',
-        'simulation terminated',
-        'simulation paused',
-        'simulation resumed',
-        'isolde closed'
+        SELECTED_MODEL_CHANGED, # Changed the master model selection
+        SIMULATION_STARTED,
+        SIMULATION_TERMINATED,
+        SIMULATION_PAUSED,
+        SIMULATION_RESUMED,
+        UNPARAMETERISED_RESIDUE,
+        ISOLDE_CLOSED
         )
 
     def __init__(self, session, gui=None):
@@ -2178,15 +2186,15 @@ class Isolde():
                 rplot.current_model = self.selected_model
             def model_changed_cb(*_, rp=rplot):
                 rp.current_model = self.selected_model
-            rplot.add_callback(self.triggers, 'selected model changed', model_changed_cb)
+            rplot.add_callback(self.triggers, self.SELECTED_MODEL_CHANGED, model_changed_cb)
             def sim_start_cb(*_, rp=rplot):
                 if rp.current_model == self.selected_model:
                     rp.restrict_to_selection(self.sim_manager.sim_construct.mobile_residues, display_text='Mobile residues')
-            rplot.add_callback(self.triggers, 'simulation started', sim_start_cb)
+            rplot.add_callback(self.triggers, self.SIMULATION_STARTED, sim_start_cb)
             def sim_end_cb(*_, rp=rplot):
                 if rp.current_model == self.selected_model:
                     rp.display_all_residues()
-            rplot.add_callback(self.triggers, 'simulation terminated', sim_end_cb)
+            rplot.add_callback(self.triggers, self.SIMULATION_TERMINATED, sim_end_cb)
             from chimerax.core.triggerset import DEREGISTER
             return DEREGISTER
         self.session.triggers.add_handler('new frame', register_next_frame)
@@ -2450,7 +2458,7 @@ class Isolde():
             self._sim_end_cb()
             err_text = str(e)
             if err_text.startswith("Unparameterised"):
-                self._unparam_mgr._sim_unparam_res_cb()
+                self.triggers.activate_trigger(self.UNPARAMETERISED_RESIDUE, None)
                 return
             raise
         except:
@@ -2562,7 +2570,7 @@ class Isolde():
         # self._update_sim_status_indicator()
         # self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
-        self.triggers.activate_trigger('simulation started', None)
+        self.triggers.activate_trigger(self.SIMULATION_STARTED, None)
         sh = self.sim_handler
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
         sh.triggers.add_handler('sim paused', self._sim_pause_cb)
