@@ -59,9 +59,9 @@ class MaskAndSpotlightSettingsDialog(UI_Panel_Base):
         l2.addWidget(fcb)
         ml.addLayout(l2)
 
-        self._selected_model_changed_cb('', self.isolde.selected_model)
+        self.selected_model_changed_cb('', self.isolde.selected_model)
 
-    def _selected_model_changed_cb(self, _, selected_model):
+    def selected_model_changed_cb(self, _, selected_model):
         h = getattr(self, '_spotlight_radius_change_handler', None)
         if h is not None:
             h.remove()

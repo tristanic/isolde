@@ -15,8 +15,7 @@ class MapAddPanel(CollapsibleArea):
 class MapAddDialog(UI_Panel_Base):
     def __init__(self, session, isolde, gui, main_frame):
         super().__init__(session, isolde, gui, main_frame)
-        self._isolde_trigger_handlers.append(self.isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self._selected_model_changed_cb))
-        self._selected_model_changed_cb('', self.isolde.selected_model)
+        self.selected_model_changed_cb('', self.isolde.selected_model)
         mf = self.main_frame
         ml = self.main_layout = DefaultVLayout()
 
@@ -66,7 +65,7 @@ class MapAddDialog(UI_Panel_Base):
             action.triggered.connect(add_map_cb)
         
 
-    def _selected_model_changed_cb(self, _, selected_model):
+    def selected_model_changed_cb(self, _, selected_model):
         if selected_model is None:
             self.main_frame.setEnabled(False)
         else:

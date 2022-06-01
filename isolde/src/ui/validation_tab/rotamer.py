@@ -33,7 +33,6 @@ class RotamerDialog(UI_Panel_Base):
         table.setHorizontalHeaderLabels(self.COLUMN_LABELS)
         table.itemClicked.connect(self._item_clicked_cb)
 
-        self._isolde_trigger_handlers.append(isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self.selected_model_changed_cb))
         self.container.expanded.connect(self._populate_table)
         
 
@@ -92,11 +91,10 @@ class RotamerDialog(UI_Panel_Base):
         if not self.container.is_collapsed:
             self._populate_table()
     
-    def selected_model_changed_cb(self, trigger_name, data):
+    def selected_model_changed_cb(self, trigger_name, m):
         tih = self._temporary_isolde_handlers
         while len(tih):
             tih.pop().remove()
-        m = data
         if m is not None:
             tih.append(m.triggers.add_handler('changes', self._model_changes_cb))
         if not self.container.is_collapsed:

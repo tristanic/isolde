@@ -205,7 +205,9 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         QTimer.singleShot(self.container.animation_duration, lambda: self.gui.validate_tab.scroll_area.ensureWidgetVisible(self.main_frame))
 
 
-
+    def selected_model_changed_cb(self, *_):
+        self.residue_table.clearContents()
+        self.template_tree.clear()
             
     def _ask_to_add_hydrogens_if_necessary(self, residues):
             h = residues.atoms[residues.atoms.element_names=='H']

@@ -40,8 +40,8 @@ class UI_Live_Map_Controls(UI_Panel_Base):
     def sim_end_cb(self, trigger_name, data):
         self._update_sim_button.setEnabled(False)
 
-    def chimerax_models_changed(self, selected_model):
-        self.set_enabled(self._enable_check(model))
+    def selected_model_changed_cb(self, trigger_name, selected_model):
+        self.set_enabled(self._enable_check(selected_model))
 
     def _model_changed_cb(self, trigger_name, model):
         self.set_enabled(self._enable_check(model))

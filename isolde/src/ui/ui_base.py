@@ -97,7 +97,7 @@ class UI_Panel_Base:
         self.expert_level = expert_level
         self._set_expert_level()
         self._chimerax_trigger_handlers = []
-        self._isolde_trigger_handlers = []
+        self._isolde_trigger_handlers = [isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self.selected_model_changed_cb)]
         if sim_sensitive:
             self._isolde_trigger_handlers.extend( [
                 isolde.triggers.add_handler(isolde.SIMULATION_STARTED, self.sim_start_cb),
@@ -138,7 +138,7 @@ class UI_Panel_Base:
         pass
 
 
-    def chimerax_models_changed(self, selected_model):
+    def selected_model_changed_cb(self, trigger_name, selected_model):
         '''
         Will be called by ISOLDE when the set of models loaded in ChimeraX
         changes.
