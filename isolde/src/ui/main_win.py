@@ -55,8 +55,8 @@ class IsoldeMainWin(MainToolWindow):
         self.general_tab = GeneralTab(self.session, self.isolde, self, tabw, "General")
         from .validation_tab import ValidationTab
         self.validate_tab = ValidationTab(self.session, self.isolde, self, tabw, "Validate")
-        self.problems_tab = IsoldeTab(self.session, self.isolde, self, tabw, "Problem Zones")
-
+        from ..problem_regions.ui import ProblemAggregatorTab
+        self.problems_tab = ProblemAggregatorTab(self.session, self.isolde, self, tabw)
 
 
 
