@@ -13,6 +13,7 @@ class ProblemAggregator:
         self._validation_problem_getters = {
             'Protein sidechains':               self.get_rotamer_problems,
             'Protein backbone':                 self.get_protein_backbone_problems,
+            'Clashes':                          self.get_clashes,
         }
 
     from chimerax.isolde.molobject import (
@@ -20,6 +21,7 @@ class ProblemAggregator:
         AdaptiveDihedralRestraint, AdaptiveDistanceRestraint,
         Rotamer, Rama
     )
+    from chimerax.isolde.validation.clashes import Clash
 
     _registered_types = {
         'Standard torsion restraints': ProperDihedralRestraint,
@@ -28,7 +30,11 @@ class ProblemAggregator:
         'Adaptive distance restraints': AdaptiveDistanceRestraint,
         'Protein sidechains': Rotamer,
         'Protein backbone': Rama,
+        'Clashes': Clash
     }
+
+    _registered_names = {val:key for key, val in _registered_types.items()}
+
 
     @property
     def registered_restraint_problem_types(self):
@@ -40,15 +46,9 @@ class ProblemAggregator:
     
     def registered_type(self, name):
         return self._registered_types[name]
-
-    def register_indicator_type(self, problem_getter):
-        '''
-        Argument "problem_getter" should be a callable taking the structure as its
-        sole argument and returning a list of objects representing problem sites. 
-        Each object must have a `center` property returning a single xyz coordinate
-        and a `atoms` property returing involved atoms.
-        '''
-        self._problem_managers.append(problem_getter)
+    
+    def registered_name(self, vtype):
+        return self._registered_names[vtype]
     
     def problem_zones(self, structure, restraint_types=None, validation_types=None, cutoff=3, min_points=6, validation_outliers_only=False):
         if restraint_types is None:
@@ -151,3 +151,9 @@ class ProblemAggregator:
         problems = concatenate([problems, cis_nonpro,twisted])
         problem_ramas = rmgr.get_ramas(problems)
         return problem_ramas
+
+    @staticmethod
+    def get_clashes(structure, outliers_only=True):
+        from chimerax.isolde.validation.clashes import unique_clashes
+        clashes = unique_clashes(structure.session, structure.atoms, severe_only=outliers_only)
+        return clashes

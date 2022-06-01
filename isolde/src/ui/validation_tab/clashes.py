@@ -71,6 +71,9 @@ class ClashesDialog(UI_Panel_Base):
         else:
             self._populate_table()
 
+    def selected_model_changed_cb(self, *_):
+        self.table.clearContents()
+
     def _populate_table(self, *_):
         atoms = self.atoms
         t = self.table
@@ -79,34 +82,18 @@ class ClashesDialog(UI_Panel_Base):
         t.setRowCount(0)
         if not len(atoms):
             return
-        from chimerax.clashes import clashes
-        clash_dict = clashes.find_clashes(self.session, atoms, inter_model=False)
-        if not len(clash_dict):
-            return
-        from functools import reduce
-        # Clash dict is bi-directional, so number of clashes is half the total count
-        clash_count = 1/2 * reduce(lambda x,y: x+y, (len(d.keys()) for d in clash_dict.values()))
-        t.setRowCount(clash_count)
-        seen = set()
-        from chimerax.atomic import Atoms
-        # Make list of unique clashing atom pairs and their distances
-        clash_list = []
-        for a1, clashes in clash_dict.items():
-            seen.add(a1)
-            for a2, dist in clashes.items():
-                if a2 in seen:
-                    continue
-                clash_list.append((Atoms([a1,a2]), dist))
-        # Sort clashes in decreasing order of overlap
-        clash_list = sorted(clash_list, key=lambda x: x[1], reverse=True)
+        from chimerax.isolde.validation.clashes import unique_clashes
+        clashes = unique_clashes(self.session, atoms)
 
-        for i, (catoms, overlap) in enumerate(clash_list):
+        t.setRowCount(len(clashes))
+        for i, clash in enumerate(clashes):
+            catoms = clash.atoms
             a1, a2 = catoms
             r1, r2 = catoms.residues
             data = (
             "{} {}{}: {}".format(r1.name, r1.chain_id, r1.number, a1.name),
             "{} {}{}: {}".format(r2.name, r2.chain_id, r2.number, a2.name),
-            "{:0.2f}".format(overlap)
+            "{:0.2f}".format(clash.overlap)
             )
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
@@ -117,10 +104,10 @@ class ClashesDialog(UI_Panel_Base):
 
     def _item_clicked_cb(self, item):
         atoms = item.data(Qt.ItemDataRole.UserRole)
-        from chimerax.isolde.view import focus_on_selection
+        from chimerax.core.commands import run
         self.session.selection.clear()
         atoms.selecteds=True
         atoms.displays=True
-        focus_on_selection(self.session, atoms)
+        run(self.session, 'view sel', log=False)
 
         
