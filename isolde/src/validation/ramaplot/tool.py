@@ -98,7 +98,7 @@ class RamaMainWin(MainToolWindow):
 
 
 
-        menu_layout.addItem(DefaultSpacerItem())
+        menu_layout.addStretch()
 
         plot_layout = self.plot_layout = QGridLayout()
         plot_layout.setContentsMargins(1,0,1,0)
@@ -114,6 +114,7 @@ class RamaMainWin(MainToolWindow):
                 p = self._plots[case] = RamaPlot(self.session, self, case)
                 plot_layout.addWidget(p, row, column, 1, 1)
         main_layout.addLayout(plot_layout)
+        main_layout.addStretch()
         
         self._populate_rama_cases_menu()
         self._visible_plots=[]
@@ -215,29 +216,34 @@ class RamaMainWin(MainToolWindow):
         a.triggered.connect(restrict_to_selection)
         
         options_menu = dmm.addMenu('Options')
+        a1 = options_menu.addAction('Hide favoured')
+        a1.setCheckable(True)
+        a2 = options_menu.addAction('Outliers only')
+        a2.setCheckable(True)
+        a3 = self._show_markup_action = options_menu.addAction('Show markup on model')
+        a3.setCheckable(True)
         def _hide_favored(flag):
             if flag:
                 self.display_mode |= self.Restrictions.DISFAVORED_ONLY
             else:
                 self.display_mode &= ~self.Restrictions.DISFAVORED_ONLY
+                if a2.isChecked():
+                    a2.toggle()
+                    return
             self.update_scatter()
-        a1 = options_menu.addAction('Hide favoured')
-        a1.setCheckable(True)
         a1.toggled.connect(_hide_favored)
         def _outliers_only(flag):
             if flag:
-                a1.setChecked(True)
                 self.display_mode |= self.Restrictions.OUTLIERS_ONLY
+                if not a1.isChecked():
+                    a1.toggle()
+                    return
             else:
                 self.display_mode &= ~self.Restrictions.OUTLIERS_ONLY
             self.update_scatter()
-        a2 = options_menu.addAction('Outliers only')
-        a2.setCheckable(True)
         a2.toggled.connect(_outliers_only)
         def _show_markup(flag):
             self.show_markup = flag
-        a3 = options_menu.addAction('Show markup on model')
-        a3.setCheckable(True)
         a3.toggled.connect(_show_markup)
 
 
@@ -245,13 +251,21 @@ class RamaMainWin(MainToolWindow):
 
     @property
     def show_markup(self):
-        return getattr(self, '_show_markup', False)
+        if self.current_model is None:
+            return False
+        from chimerax.isolde.validation import RamaAnnotator
+        for m in self.current_model.child_models():
+            if isinstance(m, RamaAnnotator):
+                return True
+        return False
     
     @show_markup.setter
     def show_markup(self, show):
         if show != self.show_markup:
-            self._show_markup = show
             self._show_or_hide_model_markup(show)
+        from Qt.QtCore import QSignalBlocker
+        with QSignalBlocker(self._show_markup_action):
+            self._show_markup_action.setChecked(show)
         
     def _show_or_hide_model_markup(self, show):
         if self.current_model is not None:
@@ -276,8 +290,9 @@ class RamaMainWin(MainToolWindow):
             self.model_select_button.setText('Choose a model')
             residues = None
         else:
-            if self.show_markup:
-                self._show_or_hide_model_markup(True)
+            from Qt.QtCore import QSignalBlocker
+            with QSignalBlocker(self._show_markup_action):
+                self._show_markup_action.setChecked(self.show_markup)
             self.model_select_button.setText(f'#{structure.id_string}')
             residues = structure.residues
             ch = getattr(self, '_model_changes_handler', None)
