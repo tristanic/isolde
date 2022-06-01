@@ -60,7 +60,7 @@ def focus_on_selection(session, atoms, pad=1.0, clip = True):
             - the top-level ChimeraX `session` instance
         * atoms:
             - a :class:`chimerax.Atoms` instance
-        * pad (default=5.0):
+        * pad (default=1.0):
             - the zoom level, camera position and (optionally) clipping planes
               will be adjusted to ensure that everything within at least this
               distance from the selection is shown.
