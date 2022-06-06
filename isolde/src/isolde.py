@@ -1162,10 +1162,11 @@ class Isolde():
             def model_changed_cb(*_, rp=rplot):
                 rp.current_model = self.selected_model
             rplot.add_callback(self.triggers, self.SELECTED_MODEL_CHANGED, model_changed_cb)
-            def sim_start_cb(*_, rp=rplot):
-                if rp.current_model == self.selected_model:
-                    rp.restrict_to_selection(self.sim_manager.sim_construct.mobile_residues, display_text='Mobile residues')
-            rplot.add_callback(self.triggers, self.SIMULATION_STARTED, sim_start_cb)
+            # sim start behaviour is managed by the Ramachandran Plot panel on the Validate tab
+            # def sim_start_cb(*_, rp=rplot):
+            #     if rp.current_model == self.selected_model:
+            #         rp.restrict_to_selection(self.sim_manager.sim_construct.mobile_residues, display_text='Mobile residues')
+            # rplot.add_callback(self.triggers, self.SIMULATION_STARTED, sim_start_cb)
             def sim_end_cb(*_, rp=rplot):
                 if rp.current_model == self.selected_model:
                     rp.display_all_residues()
