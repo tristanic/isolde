@@ -445,6 +445,14 @@ class Isolde():
         if f is not None:
             f(value)
     
+    def _update_smoothing_state(self, flag):
+        if self.simulation_running:
+            self.sim_handler.smoothing = flag
+
+    def _update_smoothing_amount(self, alpha):
+        if self.simulation_running:
+            self.sim_handler.smoothing_alpha = alpha
+
     def _update_mouse_tug_spring_constant(self, k):
         from .tugging import TugAtomsMode
         for mode in self.session.ui.mouse_modes.modes:
