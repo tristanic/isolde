@@ -68,7 +68,7 @@ class RamaPlot(QWidget):
         scatter = self.scatter = self.axes.scatter(
             (200),(200), picker = 2.0, s=base_size,
             edgecolors='black', linewidths = 0.5)
-        scatter.set_cmap('RdYlGn_r')
+        scatter.set_cmap('RdYlBu_r')
 
 
         self._prepare_contours()
