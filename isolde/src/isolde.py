@@ -432,448 +432,6 @@ class Isolde():
             if mode not in self.session.ui.mouse_modes.modes:
                 self.session.ui.mouse_modes.add_mode(mode(self.session))
 
-    def start_gui(self, gui):
-        if self.gui_mode:
-            from chimerax.core.errors import UserError
-            raise UserError('ISOLDE GUI is already running!')
-        self._gui = gui
-        self._start_gui()
-
-    def _start_gui(self, *_):
-        '''
-        Connect and initialise ISOLDE widget
-        '''
-
-        gui = self._gui
-        iw = self.iw = gui.iw
-
-        # FIXME Remove 'Custom restraints' tab from the gui while I decide
-        # whether to keep it
-        iw._sim_tab_widget.removeTab(1)
-
-        self.gui_mode = True
-
-        # Prepare display and register ISOLDE-specific mouse modes
-        self._prepare_environment()
-
-
-
-        # Function to remove all event handlers, mouse modes etc. when
-        # ISOLDE is closed, and return ChimeraX to its standard state.
-
-        self._event_handler.add_event_handler('close on app quit',
-                                      'app quit',
-                                      self._on_close)
-
-
-        # Any values in the Qt Designer .ui file are placeholders only.
-        # Combo boxes need to be repopulated, and variables need to be
-        # set to match any saved state.
-        self._populate_menus_and_update_params()
-
-        # Make sure everything in the widget actually does something.
-        self._connect_functions()
-
-        ####
-        # Add handlers for GUI events, and run each callback once to
-        # initialise to current conditions
-        ####
-
-        from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
-        eh = self._event_handler
-        eh.add_event_handler('update_menu_on_selection',
-                             'selection changed', self._selection_changed)
-        eh.add_event_handler('update_menu_on_model_add',
-                            ADD_MODELS, self._update_model_list)
-        eh.add_event_handler('update_menu_on_model_id_change',
-                            MODEL_ID_CHANGED, self._update_model_list)
-        eh.add_event_handler('update_menu_on_model_remove',
-                             REMOVE_MODELS, self._update_model_list)
-        self._selection_changed()
-        self._update_model_list(None, None, force=True)
-
-        # Work out menu state based on current ChimeraX session
-        self._update_sim_control_button_states()
-
-        st = iw._sim_tab_widget
-        st.setCurrentIndex(0)
-        from .menu import prepare_isolde_menu
-        prepare_isolde_menu(self.session)
-        from chimerax.core.triggerset import DEREGISTER
-        return DEREGISTER
-
-
-    def _populate_menus_and_update_params(self):
-        iw = self.iw
-        params = self.params
-        sim_params = self.sim_params
-        # Clear experience mode placeholders from QT Designer and repopulate
-        cb = iw._experience_level_combo_box
-        cb.clear()
-        for lvl in self._experience_levels:
-            cb.addItem(lvl.name, lvl)
-
-        iw._sim_temp_spin_box.setValue(self.sim_params.temperature.value_in_unit(OPENMM_TEMPERATURE_UNIT))
-
-        # Populate force field combo box with available forcefields
-        cb = iw._sim_force_field_combo_box
-        cb.clear()
-        cb.addItems(self.forcefield_mgr.available_forcefields)
-        cb.setCurrentIndex(cb.findText(self.sim_params.forcefield))
-
-        from .tutorials import populate_tutorial_combo_box
-        populate_tutorial_combo_box(iw._tutorials_combo_box)
-
-        # Basic settings for defining the mobile selection
-        iw._sim_basic_mobile_b_and_a_spinbox.setValue(params.num_selection_padding_residues)
-        iw._sim_basic_mobile_sel_within_spinbox.setValue(params.soft_shell_cutoff_distance)
-
-        iw._sim_basic_xtal_settings_mask_radius_spinbox.setValue(params.map_mask_radius)
-        # iw._sim_basic_xtal_map_weight_spin_box.setValue(params.difference_map_mask_cutoff)
-        ####
-        # Rebuild tab
-        ####
-
-        ## Info for a single selected residue
-        iw._rebuild_sel_residue_info.setText('(Select a single amino acid residue)')
-        iw._rebuild_sel_res_pep_info.setText('')
-        iw._rebuild_sel_res_rot_info.setText('')
-
-        iw._rebuild_pos_restraint_spring_constant.setValue(
-            self.sim_params.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
-        iw._rebuild_dist_restraint_spring_constant.setValue(
-            self.sim_params.distance_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
-        ####
-        # Validate tab
-        ####
-
-        # self._update_model_list(None, None, force=True)
-        self._prepare_ramachandran_plot()
-
-        ####
-        # Problem aggregator
-        ####
-
-        from .problem_regions.ui import ProblemAggregatorGUI
-        self._problem_aggregator_ui = ProblemAggregatorGUI(self.session, self, 
-            iw.problem_zones, iw._problem_category_grid_layout, iw._problem_region_table, iw._problem_zones_bottom_layout, iw._problem_zones_update_button)
-
-
-    def _connect_functions(self):
-        '''
-        Connect PyQt events from the ISOLDE gui widget to functions.
-        '''
-        iw = self.iw
-        ####
-        # Master switches
-        ####
-
-        iw._experience_level_combo_box.currentIndexChanged.connect(
-            self.gui._change_experience_level
-            )
-        self.gui._change_experience_level()
-
-
-        ####
-        # Help
-        ####
-
-        iw._main_help_button.clicked.connect(
-            self.show_master_help_in_browser
-        )
-        iw._tutorials_combo_box.currentIndexChanged.connect(
-            self._show_tutorial
-        )
-
-        ####
-        # Right mouse button modes
-        ####
-        iw._right_mouse_tug_atom_button.clicked.connect(
-            self._set_right_mouse_mode_tug_atom
-        )
-        iw._right_mouse_tug_residue_button.clicked.connect(
-            self._set_right_mouse_mode_tug_residue
-        )
-        iw._right_mouse_tug_selection_button.clicked.connect(
-            self._set_right_mouse_mode_tug_selection
-        )
-        # Enable VR click on buttons to set VR tug mode.
-        iw._right_mouse_tug_atom_button.vr_mode = lambda s=self: s._mouse_tug_mode('atom')
-        iw._right_mouse_tug_residue_button.vr_mode = lambda s=self: s._mouse_tug_mode('residue')
-        iw._right_mouse_tug_selection_button.vr_mode = lambda s=self: s._mouse_tug_mode('selection')
-
-        ####
-        # Simulation global parameters (can only be set before running)
-        ####
-        iw._sim_force_field_combo_box.currentIndexChanged.connect(
-            self._change_force_field
-            )
-        iw._master_model_combo_box.currentIndexChanged.connect(
-            self._change_selected_model
-            )
-        iw._sim_basic_mobile_sel_within_spinbox.valueChanged.connect(
-            self._change_soft_shell_cutoff_from_sel_menu
-            )
-        iw._sim_basic_mobile_b_and_a_spinbox.valueChanged.connect(
-            self._change_b_and_a_padding
-            )
-        iw._sim_platform_combo_box.currentIndexChanged.connect(
-            self._change_sim_platform
-            )
-        iw._sim_basic_xtal_settings_mask_radius_spinbox.valueChanged.connect(
-            self._change_mask_radius
-        )
-        iw._sim_basic_xtal_settings_spotlight_radius_spinbox.valueChanged.connect(
-            self._change_spotlight_radius
-        )
-        from .ui.general_tab.sim_fidelity import SimFidelityPanel
-        self._sim_fidelity_panel = SimFidelityPanel(self.session, self, iw._sim_fidelity_frame,
-            [
-                iw._sim_fidelity_low_rb,
-                iw._sim_fidelity_med_rb,
-                iw._sim_fidelity_high_rb
-            ])
-        # Run all connected functions once to initialise
-        self._change_force_field()
-        #self._change_selected_model(force=True)
-        self._change_b_and_a_padding()
-        self._change_sim_platform()
-
-        ####
-        # Buttons to grow/shrink a continuous selection
-        ####
-        for b in self.gui._sel_grow_n_terminal_buttons:
-            b.clicked.connect(self._extend_selection_by_one_res_N)
-
-        for b in self.gui._sel_shrink_n_terminal_buttons:
-            b.clicked.connect(self._shrink_selection_by_one_res_N)
-
-        for b in self.gui._sel_shrink_c_terminal_buttons:
-            b.clicked.connect(self._shrink_selection_by_one_res_C)
-
-        for b in self.gui._sel_grow_c_terminal_buttons:
-            b.clicked.connect(self._extend_selection_by_one_res_C)
-
-        ####
-        # Real space map parameters (can only be set before starting simulation)
-        ####
-
-        iw._real_space_map_from_volume_show_button.clicked.connect(
-            self._show_real_space_map_dialog
-        )
-        iw._real_space_map_from_volume_done_button.clicked.connect(
-            self._hide_real_space_map_dialog
-        )
-        iw._real_space_map_from_volume_button.clicked.connect(
-            self._add_real_space_map_from_gui
-        )
-
-        ####
-        # Trajectory smoothing
-        ####
-
-        iw._trajectory_smooth_button.clicked.connect(
-            self._change_smoothing_state_from_gui
-        )
-        iw._smoothing_amount_dial.valueChanged.connect(
-            self._change_smoothing_amount_from_gui
-        )
-
-
-        ####
-        # Xtal map parameters (can only be set before starting simulation)
-        ####
-        iw._sim_basic_xtal_init_open_button.clicked.connect(
-            self._show_xtal_init_frame
-        )
-        iw._sim_basic_xtal_init_done_button.clicked.connect(
-            self._hide_xtal_init_frame
-        )
-        iw._sim_basic_xtal_init_reflections_file_button.clicked.connect(
-            self._choose_mtz_file
-        )
-        iw._sim_basic_xtal_init_go_button.clicked.connect(
-            self._initialize_xtal_structure
-        )
-        iw._sim_basic_xtal_map_weight_spin_box.editingFinished.connect(
-            self._update_map_weight_box_settings
-        )
-        self._update_map_weight_box_settings()
-
-        # Load custom forcefield file(s)
-        iw._sim_basic_ff_file_load_button.clicked.connect(
-            self._add_ff_files_gui
-        )
-        iw._sim_basic_load_cif_templates_button.clicked.connect(
-            self._add_cif_template_files_gui
-        )
-
-        # Live maps direct from structure factors
-        iw._sim_basic_xtal_init_exp_data_button.clicked.connect(
-            self._choose_reflections_file
-        )
-
-        iw._sim_basic_xtal_map_settings_show_button.clicked.connect(
-            self._toggle_xtal_map_dialog
-            )
-        iw._sim_basic_xtal_settings_live_recalc_checkbox.stateChanged.connect(
-            self._set_live_xmap_recalc
-        )
-        iw._sim_basic_xtal_settings_map_combo_box.currentIndexChanged.connect(
-            self._populate_xtal_map_params
-            )
-        iw._sim_basic_xtal_settings_enable_mdff_checkbox.clicked.connect(
-            self._enable_or_disable_mdff_potential
-        )
-        iw._sim_basic_xtal_settings_set_button.clicked.connect(
-            self._apply_xtal_map_params
-            )
-
-        # Visualisation tools
-        iw._map_settings_solid_surface_button.clicked.connect(
-            self._set_map_to_solid_surface
-        )
-        iw._map_settings_transparent_surface_button.clicked.connect(
-            self._set_map_to_transparent_surface
-        )
-        iw._map_settings_mesh_button.clicked.connect(
-            self._set_map_to_mesh
-        )
-        iw._map_settings_color_button.clicked.connect(
-            self._choose_map_color
-        )
-
-        iw._vis_step_mask_forward_button.clicked.connect(
-            self._xtal_step_forward
-            )
-        iw._vis_step_mask_backward_button.clicked.connect(
-            self._xtal_step_backward
-            )
-        iw._vis_mask_to_sel_button.clicked.connect(
-            self._xtal_mask_to_selection
-            )
-        iw._vis_spotlight_mode_button.clicked.connect(
-            self._xtal_enable_live_scrolling
-            )
-
-
-        ####
-        # Rebuild tab
-        ####
-        iw._rebuild_sel_res_cis_trans_flip_button.clicked.connect(
-            self._flip_cis_trans
-            )
-        iw._rebuild_sel_res_pep_flip_button.clicked.connect(
-            self._flip_peptide_bond
-            )
-        iw._rebuild_sel_res_last_rotamer_button.clicked.connect(
-            self._prev_rotamer
-            )
-        iw._rebuild_sel_res_next_rotamer_button.clicked.connect(
-            self._next_rotamer
-            )
-        iw._rebuild_sel_res_rot_commit_button.clicked.connect(
-            self._commit_rotamer
-            )
-        iw._rebuild_sel_res_rot_target_button.clicked.connect(
-            self._set_rotamer_target
-            )
-        iw._rebuild_sel_res_rot_discard_button.clicked.connect(
-            self._clear_rotamer
-            )
-        iw._rebuild_sel_res_rot_release_button.clicked.connect(
-            self._release_rotamer
-            )
-        iw._rebuild_sel_res_rot_backrub_button.clicked.connect(
-            self._backrub_rotamer
-        )
-
-        iw._rebuild_restrain_helix_button.clicked.connect(
-            self._restrain_selection_as_alpha_helix
-            )
-        iw._rebuild_restrain_anti_beta_button.clicked.connect(
-            self._restrain_selection_as_antiparallel_beta
-            )
-        iw._rebuild_restrain_par_beta_button.clicked.connect(
-            self._restrain_selection_as_parallel_beta
-            )
-        iw._rebuild_2ry_struct_restr_clear_button.clicked.connect(
-            self.clear_secondary_structure_restraints_for_selection
-            )
-        iw._rebuild_register_shift_reduce_button.clicked.connect(
-            self._decrement_register_shift
-            )
-        iw._rebuild_register_shift_increase_button.clicked.connect(
-            self._increment_register_shift
-            )
-        iw._rebuild_register_shift_go_button.clicked.connect(
-            self._apply_register_shift
-            )
-        iw._rebuild_register_shift_release_button.clicked.connect(
-            self._release_register_shifter
-            )
-        iw._rebuild_pin_atom_to_current_pos_button.clicked.connect(
-            self._restrain_selected_atom_to_current_xyz
-            )
-        iw._rebuild_pin_atom_to_pivot_button.clicked.connect(
-            self._restrain_selected_atom_to_pivot_xyz
-            )
-        iw._rebuild_pos_restraint_clear_button.clicked.connect(
-            self.release_xyz_restraints_on_selected_atoms
-            )
-        iw._rebuild_dist_restraint_apply_button.clicked.connect(
-            self._add_distance_restraint_between_selected_atoms
-        )
-        iw._rebuild_dist_restraint_set_target_to_current_distance_button.clicked.connect(
-            self._set_distance_restraint_target_to_current_distance
-        )
-        iw._rebuild_remove_distance_restraint_button.clicked.connect(
-            self._release_distance_restraint_between_selected_atoms
-        )
-        iw._rebuild_remove_all_distance_restraints_button.clicked.connect(
-            self._release_all_distance_restraints_for_selected_atoms
-        )
-
-        ####
-        # Validation tab
-        ####
-
-        from .validation.clashes import Clash_Table_Mgr
-        self._clash_mgr = Clash_Table_Mgr(self)
-
-        from .validation.unparameterised import Unparameterised_Residues_Mgr
-        self._unparam_mgr = Unparameterised_Residues_Mgr(self)
-
-        ####
-        # Simulation control functions
-        ####
-
-        iw._sim_temp_spin_box.valueChanged.connect(
-            self._update_sim_temperature
-            )
-        iw._sim_go_button.clicked.connect(
-            self._start_sim_or_toggle_pause
-            )
-        iw._sim_save_checkpoint_button.clicked.connect(
-            self.checkpoint)
-        iw._sim_revert_to_checkpoint_button.clicked.connect(
-            self.revert_to_checkpoint)
-        iw._sim_commit_button.clicked.connect(
-            self.commit_sim
-            )
-        iw._sim_stop_and_revert_to_checkpoint_button.clicked.connect(
-            self._stop_sim_and_revert_to_checkpoint
-            )
-        iw._sim_stop_and_discard_button.clicked.connect(
-            self._discard_sim
-            )
-
-        iw._sim_min_button.clicked.connect(
-            self.minimize
-            )
-        iw._sim_equil_button.clicked.connect(
-            self.equilibrate
-        )
 
     def _sim_param_changed_cb(self, _, data):
         update_methods = {
@@ -959,227 +517,6 @@ class Isolde():
                 models[f'{m.id_string}. {m.name}'] = m
         return models
 
-
-    # TODO: This function has become somewhat monolithic and has expanded well
-    #       beyond its original remit. Needs some rethinking.
-    def _update_model_list(self, trigger_name, models, force=False):
-        from chimerax.core.models import Model
-        if isinstance(models, Model):
-            models = [models]
-        from chimerax.atomic import AtomicStructure
-        from chimerax.map import Volume
-        from chimerax.clipper.symmetry import SymmetryManager
-        from chimerax.clipper.maps import XmapHandler_Live
-        from .restraints import MDFFMgr
-
-        if force:
-            structures_need_update=True
-            volumes_need_update=True
-        else:
-            needs_update = False
-            structures_need_update = False
-            volumes_need_update = False
-
-            for m in models:
-                if type(m) == AtomicStructure:
-                    structures_need_update = True
-                if isinstance(m, Volume) or isinstance(m, MDFFMgr):
-                    volumes_need_update = True
-                if structures_need_update and volumes_need_update:
-                    break
-        mmcb = self.iw._master_model_combo_box
-        current_model = self.selected_model
-        if current_model is not None and current_model not in self.session.models.list():
-            current_model = None
-            structures_need_update = True
-
-
-        if structures_need_update:
-            from .ui.util import slot_disconnected
-            with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model):
-                mmcb.clear()
-
-                _models = self.session.models.list()
-                models = sorted(_models, key = lambda m: m.id)
-                mtd = {
-                    AtomicStructure: [],
-                    Volume: []
-                }
-
-                for m in models:
-                    for mtype in mtd.keys():
-                        if type(m) == mtype:
-                            mtd[mtype].append(m)
-
-
-                valid_models = mtd[AtomicStructure]
-                valid_models = sorted(valid_models, key=lambda m: m.id)
-
-                self._available_models = {}
-
-                for m in valid_models:
-                    id_str = '{}. {}'.format(m.id_string, m.name)
-                    mmcb.addItem(id_str, m)
-                    self._available_models[id_str] = m
-
-        if volumes_need_update:
-            self._populate_available_volumes_combo_box()
-            self._populate_rot_mdff_target_combo_box()
-
-        self._initialize_maps(current_model)
-        self._change_selected_model(model=current_model)
-        for p in self._ui_panels:
-            p.chimerax_models_changed(self.selected_model)
-        self._update_sim_control_button_states()
-
-    def _selection_changed(self, *_):
-        if not self.gui_mode:
-            return
-        from chimerax.atomic import selected_atoms, Residue
-        from .util import is_continuous_protein_chain
-        sel = selected_atoms(self.session)
-        selres = sel.unique_residues
-        if self.selected_model is not None: # self.simulation_running:
-            natoms = len(sel)
-            if natoms == 1 and sel[0].element.name != 'H':
-                self._enable_atom_position_restraints_frame()
-            else:
-                self._disable_atom_position_restraints_frame()
-            if natoms:
-                self._enable_position_restraints_clear_button()
-                self._enable_secondary_structure_restraints_clear_button()
-                self._enable_distance_restraints_frame()
-            else:
-                self._disable_position_restraints_clear_button()
-                self._disable_secondary_structure_restraints_clear_button()
-                self._disable_distance_restraints_frame()
-
-            # A distance restraint is only allowed between two non-hydrogen
-            # atoms that aren't already bonded to each other.
-            if natoms == 2 and 'H' not in sel.element_names and not len(sel.intra_bonds):
-                self._enable_distance_restraints_buttons()
-            else:
-                self._disable_distance_restraints_buttons()
-
-            if len(selres) == 1:
-                r = selres[0]
-                self._enable_rebuild_residue_frame(r)
-            else:
-                self._clear_rotamer()
-                self._disable_rebuild_residue_frame()
-            is_continuous = is_continuous_protein_chain(sel)
-            if is_continuous:
-                self._enable_secondary_structure_restraints_frame()
-                self._enable_register_shift_frame()
-            else:
-                self._disable_secondary_structure_restraints_frame()
-                self._disable_register_shift_frame()
-            if is_continuous or (len(selres)==1 and selres[0].polymer_type!=Residue.PT_NONE):
-                self._enable_selection_extend_frame()
-            else:
-                self._disable_selection_extend_frame()
-
-            # A running simulation takes precedence for memory control
-            #return
-        iw = self.iw
-        if not self.simulation_running:
-            self._disable_register_shift_frame()
-            # self._disable_peptide_bond_manipulation_frame()
-            self._enable_peptide_bond_manipulation_frame()
-            flag = not(self.session.selection.empty())
-            iw._sim_go_button.setEnabled(flag)
-        else:
-            self._enable_peptide_bond_manipulation_frame()
-            iw._sim_go_button.setEnabled(True)
-
-
-    def _update_sim_control_button_states(self, *_):
-        # Set enabled/disabled states of main simulation control panel
-        # based on whether a simulation is currently running
-        if self.gui_mode:
-            running = self.simulation_running
-            iw = self.iw
-            paused = self.sim_paused
-            go_button = iw._sim_go_button
-            mdff_cb = iw._sim_basic_xtal_settings_enable_mdff_checkbox
-            mdff_cb.setEnabled(not running)
-            if paused and not running:
-                go_button.setChecked(False)
-            elif paused:
-                go_button.setChecked(False)
-                go_button.setToolTip('Resume')
-            elif running:
-                go_button.setChecked(True)
-                go_button.setToolTip('Pause')
-            if not running:
-                go_button.setChecked(False)
-                go_button.setToolTip('Start a simulation')
-
-            iw._map_masking_frame.setDisabled(
-                running
-                    or not self.selected_model_has_maps
-                    or self.selected_model is None)
-            iw._right_mouse_modes_frame.setEnabled(running)
-            iw._sim_save_checkpoint_button.setEnabled(running)
-            iw._sim_revert_to_checkpoint_button.setEnabled(running)
-            iw._sim_commit_button.setEnabled(running)
-            iw._sim_stop_and_revert_to_checkpoint_button.setEnabled(running)
-            iw._sim_stop_and_discard_button.setEnabled(running)
-            if self.simulation_mode == 'equil':
-                iw._sim_equil_button.setChecked(True)
-            else:
-                iw._sim_min_button.setChecked(True)
-            self._set_sim_go_button_state()
-
-        # Update the status of the Go button
-        self._selection_changed()
-
-    def _model_changes_cb(self, trigger_name, changes):
-        if changes is not None:
-            changes = changes[1]
-            added = len(changes.created_atoms())
-            deleted = changes.num_deleted_atoms()
-            if added or deleted:
-                from chimerax.atomic import get_triggers
-                get_triggers().add_handler('changes done', self._changes_done_cb)
-
-    def _changes_done_cb(self, *_):
-        # self._update_iffy_rota_list()
-        # self._update_iffy_peptide_lists()
-        from chimerax.core.triggerset import DEREGISTER
-        return DEREGISTER
-
-    ####
-    # Xtal
-    ####
-    def _show_xtal_init_frame(self, *_):
-        self.iw._sim_basic_xtal_init_main_frame.show()
-        self.iw._sim_basic_xtal_init_open_button.setEnabled(False)
-
-    def _hide_xtal_init_frame(self, *_):
-        self.iw._sim_basic_xtal_init_main_frame.hide()
-        self.iw._sim_basic_xtal_init_open_button.setEnabled(True)
-
-    def _check_for_valid_xtal_init(self, *_):
-        sm = self.selected_model
-        valid = True
-        if sm is not None:
-            if not os.path.isfile(self.iw._sim_basic_xtal_init_reflections_file_name.text()):
-                valid = False
-            if valid:
-                from chimerax.clipper.symmetry import SymmetryManager
-                for m in sm.all_models():
-                    if isinstance(m, SymmetryManager):
-                        valid = False
-                        break
-        else:
-            valid = False
-        if valid:
-            self.iw._sim_basic_xtal_init_go_button.setEnabled(True)
-        else:
-            self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
-            self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
-
     def _add_cif_template_files_gui(self, *_):
         files = self._choose_cif_template_files(self)
         if files is not None and len(files):
@@ -1205,68 +542,6 @@ class Isolde():
         if dlg.exec():
             return dlg.selectedFiles()
 
-    def _initialize_xtal_structure(self, *_):
-        fname = self.iw._sim_basic_xtal_init_reflections_file_name.text()
-        if not os.path.isfile(fname):
-            from .dialog import generic_warning
-            errstring = 'Please select a valid MTZ file!'
-            generic_warning(errstring)
-        m = self.selected_model
-        spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
-        from chimerax.clipper import symmetry
-        sym_handler = symmetry.SymmetryManager(m, fname,
-            map_oversampling=self.params.map_shannon_rate,
-            spotlight_radius=spotlight_radius)
-        self.iw._sim_basic_xtal_init_reflections_file_name.setText('')
-        self.iw._sim_basic_xtal_init_go_button.setEnabled(False)
-        self._update_sim_control_button_states()
-
-    def _choose_reflections_file(self, *_):
-        # options = QFileDialog.Options()
-        # caption = ('Choose a file containing amplitudes/phases or F/sigF/free flags')
-        # filetypes = 'MTZ files (*.mtz)'
-        # filename, _ = QFileDialog.getOpenFileName(None, caption, filetypes, filetypes, options=options)
-        filename = self._choose_mtz_file()
-        #import os
-        #if os.path.isfile(filename):
-        if filename is not None:
-            self.add_xtal_data(filename)
-
-    def add_xtal_data(self, filename, model=None):
-        '''
-        Add a set of maps derived from a crystal dataset (in MTZ format) to the
-        target model. Cell dimensions and space group must match. If the file
-        contains experimental measurements (F/sigF), a set of "live" maps will
-        be generated and will be recalculated whenever the model coordinates
-        change. If it contains precalculated map data (F/phi), one static map
-        will be generated for each F/phi pair found.
-
-        Args:
-            * filename:
-                - a file in .mtz format
-            * model (default None):
-                - A :class:`chimerax.AtomicStructure` or None. If None, the
-                  model currently selected by ISOLDE will be used as the target.
-        '''
-        if model is None:
-            model = self.selected_model
-        if model is None:
-            from .dialog import generic_warning
-            generic_warning("You must have the corresponding model loaded "
-                "before loading reflection data!")
-        m = model
-        from chimerax.clipper.symmetry import get_map_mgr
-        map_mgr = get_map_mgr(m, create=True, auto_add_to_session=True)
-        xmapset = map_mgr.add_xmapset_from_mtz(filename, self.params.map_shannon_rate,
-            auto_choose_reflection_data=False)
-        if xmapset.live_xmap_mgr is not None:
-            xmapset.live_update = self.iw._sim_basic_xtal_settings_live_recalc_checkbox.isChecked()
-            # 2mFo-DFc and mFo-DFc maps are created automatically, but should
-            # not be used as MDFF potentials. For that, we need a specific map
-            # that we know excludes the free reflections.
-            # self._add_mdff_potential_to_live_xmapset(xmapset)
-        map_mgr.spotlight_radius = self.iw._sim_basic_xtal_settings_spotlight_radius_spinbox.value()
-        self._change_selected_model(model=m, force=True)
 
     def _add_mdff_potential_to_live_xmapset(self, xmapset):
         from chimerax.clipper.maps.xmapset import map_potential_recommended_bsharp
@@ -1349,7 +624,6 @@ class Isolde():
             # No maps associated with this model.
             return False
 
-        # recalc_cb = self.iw._sim_basic_xtal_settings_live_recalc_checkbox
 
         from chimerax.clipper.maps import XmapHandler_Live, XmapHandler_Static
         from .session_extensions import get_mdff_mgr
@@ -1391,63 +665,6 @@ class Isolde():
             return True
         return False
 
-
-    def _populate_available_volumes_combo_box(self, *_):
-        '''
-        Only true Volume instances (not subclasses) will be considered
-        '''
-        from chimerax.map import Volume
-        shortlist = self.session.models.list(type = Volume)
-        cb = self.iw._real_space_map_volume_combo_box
-        cb.clear()
-        for v in shortlist:
-            if type(v) == Volume:
-                label = '{}  {}'.format(v.id_string, v.name)
-                cb.addItem(label, v)
-
-    def _show_real_space_map_dialog(self, *_):
-        self._populate_available_volumes_combo_box()
-        self.iw._real_space_map_from_volume_frame.show()
-
-    def _hide_real_space_map_dialog(self, *_):
-        self._populate_available_volumes_combo_box()
-        self.iw._real_space_map_from_volume_frame.hide()
-
-    def _add_real_space_map_from_gui(self, *_):
-        cb = self.iw._real_space_map_volume_combo_box
-        i = cb.currentIndex()
-        if i == -1:
-            return
-        v = cb.itemData(i)
-        self.add_real_space_map(existing_volume=v, to_model=self.selected_model)
-
-    def _toggle_xtal_map_dialog(self, *_):
-        button = self.iw._sim_basic_xtal_map_settings_show_button
-        frame = self.iw._sim_basic_xtal_map_settings_frame
-        show_text = 'Show map settings dialogue'
-        hide_text = 'Hide map settings dialogue'
-        if button.text() == show_text:
-            if (not hasattr(self, '_xtal_dialog_model_change_handler') or
-                    self._xtal_dialog_model_change_handler is None):
-                self._xtal_dialog_model_change_handler = self.triggers.add_handler(
-                    'selected model changed',
-                    self._xtal_dialog_model_changed_cb
-                )
-            self._populate_xtal_map_combo_box()
-            frame.show()
-            self._populate_xtal_map_params()
-            button.setText(hide_text)
-        else:
-            frame.hide()
-            button.setText(show_text)
-            if self._xtal_dialog_model_change_handler is not None:
-                self.triggers.remove_handler(self._xtal_dialog_model_change_handler)
-                self._xtal_dialog_model_change_handler = None
-
-    def _xtal_dialog_model_changed_cb(self, trigger_name, changes):
-        self._populate_xtal_map_combo_box()
-        #self._populate_xtal_map_params()
-
     def _set_live_xmap_recalc(self, state):
         from chimerax.clipper.symmetry import get_map_mgr
         mgr = get_map_mgr(self.selected_model)
@@ -1455,84 +672,10 @@ class Isolde():
             for xs in mgr.xmapsets:
                 xs.live_update = state
 
-    def _populate_xtal_map_combo_box(self, *_):
-        cb = self.iw._sim_basic_xtal_settings_map_combo_box
-        cb.clear()
-        sm = self.selected_model
-        if sm is None:
-            return
-        from chimerax.clipper.symmetry import get_map_mgr
-        mgr = get_map_mgr(sm)
-        if mgr is None:
-            return
-        for v in mgr.all_maps:
-            cb.addItem(v.name, v)
-
-    def _populate_xtal_map_params(self, *_):
-        cb = self.iw._sim_basic_xtal_settings_map_combo_box
-        gb = self.iw._sim_basic_xtal_settings_set_button
-        wf = self.iw._sim_basic_xtal_map_weight_frame
-        eb = self.iw._sim_basic_xtal_settings_enable_mdff_checkbox
-        this_map = cb.currentData()
-        if cb.currentIndex() == -1 or this_map is None:
-            gb.setEnabled(False)
-            wf.setEnabled(False)
-            eb.setEnabled(False)
-            return
-        gb.setEnabled(True)
-        from .session_extensions import get_mdff_mgr
-        mgr = get_mdff_mgr(self.selected_model, this_map)
-        if mgr is not None:
-            wf.setEnabled(True)
-            eb.setEnabled(True)
-            eb.setChecked(mgr.enabled)
-            gk = mgr.global_k
-            sb = self.iw._sim_basic_xtal_map_weight_spin_box
-            sb.setValue(gk)
-            self._update_map_weight_box_settings()
-        else:
-            wf.setEnabled(False)
-            eb.setEnabled(False)
-            eb.setChecked(False)
-
-    def _enable_or_disable_mdff_potential(self, flag):
-        cb = self.iw._sim_basic_xtal_settings_map_combo_box
-        this_map = cb.currentData()
-        if this_map is None:
-            return
-        from chimerax.clipper.maps import XmapHandler_Static
-        if flag and isinstance(this_map, XmapHandler_Static):
-            from .dialog import choice_warning
-            warn_str = ('Since this map was generated from precalculated '
-                'amplitudes and phases, ISOLDE has no way of determining '
-                'whether it is suitable for fitting simulations. If generated '
-                'from crystallographic data, you should ensure that it is a'
-                '2Fo-Fc (or similar) map calculated with the free reflections '
-                'excluded. Are you sure you want to continue?')
-            choice = choice_warning(warn_str)
-            if not choice:
-                self.iw._sim_basic_xtal_settings_enable_mdff_checkbox.setChecked(False)
-                return
-        from .session_extensions import get_mdff_mgr
-        mgr = get_mdff_mgr(self.selected_model, this_map)
-        mgr.enabled = flag
-
-
-    # Update button states after a simulation has finished
-    def _update_menu_after_sim(self):
-        self.iw._master_model_combo_box.setEnabled(True)
-        self._update_sim_control_button_states()
 
     ####
     # Right mouse button modes
     ####
-
-    def _mouse_tug_mode(self, mode):
-        from .tugging import TugAtomsMode
-        sm = self.sim_manager
-        sc = sm.sim_construct
-        from chimerax.core.commands import run
-        run(self.session, 'ui mousemode right "isolde tug atom', log=False)
 
     def _set_right_mouse_mode_tug_atom(self, *_):
         from chimerax.core.commands import run
@@ -1552,136 +695,6 @@ class Isolde():
     ####
     # Rebuild tab
     ####
-    def _enable_rebuild_residue_frame(self, res):
-        from . import session_extensions
-        pdmgr = session_extensions.get_proper_dihedral_mgr(self.session)
-        # Peptide cis/trans flips
-        self._rebuild_residue = res
-        omega = self._rebuild_res_omega = pdmgr.get_dihedral(res, 'omega')
-        if omega is None:
-            # This is a terminal residue without an omega dihedral
-            self.iw._rebuild_sel_res_pep_info.setText('N/A')
-            self.iw._rebuild_sel_res_cis_trans_flip_button.setDisabled(True)
-            self.iw._rebuild_sel_res_pep_flip_button.setDisabled(True)
-            # return
-        else:
-            self.iw._rebuild_sel_res_cis_trans_flip_button.setEnabled(True)
-            self.iw._rebuild_sel_res_pep_flip_button.setEnabled(True)
-
-        # Rotamer manipulations
-        rot_text = self.iw._rebuild_sel_res_rot_info
-        rot_m = session_extensions.get_rotamer_mgr(self.session)
-        rota = rot_m.get_rotamer(res)
-        if rota != self._selected_rotamer:
-            self._clear_rotamer()
-            self._selected_rotamer = rota
-        if rota is None:
-            # This residue has no rotamers
-            rot_text.setText('')
-            self._set_rotamer_buttons_enabled(False)
-        else:
-            self._set_rotamer_buttons_enabled(True)
-
-        self.iw._rebuild_sel_residue_frame.setEnabled(True)
-        chain_id, resnum, resname = (res.chain_id, res.number, res.name)
-        self.iw._rebuild_sel_residue_info.setText(str(chain_id) + ' ' + str(resnum) + ' ' + resname)
-
-        self._steps_per_sel_res_update = 10
-        self._sel_res_update_counter = 0
-        self._update_selected_residue_info_live(None, None)
-        if not hasattr(self, '_res_info_update_handler') or self._res_info_update_handler is None:
-            self._res_info_update_handler = self.selected_model.triggers.add_handler(
-                'changes', self._update_selected_residue_info_live
-            )
-
-    def _disable_rebuild_residue_frame(self):
-        if hasattr(self, '_res_info_update_handler') and self._res_info_update_handler is not None:
-            if self.selected_model is not None:
-                self.selected_model.triggers.remove_handler(self._res_info_update_handler)
-            self._res_info_update_handler = None
-        self._rebuild_residue = None
-        self._rebuild_res_omega = None
-        self._selected_rotamer = None
-        self.iw._rebuild_sel_residue_info.setText('(Select a single amino acid residue)')
-        self.iw._rebuild_sel_res_pep_info.setText('')
-        self.iw._rebuild_sel_res_rot_info.setText('')
-        self.iw._rebuild_sel_res_rot_target_button.setText('Set target')
-        self.iw._rebuild_sel_residue_frame.setDisabled(True)
-
-    def _enable_atom_position_restraints_frame(self):
-        self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(True)
-        self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(True)
-        self.iw._position_restraints_hint_label.hide()
-
-        #~ self.iw._rebuild_pin_atom_container.setEnabled(True)
-
-    def _disable_atom_position_restraints_frame(self):
-        self.iw._rebuild_pin_atom_to_current_pos_button.setEnabled(False)
-        self.iw._rebuild_pin_atom_to_pivot_button.setEnabled(False)
-        self.iw._position_restraints_hint_label.show()
-        #self.iw._rebuild_pin_atom_container.setEnabled(False)
-
-    def _enable_position_restraints_clear_button(self):
-        self.iw._rebuild_pos_restraint_clear_button.setEnabled(True)
-
-    def _disable_position_restraints_clear_button(self):
-        self.iw._rebuild_pos_restraint_clear_button.setEnabled(False)
-
-    def _enable_secondary_structure_restraints_frame(self, *_):
-        self.iw._rebuild_2ry_struct_restr_container.setEnabled(True)
-
-    def _disable_secondary_structure_restraints_frame(self, *_):
-        self.iw._rebuild_2ry_struct_restr_container.setEnabled(False)
-
-    def _enable_secondary_structure_restraints_clear_button(self, *_):
-        self.iw._rebuild_2ry_struct_restr_clear_button.setEnabled(True)
-
-    def _disable_secondary_structure_restraints_clear_button(self, *_):
-        self.iw._rebuild_2ry_struct_restr_clear_button.setEnabled(False)
-
-    def _enable_register_shift_frame(self, *_):
-        self.iw._rebuild_register_shift_container.setEnabled(True)
-
-    def _enable_selection_extend_frame(self, *_):
-        self.iw._rebuild_grow_shrink_sel_frame.setEnabled(True)
-
-    def _disable_register_shift_frame(self, *_):
-        self.iw._rebuild_register_shift_container.setEnabled(False)
-
-    def _disable_selection_extend_frame(self, *_):
-        self.iw._rebuild_grow_shrink_sel_frame.setEnabled(False)
-
-    def _extend_selection_by_one_res_N(self, *_):
-        self._extend_selection_by_one_res(-1)
-
-    def _shrink_selection_by_one_res_N(self, *_):
-        self._shrink_selection_by_one_res(1)
-
-    def _extend_selection_by_one_res_C(self, *_):
-        self._extend_selection_by_one_res(1)
-
-    def _shrink_selection_by_one_res_C(self, *_):
-        self._shrink_selection_by_one_res(-1)
-
-    def _enable_distance_restraints_frame(self, *_):
-        self.iw._rebuild_dist_restraint_container.setEnabled(True)
-
-    def _disable_distance_restraints_frame(self, *_):
-        self.iw._rebuild_dist_restraint_container.setEnabled(False)
-
-    def _enable_distance_restraints_buttons(self, *_):
-        self.iw._rebuild_dist_restraint_apply_button.setEnabled(True)
-        self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(True)
-        self.iw._rebuild_remove_distance_restraint_button.setEnabled(True)
-        self.iw._distance_restraints_hint_label.hide()
-
-    def _disable_distance_restraints_buttons(self, *_):
-        self.iw._rebuild_dist_restraint_apply_button.setEnabled(False)
-        self.iw._rebuild_dist_restraint_set_target_to_current_distance_button.setEnabled(False)
-        self.iw._rebuild_remove_distance_restraint_button.setEnabled(False)
-        self.iw._distance_restraints_hint_label.show()
-
-
 
     def _extend_selection_by_one_res(self, direction):
         '''
@@ -1810,42 +823,6 @@ class Isolde():
         psi.cutoffs = restraint_params.CUTOFF_ANGLE
         psi.enableds = True
 
-    def _increment_register_shift(self, *_):
-        self.iw._rebuild_register_shift_nres_spinbox.stepUp()
-
-    def _decrement_register_shift(self, *_):
-        self.iw._rebuild_register_shift_nres_spinbox.stepDown()
-
-    def _apply_register_shift(self, *_):
-        from chimerax.atomic import selected_atoms
-        from .manipulations import Protein_Register_Shifter
-        nshift = self.iw._rebuild_register_shift_nres_spinbox.value()
-        sel = selected_atoms(self.session)
-        rs = self._register_shifter = Protein_Register_Shifter(self.session, self, sel)
-        rs.shift_register(nshift)
-        self.iw._rebuild_register_shift_release_button.setEnabled(False)
-        self.iw._rebuild_register_shift_go_button.setEnabled(False)
-        self.add_checkpoint_block(rs, 'Register shift in progress')
-        rs.triggers.add_handler('register shift finished', self._register_shift_finished)
-        rs.triggers.add_handler('register shift released', self._register_shift_released_cb)
-
-    def _register_shift_finished(self, *_):
-        self.iw._rebuild_register_shift_release_button.setEnabled(True)
-        from chimerax.core.triggerset import DEREGISTER
-        return DEREGISTER
-
-    def _release_register_shifter(self, *_):
-        rs = self._register_shifter
-        if rs is not None:
-            rs.release_all()
-
-    def _register_shift_released_cb(self, *_):
-        rs = self._register_shifter
-        if rs is not None:
-            self.remove_checkpoint_block(rs)
-        self._register_shifter = None
-        self.iw._rebuild_register_shift_go_button.setEnabled(True)
-        self.iw._rebuild_register_shift_release_button.setEnabled(False)
 
     def _restrain_selected_atom_to_current_xyz(self, *_):
         from chimerax.atomic import selected_atoms
@@ -1961,16 +938,6 @@ class Isolde():
         drs = dr_m.atoms_restraints(sel)
         if len(drs):
             drs.enableds=False
-
-    def _set_rotamer_buttons_enabled(self, switch):
-        iw = self.iw
-        iw._rebuild_cycle_rotamer_frame.setEnabled(switch)
-        iw._rebuild_sel_res_last_rotamer_button.setEnabled(switch)
-        iw._rebuild_sel_res_rot_commit_button.setEnabled(switch)
-        iw._rebuild_sel_res_rot_target_button.setEnabled(switch)
-        iw._rebuild_sel_res_rot_discard_button.setEnabled(switch)
-        iw._rebuild_sel_res_rot_release_button.setEnabled(switch)
-        iw._rebuild_sel_res_rot_backrub_button.setEnabled(switch)
 
     def _update_rotamer_preview_text(self, name, freq):
         f = self.iw._rebuild_sel_res_rot_preview_info
@@ -2204,10 +1171,6 @@ class Isolde():
     # Simulation global settings functions
     ##############################################################
 
-    def _change_force_field(self):
-        ff_key = self.iw._sim_force_field_combo_box.currentText()
-        self.sim_params.forcefield = ff_key
-
     def change_selected_model(self, model):
         '''
         Change the model upon which ISOLDE is focused (that is, upon which
@@ -2268,8 +1231,6 @@ class Isolde():
             from .citation import add_isolde_citation
             add_isolde_citation(m)
             self._selected_model = m
-            self._model_changes_handler = m.triggers.add_handler('changes',
-                self._model_changes_cb)
             self.session.selection.clear()
             m.selected = True
 
@@ -2279,91 +1240,6 @@ class Isolde():
             sx.get_RamaAnnotator(m)
             self._initialize_maps(m)
             self.triggers.activate_trigger('selected model changed', data=m)
-
-    def _change_sim_platform(self, *_):
-        self.sim_platform = self.iw._sim_platform_combo_box.currentText()
-
-    def _change_mask_radius(self, *_):
-        rad = self.iw._sim_basic_xtal_settings_mask_radius_spinbox.value()
-        self.params.map_mask_radius = rad
-        if self.selected_model is not None:
-            from chimerax.clipper import get_map_mgr
-            mmgr = get_map_mgr(self.selected_model)
-            if mmgr is not None and not mmgr.spotlight_mode:
-                mmgr.zone_mgr.radius = rad
-            if self.simulation_running:
-                mmgr.zone_mgr.update_needed(resize_box=False)
-
-
-    ##############################################################
-    # Visualisation functions
-    ##############################################################
-
-    def _xtal_step_forward(self, *_):
-        m = self.selected_model
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(m)
-        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
-        m.atoms.selected = False
-        m.bonds.selected = False
-        sel = sh.stepper.step_forward()
-        self._xtal_mask_to_atoms(sel, focus=False)
-        if focus:
-            from .view import focus_on_selection
-            focus_on_selection(self.session, sel[0].residue.atoms)
-        sel.selected = True
-        sel.intra_bonds.selected = True
-
-
-    def _xtal_step_backward(self, *_):
-        m = self.selected_model
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(m)
-        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
-        m.atoms.selected = False
-        m.bonds.selected = False
-        sel = sh.stepper.step_backward()
-        self._xtal_mask_to_atoms(sel, focus=False)
-        if focus:
-            from .view import focus_on_selection
-            focus_on_selection(self.session, sel[-1].residue.atoms)
-        sel.selected = True
-        sel.intra_bonds.selected = True
-
-    def _xtal_mask_to_selection(self, *_):
-        atoms = self.selected_model.atoms
-        sel = atoms[atoms.selecteds]
-        focus = self.iw._vis_focus_on_sel_checkbox.isChecked()
-        self._xtal_mask_to_atoms(sel, focus)
-
-    def _xtal_mask_to_atoms(self, atoms, focus):
-        m = self.selected_model
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(m)
-        cutoff = self.params.map_mask_radius
-        context = self.params.soft_shell_cutoff_distance
-        sh.isolate_and_cover_selection(
-            atoms, 0, context, cutoff, focus=focus)
-
-    def _xtal_enable_live_scrolling(self, *_):
-        m = self.selected_model
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sh = get_symmetry_handler(m)
-        sh.spotlight_mode = True
-
-    def _update_smoothing_state(self, flag):
-        if self.simulation_running:
-            self.sim_handler.smoothing = flag
-
-    def _update_smoothing_amount(self, alpha):
-        # sval = self.iw._smoothing_amount_dial.value()
-        # alpha = 10**-(sval/100)
-        # # Clamp to valid range
-        # mina, maxa = defaults.SMOOTHING_ALPHA_MIN, defaults.SMOOTHING_ALPHA_MAX
-        # alpha = max(mina, min(maxa, alpha))
-        # self.sim_params.smoothing_alpha = alpha
-        if self.simulation_running:
-            self.sim_handler.smoothing_alpha = alpha
 
 
     ##############################################################
@@ -2378,55 +1254,6 @@ class Isolde():
         from .openmm.sim_param_mgr import SimParams
         self.sim_params = SimParams()
 
-    def _start_sim_or_toggle_pause(self, *_):
-        if not self.simulation_running:
-            from .session_extensions import get_mdff_mgr
-            from chimerax.clipper import get_map_mgr
-            m = self.selected_model
-            mmgr = get_map_mgr(m)
-            num_disabled_potentials = 0
-            num_enabled_potentials = 0
-            for v in mmgr.all_maps:
-                mgr = get_mdff_mgr(m, v)
-                if mgr is not None:
-                    if mgr.enabled:
-                        num_enabled_potentials += 1
-                    else:
-                        num_disabled_potentials += 1
-            if not num_enabled_potentials:
-                from .dialog import choice_warning
-                warning = ('You are about to start a simulation without any '
-                'MDFF potentials! While you are welcome to go ahead if you '
-                'wish, please note that this is not what ISOLDE was designed '
-                'for and you should not expect the results to be equivalent '
-                'to a production, explicit-solvent simulation. ')
-                if num_disabled_potentials:
-                    warn_ext = ('You have {} maps loaded that are currently '
-                    'disabled as potentials. If you wish to enable one or '
-                    'more of these, please cancel now and use the tools under '
-                    '"Show map settings dialogue" to do so.').format(num_disabled_potentials)
-                    warning += warn_ext
-                choice = choice_warning(warning)
-                if not choice:
-                    self._update_menu_after_sim()
-                    return
-            self.start_sim()
-        else:
-            self.pause_sim_toggle()
-
-    def _set_sim_go_button_state(self):
-        # Annoying monkey-patch, since the automatic cycling of icons seems to be 
-        # broken in the latest PyQt
-        pb = self.iw._sim_go_button
-        from Qt.QtGui import QIcon, QPixmap
-        from Qt.QtCore import QSize
-        icon = QIcon()
-        if not self.simulation_running or self.sim_paused:
-            icon.addPixmap(QPixmap(":/icons/play_icon.png"), QIcon.Normal)
-        else:
-            icon.addPixmap(QPixmap(":/icons/pause_icon.png"), QIcon.Normal)
-        pb.setIcon(icon)
-        pb.setIconSize(QSize(32, 32))
 
 
     def start_sim(self):
@@ -2565,10 +1392,6 @@ class Isolde():
         simulation.
         '''
         self.session.logger.status('')
-        # self.iw._master_model_combo_box.setEnabled(False)
-        # self.iw._sim_running_indicator.setVisible(True)
-        # self._update_sim_status_indicator()
-        # self._update_sim_control_button_states()
         self._set_right_mouse_mode_tug_atom()
         self.triggers.activate_trigger(self.SIMULATION_STARTED, None)
         sh = self.sim_handler
@@ -2597,19 +1420,7 @@ class Isolde():
             correct_pseudosymmetric_sidechain_atoms(self.session, self.sim_manager.sim_construct.mobile_residues)
         self._sim_manager = None
         self.session.logger.info('ISOLDE: stopped sim')
-        # self.iw._sim_running_indicator.setVisible(False)
 
-    def _update_sim_status_indicator(self):
-        indicator = self.iw._sim_status_indicator
-        if not self.simulation_running:
-            indicator.setVisible(False)
-            return
-        sm = self.sim_manager
-        if sm.pause:
-            indicator.setText("<font color='blue'>SIMULATION PAUSED</font>")
-        else:
-            indicator.setText("<font color='red'>SIMULATION RUNNING</font>")
-        indicator.setVisible(True)
 
     ##############################################################
     # Simulation on-the-fly control functions
@@ -2853,12 +1664,7 @@ class Isolde():
 
     @smoothing.setter
     def smoothing(self, flag):
-        if self.gui_mode:
-            # then just let the GUI controls handle it
-            self.iw._smoothing_button.setChecked(flag)
         self.sim_params.trajectory_smoothing = flag
-        if self.simulation_running:
-            self.sim_handler.smoothing = flag
 
     @property
     def smoothing_alpha(self):
@@ -2873,20 +1679,11 @@ class Isolde():
 
     @smoothing_alpha.setter
     def smoothing_alpha(self, alpha):
-        if self.gui_mode:
-            # then just let the GUI controls handle it
-            slider = self.iw._smoothing_amount_dial
-            from math import log
-            la = log(alpha, 10)
-            slider.setValue(int(-100*la))
-        else:
-            if alpha < defaults.SMOOTHING_ALPHA_MIN:
-                alpha = defaults.SMOOTHING_ALPHA_MIN
-            elif alpha > defaults.SMOOTHING_ALPHA_MAX:
-                alpha = defaults.SMOOTHING_ALPHA_MAX
-            self.sim_params.smoothing_alpha = alpha
-            if self.simulation_running:
-                self.sim_handler.smoothing_alpha = alpha
+        if alpha < defaults.SMOOTHING_ALPHA_MIN:
+            alpha = defaults.SMOOTHING_ALPHA_MIN
+        elif alpha > defaults.SMOOTHING_ALPHA_MAX:
+            alpha = defaults.SMOOTHING_ALPHA_MAX
+        self.sim_params.smoothing_alpha = alpha
 
 
     ####
@@ -3027,14 +1824,6 @@ class Isolde():
         fname = os.path.join(self._root_dir, 'docs', 'user', 'isolde.html')
         show_url(self.session, pathlib.Path(os.path.abspath(fname)).as_uri())
 
-    def _show_tutorial(self, *_):
-        cb = self.iw._tutorials_combo_box
-        tpath = cb.currentData()
-        from .tutorials import show_tutorial
-        show_tutorial(self.session, tpath)
-        cb.blockSignals(True)
-        cb.setCurrentIndex(0)
-        cb.blockSignals(False)
 
     ##############################################
     # Demo
