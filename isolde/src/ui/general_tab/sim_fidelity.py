@@ -12,16 +12,16 @@ class SimFidelityPanel(CollapsibleArea):
 class SimFidelityDialog(UI_Panel_Base):
 
     _fidelity_settings = {
-        'Quick': {
+        'Lowest/Fastest': {
             'nonbonded_cutoff_distance': 0.9,
             'use_gbsa': False,
         },
-        'Medium': {
+        'Medium/Medium': {
             'nonbonded_cutoff_distance': 0.9,
             'use_gbsa': True,
             'gbsa_cutoff': 1.1,
         },
-        'High': {
+        'Highest/Slowest': {
             'nonbonded_cutoff_distance': 1.7,
             'use_gbsa': True,
             'gbsa_cutoff': 2.0,
@@ -30,9 +30,9 @@ class SimFidelityDialog(UI_Panel_Base):
     }
 
     _tooltips = {
-        'Quick': 'Lowest fidelity, highest speed - useful for low-end GPUs when working in good density. Nonbonded interactions cutoff at 9 Å; vacuum electrostatics.',
-        'Medium': 'Moderate fidelity, high speed. Nonbonded interactions cutoff at 9 Å; implicit solvent electrostatics. ',
-        'High': 'Best quality, recommended when using a high-end GPU. Nonbonded interactions cutoff at 17 Å; implicit solvent electrostatics.',
+        'Lowest/Fastest': '<span>Lowest fidelity, highest speed - useful for low-end GPUs when working in good density. Nonbonded interactions cutoff at 9 Å; vacuum electrostatics.</span>',
+        'Medium/Medium': '<span>Moderate fidelity, high speed. Nonbonded interactions cutoff at 9 Å; implicit solvent electrostatics.</span>',
+        'Highest/Slowest': '<span>Best quality, recommended when using a high-end GPU. Nonbonded interactions cutoff at 17 Å; implicit solvent electrostatics.</span>',
     }
 
     def __init__(self, session, isolde, gui, main_frame):
