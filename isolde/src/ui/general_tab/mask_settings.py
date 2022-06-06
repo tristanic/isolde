@@ -54,7 +54,7 @@ class MaskAndSpotlightSettingsDialog(UI_Panel_Base):
         fcb = self.center_on_selection_checkbox = QCheckBox('Centre on selection when masking', parent=mf)
         fcb.setChecked(isolde.params.center_on_sel_when_masking)
         def _cb(state):
-            isolde.params.center_on_sel_when_masking = state
+            isolde.params.center_on_sel_when_masking = fcb.isChecked()
         fcb.stateChanged.connect(_cb)
         l2.addWidget(fcb)
         ml.addLayout(l2)
