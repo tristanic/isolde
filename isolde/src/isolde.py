@@ -1514,7 +1514,6 @@ class Isolde():
         if not self.simulation_running:
             print('No simulation running!')
             return
-        self._release_register_shifter()
         self.sim_manager.stop_sim()
 
     def minimize(self):
