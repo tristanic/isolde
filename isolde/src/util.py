@@ -137,6 +137,25 @@ def expand_selection(residues, num_steps):
         )
     f(residues._c_pointers, len(residues), num_steps)
 
+def contract_selection(residues, num_steps):
+    from chimerax.atomic import Residues
+    for _ in range(num_steps):
+        removed = []
+        for r in residues:
+            selected_neighbors = 0
+            for n in r.neighbors:
+                if n.selected:
+                    selected_neighbors += 1
+            if selected_neighbors == 1:
+                removed.append(r)
+        removed = Residues(removed)
+        removed.atoms.selected=False
+        removed.atoms.intra_bonds.selected=False
+        for r in removed:
+            for n in r.neighbors:
+                r.bonds_between(n).selected=False
+        residues = residues.subtract(removed)
+                
 
 
 def compiled_lib_extension():

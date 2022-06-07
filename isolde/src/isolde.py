@@ -704,66 +704,6 @@ class Isolde():
     # Rebuild tab
     ####
 
-    def _extend_selection_by_one_res(self, direction):
-        '''
-        Extends a selection by one residue in the given direction, stopping
-        when it hits a chain break or the end of a chain
-        Args:
-            direction:
-                -1 or 1
-        '''
-        from chimerax.atomic import selected_atoms
-        sel = selected_atoms(self.session)
-        residues = sel.unique_residues
-        # expand the selection to cover all atoms in the existing residues
-        residues.atoms.selected = True
-        m = sel.unique_structures[0]
-        polymers = m.polymers(
-            missing_structure_treatment = m.PMS_NEVER_CONNECTS)
-        for p in polymers:
-            p = p[0]
-            indices = p.indices(residues)
-            if indices[0] != -1:
-                break
-        indices = numpy.sort(indices)
-        residues = p[indices]
-        first = residues[0]
-        last = residues[-1]
-        if direction == -1:
-            i0 = indices[0]
-            if i0 > 0:
-                first = p[i0-1]
-                atoms = first.atoms
-                atoms.selected=True
-                atoms.intra_bonds.selected=True
-        else:
-            iend = indices[-1]
-            if iend < len(p) - 1:
-                last = p[iend+1]
-                atoms = last.atoms
-                atoms.selected=True
-                atoms.intra_bonds.selected=True
-
-    def _shrink_selection_by_one_res(self, direction):
-        '''
-        Shrinks the current selection by one residue from one end. If
-        direction == 1 the first residue will be removed from the selection,
-        otherwise the last will be removed. The selection will never be
-        shrunk to less than a single residue.
-        '''
-        from chimerax.atomic import selected_atoms
-        sel = selected_atoms(self.session)
-        residues = sel.unique_residues
-        if len(residues) > 1:
-            if direction == 1:
-                r = residues[0]
-            elif direction == -1:
-                r = residues[-1]
-            else:
-                raise TypeError('Direction must be either 1 or -1!')
-            r.atoms.selected = False
-            r.atoms.intra_bonds.selected = False
-
     def _restrain_selection_as_alpha_helix(self, *_):
         from chimerax.atomic import selected_atoms
         sel = selected_atoms(self.session)

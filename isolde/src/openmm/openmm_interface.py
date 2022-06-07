@@ -968,7 +968,7 @@ class Sim_Manager:
         from .. import selections
         iparams = self.isolde_params
         if expansion_mode == 'extend':
-            sel = selections.expand_selection_along_chains(core_atoms,
+            sel = selections.expand_selection_to_neighbors(core_atoms,
                 iparams.num_selection_padding_residues)
         else:
             raise TypeError('Unrecognised expansion mode!')

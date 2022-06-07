@@ -29,7 +29,7 @@ def get_shell_of_residues(residues, dist_cutoff):
     shell_residues = unselected_atoms[shell_indices].unique_residues
     return shell_residues
 
-def expand_selection_along_chains(atoms, pad):
+def expand_selection_to_neighbors(atoms, pad):
     '''
     Expand an existing selection to whole residues, and extend outwards by `pad` covalently-bonded 
     neighbors.
@@ -46,4 +46,105 @@ def expand_selection_along_chains(atoms, pad):
     selres = selatoms.unique_residues
     from .util import expand_selection
     expand_selection(selres, pad)
-    return sm.atoms[sm.atoms.selected]
+    sel = sm.atoms[sm.atoms.selected]
+    sel.intra_bonds.selected = True
+    return sel
+
+
+def extend_selection_along_chains(residues, direction):
+    '''
+    Extends a selection by one residue in the given direction, stopping
+    when it hits a chain break or the end of a chain. Every contiguous
+    stretch of polymeric residues will be extended in this fashion. It 
+    is expected that all residues are from the same structure.
+    Args:
+        residues:
+            A ChimeraX :class:`Residues` object
+        direction:
+            -1 or 1
+    '''
+    from chimerax.atomic import Residues, concatenate
+    new_residues = []
+    m = residues.unique_structures[0]
+    polymers = m.polymers(
+        missing_structure_treatment = m.PMS_NEVER_CONNECTS)
+    def _extend(p, frag):
+        if direction==-1:
+            prev_index = frag[0]-1
+            if prev_index >= 0:
+                new_residues.append(p[prev_index])
+        else:
+            last_index = frag[-1]
+            next_index = last_index+1
+            if next_index < len(p):
+                new_residues.append(p[next_index])
+    for p in polymers:
+        p = p[0]
+        indices = p.indices(residues)
+        indices = indices[indices!=-1]
+        if not len(indices):
+            continue
+        indices = list(sorted(indices))
+        while len(indices):
+            last_index = indices[0]
+            frag = [last_index]
+            for i, index in enumerate(indices[1:]):
+                if index-last_index==1:
+                    frag.append(index)
+                    last_index = index
+                else:
+                    _extend(p, frag)
+                    indices = indices[i+1:]
+                    break
+            else:
+                _extend(p, frag)
+                break 
+    residues = concatenate([residues, Residues(new_residues)])
+    residues.atoms.selected=True
+    residues.atoms.intra_bonds.selected=True
+
+    return residues
+
+
+def shrink_selection_by_one_res(residues, direction):
+    '''
+    For each set of contiguous polymeric residues, shrinks the current selection 
+    by one residue from one end. If direction == -1 the first residue will be removed 
+    from the selection, otherwise the last will be removed. Each contiguous selection 
+    will never be shrunk to less than a single residue. It is expected that all residues 
+    are from the same structure.
+    '''
+    
+    m = residues.unique_structures[0]
+    for p in m.polymers(missing_structure_treatment=m.PMS_NEVER_CONNECTS):
+        p = p[0]
+        indices = p.indices(residues)
+        indices = indices[indices!=-1]
+        if not len(indices):
+            continue
+        indices = list(sorted(indices))
+        def _shrink(p, frag):
+            if len(frag)==1:
+                return
+            if direction==-1:
+                r = p[frag[0]]
+            else:
+                r = p[frag[-1]]
+            r.atoms.selected=False
+            r.atoms.intra_bonds.selected=False
+            for n in r.neighbors:
+                r.bonds_between(n).selected=False
+        while len(indices):
+            last_index = indices[0]
+            frag = [last_index]
+            for i, index in enumerate(indices[1:]):
+                if index-last_index==1:
+                    frag.append(index)
+                    last_index = index
+                else:
+                    _shrink(p, frag)
+                    indices = indices[i+1:]
+                    break
+            else:
+                _shrink(p, frag)
+                break
