@@ -319,7 +319,7 @@ class SelectionPanel(UI_Panel_Base):
             'Within\nmap mask'
         )
         im.triggered.connect(self.select_all_in_map)
-        im.setToolTip('<span>Select all residues from the working model with all atoms inside the current map mask.</span>')
+        im.setToolTip('<span>Select all residues from the working model with all heavy atoms inside the current map mask.</span>')
     
     def select_all_visible(self, *_):
         m = self.isolde.selected_model
