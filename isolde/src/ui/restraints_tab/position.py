@@ -1,6 +1,6 @@
 from ..collapse_button import CollapsibleArea
-from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout
-from Qt.QtWidgets import QToolBar, QDoubleSpinBox, QLabel, QWidget
+from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout, QDoubleSpinBox
+from Qt.QtWidgets import QToolBar, QLabel, QWidget
 from Qt.QtGui import QIcon
 from Qt.QtCore import Qt
 from .. import icon_dir, DEFAULT_ICON_SIZE
@@ -20,7 +20,6 @@ class PositionRestraintsDialog(UI_Panel_Base):
         ml = self.main_layout = DefaultVLayout()
         tb = self.toolbar = QToolBar()
         tb.setIconSize(DEFAULT_ICON_SIZE)
-        tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
         ml.addWidget(tb)
         pa = self.pin_to_current_action = tb.addAction(
@@ -57,7 +56,8 @@ class PositionRestraintsDialog(UI_Panel_Base):
         sl.addWidget(ksb)
         sl.addWidget(QLabel("<html><head/><body><p>kJ mol<span style=\" vertical-align:super;\">-1</span> Å<span style=\" vertical-align:super;\">-2</span></p></body></html>"))
         sp = self.isolde.sim_params
-        self._param_changed_cb('', ('position_restraint_spring_constant', sp.position_restraint_spring_constant))
+        from chimerax.isolde.isolde import CHIMERAX_SPRING_UNIT
+        ksb.setValue(sp.position_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
         ksb.valueChanged.connect(self._k_spin_box_changed_cb)
         ksb.setKeyboardTracking(False)
         ksb.setToolTip('<span>Spring constant to be applied to newly added restraints (does not affect existing restraints).</span>')
@@ -70,6 +70,7 @@ class PositionRestraintsDialog(UI_Panel_Base):
         self._chimerax_trigger_handlers.append(self.session.triggers.add_handler(
             SELECTION_CHANGED, self._selection_changed_cb
         ))
+        self._selection_changed_cb()
           
     def _pin_selection_in_place(self, *_):
         sel = self.isolde.selected_atoms
