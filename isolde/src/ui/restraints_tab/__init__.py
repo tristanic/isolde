@@ -9,3 +9,5 @@ class RestraintsTab(IsoldeTab):
 
         from .position import PositionRestraintsPanel
         self.addWidget(PositionRestraintsPanel(session, isolde, parent, gui))
+        from .distance import DistanceRestraintsPanel
+        self.addWidget(DistanceRestraintsPanel(session, isolde, parent, gui))        
