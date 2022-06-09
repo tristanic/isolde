@@ -783,24 +783,6 @@ class Isolde():
         psi.enableds = True
 
 
-    def _restrain_selected_atom_to_current_xyz(self, *_):
-        from chimerax.atomic import selected_atoms
-        atom = selected_atoms(self.session)[0]
-        # Displayed value in kJ mol^-1, A^2, OpenMM in kJ mol^-1 nm^2
-        k = self.iw._rebuild_pos_restraint_spring_constant.value()*100
-        self.restrain_atom_to_xyz(atom, atom.coord, k)
-
-    def _restrain_selected_atom_to_pivot_xyz(self, *_):
-        from chimerax.atomic import selected_atoms
-        m = self.selected_model
-        atom = selected_atoms(self.session)[0]
-        # Displayed value in kJ mol^-1, A^2, OpenMM in kJ mol^-1 nm^2
-        k = self.iw._rebuild_pos_restraint_spring_constant.value()*100
-        cofr = self.session.main_view.center_of_rotation
-        # Transform target from scene to model coordinates
-        target = m.position.inverse(is_orthonormal=True)*cofr
-        self.restrain_atom_to_xyz(atom, target, k)
-
     def restrain_atom_to_xyz(self, atom, target, spring_constant):
         '''
         Restrain the given atom to a (x,y,z) position.
