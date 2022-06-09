@@ -1,8 +1,5 @@
 from ..ui_base import IsoldeTab
 
-from Qt.QtWidgets import QPushButton
-from chimerax.core.commands import run
-
 class ValidationTab(IsoldeTab):
     def populate(self):
         session = self.session
