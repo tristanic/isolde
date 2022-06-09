@@ -256,7 +256,8 @@ class ToolbarButtonMgr:
     def _initialize_callbacks(self):
         session = self.session
         st = session.triggers
-        st.add_handler('selection changed', self._selection_changed_cb)
+        from chimerax.core.selection import SELECTION_CHANGED
+        st.add_handler(SELECTION_CHANGED, self._selection_changed_cb)
 
     def _enable_if_single_peptide_selected_cb(self):
         enable=False

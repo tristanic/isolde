@@ -43,7 +43,9 @@ class ParameteriseDialog(UI_Panel_Base):
         prl.addWidget(pro)
         prl.addItem(DefaultSpacerItem())
         ml.addLayout(prl)
-        self._chimerax_trigger_handlers.append(self.session.triggers.add_handler('selection changed', self._selection_changed_cb))
+
+        from chimerax.core.selection import SELECTION_CHANGED
+        self._chimerax_trigger_handlers.append(self.session.triggers.add_handler(SELECTION_CHANGED, self._selection_changed_cb))
     
     def _load_params_cb(self, *_):
         files = self._choose_ff_files(self.load_defs_button)

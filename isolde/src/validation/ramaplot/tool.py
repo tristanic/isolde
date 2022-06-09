@@ -81,7 +81,9 @@ class RamaMainWin(MainToolWindow):
         from chimerax.core.models import MODEL_ID_CHANGED, REMOVE_MODELS
         self._handlers.append(self.session.triggers.add_handler(MODEL_ID_CHANGED, self._session_models_changed_cb))
         self._handlers.append(self.session.triggers.add_handler(REMOVE_MODELS, self._session_models_changed_cb))
-        self._handlers.append(self.session.triggers.add_handler('selection changed', self._selection_changed_cb))
+        
+        from chimerax.core.selection import SELECTION_CHANGED
+        self._handlers.append(self.session.triggers.add_handler(SELECTION_CHANGED, self._selection_changed_cb))
 
         menu_layout.addWidget(QLabel('Display: ', parent=parent))
         dmb = self.display_mode_menu_button = QPushButton('All protein', parent)
