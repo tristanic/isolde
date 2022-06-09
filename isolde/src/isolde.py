@@ -421,6 +421,17 @@ class Isolde():
             raise TypeError('Selection must be a single AtomicStructure model!')
         self.change_selected_model(model)
 
+    @property
+    def selected_atoms(self):
+        '''
+        Returns the set of selected atoms in ISOLDE's currently selected model.
+        If ISOLDE has no model currently selected, returns an empty :class:`Atoms` object.
+        '''
+        m = self.selected_model
+        if m is None:
+            from chimerax.atomic import Atoms
+            return Atoms()
+        return m.atoms[m.atoms.selecteds]
 
     ###################################################################
     # GUI related functions
