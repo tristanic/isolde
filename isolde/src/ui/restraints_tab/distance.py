@@ -1,6 +1,6 @@
 from ..collapse_button import CollapsibleArea
 from ..ui_base import UI_Panel_Base, DefaultVLayout, QDoubleSpinBox
-from Qt.QtWidgets import QToolBar, QLabel, QWidget
+from Qt.QtWidgets import QToolBar, QLabel, QWidget, QSizePolicy
 from Qt.QtGui import QIcon
 from Qt.QtCore import Qt
 from .. import icon_dir, DEFAULT_ICON_SIZE
@@ -65,7 +65,11 @@ class DistanceRestraintsDialog(UI_Panel_Base):
         self._isolde_trigger_handlers.append(sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._param_changed_cb))
         tb.addWidget(kw)
 
-
+        # Just to provide a bit of a buffer between spring constant and distance boxes
+        spacer = QWidget()
+        spacer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        tb.addWidget(spacer)
+        
         dw = QWidget()
         dl = DefaultVLayout()
         dw.setLayout(dl)
