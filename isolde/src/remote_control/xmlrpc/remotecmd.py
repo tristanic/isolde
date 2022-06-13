@@ -177,7 +177,8 @@ class Isolde_XMLRPC_Server:
         self.clear_refinement()
         from chimerax.open_command.cmd import provider_open
         m = self._current_model = provider_open(self.session, [pdb_file])[0]
-        self.isolde.add_xtal_data(mtz_file, model=m)
+        from chimerax.core.commands import run
+        run(self.session, f'open {mtz_file} structureModel #{m.id_string}')
         self.set_default_atom_coloring()
         self.isolde.change_selected_model(m)
 
