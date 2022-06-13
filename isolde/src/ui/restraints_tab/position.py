@@ -1,5 +1,5 @@
 from ..collapse_button import CollapsibleArea
-from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout, QDoubleSpinBox
+from ..ui_base import UI_Panel_Base, DefaultVLayout, QDoubleSpinBox
 from Qt.QtWidgets import QToolBar, QLabel, QWidget
 from Qt.QtGui import QIcon
 from Qt.QtCore import Qt
