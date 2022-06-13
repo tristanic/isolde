@@ -59,16 +59,18 @@ class MapSettingsDialog(UI_Panel_Base):
     MDFF_COLUMN=    6
     WEIGHT_COLUMN=  7
 
-    _labels = {
-        NAME_COLUMN:    'Name',
-        ID_COLUMN:      'ID',
-        DISPLAY_COLUMN: 'Show',
-        STYLE_COLUMN:   'Style',
-        COLOR_COLUMN:   'Colour',
-        DIFF_COLUMN:    'Diff Map?',
-        MDFF_COLUMN:    'MDFF?',
-        WEIGHT_COLUMN:  'Weight'
-    }
+    _labels = {}
+    def _set_base_labels(self):
+        self._labels.update({
+            self.NAME_COLUMN:    'Name',
+            self.ID_COLUMN:      'ID',
+            self.DISPLAY_COLUMN: 'Show',
+            self.STYLE_COLUMN:   'Style',
+            self.COLOR_COLUMN:   'Colour',
+            self.DIFF_COLUMN:    'Diff Map?',
+            self.MDFF_COLUMN:    'MDFF?',
+            self.WEIGHT_COLUMN:  'Weight'
+        })
 
     _style_icons = {
         'solid':     os.path.join(icon_dir, 'mapsurf.png'),
@@ -79,6 +81,7 @@ class MapSettingsDialog(UI_Panel_Base):
     ICON_SIZE = (16,16)
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
+        self._set_base_labels()
         import os
         self.container = collapse_area
         mf = self.main_frame
@@ -90,7 +93,8 @@ class MapSettingsDialog(UI_Panel_Base):
         ml.addWidget(tree)
         tree.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         tree.setHeader(WordWrapHeader(Qt.Orientation.Horizontal))
-        tree.setHeaderLabels(self._labels.values())
+        labels = [val for _,val in sorted(self._labels.items(), key=lambda i: i[0])]
+        tree.setHeaderLabels(labels)
         tree.header().setMinimumSectionSize(20)
         tree.setSelectionBehavior(QAbstractItemView.SelectRows)
         tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -386,6 +390,8 @@ class MapSettingsDialog(UI_Panel_Base):
         super().cleanup()
 
 class XmapSettingsDialogBase(MapSettingsDialog):
+
+
     def init_tree_structure(self, mapsets):
         ret = {}
         tree = self.tree
@@ -419,11 +425,62 @@ class XmapSettingsDialogBase(MapSettingsDialog):
         self.add_weight_spinbox(item, self.WEIGHT_COLUMN, map)
 
 
+
 class XmapLiveSettingsDialog(XmapSettingsDialogBase):
     from chimerax.clipper.maps import XmapHandler_Live, XmapSet
     MAP_TYPE=XmapHandler_Live
     MAP_SET_TYPE=XmapSet
     MAP_NAME_PREFIX='(LIVE) '
+
+    LIVE_COLUMN=    2
+    DISPLAY_COLUMN= 3
+    STYLE_COLUMN=   4
+    COLOR_COLUMN=   5
+    DIFF_COLUMN=    6
+    MDFF_COLUMN=    7
+    WEIGHT_COLUMN=  8
+
+    def __init__(self, *args, **kwargs):
+        self._labels[self.LIVE_COLUMN] = "Live?"
+        super().__init__(*args, **kwargs)
+
+    def init_tree_structure(self, mapsets):
+        ret = {}
+        tree = self.tree
+        parent = tree.invisibleRootItem()
+        for mapset in mapsets:
+            maps = [map for map in mapset.all_maps if isinstance(map, self.MAP_TYPE)]
+            if not len(maps):
+                continue
+            ms = QTreeWidgetItem(parent)
+            ms.setText(self.NAME_COLUMN, mapset.base_name)
+            ms.setText(self.ID_COLUMN, mapset.id_string)
+            self.add_live_recalc_checkbox(ms, self.LIVE_COLUMN, mapset)
+            self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
+            ret[mapset.name] = (ms, maps)
+        return ret            
+
+
+    def add_live_recalc_checkbox(self, item, column, mapset):
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        cb = QCheckBox(w)
+        l.addWidget(cb)
+        cb.setChecked(mapset.live_update)
+        l.addStretch()
+        def toggled_cb(state, ms=mapset):
+            ms.live_update = state
+        cb.toggled.connect(toggled_cb)
+        th = self._temporary_handlers
+        def map_recalc_changed_cb(trigger_name, flag, b = cb):
+            with slot_disconnected(b.toggled, toggled_cb):
+                b.setChecked(flag)
+        th.append(mapset.triggers.add_handler('live recalc changed', map_recalc_changed_cb))
+        self.tree.setItemWidget(item, column, w)
+
+
 
         
 
