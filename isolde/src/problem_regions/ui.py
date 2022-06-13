@@ -10,8 +10,9 @@ USER_ROLE = Qt.ItemDataRole.UserRole
 
 
 class ProblemAggregatorTab(IsoldeTab):
-    def __init__(self, session, isolde, gui, tab_widget, tab_name='Problem Zones'):
-        super().__init__(session, isolde, gui, tab_widget, tab_name)
+    display_name = 'Problem Zones'
+    def __init__(self, session, isolde, gui, tab_widget):
+        super().__init__(session, isolde, gui, tab_widget)
         aggw = QWidget()
         agg = self.aggregator = ProblemAggregatorGUI(session, isolde, gui, aggw)
         self.addWidget(aggw)

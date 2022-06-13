@@ -1,6 +1,7 @@
 from ..ui_base import IsoldeTab
 
 class ValidationTab(IsoldeTab):
+    display_name = 'Validate'
     def populate(self):
         session = self.session
         isolde = self.isolde

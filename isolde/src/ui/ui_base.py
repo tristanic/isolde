@@ -177,13 +177,16 @@ class UI_Panel_Base:
 
 
 class IsoldeTab(QWidget):
-    def __init__(self, session, isolde, gui, tab_widget, tab_name):
+    display_name = ''
+    def __init__(self, session, isolde, gui, tab_widget, name=None):
         super().__init__()
         self.session = session
         self.isolde = isolde
         self.gui = gui
         self.tab_widget = tab_widget
-        tab_widget.addTab(self, tab_name)
+        if name is None:
+            name = self.display_name
+        tab_widget.addTab(self, name)
         hl = DefaultHLayout()
         self.setLayout(hl)
         sa = self.scroll_area = QScrollArea(self)

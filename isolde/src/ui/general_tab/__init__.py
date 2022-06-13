@@ -2,7 +2,7 @@ from ..ui_base import IsoldeTab
 
 
 class GeneralTab(IsoldeTab):
-
+    display_name = 'General'
     def populate(self):
         session = self.session
         isolde = self.isolde

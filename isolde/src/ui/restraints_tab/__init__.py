@@ -1,6 +1,7 @@
 from ..ui_base import IsoldeTab
 
 class RestraintsTab(IsoldeTab):
+    display_name = 'Restraints'
     def populate(self):
         session = self.session
         isolde = self.isolde

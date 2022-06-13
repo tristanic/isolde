@@ -52,13 +52,12 @@ class IsoldeMainWin(MainToolWindow):
         tabw.setUsesScrollButtons(True)
         tabw.setDocumentMode(False)
         main_layout.addWidget(tabw)
-        from .ui_base import IsoldeTab
         from .general_tab import GeneralTab
-        self.general_tab = GeneralTab(self.session, self.isolde, self, tabw, "General")
+        self.general_tab = GeneralTab(self.session, self.isolde, self, tabw)
         from .restraints_tab import RestraintsTab
-        self.restraints_tab = RestraintsTab(self.session, self.isolde, self, tabw, 'Restraints')
+        self.restraints_tab = RestraintsTab(self.session, self.isolde, self, tabw)
         from .validation_tab import ValidationTab
-        self.validate_tab = ValidationTab(self.session, self.isolde, self, tabw, "Validate")
+        self.validate_tab = ValidationTab(self.session, self.isolde, self, tabw)
         from ..problem_regions.ui import ProblemAggregatorTab
         self.problems_tab = ProblemAggregatorTab(self.session, self.isolde, self, tabw)
 
