@@ -17,7 +17,7 @@ from ..util import is_continuous_protein_chain, find_polymer
 from chimerax.atomic import Atoms
 from ..constants import defaults
 
-class Protein_Register_Shifter:
+class ProteinRegisterShifter:
     '''
     In models built into low-resolution maps it is quite common to find
     stretches of the protein chain that have been built out of register - that
@@ -26,7 +26,7 @@ class Protein_Register_Shifter:
     be a difficult and frustrating task to fix such problems via purely manual
     methods, but a little scripting can help simplify the task substantially.
 
-    :class:`Protein_Register_Shifter` addresses the task by first calculating
+    :class:`ProteinRegisterShifter` addresses the task by first calculating
     four 3D parametric splines (through the coordinates of the N, CA, C and
     CB (or HA3 for glycine) atoms of the problem residues respectively). These
     splines are then used to define the positions of position restraints for
@@ -38,9 +38,13 @@ class Protein_Register_Shifter:
     check and correct local geometry before releasing.
 
     Note that checkpointing of the simulation is blocked while a
-    :class:`Protein_Register_Shifter` is active. The block will be released
+    :class:`ProteinRegisterShifter` is active. The block will be released
     when :func:`release_all` is called.
     '''
+
+    IN_PROGRESS_SPRING_CONSTANT = 5000 # kJ.mol^-1.nm^-2
+    POLISHING_SPRING_CONSTANT = 25000
+
     def __init__(self, session, isolde, atoms):
         '''
         Initialise the object, including creating the splines from the current
@@ -58,13 +62,11 @@ class Protein_Register_Shifter:
                   shifting
         '''
         if not is_continuous_protein_chain(atoms):
-            raise TypeError(
+            from chimerax.core.errors import UserError
+            raise UserError(
                 'Selection must be atoms from a continuous peptide chain!')
 
-        self.spring_constant =\
-           isolde.sim_params.position_restraint_spring_constant.value_in_unit(
-               defaults.OPENMM_SPRING_UNIT
-           ) # kJ/mol/A2
+        self.spring_constant = self.IN_PROGRESS_SPRING_CONSTANT
 
         # Number of GUI update steps between each residue along the spline
         self.spline_steps_per_residue = 10
@@ -193,7 +195,7 @@ class Protein_Register_Shifter:
         self._positions_along_spline = (p.indices(xr) - spline_start_index).astype(float)
 
         self._handler = isolde.sim_handler.triggers.add_handler('coord update', self._step_forward)
-        self.triggers.activate_trigger('register shift started', self)
+        self.triggers.activate_trigger('register shift started', None)
 
     def release_all(self):
         '''
@@ -206,7 +208,7 @@ class Protein_Register_Shifter:
         if isolde.simulation_running and self._handler is not None:
             isolde.sim_handler.triggers.remove_handler(self._handler)
             self._handler = None
-        self.triggers.activate_trigger('register shift released', self)
+        self.triggers.activate_trigger('register shift released', None)
 
     def _step_forward(self, *_):
         '''
@@ -217,12 +219,18 @@ class Protein_Register_Shifter:
         xr = self._extended_residues
         xa = self._extended_atoms
         if abs(self._current_position_on_spline) >= abs(self._shift_length):
-            # Our target has reached the end of the spline. Switch to a
-            # final "polishing" routine
+            # Our target has reached the end of the spline. Stop pushing forward, and strengthen the restraints
+            # to polish.
             isolde.sim_handler.triggers.remove_handler(self._handler)
             self._handler = None
             self.finished = True
             self.triggers.activate_trigger('register shift finished', self)
+            from chimerax.atomic import Atoms
+            all_atoms = xa.ravel()
+            all_atoms = Atoms(all_atoms[all_atoms!=None])
+            prs = self._pr_mgr.get_restraints(all_atoms)
+            prs[prs.enableds].spring_constants = self.POLISHING_SPRING_CONSTANT
+            return
             #self._handler = self.isolde.triggers.add_handler('completed simulation step', self._final_polish)
         self._current_position_on_spline += self._spline_step
         sp = self._positions_along_spline
