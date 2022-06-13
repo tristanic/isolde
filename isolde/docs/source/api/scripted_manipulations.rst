@@ -13,11 +13,11 @@ Peptide_Bond_Flipper
     .. autoclass:: Peptide_Bond_Flipper
         :members:
 
-Protein_Register_Shifter
+ProteinRegisterShifter
 ~~~~~~~~~~~~~~~~~~~~~~~~
     .. image:: ../tools/gui/images/registershift-icon.png
 
-    .. autoclass:: Protein_Register_Shifter
+    .. autoclass:: ProteinRegisterShifter
         :members:
 
 Backrub
