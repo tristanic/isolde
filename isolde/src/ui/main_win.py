@@ -288,6 +288,7 @@ class SelectionPanel(UI_Panel_Base):
         tb.setMovable(False)
         tb.setIconSize(DEFAULT_ICON_SIZE)
         tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        tb.setStyleSheet('background: rgb(80,80,80); border:none; color: white;')
         en = self.extend_backward_action = tb.addAction(
             QIcon(os.path.join(icon_dir, 'extend_selection_n.png')),
             'Extend\nbackward')
