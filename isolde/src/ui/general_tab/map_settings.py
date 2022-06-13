@@ -72,6 +72,19 @@ class MapSettingsDialog(UI_Panel_Base):
             self.WEIGHT_COLUMN:  'Weight'
         })
 
+    _tooltips = {}
+    def _set_base_tooltips(self):
+        self._tooltips.update({
+            self.NAME_COLUMN:   '<span>Name of map or mapset</span>',
+            self.ID_COLUMN:     '<span>ChimeraX model ID, used in some command-line commands.</span>',
+            self.DISPLAY_COLUMN:    '<span>Show/hide individual maps or groups</span>',
+            self.STYLE_COLUMN:  '<span>Switch between solid, transparent or mesh representations</span>',
+            self.COLOR_COLUMN: '<span>Choose colour(s) for a given map (two colours for a difference map)</span>',
+            self.DIFF_COLUMN:   '<span>Is this a difference (i.e. mFo-DFc) map?</span>',
+            self.MDFF_COLUMN:   '<span>Tick to allow this map to "pull" on atoms (not available for all map types)</span>',
+            self.WEIGHT_COLUMN: '<span>Strength with which the map pulls on atoms, normalised by the map sigma</span>',
+        })
+
     _style_icons = {
         'solid':     os.path.join(icon_dir, 'mapsurf.png'),
         'mesh':    os.path.join(icon_dir, 'mesh.png'),
@@ -82,6 +95,7 @@ class MapSettingsDialog(UI_Panel_Base):
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
         self._set_base_labels()
+        self._set_base_tooltips()
         import os
         self.container = collapse_area
         mf = self.main_frame
@@ -95,6 +109,8 @@ class MapSettingsDialog(UI_Panel_Base):
         tree.setHeader(WordWrapHeader(Qt.Orientation.Horizontal))
         labels = [val for _,val in sorted(self._labels.items(), key=lambda i: i[0])]
         tree.setHeaderLabels(labels)
+        for column, tooltip in self._tooltips.items():
+            tree.headerItem().setToolTip(column, tooltip)
         tree.header().setMinimumSectionSize(20)
         tree.setSelectionBehavior(QAbstractItemView.SelectRows)
         tree.setSelectionMode(QAbstractItemView.ExtendedSelection)
@@ -318,9 +334,9 @@ class MapSettingsDialog(UI_Panel_Base):
         w.setLayout(l)
         l.addStretch()
         sb = MapWeightSpinBox()
-        sb.setValue(mgr.global_k)
+        sb.setValue(mgr.global_k/map.sigma)
         def set_weight(value, m=mgr):
-            mgr.global_k = value
+            mgr.global_k = value*map.sigma
         sb.valueChanged.connect(set_weight)
         l.addWidget(sb)
         l.addStretch()
@@ -442,6 +458,7 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
 
     def __init__(self, *args, **kwargs):
         self._labels[self.LIVE_COLUMN] = "Live?"
+        self._tooltips[self.LIVE_COLUMN] = '<span>Automatically recalculate structure factors when atom coords or properties change?</span>'
         super().__init__(*args, **kwargs)
 
     def init_tree_structure(self, mapsets):
