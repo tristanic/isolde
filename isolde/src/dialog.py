@@ -31,7 +31,7 @@ def choice_warning(message, allow_dont_ask_again=False):
     msg.setText(message)
     msg.setStandardButtons(QMessageBox.Ok|QMessageBox.Cancel)
     if allow_dont_ask_again:
-        dag_button = msg.addButton("Don't ask again", QMessageBox.ButtonRole.YesRole)
+        dag_button = msg.addButton("OK (don't ask again)", QMessageBox.ButtonRole.YesRole)
     reply = msg.exec()
     if allow_dont_ask_again:
         if msg.clickedButton()==dag_button:
