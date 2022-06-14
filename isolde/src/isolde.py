@@ -632,6 +632,25 @@ class Isolde():
         if not len(mgr.all_maps):
             return False
         return True
+    
+    @property
+    def selected_model_has_mdff_enabled(self):
+        '''
+        Returns True if the selected model has at least one MDFF manager present 
+        and enabled for MDFF fitting, otherwise False. Read only
+        '''
+        if not self.selected_model_has_maps:
+            return False
+        from chimerax.clipper import get_map_mgr
+        m = self.selected_model
+        mgr = get_map_mgr(m)
+        from . import session_extensions as sx
+        for v in mgr.all_maps:
+            mdff = sx.get_mdff_mgr(m, v)
+            if mdff is not None and mdff.enabled:
+                return True
+        return False
+            
 
     def _initialize_maps(self, model):
         '''
@@ -1215,6 +1234,21 @@ class Isolde():
         from .openmm.openmm_interface import Sim_Manager
         sm = self.selected_model
         main_sel = self._last_main_sel = sm.atoms[sm.atoms.selected]
+        if not self.selected_model_has_mdff_enabled and getattr(self, '_warn_on_no_maps', True):
+            from .dialog import choice_warning
+            warn_str = ('You are about to start a simulation with no map fitting forces enabled! '
+                'While this is supported by ISOLDE, please be aware that the simulation environment '
+                'is not generally suitable for equilibrium simulation and the results should be '
+                'interpreted with care. You should strongly consider reinforcing core structures '
+                'first with the "isolde restrain distances" command.')
+            if self.gui_mode:
+                warn_str += '\nAre you sure you want to continue?'
+                choice, dont_ask_again = choice_warning(warn_str, allow_dont_ask_again=True)
+                self._warn_on_no_maps = not dont_ask_again
+                if not choice:
+                    return
+            else:
+                self.session.logger.warning(warn_str)
         try:
             sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
                 self.params, self.sim_params, excluded_residues = self.ignored_residues)
