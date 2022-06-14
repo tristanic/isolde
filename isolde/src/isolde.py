@@ -412,6 +412,9 @@ class Isolde():
         Returns the atomic model on which ISOLDE is currently operating.
         Can be set.
         '''
+        m = self._selected_model
+        if m is not None and m.was_deleted:
+            self._selected_model = None
         return self._selected_model
 
     @selected_model.setter
