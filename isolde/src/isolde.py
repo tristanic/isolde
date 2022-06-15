@@ -185,7 +185,9 @@ class Isolde():
 
         self._status = self.session.logger.status
 
-        self._event_handler = EventHandler(self.session)
+        eh = self._event_handler = EventHandler(self.session)
+        from chimerax.core.models import ADD_MODELS
+        eh.add_event_handler('Reinitialize maps on model add', ADD_MODELS, self._model_add_cb)
 
         # Available pre-defined colors
         from chimerax.core import colors
@@ -650,7 +652,11 @@ class Isolde():
             if mdff is not None and mdff.enabled:
                 return True
         return False
-            
+
+    def _model_add_cb(self, *_):
+        m = self.selected_model
+        if m is not None:
+            self._initialize_maps(m)            
 
     def _initialize_maps(self, model):
         '''
