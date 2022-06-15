@@ -122,11 +122,21 @@ class ToolbarButtonMgr:
         self._initialize_callbacks()
 
     def _set_button_starting_states(self, *_):
-        for key, (tab, section, name, display_name) in self.all_buttons.items():
-            if key == 'Start ISOLDE':
-                self.set_enabled(key, True)
-            else:
-                self.set_enabled(key, False)
+        try:
+            for key, (tab, section, name, display_name) in self.all_buttons.items():
+                if key == 'Start ISOLDE':
+                    self.set_enabled(key, True)
+                else:
+                    self.set_enabled(key, False)
+        except ValueError:
+            # Temporary hack because in ChimeraX 1.4 the Toolbar manager doesn't update on bundle install,
+            # leading to a traceback when ISOLDE is first installed via the GUI.
+            from .dialog import choice_warning
+            result = choice_warning('You will need to restart ChimeraX before using ISOLDE '
+                'for the first time. Would you like to close ChimeraX now?')
+            if result:
+                self.session.ui.exit()
+
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
