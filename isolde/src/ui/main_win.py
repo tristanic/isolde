@@ -3,7 +3,7 @@ from chimerax.ui.gui import MainToolWindow
 
 from Qt.QtWidgets import (
     QFrame, QLabel,
-    QPushButton, QTabWidget, QWidget, 
+    QPushButton, QMenu, QTabWidget, QWidget, 
     QToolBar
 )
 from Qt import QtCore
@@ -31,7 +31,6 @@ class IsoldeMainWin(MainToolWindow):
             self.isolde = Isolde(self.session, gui=self)
         self.isolde.gui_mode = True
         self._gui_panels = []
-
         sth = self._session_trigger_handlers = []
         ith = self._isolde_trigger_handlers = []
 
@@ -39,6 +38,9 @@ class IsoldeMainWin(MainToolWindow):
             'selected model changed', self._selected_model_changed_cb
         )
         self._isolde_trigger_handlers.append(smch)
+        from chimerax.core.models import REMOVE_MODELS
+        self._session_trigger_handlers.append(self.session.triggers.add_handler(REMOVE_MODELS,
+            self._model_deleted_cb))
 
         parent = self.ui_area
         main_layout = DefaultVLayout()
@@ -95,27 +97,22 @@ class IsoldeMainWin(MainToolWindow):
         wol = QLabel(tw)
         wol.setText('Working on: ')
         l1.addWidget(wol)
-        mmcb = self.master_model_combo_box = QComboBox(tw)
-        mmcb.setMinimumSize(QtCore.QSize(150,0))
-        mmcb.setToolTip('Select the model to work on in ISOLDE')
-        l1.addWidget(mmcb)
+        mmb = self.master_model_menu_button = QPushButton(tw)
+        self._update_model_menu_button(self.isolde.selected_model)
+        mmm = self.master_model_menu = QMenu()
+        mmm.aboutToShow.connect(self._populate_available_models_menu)
+        mmb.setMenu(mmm)
+        mmb.setMinimumSize(QtCore.QSize(150,0))
+        mmb.setToolTip('Select the model to work on in ISOLDE')
+        l1.addWidget(mmb)
         l1.addItem(DefaultSpacerItem(200))
         l1.addWidget(QLabel('Experience level: ', parent=tw))
         from .ui_base import ExpertModeSelector
         elcb = self.expert_mode_combo_box = ExpertModeSelector(tw)
         l1.addWidget(elcb)
 
-        from chimerax.core.models import ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS
-        for event_type in (ADD_MODELS, MODEL_ID_CHANGED, REMOVE_MODELS):
-            self._session_trigger_handlers.append(
-                session.triggers.add_handler(event_type, self._update_model_list_cb)
-            )
-        
-        self._update_model_list_cb(None, None)
         self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler(self.isolde.SIMULATION_STARTED, self._sim_start_cb))
         self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler(self.isolde.SIMULATION_TERMINATED, self._sim_end_cb))
-
-        mmcb.currentIndexChanged.connect(self._change_selected_model_cb)
 
         li.addWidget(tw)
 
@@ -146,79 +143,23 @@ class IsoldeMainWin(MainToolWindow):
         main_layout.addWidget(tf)
 
 
-    def _change_selected_model_cb(self, *_):
-        mmcb = self.master_model_combo_box
-        from ..util import block_managed_trigger_handler
-        with block_managed_trigger_handler(self, '_selected_model_changed_handler'):
-            m = mmcb.currentData()
-            if m is not None:
-                if mmcb.itemData(0) is None:
-                    mmcb.removeItem(0)
-                self.isolde.change_selected_model(m)
-
     def _sim_start_cb(self, *_):
-        self.master_model_combo_box.setEnabled(False)
+        self.master_model_menu_button.setEnabled(False)
     
     def _sim_end_cb(self, *_):
-        self.master_model_combo_box.setEnabled(True)
+        self.master_model_menu_button.setEnabled(True)
 
-    @contextmanager
-    def _block_update_model_list_cb(self):
-        self._update_model_list_cb_blocked = True
-        yield
-        self._update_model_list_cb_blocked = False
-
-    def _update_model_list_cb(self, _, models=None):
+    def _populate_available_models_menu(self):
         from chimerax.atomic import AtomicStructure
-        blocked = getattr(self, '_update_model_list_cb_blocked', False)
-        if blocked:
-            return
-        mmcb = self.master_model_combo_box
-        from chimerax.core.models import Model
-        if isinstance(models, Model):
-            models = [models]
-        cm = self.isolde.selected_model
-        if models is None or cm is None:
-            structures_need_update = True
-        else:
-            structures_need_update = False
-            for m in models:
-                # Use explicit type equality rather than isInstance because some previews 
-                # are AtomicStructure subclasses
-                if type(m) == AtomicStructure:
-                    structures_need_update = True
-                    break
-            
-            if cm is not None and cm not in self.session.models.list():
-                # Model has been deleted
-                cm = None
-                structures_need_update = True
-        
-        if structures_need_update:
-            with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb), self._block_update_model_list_cb():
-                mmcb.clear()
-                models = [m for m in self.session.models.list() if type(m) == AtomicStructure]
-                models = sorted(models, key=lambda m: m.id)
-                if cm is None:
-                    # If any models are already initialised with Clipper, choose the first. Otherwise, leave it
-                    # up to the user
-                    from chimerax.clipper import get_symmetry_handler
-                    handlers = [get_symmetry_handler(m) for m in models]
-                    handlers = [h for h in handlers if h is not None]
-                    mmcb.addItem('Choose a model...', None)
-
-                for m in models:
-                    id_str = f'{m.id_string}. {m.name}'
-                    mmcb.addItem(id_str, m)
-                if cm is not None:
-                    mmcb.setCurrentIndex(mmcb.findData(cm))
-                else:
-                    if len(handlers):
-                        cm = handlers[0].structure
-                        mmcb.setCurrentIndex(mmcb.findData(cm))
-                    else:
-                        mmcb.setCurrentIndex(0)
-                    self._change_selected_model_cb()
+        mmm = self.master_model_menu
+        mmm.clear()
+        models = [m for m in self.session.models if type(m)==AtomicStructure]
+        models = sorted(models, key=lambda m: m.id)
+        for m in models:
+            a = mmm.addAction(f'{m.id_string}: {m.name}')
+            def _set_selected_model(_, model=m):
+                self.isolde.selected_model = model
+            a.triggered.connect(_set_selected_model)
 
     def cleanup(self):
         for h in self._session_trigger_handlers:
@@ -232,14 +173,27 @@ class IsoldeMainWin(MainToolWindow):
     # ISOLDE event callbacks
     ###
 
-    def _selected_model_changed_cb(self, trigger_name, m):
-        if m is None:
-            self._update_model_list_cb(None)
-            return
-        mmcb = self.master_model_combo_box
-        with slot_disconnected(mmcb.currentIndexChanged, self._change_selected_model_cb):
-            mmcb.setCurrentIndex(mmcb.findData(m))
+    def _model_deleted_cb(self, *_):
+        self._update_model_menu_button(self.isolde.selected_model)
 
+    def _selected_model_changed_cb(self, trigger_name, m):
+        self._update_model_menu_button(m)
+    
+    def _update_model_menu_button(self, m=None):
+        mmb = self.master_model_menu_button
+        if m is None:
+            # If any existing models are initialized for ISOLDE, switch to the first
+            from chimerax.atomic import AtomicStructure
+            models = [model for model in self.session.models if type(model)==AtomicStructure]
+            models = sorted(models, key=lambda m: m.id)
+            from chimerax.clipper import get_symmetry_handler
+            for m in models:
+                if get_symmetry_handler(m) is not None:
+                    self.isolde.selected_model = m
+                    return
+            mmb.setText('Choose a model')
+        else:    
+            mmb.setText(f'{m.id_string}')
 
 
 class SimStatusIndicator(UI_Panel_Base):
