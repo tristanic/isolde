@@ -334,9 +334,9 @@ class MapSettingsDialog(UI_Panel_Base):
         w.setLayout(l)
         l.addStretch()
         sb = MapWeightSpinBox()
-        sb.setValue(mgr.global_k/map.sigma)
+        sb.setValue(mgr.global_k*map.sigma)
         def set_weight(value, m=mgr):
-            mgr.global_k = value*map.sigma
+            mgr.global_k = value/map.sigma
         sb.valueChanged.connect(set_weight)
         l.addWidget(sb)
         l.addStretch()
