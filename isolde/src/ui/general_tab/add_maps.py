@@ -61,7 +61,7 @@ class MapAddDialog(UI_Panel_Base):
             action = rsmm.addAction(f'#{v.id_string}: {v.name}')
             def add_map_cb(*_, session=self.session, volume=v):
                 from chimerax.core.commands import run
-                run(session, f'clipper assoc #{v.id_string} to #{session.isolde.selected_model.parent.id_string}')
+                run(session, f'clipper assoc #{volume.id_string} to #{session.isolde.selected_model.parent.id_string}')
             action.triggered.connect(add_map_cb)
         
 
