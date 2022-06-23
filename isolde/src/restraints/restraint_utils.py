@@ -748,9 +748,6 @@ def adjust_distance_restraint_terms_by_pae(pae):
     return kappa_adj, tol_adj, falloff_adj
 
 
-
-
-
 def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa, c, alpha=-2):
     if not atom1.structure == atom2.structure:
         raise UserError('Both atoms must belong to the same model!')
@@ -763,3 +760,219 @@ def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa,
     adr.c = c
     adr.alpha = alpha
     adr.enabled = True
+
+
+def _categorise_strand_pair(strands, hbonds):
+    residue_pairs = []
+    for hbond in hbonds:
+        r1, r2 = [a.residue for a in hbond]
+        if r1 in strands[0]:
+            indices = [strands[0].index(r1), strands[1].index(r2)]
+        else:
+            indices = [strands[0].index(r2), strands[1].index(r1)]
+        residue_pairs.append(indices)
+    residue_pairs = list(sorted(residue_pairs, key=lambda p: p[0]))
+    if residue_pairs[-1][1]-residue_pairs[0][1] < 0:
+        return 'antiparallel'
+    return 'parallel'
+
+BETA_H_BOND_DISTANCE = 2.9
+BETA_H_BOND_STD = 0.08
+
+def restrain_as_beta_sheets(session, residues, minimum_length=2):
+    from ..util import find_contiguous_fragments
+    strands = find_contiguous_fragments(residues)
+    m = residues.unique_structures[0]
+    from chimerax.hbonds import find_hbonds
+    # Filter out any overly-short strands
+    strands = [s for s in strands if len(s) >= minimum_length]
+    strand_pair_dict = {}
+    for i, strand in enumerate(strands):
+        for other_strand in strands[i+1:]:
+            strand_donors = strand.atoms[strand.atoms.names=='N']
+            strand_acceptors = strand.atoms[strand.atoms.names=='O']
+            other_donors = other_strand.atoms[strand.atoms.names=='N']
+            other_acceptors = other_strand.atoms[strand.atoms.names=='O']
+            dh = find_hbonds(session, [m], donors=strand_donors, acceptors=other_acceptors)
+            ah = find_hbonds(session, [m], donors=other_donors, acceptors=strand_acceptors)
+            if not len(dh) and not len(ah):
+                continue
+            pair_type = _categorise_strand_pair([strand, other_strand], dh+ah)
+
+def release_ss_restraints(residues):
+    from chimerax.isolde import session_extensions as sx
+    from chimerax.atomic import Residue
+    import numpy
+    residues = residues[residues.polymer_types==Residue.PT_AMINO]
+    for m in residues.unique_structures:
+        s_residues = residues[m.residues.indices(residues)!=-1]
+        drm = sx.get_distance_restraint_mgr(m)
+        backbone_atoms = s_residues.atoms[numpy.in1d(s_residues.atoms.names, ('N','CA','C','O'))]
+        drs = drm.atoms_restraints(backbone_atoms)
+        drs.enableds=False
+        pdrm = sx.get_proper_dihedral_restraint_mgr(m)
+        phi_rs = pdrm.get_restraints_by_residues_and_name(s_residues, 'phi')
+        phi_rs.enableds=False
+        psi_rs = pdrm.get_restraints_by_residues_and_name(s_residues, 'psi')
+        psi_rs.enableds=False
+
+def restrain_secondary_structure(session, residues, target):
+    '''
+    Restrain all amino acid residues in a selection to a target secondary
+    structure. Secondary structure restraints consist of dihedral restraints
+    on phi and psi, and distance restraints on (CA(n)-CA(n+2)) and
+    (O(n)-O(n+4)).
+
+    Args:
+        * atoms:
+            - a :class:`chimerax.Atoms` instance defining the selection. Any
+                residue with at least one atom in the selection will be
+                restrained. No distance restraints involving residues outside
+                the selection will be applied.
+        * target:
+            - 'helix' or 'strand'
+
+
+    Target distances/angles for each secondary structure definition are
+    stored in `constants.py`.
+    '''
+    from chimerax.core.errors import UserError
+    if not len(residues):
+        return
+    isolde = getattr(session, 'isolde', None)
+    from chimerax.isolde.isolde import OPENMM_RADIAL_SPRING_UNIT, OPENMM_SPRING_UNIT
+    if isolde is None:
+        from chimerax.isolde.constants import defaults
+        dihed_k = defaults.PHI_PSI_SPRING_CONSTANT.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
+        dist_k = defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT.value_in_unit(OPENMM_SPRING_UNIT)
+    else:
+        dihed_k = isolde.sim_params.phi_psi_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
+        dist_k = isolde.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
+    us = residues.unique_structures
+    if len(us) != 1:
+        raise UserError('All residues must be from the same model!')
+    m = us[0]
+    from .constants import ss_restraints
+    try:
+        restraint_params = ss_restraints[target.lower()]
+    except KeyError:
+        raise UserError('Target argument must be one of "helix" or "strand"!')
+    from .. import session_extensions as sx
+    dr_m = sx.get_distance_restraint_mgr(m)
+    pdr_m = sx.get_proper_dihedral_restraint_mgr(m)
+
+    # Release any existing restraints on the backbone atoms
+    import numpy
+    backbone_atoms = residues.atoms[numpy.in1d(residues.atoms.names, ['N','CA','C','O'])]
+    existing_drs = dr_m.atoms_restraints(backbone_atoms)
+    existing_drs.enableds=True
+    from ..util import find_contiguous_fragments
+    fragments = find_contiguous_fragments(residues)
+    for frag in fragments:
+        o_to_n_plus_four, ca_to_ca_plus_two = dr_m.add_ss_restraints(frag)
+        o_to_n_plus_four.targets = restraint_params.O_TO_N_PLUS_FOUR_DISTANCE
+        ca_to_ca_plus_two.targets = restraint_params.CA_TO_CA_PLUS_TWO_DISTANCE
+        o_to_n_plus_four.spring_constants = dist_k
+        ca_to_ca_plus_two.spring_constants = dist_k
+        o_to_n_plus_four.enableds = True
+        ca_to_ca_plus_two.enableds = True
+
+        phi = pdr_m.add_restraints_by_residues_and_name(frag, 'phi')
+        phi.targets = restraint_params.PHI_ANGLE
+        phi.spring_constants = dihed_k
+        phi.cutoffs = restraint_params.CUTOFF_ANGLE
+        phi.enableds = True
+
+        psi = pdr_m.add_restraints_by_residues_and_name(frag, 'psi')
+        psi.targets = restraint_params.PSI_ANGLE
+        psi.spring_constants = dihed_k
+        psi.cutoffs = restraint_params.CUTOFF_ANGLE
+        psi.enableds = True
+
+    if target.lower()=='strand':
+        from chimerax.hbonds import find_hbonds
+        from math import radians
+        donors = residues.atoms[residues.atoms.names=='N']
+        acceptors = residues.atoms[residues.atoms.names=='O']
+        hbonds = find_hbonds(session, [m], donors=donors, acceptors=acceptors)
+        for hbond in hbonds:
+            # Only restrain if both residues have strand-like geometry
+            a1, a2 = hbond
+            restrain=True
+            for a in a1, a2:
+                r = a.residue
+                phi = r.phi
+                if phi is not None:
+                    phi = radians(phi)
+                psi = r.psi
+                if psi is not None:
+                    psi = radians(psi)
+                if a.name=='N':
+                    omega = r.omega
+                else:
+                    for n in r.find_atom('C').neighbors:
+                        if n.name=='N':
+                            break
+                    else:
+                        omega = None
+                    omega = n.residue.omega
+                if omega is not None and abs(omega) < 150:
+                    restrain=False
+                    break
+                if phi is not None:
+                    if abs(phi-restraint_params.PHI_ANGLE) > restraint_params.CUTOFF_ANGLE:
+                        restrain=False
+                        break
+                if psi is not None:
+                    if abs(psi-restraint_params.PSI_ANGLE) > restraint_params.CUTOFF_ANGLE:
+                        restrain=False
+                        break
+            if restrain:
+                restraint = dr_m.add_restraint(a1, a2)
+                restraint.spring_constant = dist_k
+                restraint.target = restraint_params.H_BOND_LENGTH
+                restraint.enabled=True
+                
+            
+
+                
+
+
+
+
+
+
+
+def paired_beta_strands(strands, h_bond_cutoff=3.3):
+    from chimerax.atomic import Residue, Residues, concatenate
+    import numpy
+    from chimerax.geometry import find_closest_points
+    for strand in strands:
+        pairs = []
+        other_strands = concatenate([s for s in strands if s!=strand])
+        donors = strand.atoms[strand.atoms.names=='N']
+        acceptors = strand.atoms[strand.atoms.names=='O']
+        other_donors = other_strands.atoms[other_strands.atoms.names=='N']
+        other_acceptors = other_strands.atoms[other_strands.atoms.names=='O']
+        di1, ai1, near1 = find_closest_points(donors.coords, other_acceptors.coords, h_bond_cutoff)
+        pairs.extend(zip(donors[di1],other_acceptors(near1)))
+        ai2, di2, near2 = find_closest_points(acceptors.coords, other_donors.coords, h_bond_cutoff)
+        pairs.extend(zip(acceptors[ai2], other_donors[near2]))
+        found_partners = []
+        from collections import defaultdict
+        partner_dict = defaultdict(list)
+        for pair in pairs:
+            this_res, other_res = pair[0].residue, pair[1].residue
+            for os in found_partners:
+                index = os.index(other_res)
+                if index != -1:
+                    break
+            else:
+                for os in strands:
+                    index = os.index(other_res)
+                    if index != -1:
+                        found_partners.append(os)
+            partner_dict[tuple(os)].append((strand.index(this_res, strand.index_other_res)))
+        for partner, pairlist in partner_dict.items():
+            pairlist = list(sorted(pairlist, key=lambda p:p[0]))            
+

@@ -12,5 +12,7 @@ class RestraintsTab(IsoldeTab):
         self.addWidget(PositionRestraintsPanel(session, isolde, parent, gui))
         from .distance import DistanceRestraintsPanel
         self.addWidget(DistanceRestraintsPanel(session, isolde, parent, gui))
+        from .secondary_structure import SecondaryStructurePanel
+        self.addWidget(SecondaryStructurePanel(session, isolde, parent, gui))
         from .register_shift import RegisterShiftPanel
         self.addWidget(RegisterShiftPanel(session, isolde, parent, gui))        

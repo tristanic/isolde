@@ -60,10 +60,20 @@ class _SS_Beta_Antiparallel:
         'CUTOFF_ANGLE':                      radians(10.0),
     }
 
+@_constant_properties
+class _SS_Beta_Generic:
+    _constants = {
+        'CA_TO_CA_PLUS_TWO_DISTANCE':        6.81,
+        'O_TO_N_PLUS_FOUR_DISTANCE':         11.4,
+        'PHI_ANGLE':                         radians(-129.0),
+        'PSI_ANGLE':                         radians(124.0),
+        'CUTOFF_ANGLE':                      radians(30.0),
+        'H_BOND_LENGTH':                     2.9,
+    }
+
 ss_restraints = {
-    'Helix':                _SS_Helix(),
-    'Parallel Beta':        _SS_Beta_Parallel(),
-    'Antiparallel Beta':    _SS_Beta_Antiparallel(),
+    'helix':                _SS_Helix(),
+    'strand':               _SS_Beta_Generic(),
 }
 
 @_constant_properties
