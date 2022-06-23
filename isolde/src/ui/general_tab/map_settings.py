@@ -443,6 +443,8 @@ class XmapSettingsDialogBase(MapSettingsDialog):
 
 
 class XmapLiveSettingsDialog(XmapSettingsDialogBase):
+    _labels = {}
+    _tooltips = {}
     from chimerax.clipper.maps import XmapHandler_Live, XmapSet
     MAP_TYPE=XmapHandler_Live
     MAP_SET_TYPE=XmapSet
