@@ -561,19 +561,15 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
             chains = set()
             for trs in template_residues:
                 chains.update(set(trs.unique_chain_ids))
+            template = trs.unique_structures[0]
             if len(chains) != 1:
                 raise UserError('Weighting according to PAE is currently only supported for single-chain templates!')
             if pae_matrix is None:
-                from chimerax.isolde.reference_model.alphafold import alphafold_id, fetch_alphafold_pae
-                tm = template_residues[0].unique_structures[0]
-                aid = alphafold_id(tm)
-                if aid is None:
-                    raise UserError(f'Template model #{tm.id_string} does not appear to be from the AlphaFold server. You will need to provide a PAE matrix separately.')
-                uniprot_id = aid.split('-')[1]
-                try:
-                    pae_matrix = fetch_alphafold_pae(session, uniprot_id)
-                except:
-                    raise UserError(f'Failed to fetch the PAE matrix for template model #{tm.id_string}!')
+                if hasattr(template, 'alphafold_pae'):
+                    pae_matrix = template.alphafold_pae._pae_matrix
+                else:
+                    raise UserError('Adjusting restraints for confidence requires a PAE matrix, but none was provided and none is currently '
+                    'associated with this model!')
             # Symmetrify the PAE matrix by taking the lowest value for each (i,j) pair
             pae_matrix = numpy.minimum(pae_matrix, pae_matrix.T)
         elif confidence_type=='plddt':
