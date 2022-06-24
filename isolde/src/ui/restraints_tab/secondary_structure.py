@@ -50,6 +50,12 @@ class SecondaryStructureDialog(UI_Panel_Base):
         rel.setToolTip('<span>Release all secondary structure restraints on the selection</span>')
         rel.triggered.connect(self._release_ss_restraints)
 
+        from chimerax.core.selection import SELECTION_CHANGED
+        self._chimerax_trigger_handlers.append(
+            self.session.triggers.add_handler(SELECTION_CHANGED, self._selection_changed_cb)
+        )
+        self._selection_changed_cb()
+
     def _restrain_single_type(self, ss_type):
         sel = self.isolde.selected_atoms.unique_residues
         from chimerax.isolde.restraints.restraint_utils import restrain_secondary_structure
@@ -68,3 +74,14 @@ class SecondaryStructureDialog(UI_Panel_Base):
         sel = self.isolde.selected_atoms.unique_residues
         from chimerax.isolde.restraints.restraint_utils import release_ss_restraints
         release_ss_restraints(sel)
+
+    def _selection_changed_cb(self, *_):
+        sel = self.isolde.selected_atoms.unique_residues
+        import numpy
+        from chimerax.atomic import Residue
+        # The restrain buttons only do anything when at least 3 residues in the selection are 
+        # connected... but that would get a bit expensive to detect. Keep it simple.
+        if numpy.any(sel.polymer_types==Residue.PT_AMINO):
+            self.toolbar.setEnabled(True)
+        else:
+            self.toolbar.setEnabled(False)
