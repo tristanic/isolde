@@ -129,6 +129,43 @@ def add_disulfides_from_model_metadata(model):
             a1, a2 = atoms
             add_bond(a1, a2)
 
+def find_contiguous_fragments(residues):
+    from chimerax.core.errors import UserError
+    from chimerax.atomic import Residue
+    import numpy
+    residues = residues[residues.polymer_types != Residue.PT_NONE]
+    if len(residues) == 0:
+        return list()
+    us = residues.unique_structures
+    if len(us) > 1:
+        raise UserError('All residues must be from the same model!')
+    m = us[0]
+    polymers = m.polymers(missing_structure_treatment = m.PMS_NEVER_CONNECTS)
+    fragments = []
+    for p in polymers:
+        p = p[0]
+        indices = p.indices(residues)
+        indices = indices[indices!=-1]
+        if not len(indices):
+            continue
+        indices = list(sorted(indices))
+        while len(indices):
+            last_index = indices[0]
+            frag = [last_index]
+            for i, index in enumerate(indices[1:]):
+                if index-last_index==1:
+                    frag.append(index)
+                    last_index = index
+                else:
+                    fragments.append(p[numpy.array(frag)])
+                    indices = indices[i+1:]
+                    break
+            else:
+                fragments.append(p[numpy.array(frag)])
+                break
+    return fragments
+
+
 def expand_selection(residues, num_steps):
     from .molobject import c_function
     import ctypes
