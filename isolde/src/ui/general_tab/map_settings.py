@@ -504,6 +504,8 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
         
 
 class XmapStaticSettingsDialog(XmapSettingsDialogBase):
+    _labels = {}
+    _tooltips = {}
     from chimerax.clipper.maps import XmapHandler_Static, XmapSet
     MAP_TYPE=XmapHandler_Static
     MAP_SET_TYPE=XmapSet
