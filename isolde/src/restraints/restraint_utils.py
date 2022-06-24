@@ -546,6 +546,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         if len(template_us) != 1:
             raise UserError('Template residues must be from a single model! '
                 'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
+    template = template_us[0]
     restrained_model = restrained_us[0]
     from ..atomic.util import correct_pseudosymmetric_sidechain_atoms
     correct_pseudosymmetric_sidechain_atoms(session, restrained_model.residues)
@@ -561,12 +562,15 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
             chains = set()
             for trs in template_residues:
                 chains.update(set(trs.unique_chain_ids))
-            template = trs.unique_structures[0]
             if len(chains) != 1:
-                raise UserError('Weighting according to PAE is currently only supported for single-chain templates!')
+                pass
+                #raise UserError('Weighting according to PAE is currently only supported for single-chain templates!')
             if pae_matrix is None:
                 if hasattr(template, 'alphafold_pae'):
                     pae_matrix = template.alphafold_pae._pae_matrix
+                    if len(template.residues) != pae_matrix.shape[0]:
+                        raise UserError('The number of residues in the template must match the size of the PAE matrix! '
+                            'Have some residues been deleted? If so, please reload the template model and try again.')
                 else:
                     raise UserError('Adjusting restraints for confidence requires a PAE matrix, but none was provided and none is currently '
                     'associated with this model!')
@@ -610,6 +614,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
 
         template_coords = template_as.coords
         from math import sqrt
+        template_indices = template.residues.indices(template_as.residues)
         for i, ra1 in enumerate(restrained_as):
             query_coord = numpy.array([template_coords[i]])
             indices = find_close_points(query_coord, template_coords, distance_cutoff)[1]
@@ -622,7 +627,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                     if confidence_type=='plddt':
                         scores = [template_as[i].bfactor*confidence_multiplier, template_as[ind].bfactor*confidence_multiplier]
                     elif confidence_type=='pae':
-                        scores = [pae_matrix[template_as[i].residue.number-1,template_as[ind].residue.number-1]]
+                        scores = [pae_matrix[template_indices[i],template_indices[ind]]]
                     kappa_adj, tol_adj, falloff_adj = adjust_distance_restraint_terms_by_confidence(scores, confidence_type)
                     if kappa_adj == 0:
                         continue
