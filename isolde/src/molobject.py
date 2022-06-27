@@ -2850,7 +2850,7 @@ class _DistanceRestraintMgrBase(_RestraintMgr):
         if not hasattr(self, '_c_func_get_restraint'):
             self._c_func_get_restraint = c_function(
                 self._c_function_prefix+'_mgr_get_restraint',
-                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_void_p),
+                args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_bool, ctypes.c_size_t, ctypes.c_void_p),
                 ret = ctypes.c_size_t)
         return self._c_func_get_restraint
 
