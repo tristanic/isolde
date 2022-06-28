@@ -1,9 +1,10 @@
 from ..collapse_button import CollapsibleArea
 from ..ui_base import UI_Panel_Base, DefaultVLayout, DefaultHLayout, QLedLabel
-from Qt.QtWidgets import (QLabel, QWidget, QPushButton, QMenu, 
+from Qt.QtWidgets import (QLabel, QWidget, QFrame, QGridLayout, QPushButton, QMenu, 
     QTreeWidget, QTreeWidgetItem,
     QFileDialog,
-    QCheckBox, QButtonGroup
+    QCheckBox, QButtonGroup,
+    QSlider
 )
 from Qt.QtGui import QIcon
 from Qt.QtCore import Qt
@@ -21,16 +22,20 @@ class ReferenceModelDialog(UI_Panel_Base):
 
     WORKING_CHAIN_COLUMN=0
     REFERENCE_CHAIN_COLUMN=1
-    IDENTITY_COLUMN=2
-    ALIGNMENT_LENGTH_COLUMN=3
-    DIST_COLUMN=4
-    TORS_COLUMN=5
+    ALIGN_COLUMN=2
+    DIST_COLUMN=3
+    TORS_COLUMN=4
+    IDENTITY_COLUMN=5
+    ALIGNMENT_LENGTH_COLUMN=6
+    RMSD_COLUMN=7
 
     _column_labels = {
         WORKING_CHAIN_COLUMN: 'Chain',
-        REFERENCE_CHAIN_COLUMN: 'Ref chain',
-        IDENTITY_COLUMN: 'Identity (%)',
-        ALIGNMENT_LENGTH_COLUMN: 'Coverage (%)',
+        REFERENCE_CHAIN_COLUMN: 'Ref',
+        IDENTITY_COLUMN: 'Identity',
+        ALIGNMENT_LENGTH_COLUMN: 'Coverage',
+        RMSD_COLUMN: 'CA RMSD',
+        ALIGN_COLUMN: '',
         DIST_COLUMN: 'Distances',
         TORS_COLUMN: 'Torsions',
     }
@@ -52,22 +57,22 @@ class ReferenceModelDialog(UI_Panel_Base):
         rmb.setMenu(rmm)
         rml.addWidget(rmb)
         rml.addStretch()
-        ab = self.align_button = QPushButton('Align (optional)')
-        ab.clicked.connect(lambda _:run(session, f'match #{self._current_reference.id_string} to #{self.isolde.selected_model.id_string}'))
-        rml.addWidget(ab)
+        # ab = self.align_button = QPushButton('Align')
+        # ab.clicked.connect(lambda _:run(session, f'match #{self._current_reference.id_string} to #{self.isolde.selected_model.id_string}'))
+        # rml.addWidget(ab)
+        ll = self.has_pae_indicator = QLedLabel(None)
+        ll.setColor('red')
+        rml.addWidget(ll)
+        pa = self.pae_assigned_label = QLabel('No PAE matrix assigned')
+        rml.addWidget(pa)
+        pb = self.load_pae_button = QPushButton('Load PAE matrix')
+        pb.clicked.connect(self._load_pae_from_file)
+        rml.addStretch()
+        rml.addWidget(pb)
+
         ml.addLayout(rml)
 
         dl = DefaultVLayout()
-        sl = DefaultHLayout()
-        ll = self.has_pae_indicator = QLedLabel(None)
-        ll.setColor('red')
-        sl.addWidget(ll)
-        pa = self.pae_assigned_label = QLabel('No PAE matrix assigned')
-        pb = self.load_pae_button = QPushButton('Load PAE matrix')
-        pb.clicked.connect(self._load_pae_from_file)
-        sl.addStretch()
-        sl.addWidget(pb)
-        dl.addLayout(sl)
 
         dl.addWidget(QLabel('Assign restraints'))
         dt = self.detail_tree = QTreeWidget()
@@ -76,17 +81,30 @@ class ReferenceModelDialog(UI_Panel_Base):
 
         self._initialize_tree()
 
+        options_frame = QFrame()
+        options_frame.setContentsMargins(3,3,3,3)
+        options_frame.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
+        ol = DefaultHLayout()
+        opt = self.options = ReferenceModelOptions(gui, options_frame)
+        ol.addWidget(opt)
+        options_frame.setLayout(ol)
+        ml.addWidget(options_frame)
+
+
+
         self.container.expanded.connect(self._on_expand)
 
     def _on_expand(self):
         cm = self._current_reference
-        if cm is not None and cm.was_deleted():
+        if cm is not None and cm.was_deleted:
             self.set_reference_model(None)
     
     def _initialize_tree(self):
         tree = self.detail_tree
-        tree.setHeaderLabels(self._column_labels.values())
-    
+        items = sorted(self._column_labels.items(), key=lambda i: i[0])
+        tree.setHeaderLabels([item[1] for item in items])
+        tree.header().setMinimumSectionSize(20)
+
     def _populate_reference_model_menu(self, *_):
         rmm = self.reference_model_menu
         rmm.clear()
@@ -110,6 +128,15 @@ class ReferenceModelDialog(UI_Panel_Base):
             rmb.setText('(self)')
         else:
             rmb.setText(f'{m.id_string}')
+        sm = self.isolde.selected_model
+        if m is not None and sm is not None:
+            from chimerax.core.commands import run
+            run(self.session, f'match #{m.id_string} to #{sm.id_string}')
+            run(self.session, f'color #{m.id_string} bychain')
+            run(self.session, f'color #{m.id_string} byhet')
+            run(self.session, f'color modify #{m.id_string} hue + 50')
+
+
         self._pae_assigned_check()
         self._populate_detail_tree()
 
@@ -119,7 +146,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         if cr is not None:
             if getattr(cr, 'alphafold_pae', None) is None:
                 self._fetch_pae_from_database_if_possible(cr)
-            if getattr(cr, 'alphafold_pae', None) is None:
+            if getattr(cr, 'alphafold_pae', None) is not None:
                 assigned=True
         if assigned:
             self.pae_assigned_label.setText('PAE matrix assigned')
@@ -139,9 +166,6 @@ class ReferenceModelDialog(UI_Panel_Base):
                     '"Load PAE matrix" button in ISOLDE\'s reference model restraints widget.')
                 from chimerax.core.commands import run
                 run(self.session, f'alphafold pae #{model.id_string} uniprot {uniprot_id}')
-
-
-
 
     def _populate_detail_tree(self, *_):
         self.detail_tree.clear()
@@ -165,35 +189,48 @@ class ReferenceModelDialog(UI_Panel_Base):
                 'nw', defaults['gap_open'], defaults['gap_extend'], dssp_cache
                 )
                 num_identical=0
-                for i, (c1, c2) in enumerate(zip(s1.characters, s2.characters)):
+                for c1, c2 in zip(s1.characters, s2.characters):
                     if c1==c2:
                         num_identical += 1
-                identity = num_identical/i
-                coverage = i/len([r for r in mc.residues if r is not None])
+                identity = num_identical/len(s1.ungapped())
+                coverage = len(s1.ungapped())/len(mc.ungapped())
+                print(f's1: {s1.characters}\ns2: {s2.characters}\nmc: {mc.ungapped()}\nidentity: {identity} coverage: {coverage}')
                 # ref chain, alignment score, fractional identity, coverage, model seq, ref seq
                 if identity > self.IDENTITY_CUTOFF:
-                    alignments[mc].append((rc, score, identity, coverage, s1, s2))
+                    rmsd = _ca_rmsd(mc.residues, s2.residues)
+                    alignments[mc].append((rc, score, identity, coverage, s1, s2, rmsd))
         # Sort in descending order of score
         for key, rlist in alignments.items():
-            alignments[key] = list(sorted(rlist, key=lambda i:i[1], reverse=True))
+            # Sort by aligned CA-RMSD
+            alignments[key] = list(sorted(rlist, key=lambda i:i[-1]))
         
         tree = self.detail_tree
         root = tree.invisibleRootItem()
         for model_chain, refs in alignments.items():
             parent = QTreeWidgetItem(root)
             parent.setText(self.WORKING_CHAIN_COLUMN, f'{model_chain.chain_id}')
-            distance_group = QButtonGroup(tree)
+            distance_group = ExclusiveOrNoneQButtonGroup(tree)
             distance_group._model_chain = model_chain
             self._restrain_distance_groups.append(distance_group)
-            torsion_group = QButtonGroup(tree)
+            torsion_group = ExclusiveOrNoneQButtonGroup(tree)
             torsion_group._model_chain = model_chain
             self._restrain_torsions_groups.append(torsion_group)
+            
             for ref_data in refs:
-                rc, score, identity, alignment_length, model_seq, ref_seq = ref_data
+                rc, score, identity, coverage, model_seq, ref_seq, rmsd = ref_data
                 entry = QTreeWidgetItem(parent)
                 entry.setText(self.REFERENCE_CHAIN_COLUMN, f'{rc.chain_id}')
-                entry.setText(self.IDENTITY_COLUMN, f'{int(round(identity*100, 0))}')
-                entry.setText(self.ALIGNMENT_LENGTH_COLUMN, f'{int(round(coverage*100, 0))}')
+                entry.setText(self.IDENTITY_COLUMN, f'{round(identity*100, 0):.0f}%')
+                entry.setText(self.ALIGNMENT_LENGTH_COLUMN, f'{round(coverage*100, 0):.0f}%')
+                entry.setText(self.RMSD_COLUMN,f'{rmsd:.1f}')
+                align_button = QPushButton('Align')
+                def align_on_chain(*_,mc=model_chain, rc=rc):
+                    from chimerax.core.commands import run
+                    run(self.session, f'match #{cm.id_string}/{rc.chain_id} to #{sm.id_string}/{mc.chain_id}')
+                    self._populate_detail_tree()
+                align_button.clicked.connect(align_on_chain)
+                tree.setItemWidget(entry, self.ALIGN_COLUMN, align_button)
+
                 w1 = QWidget()
                 l = DefaultHLayout()
                 w1.setLayout(l)
@@ -214,7 +251,12 @@ class ReferenceModelDialog(UI_Panel_Base):
                 torsion_group.addButton(tcb)
                 l.addWidget(tcb)
                 l.addStretch()
-                tree.setItemWidget(entry, self.TORS_COLUMN, w2)     
+                tree.setItemWidget(entry, self.TORS_COLUMN, w2)
+                    
+        tree.expandAll()
+        for column in self._column_labels.keys():
+            tree.resizeColumnToContents(column)
+         
 
 
 
@@ -238,3 +280,106 @@ class ReferenceModelDialog(UI_Panel_Base):
             from chimerax.core.commands import run
             run(self.session,f'alphafold pae #{self._current_reference.id_string} file {selected_file} plot false')
         self._pae_assigned_check()
+
+
+class ReferenceModelOptions(CollapsibleArea):
+    def __init__(self, gui, parent, **kwargs):
+        super().__init__(gui, parent, title="Options", **kwargs)
+
+        layout = QGridLayout()
+        layout.addWidget(QLabel('Distance restraints'),0,0)
+        rif = self.restrain_interfaces = QCheckBox('Inter-chain restraints')
+        rif.setChecked(True)
+        layout.addWidget(rif, 1,0)
+        daw = self.adjust_distances_for_confidence = QCheckBox('Adjust by PAE')
+        layout.addWidget(daw, 2,0)
+        layout.addWidget(QLabel('Overall strength'),3,0)
+        dsl = self.distance_strength_slider = DistanceRestraintWeightSlider()
+        dsl.setValue(74) # kappa ~ 10
+        layout.addWidget(dsl, 4, 0)
+
+        layout.addWidget(QLabel('Torsion restraints'), 0, 1)
+        tsc = self.restrain_sidechains = QCheckBox('Restrain sidechains')
+        tsc.setChecked(True)
+        layout.addWidget(tsc, 1,1)
+        taw = self.adjust_torsions_for_confidence = QCheckBox('Adjust by pLDDT')
+        taw.setChecked(True)
+        layout.addWidget(taw, 2,1)
+        layout.addWidget(QLabel('Overall strength'), 3, 1)
+        tsl = self.torsion_strength_slider = TorsionRestraintWeightSlider()
+        tsl.setValue(82) # spring constant = 250
+        layout.addWidget(tsl, 4, 1)
+
+
+
+        self.setContentLayout(layout)
+
+
+class DistanceRestraintWeightSlider(QSlider):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setMinimum(0)
+        self.setMaximum(196)
+    
+    def weight(self):
+        '''
+        Minimum 2, maximum 100
+        '''
+        from math import exp, floor
+        val = 2*exp(self.value()/50)
+        if val < 20:
+            return round(val, 1)
+        return floor(val)
+        
+class TorsionRestraintWeightSlider(QSlider):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setMinimum(0)
+        self.setMaximum(200)
+    
+    def weight(self):
+        '''
+        Minimum 50, maximum 100
+        '''
+        from math import exp, floor
+        val = 50*exp(self.value()/51)
+        if val < 100:
+            return floor(val)
+        elif val < 200:
+            return 5*round(val/5)
+        elif val < 500:
+            return round(val, -1)
+        elif val < 1000:
+            return 25*round(val/25)
+        else:
+            return 50*round(val/50)
+
+
+
+class ExclusiveOrNoneQButtonGroup(QButtonGroup):
+    '''
+    When in exclusive mode, it is impossible to uncheck a button once it's checked, other than by 
+    checking another button in the group. This class acts like an exclusive QButtonGroup, but also 
+    allows unchecking of the currently-selected button.
+    '''
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setExclusive(False)
+        self.buttonToggled.connect(self._button_toggled_cb)
+    
+    def _button_toggled_cb(self, button, checked):
+        from ..util import slot_disconnected
+        with slot_disconnected(self.buttonToggled, self._button_toggled_cb):
+            if checked:
+                for b in self.buttons():
+                    if b != button:
+                        b.setChecked(False)
+
+def _ca_rmsd(model_residues, ref_residues):
+    from chimerax.atomic import Residues
+    model_residues = Residues(model_residues)
+    ref_residues = Residues(ref_residues)
+    mcas = model_residues.atoms[model_residues.atoms.names=='CA']
+    rcas = ref_residues.atoms[ref_residues.atoms.names=='CA']
+    import numpy
+    return numpy.sqrt(numpy.mean(numpy.sum((mcas.coords-rcas.scene_coords)**2, axis=1)))
