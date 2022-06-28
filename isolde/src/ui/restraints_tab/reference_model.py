@@ -294,7 +294,7 @@ class ReferenceModelOptions(CollapsibleArea):
         daw = self.adjust_distances_for_confidence = QCheckBox('Adjust by PAE')
         layout.addWidget(daw, 2,0)
         layout.addWidget(QLabel('Overall strength'),3,0)
-        dsl = self.distance_strength_slider = DistanceRestraintWeightSlider()
+        dsl = self.distance_strength_slider = DistanceRestraintWeightSlider(Qt.Orientation.Horizontal)
         dsl.setValue(74) # kappa ~ 10
         layout.addWidget(dsl, 4, 0)
 
@@ -306,7 +306,7 @@ class ReferenceModelOptions(CollapsibleArea):
         taw.setChecked(True)
         layout.addWidget(taw, 2,1)
         layout.addWidget(QLabel('Overall strength'), 3, 1)
-        tsl = self.torsion_strength_slider = TorsionRestraintWeightSlider()
+        tsl = self.torsion_strength_slider = TorsionRestraintWeightSlider(Qt.Orientation.Horizontal)
         tsl.setValue(82) # spring constant = 250
         layout.addWidget(tsl, 4, 1)
 
