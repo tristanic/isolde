@@ -85,7 +85,8 @@ class ReferenceModelDialog(UI_Panel_Base):
         options_frame.setContentsMargins(3,3,3,3)
         options_frame.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
         ol = DefaultHLayout()
-        opt = self.options = ReferenceModelOptions(gui, options_frame)
+        opt = self.options = ReferenceModelOptions(self.session, gui, options_frame)
+        opt.expanded.connect(lambda: self.gui.restraints_tab.scroll_area.ensureWidgetVisible(opt))
         ol.addWidget(opt)
         options_frame.setLayout(ol)
         ml.addWidget(options_frame)
@@ -104,6 +105,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         items = sorted(self._column_labels.items(), key=lambda i: i[0])
         tree.setHeaderLabels([item[1] for item in items])
         tree.header().setMinimumSectionSize(20)
+        tree.setMinimumHeight(150)
 
     def _populate_reference_model_menu(self, *_):
         rmm = self.reference_model_menu
@@ -194,7 +196,6 @@ class ReferenceModelDialog(UI_Panel_Base):
                         num_identical += 1
                 identity = num_identical/len(s1.ungapped())
                 coverage = len(s1.ungapped())/len(mc.ungapped())
-                print(f's1: {s1.characters}\ns2: {s2.characters}\nmc: {mc.ungapped()}\nidentity: {identity} coverage: {coverage}')
                 # ref chain, alignment score, fractional identity, coverage, model seq, ref seq
                 if identity > self.IDENTITY_CUTOFF:
                     rmsd = _ca_rmsd(mc.residues, s2.residues)
@@ -283,7 +284,8 @@ class ReferenceModelDialog(UI_Panel_Base):
 
 
 class ReferenceModelOptions(CollapsibleArea):
-    def __init__(self, gui, parent, **kwargs):
+    def __init__(self, session, gui, parent, **kwargs):
+        self.session = session
         super().__init__(gui, parent, title="Options", **kwargs)
 
         layout = QGridLayout()
@@ -297,6 +299,13 @@ class ReferenceModelOptions(CollapsibleArea):
         dsl = self.distance_strength_slider = DistanceRestraintWeightSlider(Qt.Orientation.Horizontal)
         dsl.setValue(74) # kappa ~ 10
         layout.addWidget(dsl, 4, 0)
+        layout.addWidget(QLabel('Fuzziness'), 5,0)
+        dfl = self.distance_fuzziness_slider = DistanceRestraintAlphaSlider(Qt.Orientation.Horizontal)
+        dfl.setValue(25)
+        layout.addWidget(dfl, 6, 0)
+        drfi = self.distance_fuzziness_indicator = DistanceRestraintFuzzinessIndicator(session, dsl, dfl)
+        layout.addWidget(drfi, 7,0)
+        self.expanded.connect(drfi._update_plot)
 
         layout.addWidget(QLabel('Torsion restraints'), 0, 1)
         tsc = self.restrain_sidechains = QCheckBox('Restrain sidechains')
@@ -309,6 +318,10 @@ class ReferenceModelOptions(CollapsibleArea):
         tsl = self.torsion_strength_slider = TorsionRestraintWeightSlider(Qt.Orientation.Horizontal)
         tsl.setValue(82) # spring constant = 250
         layout.addWidget(tsl, 4, 1)
+        layout.addWidget(QLabel('Fuzziness'), 5, 1)
+        tfl = self.torsion_fuzziness_slider = TorsionRestraintAlphaSlider(Qt.Orientation.Horizontal)
+        tfl.setValue(25)
+        layout.addWidget(tfl, 6, 1)
 
 
 
@@ -321,6 +334,7 @@ class DistanceRestraintWeightSlider(QSlider):
         self.setMinimum(0)
         self.setMaximum(196)
     
+    @property
     def weight(self):
         '''
         Minimum 2, maximum 100
@@ -330,6 +344,16 @@ class DistanceRestraintWeightSlider(QSlider):
         if val < 20:
             return round(val, 1)
         return floor(val)
+
+class DistanceRestraintAlphaSlider(QSlider):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setMinimum(0)
+        self.setMaximum(50)
+    
+    @property
+    def alpha(self):
+        return self.value()/10
         
 class TorsionRestraintWeightSlider(QSlider):
     def __init__(self, *args, **kwargs):
@@ -337,6 +361,7 @@ class TorsionRestraintWeightSlider(QSlider):
         self.setMinimum(0)
         self.setMaximum(200)
     
+    @property
     def weight(self):
         '''
         Minimum 50, maximum 100
@@ -354,7 +379,15 @@ class TorsionRestraintWeightSlider(QSlider):
         else:
             return 50*round(val/50)
 
-
+class TorsionRestraintAlphaSlider(QSlider):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setMinimum(0)
+        self.setMaximum(50)
+    
+    @property
+    def alpha(self):
+        return 0.5-self.value()/50
 
 class ExclusiveOrNoneQButtonGroup(QButtonGroup):
     '''
@@ -383,3 +416,96 @@ def _ca_rmsd(model_residues, ref_residues):
     rcas = ref_residues.atoms[ref_residues.atoms.names=='CA']
     import numpy
     return numpy.sqrt(numpy.mean(numpy.sum((mcas.coords-rcas.scene_coords)**2, axis=1)))
+
+class FuzzinessIndicatorBase(QWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        layout = DefaultHLayout()
+        from matplotlib.figure import Figure
+        from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+
+        self.setMaximumHeight(120)
+        fig = self.figure = Figure()
+        fig.set_tight_layout({'pad':0.25})
+        canvas = self.canvas = FigureCanvas(fig)
+        ax = self.axes = fig.add_subplot(111)
+        for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
+                    ax.get_xticklabels() + ax.get_yticklabels()):
+            item.set_fontsize(8)
+        layout.addWidget(canvas)
+        self.setLayout(layout)
+
+
+class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
+    def __init__(self, session, weight_slider, alpha_slider, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.weight_slider = weight_slider
+        self.falloff_slider = alpha_slider
+        self.session = session
+        self.well_half_width = 0.1
+        self.tolerance = 0.025
+        self.target_distance = 3
+        self._create_dummy_model()
+
+        weight_slider.valueChanged.connect(self._update_plot)
+        alpha_slider.valueChanged.connect(self._update_plot)
+        axes = self.axes
+        axes.set_ylim([0,100])
+        axes.set_xlim([0,2])
+        axes.set_xlabel('Deviation (Angstroms)')
+        axes.set_ylabel('Force')
+
+        self.canvas.setToolTip('<span>Example applied force for a target distance of 3 Angstroms and a PAE of 100. '
+            'Lower-confidence and/or longer-range restraints will be both fuzzier and weaker than this.</span>')
+
+
+    
+    def _update_plot(self, *_):
+        td = self.target_distance
+        weight = self.weight_slider.weight
+        falloff = self.falloff_slider.alpha
+        from math import log, sqrt
+        alpha = -1-falloff*log(self.target_distance)
+
+        import numpy
+        offsets = numpy.arange(0,2,0.025)
+        forces = numpy.empty(offsets.shape)
+        dr = self._dummy_restraint
+        dr.tolerance = self.tolerance * td
+        dr.c = max(sqrt(td)*self.well_half_width, 0.1)
+        dr.alpha = alpha
+        dr.target = self.target_distance
+        dr.kappa = weight
+
+        da = self._moving_dummy_atom
+        for i, os in enumerate(offsets):
+            da.coord = (0,0,td+os)
+            forces[i] = dr.applied_force
+        
+        plot = getattr(self, '_plot', None)
+        if plot is None:
+            plot = self.axes.plot(offsets, forces, color='blue')[0]
+            self._plot = plot
+        else:
+            #self.axes.clear()
+            plot.set_ydata(forces)
+            self.axes.draw_artist(plot)
+            self.canvas.draw()
+
+
+
+
+    def _create_dummy_model(self):
+        from chimerax.atomic import AtomicStructure
+        dm = self._dummy_model = AtomicStructure(self.session)
+        r = dm.new_residue('DUM', 'A', 0)
+        a1 = dm.new_atom('C1', 'C')
+        a2 = self._moving_dummy_atom = dm.new_atom('C2', 'C')
+        r.add_atom(a1)
+        r.add_atom(a2)
+        a1.coord = (0,0,0)
+        a2.coord = (0,0,4)
+        from chimerax.isolde import session_extensions as sx
+        drm = sx.get_adaptive_distance_restraint_mgr(dm)
+        dr = self._dummy_restraint = drm.add_restraint(a1, a2)
+        dr.enabled = True
