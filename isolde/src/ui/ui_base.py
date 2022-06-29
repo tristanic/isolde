@@ -212,16 +212,17 @@ class IsoldeTab(QWidget):
         hl.addWidget(sa)
         sa.setWidgetResizable(True)
         mf = self.main_frame = QFrame(sa)
+        mf.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
         ml = self.main_layout = DefaultVLayout()
         ml.setContentsMargins(1,1,3,1)
-        ml.addStretch()
+        ml.addStretch(50)
         mf.setLayout(ml)
         sa.setWidget(mf)
         self.populate()
     
     def addWidget(self, widget):
         # Last position is the spacer, so we always want to go just before that.
-        self.main_layout.insertWidget(self.main_layout.count()-1, widget)
+        self.main_layout.insertWidget(self.main_layout.count()-1, widget, 1)
     
     def populate(self):
         ''' Override in derived classes to populate self.main_frame with widgets'''
