@@ -202,7 +202,7 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         mtw = self.gui.main_tab_widget
         mtw.setCurrentWidget(self.gui.validate_tab)
         self.container.expand()
-        QTimer.singleShot(self.container.animation_duration, lambda: self.gui.validate_tab.scroll_area.ensureWidgetVisible(self.main_frame))
+        QTimer.singleShot(5, lambda: self.gui.validate_tab.scroll_area.ensureWidgetVisible(self.main_frame))
 
 
     def selected_model_changed_cb(self, *_):
