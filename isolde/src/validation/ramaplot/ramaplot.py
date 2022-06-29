@@ -26,9 +26,8 @@ class RamaPlot(QWidget):
         self.name=rmgr.RAMA_CASE_DETAILS[rama_case]['name']
 
         from matplotlib.figure import Figure
-        from matplotlib.backends.backend_qt5agg import (
+        from matplotlib.backends.backend_qtagg import (
             FigureCanvasQTAgg as FigureCanvas,
-            NavigationToolbar2QT as NavigationToolbar
             )
 
         self._current_residues = None
