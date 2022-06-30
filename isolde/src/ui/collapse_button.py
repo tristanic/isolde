@@ -1,5 +1,5 @@
 from Qt.QtWidgets import QToolButton, QWidget, QFrame, QGridLayout
-from Qt.QtCore import Qt, QParallelAnimationGroup, QPropertyAnimation, Signal
+from Qt.QtCore import Qt, QParallelAnimationGroup, QPropertyAnimation, Signal, QTimer
 from Qt.QtWidgets import QSizePolicy
 
 from .ui_base import ExpertModeSelector
@@ -71,10 +71,12 @@ class CollapsibleArea(QWidget):
 
         if forward:
             ca.setVisible(True)
-            self.expanded.emit()
+            # Need to delay the event to the next redraw, otherwise some things 
+            # (e.g. MatPlotLib redraws) go wrong
+            QTimer.singleShot(5, lambda: self.expanded.emit())
         else:
             ca.setVisible(False)
-            self.collapsed.emit()
+            QTimer.singleShot(5, lambda: self.collapsed.emit())
 
         arrow_type = Qt.DownArrow if checked else Qt.RightArrow
         self.toggle_button.setArrowType(arrow_type)            
