@@ -283,6 +283,7 @@ public:
 
     double effective_sdev() const { return atan(sqrt(sqrt(4*_kappa*_kappa+1)-2*_kappa)); }
 
+    double applied_moment() const;
 
 
     AdaptiveDihedralRestraintMgr *mgr() const;

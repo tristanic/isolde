@@ -1243,6 +1243,12 @@ adaptive_diheddral_restraint_effective_sd(void *restraint, size_t n, double *sd)
     error_wrap_array_get(r, n, &AdaptiveDihedralRestraint::effective_sdev, sd);
 }
 
+extern "C" EXPORT void
+adaptive_dihedral_restraint_applied_moment(void *restraint, size_t n, double *mag)
+{
+    AdaptiveDihedralRestraint **r = static_cast<AdaptiveDihedralRestraint **>(restraint);
+    error_wrap_array_get(r, n, &AdaptiveDihedralRestraint::applied_moment, mag);
+}
 
 
 

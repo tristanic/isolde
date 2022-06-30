@@ -5476,6 +5476,10 @@ class AdaptiveDihedralRestraint(_ProperDihedralRestraint_Base):
             r'steeply than inside; for values less than zero the force outside '
             r'the well will become repulsive.')
         )
+    applied_moment = c_property('adaptive_dihedral_restraint_applied_moment', float64,
+        doc='Current moment (or torque) around the axis of this dihedral, in kJ/mol',   
+        read_only=True
+    )
 
 class RotamerRestraint(State):
     '''

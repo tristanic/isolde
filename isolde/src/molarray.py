@@ -869,6 +869,10 @@ class AdaptiveDihedralRestraints(_ProperDihedralRestraints_Base):
             r'steeply than inside; for values less than zero the force outside '
             r'the well will become repulsive.')
         )
+    applied_moments = cvec_property('adaptive_dihedral_restraint_applied_moment', float64,
+        doc='Current moment (or torque) around the axis of each dihedral, in kJ/mol',   
+        read_only=True
+    )
 
 class RotamerRestraints(Collection):
     def __init__(self, c_pointers=None):

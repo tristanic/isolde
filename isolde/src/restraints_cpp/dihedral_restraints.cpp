@@ -206,6 +206,33 @@ void ProperDihedralRestraintBase::get_annotation_color(uint8_t *color)
 
 ProperDihedralRestraintMgr* ProperDihedralRestraint::mgr() const { return static_cast<ProperDihedralRestraintMgr*>(base_mgr()); }
 
+double AdaptiveDihedralRestraint::applied_moment() const
+{
+    if (!_enabled) return 0.0;
+    auto sopfks = sqrt(1+4*pow(_kappa,2));
+    auto A = sqrt(sopfks-1);
+    auto d_theta = offset();
+    auto costheta = cos(d_theta);
+    auto sintheta = sin(d_theta);
+    auto sqrt2 = sqrt(2.0);
+
+    auto part_1 = exp(-2.0*sqrt2 *
+        exp (0.5 -_kappa-0.5*sopfks) *
+        (exp(_kappa*(1.0+costheta))-1.0) * sqrt(_alpha) /
+        A
+        ) * _alpha*sintheta;
+    
+    auto part_2 = sqrt2 * exp(0.5 -_kappa-0.5*sopfks+_kappa*(1.0+costheta)) * _kappa * sintheta / A;
+
+    auto part_3 = 2.0 * sqrt2 *
+        exp(
+            0.5 - _kappa - 0.5*sopfks + _kappa*(1+costheta) - 
+                (2.0*sqrt2*exp(0.5-_kappa-0.5*sopfks)*(exp(_kappa*(1+costheta))-1)*sqrt(_alpha)) / A
+        ) * pow(_alpha, 3.0/2.0) * _kappa *(1-costheta)*sintheta /
+        A;
+    return _spring_constant *(part_1+part_2+part_3);
+}
+
 AdaptiveDihedralRestraintMgr* AdaptiveDihedralRestraint::mgr() const { return static_cast<AdaptiveDihedralRestraintMgr*>(base_mgr()); }
 
 
