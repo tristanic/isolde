@@ -96,7 +96,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         rsb.clicked.connect(lambda: self.apply_restraints(selected_only=True))
         bl.addWidget(rsb)
         bl.addStretch()
-        ml.addWidget(bl)
+        ml.addLayout(bl)
 
         self.container.expanded.connect(self._on_expand)
 
