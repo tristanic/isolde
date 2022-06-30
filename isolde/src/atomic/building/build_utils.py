@@ -180,6 +180,9 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
                 h = next_res.find_atom('H')
                 if h:
                     h.delete()
+    else:
+        b_factor = add_b_factor
+        ref_res = None
     if number is None:
         if prev_res:
             number = prev_res.number + 1
@@ -230,8 +233,9 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     r.atoms.bfactors = b_factor
     r.atoms.occupancies = occupancy
 
-    from . import copy_atom_style_from
-    copy_atom_style_from(session, r.atoms, ref_res)
+    if ref_res is not None:
+        from . import copy_atom_style_from
+        copy_atom_style_from(session, r.atoms, ref_res)
     model.atoms.selecteds=False
     r.atoms.selecteds=True
     return r
