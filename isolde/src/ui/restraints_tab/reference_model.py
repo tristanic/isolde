@@ -239,13 +239,14 @@ class ReferenceModelDialog(UI_Panel_Base):
                 entry.setText(self.IDENTITY_COLUMN, f'{round(identity*100, 0):.0f}%')
                 entry.setText(self.ALIGNMENT_LENGTH_COLUMN, f'{round(coverage*100, 0):.0f}%')
                 entry.setText(self.RMSD_COLUMN,f'{rmsd:.1f}')
-                align_button = QPushButton('Align')
-                def align_on_chain(*_,mc=model_chain, rc=rc):
-                    from chimerax.core.commands import run
-                    run(self.session, f'match #{cm.id_string}/{rc.chain_id} to #{sm.id_string}/{mc.chain_id}')
-                    self._populate_detail_tree()
-                align_button.clicked.connect(align_on_chain)
-                tree.setItemWidget(entry, self.ALIGN_COLUMN, align_button)
+                if sm != cm:
+                    align_button = QPushButton('Align')
+                    def align_on_chain(*_,mc=model_chain, rc=rc):
+                        from chimerax.core.commands import run
+                        run(self.session, f'match #{cm.id_string}/{rc.chain_id} to #{sm.id_string}/{mc.chain_id}')
+                        self._populate_detail_tree()
+                    align_button.clicked.connect(align_on_chain)
+                    tree.setItemWidget(entry, self.ALIGN_COLUMN, align_button)
 
                 w1 = QWidget()
                 l = DefaultHLayout()
