@@ -138,7 +138,8 @@ class ReferenceModelDialog(UI_Panel_Base):
         sm = self.isolde.selected_model
         if m is not None and sm is not None:
             from chimerax.core.commands import run
-            run(self.session, f'match #{m.id_string} to #{sm.id_string}')
+            if sm != m:
+                run(self.session, f'match #{m.id_string} to #{sm.id_string}')
             run(self.session, f'color #{m.id_string} bychain')
             run(self.session, f'color #{m.id_string} byhet')
             run(self.session, f'color modify #{m.id_string} hue + 50')
