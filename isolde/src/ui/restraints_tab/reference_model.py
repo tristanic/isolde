@@ -57,9 +57,6 @@ class ReferenceModelDialog(UI_Panel_Base):
         rmb.setMenu(rmm)
         rml.addWidget(rmb)
         rml.addStretch()
-        # ab = self.align_button = QPushButton('Align')
-        # ab.clicked.connect(lambda _:run(session, f'match #{self._current_reference.id_string} to #{self.isolde.selected_model.id_string}'))
-        # rml.addWidget(ab)
         ll = self.has_pae_indicator = QLedLabel(None)
         ll.setColor('red')
         rml.addWidget(ll)
@@ -91,7 +88,15 @@ class ReferenceModelDialog(UI_Panel_Base):
         options_frame.setLayout(ol)
         ml.addWidget(options_frame)
 
-
+        bl = DefaultHLayout()
+        rab = self.restrain_all_button = QPushButton('Apply')
+        rab.clicked.connect(self.apply_restraints)
+        bl.addWidget(rab)
+        rsb = self.restrain_selected_button = QPushButton('Apply (selected only)')
+        rsb.clicked.connect(lambda: self.apply_restraints(selected_only=True))
+        bl.addWidget(rsb)
+        bl.addStretch()
+        ml.addWidget(bl)
 
         self.container.expanded.connect(self._on_expand)
 
@@ -120,7 +125,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         for m in models:
             a = rmm.addAction(f'{m.id_string}: {m.name}')
             a.triggered.connect(lambda _, mm=m: self.set_reference_model(mm))
-            
+
     def set_reference_model(self, m):
         self._current_reference = m
         rmb = self.reference_model_menu_button
@@ -156,6 +161,15 @@ class ReferenceModelDialog(UI_Panel_Base):
         else:
             self.pae_assigned_label.setText('No PAE matrix assigned')
             self.has_pae_indicator.setColor('red')
+
+    @property
+    def pae_assigned(self):
+        cr = self._current_reference
+        if cr is None or cr.was_deleted:
+            return False
+        if hasattr(cr, 'alphafold_pae'):
+            return True
+        return False
 
     def _fetch_pae_from_database_if_possible(self, model):
         from chimerax.alphafold.database import uniprot_id_from_filename
@@ -257,16 +271,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         tree.expandAll()
         for column in self._column_labels.keys():
             tree.resizeColumnToContents(column)
-         
-
-
-
-
-
-
-        
-
-        
+ 
     def _load_pae_from_file(self, *_):
         caption = 'Load the PAE matrix for a structure prediction'
         filetypes = 'JSON files (*.json)'
@@ -282,6 +287,60 @@ class ReferenceModelDialog(UI_Panel_Base):
             run(self.session,f'alphafold pae #{self._current_reference.id_string} file {selected_file} plot false')
         self._pae_assigned_check()
 
+    def apply_restraints(self, selected_only = False):
+        sm = self.isolde.selected_model
+        cm = self._current_reference
+        distance_pairs = {}
+        torsion_pairs = {}
+        d_groups = self._restrain_distance_groups
+        for group in d_groups:
+            mc = group._model_chain
+            checked = group.checkedButton()
+            if checked is not None:
+                distance_pairs[mc] = checked._ref_chain
+        t_groups = self._restrain_torsions_groups
+        for group in t_groups:
+            mc = group._model_chain
+            checked = group.checkedButton()
+            if checked is not None:
+                torsion_pairs[mc] = checked._ref_chain
+        from chimerax.core.commands import run
+        if len(distance_pairs):
+            distance_options = self.options.distance_options
+            if not selected_only:
+                model_sigs = ','.join([f'"#{sm.id_string}/{mc.chain_id}"' for mc in distance_pairs.keys()])
+            else:
+                model_sigs = ','.join([f'"#{sm.id_string}/{mc.chain_id}&sel"' for mc in distance_pairs.keys()])
+            ref_sigs = ','.join([f'"#{cm.id_string}/{rc.chain_id}"' for rc in distance_pairs.values()])
+
+            cmd = (f'isolde restrain distances {model_sigs} template {ref_sigs} '
+                f'perchain {not distance_options["restrain interfaces"]} '
+                f'adjustForConfidence {distance_options["adjust for confidence"]} '
+                f'useCoordinateAlignment {distance_options["use coordinate alignment"]} '
+                f'kappa {distance_options["strength"]} '
+                f'fallOff {distance_options["falloff"]}'
+            )
+            run(self.session, cmd)
+        
+        torsion_options = self.options.torsion_options
+        for mc, rc in torsion_pairs.items():
+            if selected_only:
+                sel_text = "&sel"
+            else:
+                sel_text = ""
+            cmd = (f'isolde restrain torsions #{sm.id_string}/{mc.chain_id}{sel_text} '
+                f'template #{cm.id_string}/{rc.chain_id} '
+                f'adjustForConfidence {torsion_options["adjust for confidence"]} '
+                f'sidechains {torsion_options["restrain sidechains"]} '
+                f'springConstant {torsion_options["spring constant"]} '
+                f'alpha {torsion_options["alpha"]}'
+            )
+            run (self.session, cmd)
+
+
+
+
+
 
 class ReferenceModelOptions(CollapsibleArea):
     def __init__(self, session, gui, parent, **kwargs):
@@ -294,17 +353,24 @@ class ReferenceModelOptions(CollapsibleArea):
         rif.setChecked(True)
         layout.addWidget(rif, 1,0)
         daw = self.adjust_distances_for_confidence = QCheckBox('Adjust by PAE')
+        daw.setChecked(True)
         layout.addWidget(daw, 2,0)
-        layout.addWidget(QLabel('Overall strength'),3,0)
+        drb = self.use_rigid_alignment = QCheckBox('Use rigid-body matching')
+        drb.setChecked(False)
+        drb.setToolTip('<span>Progressively decompose model and template into matching rigid body regions, '
+            'and apply restraints within each rigid body. Recommended if not adjusting for PAE '
+            'scores, otherwise <strong>not</strong> recommended.</span>')
+        layout.addWidget(drb, 3, 0)
+        layout.addWidget(QLabel('Overall strength'),4,0)
         dsl = self.distance_strength_slider = DistanceRestraintWeightSlider(Qt.Orientation.Horizontal)
         dsl.setValue(74) # kappa ~ 10
-        layout.addWidget(dsl, 4, 0)
-        layout.addWidget(QLabel('Fuzziness'), 5,0)
+        layout.addWidget(dsl, 5, 0)
+        layout.addWidget(QLabel('Fuzziness'), 6,0)
         dfl = self.distance_fuzziness_slider = DistanceRestraintAlphaSlider(Qt.Orientation.Horizontal)
         dfl.setValue(25)
-        layout.addWidget(dfl, 6, 0)
+        layout.addWidget(dfl, 7, 0)
         drfi = self.distance_fuzziness_indicator = DistanceRestraintFuzzinessIndicator(session, dsl, dfl)
-        layout.addWidget(drfi, 7,0)
+        layout.addWidget(drfi, 8,0)
         self.expanded.connect(drfi._update_plot)
 
         layout.addWidget(QLabel('Torsion restraints'), 0, 1)
@@ -314,18 +380,38 @@ class ReferenceModelOptions(CollapsibleArea):
         taw = self.adjust_torsions_for_confidence = QCheckBox('Adjust by pLDDT')
         taw.setChecked(True)
         layout.addWidget(taw, 2,1)
-        layout.addWidget(QLabel('Overall strength'), 3, 1)
+        layout.addWidget(QLabel('Overall strength'), 4, 1)
         tsl = self.torsion_strength_slider = TorsionRestraintWeightSlider(Qt.Orientation.Horizontal)
         tsl.setValue(82) # spring constant = 250
-        layout.addWidget(tsl, 4, 1)
-        layout.addWidget(QLabel('Fuzziness'), 5, 1)
+        layout.addWidget(tsl, 5, 1)
+        layout.addWidget(QLabel('Fuzziness'), 6, 1)
         tfl = self.torsion_fuzziness_slider = TorsionRestraintAlphaSlider(Qt.Orientation.Horizontal)
-        tfl.setValue(25)
-        layout.addWidget(tfl, 6, 1)
-
-
-
+        tfl.setValue(80)
+        layout.addWidget(tfl, 7, 1)
+        trfi = self.torsion_fuzziness_indicator = DihedralRestraintFuzzinessIndicator(session, tsl, tfl)
+        layout.addWidget(trfi, 8,1)
+        self.expanded.connect(trfi._update_plot)
         self.setContentLayout(layout)
+    
+    @property
+    def distance_options(self):
+        return {
+            'restrain interfaces': self.restrain_interfaces.isChecked(),
+            'adjust for confidence': self.adjust_distances_for_confidence.isChecked(),
+            'use coordinate alignment': self.use_rigid_alignment.isChecked(),
+            'strength': self.distance_strength_slider.weight,
+            'falloff': self.distance_fuzziness_slider.alpha
+        }
+    
+    @property
+    def torsion_options(self):
+        return {
+            'restrain sidechains': self.restrain_sidechains.isChecked(),
+            'adjust for confidence': self.adjust_torsions_for_confidence.isChecked(),
+            'spring constant': self.torsion_strength_slider.weight,
+            'alpha': self.torsion_strength_slider.alpha
+        }
+
 
 
 class DistanceRestraintWeightSlider(QSlider):
@@ -383,11 +469,11 @@ class TorsionRestraintAlphaSlider(QSlider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setMinimum(0)
-        self.setMaximum(50)
+        self.setMaximum(100)
     
     @property
     def alpha(self):
-        return 0.5-self.value()/50
+        return 1-self.value()/100
 
 class ExclusiveOrNoneQButtonGroup(QButtonGroup):
     '''
@@ -418,17 +504,20 @@ def _ca_rmsd(model_residues, ref_residues):
     return numpy.sqrt(numpy.mean(numpy.sum((mcas.coords-rcas.scene_coords)**2, axis=1)))
 
 class FuzzinessIndicatorBase(QWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, tick_step=5, **kwargs):
         super().__init__(*args, **kwargs)
         layout = DefaultHLayout()
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+        from matplotlib import ticker
 
         self.setMaximumHeight(120)
         fig = self.figure = Figure()
         fig.set_tight_layout({'pad':0.25})
         canvas = self.canvas = FigureCanvas(fig)
+        loc = self._tick_locator = ticker.MultipleLocator(base=tick_step)
         ax = self.axes = fig.add_subplot(111)
+        ax.yaxis.set_major_locator(loc)
         for item in ([ax.title, ax.xaxis.label, ax.yaxis.label] +
                     ax.get_xticklabels() + ax.get_yticklabels()):
             item.set_fontsize(8)
@@ -450,10 +539,10 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         weight_slider.valueChanged.connect(self._update_plot)
         alpha_slider.valueChanged.connect(self._update_plot)
         axes = self.axes
-        axes.set_ylim([0,100])
+        axes.set_ylim([0,10])
         axes.set_xlim([0,2])
         axes.set_xlabel('Deviation (Angstroms)')
-        axes.set_ylabel('Force')
+        axes.set_ylabel('Force (kJ/mol/A)')
 
         self.canvas.setToolTip('<span>Example applied force for a target distance of 3 Angstroms and a PAE of 100. '
             'Lower-confidence and/or longer-range restraints will be both fuzzier and weaker than this.</span>')
@@ -465,7 +554,7 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         weight = self.weight_slider.weight
         falloff = self.falloff_slider.alpha
         from math import log, sqrt
-        alpha = -1-falloff*log(self.target_distance)
+        alpha = -falloff*log(self.target_distance)
 
         import numpy
         offsets = numpy.arange(0,2,0.025)
@@ -481,6 +570,11 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         for i, os in enumerate(offsets):
             da.coord = (0,0,td+os)
             forces[i] = dr.applied_force
+        # Switch to Angstrom units
+        forces = forces/10
+        if forces.max() > 10:
+            self.axes.set_ylim([0,25])
+        else:self.axes.set_ylim([0,10])
         
         plot = getattr(self, '_plot', None)
         if plot is None:
@@ -509,3 +603,79 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         drm = sx.get_adaptive_distance_restraint_mgr(dm)
         dr = self._dummy_restraint = drm.add_restraint(a1, a2)
         dr.enabled = True
+
+class DihedralRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
+    def __init__(self, session, weight_slider, fuzziness_slider, *args, tick_step=250, **kwargs):
+        super().__init__(*args, tick_step=tick_step, **kwargs)
+        self.weight_slider = weight_slider
+        self.fuzziness_slider = fuzziness_slider
+        self.session = session
+        self._create_dummy_model()
+        self.kappa = 5
+        self._angle_step = 5
+
+        weight_slider.valueChanged.connect(self._update_plot)
+        fuzziness_slider.valueChanged.connect(self._update_plot)
+        axes = self.axes
+        axes.set_ylim([0,500])
+        axes.set_xlim([0,180])
+        axes.set_xlabel('Deviation (degrees)')
+        axes.set_ylabel('Torque (kJ/mol)')
+
+        self.canvas.setToolTip('<span>Example applied torque around a dihedral for a residue with a pLDDT of 100. '
+            'Lower-confidence restraints will be both fuzzier and weaker than this.</span>')
+  
+    def _update_plot(self, *_):
+        self._dummy_atoms.coords = self._starting_coords
+        weight = self.weight_slider.weight
+        alpha = self.fuzziness_slider.alpha
+
+        import numpy
+        offsets = numpy.arange(0, 180, self._angle_step)
+        torques = numpy.empty(offsets.shape)
+        dr = self._dummy_restraint
+        dr.kappa = self.kappa
+        dr.alpha = alpha
+        dr.spring_constant = weight
+
+        ma = self._moving_atoms
+        axis = self._axis
+        from chimerax.geometry import rotation
+        r = rotation(axis, self._angle_step, center=self._center)
+        torques[0] = dr.applied_moment
+        for i in range(len(offsets)-1):
+            ma.transform(r)
+            torques[i+1]=dr.applied_moment
+        if torques.max() > 500:
+            self.axes.set_ylim([0,2500])
+            self._tick_locator.set_params(500)
+        else:
+            self.axes.set_ylim([0,500])
+            self._tick_locator.set_params(250)
+        
+        plot = getattr(self, '_plot', None)
+        if plot is None:
+            plot = self.axes.plot(offsets, torques, color='blue')[0]
+            self._plot = plot
+        else:
+            plot.set_ydata(torques)
+            self.axes.draw_artist(plot)
+            self.canvas.draw()
+
+    def _create_dummy_model(self):
+        from chimerax.atomic import AtomicStructure
+        dm = self._dummy_model = AtomicStructure(self.session)
+        from chimerax.isolde.atomic.building.build_utils import add_amino_acid_residue
+        r = add_amino_acid_residue(dm, 'SER', center=(0,0,0), chain_id='A', number=1)
+        self._dummy_atoms = r.atoms
+        self._starting_coords = r.atoms.coords
+        from chimerax.isolde import session_extensions as sx
+        adrm = sx.get_adaptive_dihedral_restraint_mgr(dm)
+        dr = self._dummy_restraint = adrm.add_restraint_by_residue_and_name(r, 'chi1')
+        dr.target = dr.dihedral.angle
+        dr.enabled = True
+        ab = dr.dihedral.axial_bond
+        self._moving_atoms = ab.side_atoms(ab.smaller_side)
+        self._axis = ab.atoms[0].coord - ab.atoms[1].coord
+        self._center = ab.atoms[1].coord
+
