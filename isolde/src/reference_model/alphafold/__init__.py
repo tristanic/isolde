@@ -55,3 +55,19 @@ def alphafold_id(model):
     if result is None:
         return None
     return result[0]
+
+def b_factors_look_like_plddt(m):
+    import numpy
+    if m.atoms.bfactors.max() > 100:
+        return (False, 'out of range')
+    from chimerax.atomic import Residue, Atoms
+    coil = m.residues[numpy.logical_and(m.residues.polymer_types==Residue.PT_AMINO, m.residues.ss_types==Residue.SS_COIL)]
+    coil_median = numpy.median(Atoms(coil.principal_atoms).bfactors)
+    structured = m.residues[numpy.logical_and(m.residues.polymer_types==Residue.PT_AMINO, m.residues.ss_types!=Residue.SS_COIL)]
+    structured_median = numpy.median(Atoms(structured.principal_atoms).bfactors)
+    if structured_median < coil_median:
+        return (False, 'inverted')
+    for r in m.residues:
+        if not numpy.allclose(r.atoms.bfactors, r.atoms.bfactors.mean()):
+            return (False, 'different within residues')
+    return (True, None)
