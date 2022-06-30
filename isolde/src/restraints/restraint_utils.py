@@ -23,7 +23,7 @@ from chimerax.core.errors import UserError
 
 def restrain_torsions_to_template(session, template_residues, restrained_residues,
     restrain_backbone=True, restrain_sidechains=True,
-    kappa=10, alpha=0.2, spring_constant=100, identical_sidechains_only=True,
+    kappa=5, alpha=0.2, spring_constant=100, identical_sidechains_only=True,
     adjust_for_confidence=False, confidence_type='plddt'):
     r'''
     Restrain all phi, psi, omega and/or chi dihedrals in `restrained_residues`
@@ -53,8 +53,8 @@ def restrain_torsions_to_template(session, template_residues, restrained_residue
               kappa=10 corresponds to a standard deviation of
               :math:`\sqrt{\frac{1}{10}}` = 0.316 radians or about 18 degrees.
               A torsion restrained with this kappa will begin to "feel" the
-              restraint once it comes within about two standard deviations of
-              the target angle.
+              steepest part of the restraint once it comes within about two 
+              standard deviations of the target angle.
         * alpha:
             - sets the rate of fall-off of the potential outside the restraint
               well. For alpha==0, the potential quickly falls to a constant
@@ -498,7 +498,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
               distance deviates strongly from the target, as a function of the
               target distance. The exponent on the energy term at large
               deviations from the target distance will be set as
-              :math:`\alpha = -1 -\text{fall\_off} ln(\text{target})`. In other
+              :math:`\alpha = -\text{fall\_off} ln(\text{target})`. In other
               words, long-distance restraints are treated as less confident than
               short-distance ones.
         * display_threshold (default = 0):
@@ -645,7 +645,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 #dr.effective_spring_constant = spring_constant
                 dr.kappa = kappa * kappa_adj
                 from math import log
-                dr.alpha = -1 - fall_off * log((max(dist-1,1))) - falloff_adj
+                dr.alpha = -fall_off * log((max(dist-1,1))) - falloff_adj
                 dr.enabled = True
 
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
