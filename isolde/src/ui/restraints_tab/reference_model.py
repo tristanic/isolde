@@ -409,7 +409,7 @@ class ReferenceModelOptions(CollapsibleArea):
             'restrain sidechains': self.restrain_sidechains.isChecked(),
             'adjust for confidence': self.adjust_torsions_for_confidence.isChecked(),
             'spring constant': self.torsion_strength_slider.weight,
-            'alpha': self.torsion_strength_slider.alpha
+            'alpha': self.torsion_fuzziness_slider.alpha
         }
 
 
