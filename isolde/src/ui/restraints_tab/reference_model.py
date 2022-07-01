@@ -342,7 +342,7 @@ class ReferenceModelDialog(UI_Panel_Base):
             adjust_for_confidence = torsion_options['adjust for confidence']
             if adjust_for_confidence:
                 from chimerax.isolde.reference_model.alphafold import b_factors_look_like_plddt
-                looks_like, reason = b_factors_look_like_plddt(mc)
+                looks_like, reason = b_factors_look_like_plddt(cm)
                 if not looks_like:
                     from chimerax.isolde.dialog import choice_warning
                     msg = ('You have opted to adjust torsion restraints according to pLDDT, but the values in the B-factor column '
