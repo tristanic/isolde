@@ -215,7 +215,13 @@ class ReferenceModelDialog(UI_Panel_Base):
                 coverage = len(s1.ungapped())/len(mc.ungapped())
                 # ref chain, alignment score, fractional identity, coverage, model seq, ref seq
                 if identity > self.IDENTITY_CUTOFF:
-                    rmsd = _ca_rmsd(mc.residues, s2.residues)
+                    res1 = []
+                    res2 = []
+                    for r1, r2 in zip(s1.residues, s2.residues):
+                        if r1 is not None and r2 is not None:
+                            res1.append(r1)
+                            res2.append(r2)
+                    rmsd = _ca_rmsd(res1, res2)
                     alignments[mc].append((rc, score, identity, coverage, s1, s2, rmsd))
         # Sort in descending order of score
         for key, rlist in alignments.items():
