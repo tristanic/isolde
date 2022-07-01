@@ -176,6 +176,8 @@ class ReferenceModelDialog(UI_Panel_Base):
         from chimerax.alphafold.database import uniprot_id_from_filename
         structure_path = getattr(model, 'filename', None)
         if structure_path is not None:
+            import os
+            structure_path = os.path.basename(structure_path)
             uniprot_id = uniprot_id_from_filename(structure_path)
             if uniprot_id is not None:
                 self.session.logger.info(f'ISOLDE: attempting to load PAE matrix for model #{model.id_string} from the AlphaFold-EBI '
