@@ -111,6 +111,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         tree.setHeaderLabels([item[1] for item in items])
         tree.header().setMinimumSectionSize(20)
         tree.setMinimumHeight(150)
+        tree.itemClicked.connect(self._tree_item_clicked_cb)
 
     def _populate_reference_model_menu(self, *_):
         rmm = self.reference_model_menu
@@ -232,6 +233,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         root = tree.invisibleRootItem()
         for model_chain, refs in alignments.items():
             parent = QTreeWidgetItem(root)
+            parent._model_chain = model_chain
             parent.setText(self.WORKING_CHAIN_COLUMN, f'{model_chain.chain_id}')
             distance_group = ExclusiveOrNoneQButtonGroup(tree)
             distance_group._model_chain = model_chain
@@ -243,6 +245,8 @@ class ReferenceModelDialog(UI_Panel_Base):
             for ref_data in refs:
                 rc, score, identity, coverage, model_seq, ref_seq, rmsd = ref_data
                 entry = QTreeWidgetItem(parent)
+                entry._model_chain = model_chain
+                entry._ref_chain = rc
                 entry.setText(self.REFERENCE_CHAIN_COLUMN, f'{rc.chain_id}')
                 entry.setText(self.IDENTITY_COLUMN, f'{round(identity*100, 0):.0f}%')
                 entry.setText(self.ALIGNMENT_LENGTH_COLUMN, f'{round(coverage*100, 0):.0f}%')
@@ -281,7 +285,12 @@ class ReferenceModelDialog(UI_Panel_Base):
         tree.expandAll()
         for column in self._column_labels.keys():
             tree.resizeColumnToContents(column)
- 
+
+    def _tree_item_clicked_cb(self, item, _):
+        chain = item._model_chain
+        from chimerax.core.commands import run
+        run(self.session, f'view #{self.isolde.selected_model.id_string}/{chain.chain_id}', log=False)
+
     def _load_pae_from_file(self, *_):
         caption = 'Load the PAE matrix for a structure prediction'
         filetypes = 'JSON files (*.json)'
