@@ -21,6 +21,8 @@ KAPPA_MAX=30
 
 from chimerax.core.errors import UserError
 
+DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME = 'Reference Model Restraints'
+
 def restrain_torsions_to_template(session, template_residues, restrained_residues,
     restrain_backbone=True, restrain_sidechains=True,
     kappa=5, alpha=0.2, spring_constant=100, identical_sidechains_only=True,
@@ -439,7 +441,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
     protein=True, nucleic=True, custom_atom_names=[],
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.1,
     kappa = 10, tolerance = 0.025, fall_off = 2, display_threshold=None,
-    adjust_for_confidence=False, use_coordinate_alignment=True, confidence_type='pae', pae_matrix=None):
+    adjust_for_confidence=False, use_coordinate_alignment=True, confidence_type='pae', pae_matrix=None,
+    group_name=None):
     r'''
     Creates a "web" of adaptive distance restraints between nearby atoms,
     restraining one set of residues to the same spatial organisation as another.
@@ -523,7 +526,10 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
             - used if adjust_for_confidence is True and confidence_type is "pae". If the reference model
               was downloaded from the AlphaFold database, leave this argument as None and the relevant PAE
               matrix will be automatically fetched. Otherwise, the matrix should be a 2D Numpy array with entry (i,j) 
-              equal to the PAE of residue number i relative to residue number j. 
+              equal to the PAE of residue number i relative to residue number j.
+        * group_name (default = "Reference Model Restraints"):
+            - allows for the generation of multiple independent groups of restraints. Each unique name will
+              create a new group. 
 
     '''
     from chimerax.std_commands.align import IterationError
@@ -533,6 +539,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         raise UserError('Nothing to restrain!')
     # if len(template_residues) != len(restrained_residues):
     #     raise TypeError('Template and restrained residue arrays must be the same length!')
+    if group_name is None:
+        group_name = DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
     for rrs in restrained_residues:
         if len(rrs) == 0:
             raise UserError('No residues specified to restrain!')
@@ -581,7 +589,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
 
 
 
-    adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model)
+    adrm = sx.get_adaptive_distance_restraint_mgr(restrained_model, name=group_name)
     if display_threshold is not None:
         adrm.display_threshold = display_threshold
     from chimerax.geometry import find_close_points, distance
@@ -645,7 +653,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 #dr.effective_spring_constant = spring_constant
                 dr.kappa = kappa * kappa_adj
                 from math import log
-                dr.alpha = -fall_off * log((max(dist-1,1))) - falloff_adj
+                dr.alpha = 1 - fall_off * log((max(dist-1,1))) - falloff_adj
                 dr.enabled = True
 
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
@@ -749,7 +757,10 @@ def adjust_distance_restraint_terms_by_pae(pae):
     return kappa_adj, tol_adj, falloff_adj
 
 
-def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa, c, alpha=-2):
+def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa, c, alpha=-2,
+        group_name=None):
+    if group_name is None:
+        group_name = DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
     if not atom1.structure == atom2.structure:
         raise UserError('Both atoms must belong to the same model!')
     from chimerax.isolde import session_extensions as sx

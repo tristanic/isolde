@@ -12,7 +12,7 @@ def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **k
     valid_args = set((
         'protein', 'nucleic', 'custom_atom_names', 'distance_cutoff',
         'alignment_cutoff', 'well_half_width', 'kappa', 'tolerance', 'fall_off',
-        'display_threshold'
+        'display_threshold', 'group_name'
     ))
     log = session.logger
 
@@ -45,12 +45,15 @@ def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **k
 
     args = {kw: arg for kw, arg in kwargs.items() if kw in valid_args and arg is not None}
     restraint_utils.restrain_atom_distances_to_template(session, template_residues,
-        model_residues, **kwargs)
+        model_residues, **args)
 
 def release_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False, to=None,
         longer_than=None, strained_only=False,
-        stretch_limit=1.2, compression_limit=0.8):
+        stretch_limit=1.2, compression_limit=0.8, group_name=None):
+    if group_name is None:
+        from chimerax.isolde.restraints.restraint_utils import DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
+        group_name = DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
     log = session.logger
     if internal_only and external_only:
         raise UserError('Cannot specify both internal only and external only!')
@@ -58,7 +61,7 @@ def release_adaptive_distance_restraints(session, atoms,
         raise UserError('Argument "to" cannot be used with internal_only=True or external_only=True!')
     from chimerax.isolde import session_extensions as sx
     for m in atoms.unique_structures:
-        adrm = sx.get_adaptive_distance_restraint_mgr(m)
+        adrm = sx.get_adaptive_distance_restraint_mgr(m, name=group_name)
         if internal_only:
             adrs = adrm.intra_restraints(atoms)
         elif external_only:
@@ -80,14 +83,17 @@ def release_adaptive_distance_restraints(session, atoms,
 
 def adjust_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False, kappa=None, well_half_width=None,
-        tolerance=None, fall_off=None, display_threshold=None):
+        tolerance=None, fall_off=None, display_threshold=None, group_name = None):
+    if group_name is None:
+        from chimerax.isolde.restraints.restraint_utils import DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
+        group_name = DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
     log = session.logger
     if internal_only and external_only:
         log.warning('Cannot specify both internal only and external only!')
         return
     from chimerax.isolde import session_extensions as sx
     for m in atoms.unique_structures:
-        adrm = sx.get_adaptive_distance_restraint_mgr(m)
+        adrm = sx.get_adaptive_distance_restraint_mgr(m, name=group_name)
         if internal_only:
             adrs = adrm.intra_restraints(atoms)
         elif external_only:
@@ -113,7 +119,7 @@ def adjust_adaptive_distance_restraints(session, atoms,
             adrm.display_threshold = display_threshold
 
 def restrain_single_distance(session, atoms, min_dist, max_dist,
-        strength=20, well_half_width=None, confidence=-2):
+        strength=20, well_half_width=None, confidence=-2, group_name=None):
     if len(atoms)!=2:
         raise UserError('Selection must specify exactly two atoms!')
     atom1, atom2 = atoms
@@ -125,7 +131,7 @@ def restrain_single_distance(session, atoms, min_dist, max_dist,
         well_half_width = min(target/5, 2.0)
     from .restraint_utils import restrain_atom_pair_adaptive_distance
     restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance,
-        strength, well_half_width, confidence)
+        strength, well_half_width, confidence, group_name=group_name)
 
 def restrain_ligands(session, models, distance_cutoff=4, max_heavy_atoms=3,
         spring_constant=5000, bond_to_carbon=False):
@@ -253,7 +259,8 @@ def register_isolde_restrain(logger):
                 ('fall_off', FloatArg),
                 ('display_threshold', FloatArg),
                 ('adjust_for_confidence', BoolArg),
-                ('confidence_type', EnumOf(['plddt','pae']))
+                ('confidence_type', EnumOf(['plddt','pae'])),
+                ('group_name', StringArg)
             ]
         )
         register('isolde restrain distances', desc, restrain_distances, logger=logger)
@@ -269,6 +276,7 @@ def register_isolde_restrain(logger):
                 ('strength', FloatArg),
                 ('well_half_width', FloatArg),
                 ('confidence', FloatArg),
+                ('group_name', StringArg)
             ]
         )
         register('isolde restrain single distance', desc, restrain_single_distance, logger=logger)
@@ -298,7 +306,8 @@ def register_isolde_restrain(logger):
                 ('well_half_width', FloatArg),
                 ('tolerance', FloatArg),
                 ('fall_off', FloatArg),
-                ('display_threshold', FloatArg)
+                ('display_threshold', FloatArg),
+                ('group_name', StringArg)
             ]
         )
         register('isolde adjust distances', desc, adjust_adaptive_distance_restraints, logger=logger)
