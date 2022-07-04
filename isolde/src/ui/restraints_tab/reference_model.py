@@ -100,6 +100,17 @@ class ReferenceModelDialog(UI_Panel_Base):
 
         self.container.expanded.connect(self._on_expand)
 
+        from chimerax.core.models import REMOVE_MODELS
+        self._chimerax_trigger_handlers.append(self.session.triggers.add_handler(
+            REMOVE_MODELS, self._model_removed_cb
+        ))
+
+        from chimerax.isolde.isolde import Isolde 
+        self._isolde_trigger_handlers.append(self.isolde.triggers.add_handler(
+            Isolde.SELECTED_MODEL_CHANGED, self._selected_model_changed_cb
+        ))
+        self._selected_model_changed_cb()
+
     def _on_expand(self):
         cm = self._current_reference
         if cm is not None and cm.was_deleted:
@@ -127,6 +138,17 @@ class ReferenceModelDialog(UI_Panel_Base):
             a = rmm.addAction(f'{m.id_string}: {m.name}')
             a.triggered.connect(lambda _, mm=m: self.set_reference_model(mm))
 
+    def _selected_model_changed_cb(self, *_):
+        if self.isolde.selected_model is None:
+            self.set_reference_model(None)
+            self.reference_model_menu_button.setEnabled(False)
+        else:
+            self.reference_model_menu_button.setEnabled(True)
+    
+    def _model_removed_cb(self, *_):
+        if self._current_reference is not None and self._current_reference.was_deleted:
+            self.set_reference_model(None)
+
     def set_reference_model(self, m):
         self._current_reference = m
         rmb = self.reference_model_menu_button
@@ -141,11 +163,9 @@ class ReferenceModelDialog(UI_Panel_Base):
             from chimerax.core.commands import run
             if sm != m:
                 run(self.session, f'match #{m.id_string} to #{sm.id_string}')
-            run(self.session, f'color #{m.id_string} bychain')
-            run(self.session, f'color #{m.id_string} byhet')
-            run(self.session, f'color modify #{m.id_string} hue + 50')
-
-
+                run(self.session, f'color #{m.id_string} bychain')
+                run(self.session, f'color #{m.id_string} byhet')
+                run(self.session, f'color modify #{m.id_string} hue + 50')
         self._pae_assigned_check()
         self._populate_detail_tree()
 
@@ -332,9 +352,14 @@ class ReferenceModelDialog(UI_Panel_Base):
                 model_sigs = ','.join([f'"#{sm.id_string}/{mc.chain_id}&sel"' for mc in distance_pairs.keys()])
             ref_sigs = ','.join([f'"#{cm.id_string}/{rc.chain_id}"' for rc in distance_pairs.values()])
 
+            adjust_for_confidence = distance_options['adjust for confidence']
+            if adjust_for_confidence and not self.pae_assigned:
+                self.session.logger.warning('"Adjust for PAE" is checked in the distance restraint options, but '
+                    'the reference model has no PAE matrix assigned. This option has been ignored.')
+                adjust_for_confidence = False
             cmd = (f'isolde restrain distances {model_sigs} template {ref_sigs} '
                 f'perchain {not distance_options["restrain interfaces"]} '
-                f'adjustForConfidence {distance_options["adjust for confidence"]} '
+                f'adjustForConfidence {adjust_for_confidence} '
                 f'useCoordinateAlignment {distance_options["use coordinate alignment"]} '
                 f'kappa {distance_options["strength"]} '
                 f'fallOff {distance_options["falloff"]}'
@@ -358,7 +383,7 @@ class ReferenceModelDialog(UI_Panel_Base):
                         f'of the reference model do not look like pLDDT values. {plddt_reasons[reason]}\n'
                         'Would you like to turn off this option before continuing?'
                     )
-                    disable = choice_warning(msg)
+                    disable = choice_warning(msg, yesno=True)
                     if disable:
                         self.options.adjust_torsions_for_confidence.setChecked(False)
                         torsion_options = self.options.torsion_options
@@ -539,8 +564,15 @@ def _ca_rmsd(model_residues, ref_residues):
     from chimerax.atomic import Residues
     model_residues = Residues(model_residues)
     ref_residues = Residues(ref_residues)
-    mcas = model_residues.atoms[model_residues.atoms.names=='CA']
-    rcas = ref_residues.atoms[ref_residues.atoms.names=='CA']
+    cas1 = []
+    cas2 = []
+    for ca1, ca2 in zip(model_residues.principal_atoms, ref_residues.principal_atoms):
+        if ca1 is not None and ca2 is not None:
+            cas1.append(ca1)
+            cas2.append(ca2)
+    from chimerax.atomic import Atoms
+    mcas = Atoms(cas1)
+    rcas = Atoms(cas2)
     import numpy
     return numpy.sqrt(numpy.mean(numpy.sum((mcas.coords-rcas.scene_coords)**2, axis=1)))
 
@@ -595,7 +627,7 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         weight = self.weight_slider.weight
         falloff = self.falloff_slider.alpha
         from math import log, sqrt
-        alpha = -falloff*log(self.target_distance)
+        alpha = 1 - falloff*log(self.target_distance)
 
         import numpy
         offsets = numpy.arange(0,2,0.025)
@@ -621,6 +653,7 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         if plot is None:
             plot = self.axes.plot(offsets, forces, color='blue')[0]
             self._plot = plot
+            self.canvas.draw()
         else:
             #self.axes.clear()
             plot.set_ydata(forces)
@@ -698,6 +731,7 @@ class DihedralRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         if plot is None:
             plot = self.axes.plot(offsets, torques, color='blue')[0]
             self._plot = plot
+            self.canvas.draw()
         else:
             plot.set_ydata(torques)
             self.axes.draw_artist(plot)
