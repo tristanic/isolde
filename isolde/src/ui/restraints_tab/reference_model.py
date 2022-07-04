@@ -92,7 +92,7 @@ class ReferenceModelDialog(UI_Panel_Base):
         rab = self.restrain_all_button = QPushButton('Apply')
         rab.clicked.connect(self.apply_restraints)
         bl.addWidget(rab)
-        rsb = self.restrain_selected_button = QPushButton('Apply (selected only)')
+        rsb = self.restrain_selected_button = QPushButton('Apply (selected residues only)')
         rsb.clicked.connect(lambda: self.apply_restraints(selected_only=True))
         bl.addWidget(rsb)
         bl.addStretch()
@@ -345,11 +345,18 @@ class ReferenceModelDialog(UI_Panel_Base):
                 torsion_pairs[mc] = checked._ref_chain
         from chimerax.core.commands import run
         if len(distance_pairs):
+            from chimerax.isolde.restraints.restraint_utils import DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
             distance_options = self.options.distance_options
             if not selected_only:
                 model_sigs = ','.join([f'"#{sm.id_string}/{mc.chain_id}"' for mc in distance_pairs.keys()])
             else:
-                model_sigs = ','.join([f'"#{sm.id_string}/{mc.chain_id}&sel"' for mc in distance_pairs.keys()])
+                from chimerax.atomic import concise_residue_spec
+                chain_sigs = []
+                for mc in distance_pairs.keys():
+                    cid = mc.chain_id
+                    residues = sm.residues[sm.residues.chain_ids==cid]
+                    chain_sigs.append(concise_residue_spec(self.session, residues[residues.selected]))
+                model_sigs = ','.join([f'"{cs}"' for cs in chain_sigs])
             ref_sigs = ','.join([f'"#{cm.id_string}/{rc.chain_id}"' for rc in distance_pairs.values()])
 
             adjust_for_confidence = distance_options['adjust for confidence']
@@ -361,8 +368,9 @@ class ReferenceModelDialog(UI_Panel_Base):
                 f'perchain {not distance_options["restrain interfaces"]} '
                 f'adjustForConfidence {adjust_for_confidence} '
                 f'useCoordinateAlignment {distance_options["use coordinate alignment"]} '
-                f'kappa {distance_options["strength"]} '
-                f'fallOff {distance_options["falloff"]}'
+                f'kappa {distance_options["strength"]:.2f} '
+                f'fallOff {distance_options["falloff"]:.2f} '
+                f'groupName "{DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME}"'
             )
             run(self.session, cmd)
         
@@ -390,23 +398,20 @@ class ReferenceModelDialog(UI_Panel_Base):
 
         for mc, rc in torsion_pairs.items():
             if selected_only:
-                sel_text = "&sel"
+                from chimerax.atomic import concise_residue_spec, Residues
+                residues = sm.residues[sm.residues.chain_ids==mc.chain_id]
+                sel_text = concise_residue_spec(self.session, residues[residues.selected])
             else:
-                sel_text = ""
+                sel_text = f'#{sm.id_string}/{mc.chain_id}'
 
-            cmd = (f'isolde restrain torsions #{sm.id_string}/{mc.chain_id}{sel_text} '
+            cmd = (f'isolde restrain torsions {sel_text} '
                 f'template #{cm.id_string}/{rc.chain_id} '
                 f'adjustForConfidence {torsion_options["adjust for confidence"]} '
                 f'sidechains {torsion_options["restrain sidechains"]} '
-                f'springConstant {torsion_options["spring constant"]} '
-                f'alpha {torsion_options["alpha"]}'
+                f'springConstant {torsion_options["spring constant"]:.2f} '
+                f'alpha {torsion_options["alpha"]:.2f}'
             )
             run (self.session, cmd)
-
-
-
-
-
 
 class ReferenceModelOptions(CollapsibleArea):
     def __init__(self, session, gui, parent, **kwargs):
