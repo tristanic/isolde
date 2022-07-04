@@ -186,9 +186,9 @@ class Isolde():
         self._status = self.session.logger.status
 
         eh = self._event_handler = EventHandler(self.session)
-        from chimerax.core.models import ADD_MODELS
+        from chimerax.core.models import ADD_MODELS, REMOVE_MODELS
         eh.add_event_handler('Reinitialize maps on model add', ADD_MODELS, self._model_add_cb)
-
+        eh.add_event_handler('Update selected model if current model deleted', REMOVE_MODELS, self._model_remove_cb)
         # Available pre-defined colors
         from chimerax.core import colors
         import copy
@@ -287,7 +287,6 @@ class Isolde():
         # Internal trigger handlers
         ####
 
-        self.gui_mode = False
         self._menu_prepared = False
 
         self._ui_panels = []
@@ -296,6 +295,8 @@ class Isolde():
             self._prepare_environment()
             from .menu import prepare_isolde_menu
             prepare_isolde_menu(self.session)
+
+        self.selected_model = self.find_next_available_model()
 
         session.isolde = self
         if session.ui.is_gui:
@@ -325,11 +326,11 @@ class Isolde():
     @gui.setter
     def gui(self, gui):
         self._gui = gui
-        if gui is None:
-            self.gui_mode = False
-        else:
-            self.gui_mode = True
     
+    @property
+    def gui_mode(self):
+        return self.session.ui.is_gui
+
     @property
     def forcefield_mgr(self):
         return self._ff_mgr
@@ -416,7 +417,7 @@ class Isolde():
         '''
         m = self._selected_model
         if m is not None and m.was_deleted:
-            self._selected_model = None
+            self.change_selected_model(None)
         return self._selected_model
 
     @selected_model.setter
@@ -657,6 +658,11 @@ class Isolde():
         m = self.selected_model
         if m is not None:
             self._initialize_maps(m)            
+
+    def _model_remove_cb(self, *_):
+        m = self._selected_model
+        if m is not None and m.was_deleted:
+            self.selected_model = None
 
     def _initialize_maps(self, model):
         '''
@@ -1073,6 +1079,14 @@ class Isolde():
     # Simulation global settings functions
     ##############################################################
 
+    def find_next_available_model(self):
+        from chimerax.clipper import get_symmetry_handler
+        from chimerax.atomic import AtomicStructure
+        for m in sorted(self.session.models.list(type=AtomicStructure), key=lambda mm: mm.id):
+            if get_symmetry_handler(m) is not None:
+                return m
+        return None
+
     def change_selected_model(self, model):
         '''
         Change the model upon which ISOLDE is focused (that is, upon which
@@ -1085,7 +1099,7 @@ class Isolde():
             * model:
                 - a :class:`chimerax.AtomicStructure` instance.
         '''
-        if self.gui_mode:
+        if self.session.ui.is_gui:
             self._change_selected_model(self, model=model, force=True)
         else:
             self._selected_model = model
@@ -1095,7 +1109,7 @@ class Isolde():
                 add_isolde_citation(model)
                 # self._selected_model.selected = True
                 self._initialize_maps(model)
-            self.triggers.activate_trigger('selected model changed', model)
+            self.triggers.activate_trigger(self.SELECTED_MODEL_CHANGED, model)
 
     def _change_selected_model(self, *_, model=None, force=False):
         m = model
@@ -1690,7 +1704,6 @@ class Isolde():
     # Final cleanup
     #############################################
     def _on_close(self, *_):
-        self.gui_mode = False
         self.session.logger.status('Closing ISOLDE and cleaning up')
 
         for p in self._ui_panels:

@@ -25,11 +25,10 @@ class IsoldeMainWin(MainToolWindow):
         super().__init__(tool_instance, **kw)
         if hasattr(self.session, 'isolde'):
             self.isolde = self.session.isolde
-            self.isolde._gui = self
+            self.isolde.gui = self
         else:
             from ..isolde import Isolde
             self.isolde = Isolde(self.session, gui=self)
-        self.isolde.gui_mode = True
         self._gui_panels = []
         sth = self._session_trigger_handlers = []
         ith = self._isolde_trigger_handlers = []
@@ -38,9 +37,6 @@ class IsoldeMainWin(MainToolWindow):
             'selected model changed', self._selected_model_changed_cb
         )
         self._isolde_trigger_handlers.append(smch)
-        from chimerax.core.models import REMOVE_MODELS
-        self._session_trigger_handlers.append(self.session.triggers.add_handler(REMOVE_MODELS,
-            self._model_deleted_cb))
 
         parent = self.ui_area
         main_layout = DefaultVLayout()
@@ -173,24 +169,17 @@ class IsoldeMainWin(MainToolWindow):
     # ISOLDE event callbacks
     ###
 
-    def _model_deleted_cb(self, *_):
-        self._update_model_menu_button(self.isolde.selected_model)
-
     def _selected_model_changed_cb(self, trigger_name, m):
         self._update_model_menu_button(m)
     
     def _update_model_menu_button(self, m=None):
         mmb = self.master_model_menu_button
+        text = m.id_string if m is not None else "None"
         if m is None:
-            # If any existing models are initialized for ISOLDE, switch to the first
-            from chimerax.atomic import AtomicStructure
-            models = [model for model in self.session.models if type(model)==AtomicStructure]
-            models = sorted(models, key=lambda m: m.id)
-            from chimerax.clipper import get_symmetry_handler
-            for m in models:
-                if get_symmetry_handler(m) is not None:
-                    self.isolde.selected_model = m
-                    return
+            m = self.isolde.find_next_available_model()
+            if m is not None:
+                self.isolde.selected_model = m
+                return
             mmb.setText('Choose a model')
         else:    
             mmb.setText(f'{m.id_string}')
