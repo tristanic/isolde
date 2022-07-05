@@ -17,4 +17,6 @@ class RestraintsTab(IsoldeTab):
         from .register_shift import RegisterShiftPanel
         self.addWidget(RegisterShiftPanel(session, isolde, parent, gui))  
         from .reference_model import ReferenceModelPanel
-        self.addWidget(ReferenceModelPanel(session, isolde, parent, gui))      
+        self.addWidget(ReferenceModelPanel(session, isolde, parent, gui))
+        from .manage_restraints import ManageRestraintsPanel
+        self.addWidget(ManageRestraintsPanel(session, isolde, parent, gui))      
