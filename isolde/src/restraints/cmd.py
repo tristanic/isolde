@@ -291,7 +291,8 @@ def register_isolde_restrain(logger):
                 ('longer_than', FloatArg),
                 ('strained_only', BoolArg),
                 ('stretch_limit', FloatArg),
-                ('compression_limit', FloatArg)
+                ('compression_limit', FloatArg),
+                ('group_name', StringArg)
             ]
         )
         register('isolde release distances', desc, release_adaptive_distance_restraints, logger=logger)
