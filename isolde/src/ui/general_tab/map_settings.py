@@ -139,7 +139,7 @@ class MapSettingsDialog(UI_Panel_Base):
         
         ith = self._isolde_trigger_handlers
         ith.append(isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self._rebuild_tree_if_necessary))
-        self.container.expanded.connect(self.rebuild_tree)
+        self.container.expanded.connect(self._expanded_cb)
         self._temporary_handlers = []
         self.rebuild_tree()
 
@@ -166,6 +166,9 @@ class MapSettingsDialog(UI_Panel_Base):
         '''
         pass
 
+    def _expanded_cb(self):
+        self._compare_maps_to_current()
+        self.rebuild_tree()
 
     def rebuild_tree(self):
         th = self._temporary_handlers
