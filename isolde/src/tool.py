@@ -21,6 +21,8 @@ def _find_help():
     return 'help:user/tools/ISOLDE.html'
 
 class ISOLDE_ToolUI(ToolInstance):
+    SESSION_ENDURING = True
+
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)
         from .isolde import Isolde

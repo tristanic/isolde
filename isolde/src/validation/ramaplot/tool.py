@@ -16,6 +16,7 @@ from chimerax.isolde.ui.ui_base import QComboBox, DefaultHLayout, DefaultVLayout
 
 
 class Rama_ToolUI(ToolInstance):
+    SESSION_ENDURING = True
     TOOL_CLOSED = 'tool closed'
     def __init__(self, session, tool_name):
         super().__init__(session, tool_name)
@@ -35,6 +36,7 @@ DISPLAY_MODE_CHANGED = 'display mode changed'
 
 
 class RamaMainWin(MainToolWindow):
+
     from enum import IntFlag
     class Restrictions(IntFlag):
         ALL_PROTEIN = 0
