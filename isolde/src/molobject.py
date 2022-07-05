@@ -3233,7 +3233,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
 
     def set_colormap(self, min_color, mid_color, max_color):
         '''
-        Set the color scale for automatically colouring the restraint
+        Set the color scale for automatically coloring the restraint
         pseudobonds. Colors will be interpolated from min_color to mid_color
         when (r0-tolerance-3*c) < r < (r0-tolerance), and from
         mid_color to max_color when (r0+tolerance < r < r0+tolerance+3*c).
@@ -3254,6 +3254,19 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         colors[1,:] = mid_color
         colors[2,:] = min_color
         cf(self._c_pointer, pointer(colors))
+        self.update_graphics()
+
+    def get_colormap(self):
+        '''
+        Get the current color scale (as min_color, mid_color, max_color) used for the restraint pseudobonds.
+        '''
+        cf = c_function('adaptive_distance_restraint_mgr_colors',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8))
+            )
+        colors = numpy.empty((3,4), uint8)
+        cf(self._c_pointer, pointer(colors))
+        return colors
+
 
 
     def _target_geometry(self):

@@ -207,6 +207,29 @@ adaptive_distance_restraint_mgr_all_restraints(void *mgr)
 }
 
 extern "C" EXPORT void
+adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
+{
+    AdaptiveDistanceRestraintMgr *d = static_cast<AdaptiveDistanceRestraintMgr *>(mgr);
+    try {
+        auto minc = colors;
+        auto midc = colors+4;
+        auto maxc = colors+8;
+        
+        auto cmap = d->colormap()->mapped_colors();
+        for (size_t i=0; i<4; ++i)
+        {
+            minc[i] = int(cmap[0][i]*255.0);
+            midc[i] = int(cmap[1][i]*255.0);
+            // Not a typo - the middle color is used twice in the colormap
+            maxc[i] = int(cmap[3][i]*255.0);
+        }
+    } catch (...) {
+        molc_error();
+    }
+
+}
+
+extern "C" EXPORT void
 set_adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
 {
     AdaptiveDistanceRestraintMgr *d = static_cast<AdaptiveDistanceRestraintMgr *>(mgr);
@@ -220,6 +243,7 @@ set_adaptive_distance_restraint_mgr_colors(void *mgr, uint8_t *colors)
         molc_error();
     }
 }
+
 
 
 /***************************************************************
