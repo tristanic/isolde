@@ -1,6 +1,6 @@
 from ..collapse_button import CollapsibleArea
-from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout
-from Qt.QtWidgets import QLabel, QPushButton, QMenu, QToolBar
+from ..ui_base import DefaultSpacerItem, UI_Panel_Base, DefaultHLayout, DefaultVLayout
+from Qt.QtWidgets import QLabel, QPushButton, QMenu, QToolBar, QSlider, QGridLayout
 from Qt.QtGui import QIcon
 from Qt.QtCore import Qt, QSize
 from .. import icon_dir, DEFAULT_ICON_SIZE
@@ -42,6 +42,20 @@ class ManageRestraintsDialog(UI_Panel_Base):
 
         dbl1.addStretch()
         dl.addLayout(dbl1)
+
+        dbl2 = QGridLayout()
+        dbl2.addWidget(QLabel('Display threshold'),0,0,1,1)
+        ddsl = self.distance_restraint_display_threshold_slider = QSlider(Qt.Orientation.Horizontal)
+        ddsl.setMinimum(0)
+        ddsl.setMaximum(100)
+        ddsl.valueChanged.connect(self._distance_display_slider_value_changed_cb)
+        dbl2.addWidget(ddsl, 1,0,1,3)
+        dbl2.addWidget(QLabel('All'), 2,0)
+        sl = QLabel('Severely strained')
+        sl.setAlignment(Qt.AlignmentFlag.AlignVCenter|Qt.AlignmentFlag.AlignRight)
+        dbl2.addWidget(sl,2,2)
+        dl.addLayout(dbl2)
+
         dtb = self.distance_restraint_toolbar = QToolBar()
         dtb.setIconSize(DEFAULT_ICON_SIZE)
         dtb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
@@ -93,6 +107,11 @@ class ManageRestraintsDialog(UI_Panel_Base):
         self._chimerax_trigger_handlers.append(
             self.session.triggers.add_handler(ADD_MODELS, self._model_add_or_remove_cb)
         )
+
+    def _distance_display_slider_value_changed_cb(self, value):
+        from chimerax.core.commands import run
+        run(self.session, f'isolde adj dist #{self.isolde.selected_model.id_string} displayThreshold {value/50} groupName "{self.active_distance_restraint_group.name}"', log=False)
+
 
     def _distance_restraint_color_button_cb(self):
         dcb = self.distance_restraint_color_button
@@ -148,12 +167,18 @@ class ManageRestraintsDialog(UI_Panel_Base):
         if group is None:
             db.setText('(None)')
             self.distance_restraint_color_button.setEnabled(False)
+            self.distance_restraint_display_threshold_slider.setEnabled(False)
         else:
             db.setText(group.name)
-            self.distance_restraint_color_button.setEnabled(True)
+            drcb = self.distance_restraint_color_button
+            drcb.setEnabled(True)            
             from ..util import slot_disconnected
-            with slot_disconnected(self.distance_restraint_color_button.color_changed, self._distance_restraint_color_button_cb):
-                self.distance_restraint_color_button.color=group.get_colormap()
+            with slot_disconnected(drcb.color_changed, self._distance_restraint_color_button_cb):
+                drcb.color=group.get_colormap()
+            ddsl = self.distance_restraint_display_threshold_slider
+            ddsl.setEnabled(True)
+            with slot_disconnected(ddsl.valueChanged, self._distance_display_slider_value_changed_cb):
+                ddsl.setValue(min(max(int(self.active_distance_restraint_group.display_threshold*50),0),100))
         self._set_distance_restraint_tb_state()
     
     active_distance_restraint_group = property(_get_active_distance_restraint_group, _set_active_distance_restraint_group)
