@@ -16,3 +16,4 @@ situation.)*
     bulk_fitting/bulk_fitting
     alphafold/from_scratch/from_scratch
     alphafold/reference_model/af2_reference
+    alphafold/multimer/alphafold_multimer_cryoem
