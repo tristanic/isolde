@@ -148,6 +148,25 @@ proper_dihedral_restraint_mgr_set_colors(void *mgr, uint8_t *maxc, uint8_t *midc
     }
 }
 
+extern "C" EXPORT void
+proper_dihedral_restraint_mgr_colors(void *mgr, uint8_t *maxc, uint8_t *midc, uint8_t *minc)
+{
+    ProperDihedralRestraintMgr *m = static_cast<ProperDihedralRestraintMgr *>(mgr);
+    try {
+        auto cmap = m->colormap()->mapped_colors();
+    for (size_t i=0; i<4; ++i)
+        {
+            minc[i] = int(cmap[0][i]*255.0);
+            midc[i] = int(cmap[1][i]*255.0);
+            maxc[i] = int(cmap[2][i]*255.0);
+        }
+        } catch (...) {
+        molc_error();
+    }
+}
+
+
+
 extern "C" EXPORT size_t
 proper_dihedral_restraint_mgr_num_restraints(void *mgr)
 {
@@ -259,6 +278,24 @@ adaptive_dihedral_restraint_mgr_set_colors(void *mgr, uint8_t *maxc, uint8_t *mi
         molc_error();
     }
 }
+
+extern "C" EXPORT void
+adaptive_dihedral_restraint_mgr_colors(void *mgr, uint8_t *maxc, uint8_t *midc, uint8_t *minc)
+{
+    AdaptiveDihedralRestraintMgr *m = static_cast<AdaptiveDihedralRestraintMgr *>(mgr);
+    try {
+        auto cmap = m->colormap()->mapped_colors();
+    for (size_t i=0; i<4; ++i)
+        {
+            minc[i] = int(cmap[0][i]*255.0);
+            midc[i] = int(cmap[1][i]*255.0);
+            maxc[i] = int(cmap[2][i]*255.0);
+        }
+        } catch (...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT size_t
 adaptive_dihedral_restraint_mgr_num_restraints(void *mgr)

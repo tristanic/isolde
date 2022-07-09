@@ -3226,12 +3226,19 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
 
         super().__init__(model, class_name, c_function_prefix,
             singular_getter, plural_getter, c_pointer=c_pointer,
-            auto_add_to_session=auto_add_to_session)
+            auto_add_to_session=False)
         self.name = name
-        self.set_colormap(self._DEFAULT_MIN_COLOR, self._DEFAULT_TARGET_COLOR, self._DEFAULT_MAX_COLOR)
+        self.set_default_colormap(update_graphics=False)
+        if auto_add_to_session:
+            model.add([self])
 
 
-    def set_colormap(self, min_color, mid_color, max_color):
+
+    def set_default_colormap(self, update_graphics=True):
+        self.set_colormap(self._DEFAULT_MIN_COLOR, self._DEFAULT_TARGET_COLOR, self._DEFAULT_MAX_COLOR, update_graphics=update_graphics)
+
+
+    def set_colormap(self, min_color, mid_color, max_color, update_graphics=True):
         '''
         Set the color scale for automatically coloring the restraint
         pseudobonds. Colors will be interpolated from min_color to mid_color
@@ -3254,7 +3261,8 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
         colors[1,:] = mid_color
         colors[2,:] = min_color
         cf(self._c_pointer, pointer(colors))
-        self.update_graphics()
+        if update_graphics:
+            self.update_graphics()
 
     def get_colormap(self):
         '''
@@ -3623,7 +3631,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
     def __init__(self, model, c_pointer = None, auto_add_to_session=True,
             display_name='Proper Dihedral Restraints'):
         super().__init__(display_name, model, c_pointer)
-        self.set_default_colors()
+        self.set_default_colors(update_graphics=False)
         self._update_needed = True
         self._prepare_drawings()
         self._last_visibles = None
@@ -3971,15 +3979,15 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
             ret = ctypes.py_object)
         return self._ARRAY_GETTER(f(self._c_pointer))
 
-    def set_default_colors(self):
+    def set_default_colors(self, update_graphics=True):
         '''
         Set the colour scale for validation indicators back to their defaults.
         '''
         from .validation.constants import rotarama_defaults as val_defaults
         self.set_color_scale(val_defaults.OUTLIER_COLOR, val_defaults.ALLOWED_COLOR,
-             val_defaults.MAX_FAVORED_COLOR)
+             val_defaults.MAX_FAVORED_COLOR, update_graphics=update_graphics)
 
-    def set_color_scale(self, max_c, mid_c, min_c):
+    def set_color_scale(self, max_c, mid_c, min_c, update_graphics=True):
         '''
         Set a custom colour scale for the validation indicators.
 
@@ -4005,6 +4013,19 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
             if len(arr) != 4:
                 raise TypeError('Each color should be an array of 4 values in the range (0,255)')
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+        if update_graphics:
+            self.update_graphics()
+
+    def get_color_scale(self):
+        maxc = numpy.empty(4, uint8)
+        midc = numpy.empty(4, uint8)
+        minc = numpy.empty(4, uint8)
+        f = c_function(self._C_FUNCTION_PREFIX+'_colors',
+            args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+                  ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
+        f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
+        return maxc, midc, minc    
+        
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
@@ -4151,8 +4172,13 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
             auto_add_to_session=auto_add_to_session,
             display_name = 'Adaptive Dihedral Restraints')
 
+    def set_default_colors(self, update_graphics=True):
+        '''
+        Set the colour scale for validation indicators back to their defaults.
+        '''
         self.set_color_scale(self.DEFAULT_MAX_COLOR, self.DEFAULT_MID_COLOR,
-        self.DEFAULT_MIN_COLOR)
+             self.DEFAULT_MIN_COLOR, update_graphics=update_graphics)
+
 
     @staticmethod
     def angle_range_to_kappa(angle_range):
