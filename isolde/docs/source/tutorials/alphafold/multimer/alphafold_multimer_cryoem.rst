@@ -3,17 +3,17 @@
 Building Into CryoEM Maps with AlphaFold Models
 ===============================================
 
-**(NOTE: Most links on this page will only work correctly when the page is
+**NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. Unless the necessary files have been
 pre-fetched you will also need to be connected to the Internet. Please close any
-open models before starting this tutorial.)**
+open models before starting this tutorial.**
 
-**(The instructions in the tutorial below assume you are using a wired mouse
+**The instructions in the tutorial below assume you are using a wired mouse
 with a scroll wheel doubling as the middle mouse button. While everything
 should also work well on touchpads in Windows and Linux, support for Apple's
 multi-touch touchpad is a work in progress. Known issues with the latter are
 that clipping planes will not update when zooming, and recontouring of maps is
-not possible.)**
+not possible.**
 
 
 Tutorial: Fitting a new cryoEM map starting from an AlphaFold multimer prediction
@@ -24,14 +24,14 @@ Tutorial: Fitting a new cryoEM map starting from an AlphaFold multimer predictio
 .. toctree::
     :maxdepth: 2
 
-**(This tutorial will write a number of files to your current working directory. To 
+**This tutorial will write a number of files to your current working directory. To 
 avoid clutter and confusion it is best if you change to a fresh directory first, using
-the command: ** 
+the command:** 
 
 cd browse 
 
 **Due to the way ChimeraX tutorials are implemented you will 
-need to enter this command in the ChimeraX command line yourself.)**
+need to enter this command in the ChimeraX command line yourself.**
 
 
 Historically, the typical approach to building an atomic model into a new crystallographic
@@ -180,7 +180,9 @@ You can limit *fitMap* to only consider this domain with:
 
 __ cxcmd:fit\ #3/C:50-230\ in\ #2
 
-Don't worry that the fit isn't perfect - after all, that's what we're here to fix! But if at least part of the model is well-fitted,
+Don't worry that the fit isn't perfect - after all, that's what we're here to fix! But credit where it's due - 
+considering that when AlphaFold2 was trained there was no experimental structure for this complex (or any homologue)
+this model is *amazingly* good. Anyway, if at least part of the model is well-fitted,
 that makes everything following that much easier.
 
 At this point, it's finally time to initialise this model for ISOLDE. First, let's close the experimental model:
@@ -203,6 +205,49 @@ __ cxcmd:isolde\ select\ #3
 
 A dialog box will appear noting that the model looks like it should have disulfide bonds that aren't specified 
 in the metadata and asking if you wish to create them. Choose "Yes". 
+
+**NOTE: when first prepping a model, ISOLDE temporarily removes it from the ChimeraX session before returning it
+under the control of a higher-level "manager" with the first available model ID. In this case, the working model 
+now becomes model #1.**
+
+Before we associate the map with the model and start rebuilding, it would be a good idea to take a quick look 
+at its quality. For clarity, let's temporarily hide the map:
+
+`hide #2 model`__
+
+__cxcmd:hide\ #2\ model
+
+Now, go to ISOLDE's "Validate" tab and open the Clashes widget.
+
+.. figure:: images/model_1_clashes.png
+
+Hmmm - that's not a good sign. A carbon-carbon overlap of 2.5 Angstroms means the atoms are occupying almost 
+the same position, which could be a real headache to untangle. Click on the top entry in the table to take a 
+closer look. 
+
+.. figure:: images/bad_clash.jpg
+
+Ugh. That's not good. This looks like an instance of one of the known deficiencies of AlphaFold: when two stretches
+(a) are distant in sequence space and (b) have no mutual information controlling their relative positions, in key
+stages of the algorithm they don't "know" about each other and can end up overlapping like this.
+
+While a situation like this *is* recoverable with judicious use of the "isolde ignore" command (excluding one of the 
+offending stretches from simulation while clearing the other), let's see if we can avoid the issue by using the second 
+model instead. Go ahead and open that ("7drt_20b0f_unrelaxed_rank_2_model_5.pdb") with the File/Open dialog, and align
+it to the working model:
+
+`match #3 to #1`__
+
+__ cxcmd:match\ #3\ to\ #1
+
+You might find it easier to compare if you temporarily hide all atoms:
+
+`hide #1`__
+
+__ cxcmd:hide\ #1
+
+.. figure:: images/model_2_no_clash.jpg
+  
 
 
 
