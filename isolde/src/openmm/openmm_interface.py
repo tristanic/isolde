@@ -767,7 +767,8 @@ class Sim_Manager:
         adrms = self.adaptive_distance_restraint_mgrs = sx.get_all_adaptive_distance_restraint_mgrs(m)
         if not len(adrms):
             # Always maintain at least the default manager
-            self.adaptive_distance_restraint_mgrs = [sx.get_adaptive_distance_restraint_mgr(m)]
+            from chimerax.isolde.restraints.restraint_utils import DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
+            self.adaptive_distance_restraint_mgrs = [sx.get_adaptive_distance_restraint_mgr(m, DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME)]
 
     def _initialize_restraints(self, update_handlers):
         sh = self.sim_handler
