@@ -135,6 +135,7 @@ class Isolde():
     SIMULATION_RESUMED = 'simulation resumed'
     UNPARAMETERISED_RESIDUE = 'unparameterised residue'
     ISOLDE_CLOSED = 'isolde closed'
+    GUI_STARTED = 'gui started'
     trigger_names = (
         SELECTED_MODEL_CHANGED, # Changed the master model selection
         SIMULATION_STARTED,
@@ -142,7 +143,8 @@ class Isolde():
         SIMULATION_PAUSED,
         SIMULATION_RESUMED,
         UNPARAMETERISED_RESIDUE,
-        ISOLDE_CLOSED
+        ISOLDE_CLOSED,
+        GUI_STARTED
         )
 
     def __init__(self, session, gui=None):

@@ -50,6 +50,8 @@ class ISOLDE_ToolUI(ToolInstance):
         #     placement='side'
         tw.manage(placement=None, allowed_areas=Qt.LeftDockWidgetArea|Qt.RightDockWidgetArea)
         tw.shrink_to_fit()
+        isolde = self.session.isolde
+        isolde.triggers.activate_trigger(isolde.GUI_STARTED, None)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
     

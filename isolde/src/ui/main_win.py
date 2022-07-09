@@ -164,6 +164,43 @@ class IsoldeMainWin(MainToolWindow):
             h.remove()
         for panel in self._gui_panels:
             panel.cleanup()
+    
+    def _check_for_unspecified_disulfides(self, *_):
+        m = self.isolde.selected_model
+        from chimerax.core.triggerset import DEREGISTER
+        if m is None:
+            return DEREGISTER
+        from chimerax.isolde.atomic.building.build_utils import current_and_possible_disulfides
+        current, possible, ambiguous = current_and_possible_disulfides(m, cutoff_distance=2.3)
+        from ..dialog import generic_warning, choice_warning
+        if len(possible):
+            warn_str = ('The geometry of this model suggests the presence of disulfide bonds, but they have not been '
+                'specified in the model metadata. Would you like to create them now?')
+            result = choice_warning(warn_str, yesno=True)
+            if result:
+                from chimerax.isolde.atomic.building.build_utils import create_disulfide
+                for cys_pair in possible:
+                    create_disulfide(*cys_pair)
+                self.session.logger.info('ISOLDE: created disulfide bonds between the following residues: \n{}'.format(
+                    '; '.join(['-'.join(['{}{}{}'.format (c.chain_id, c.number, c.insertion_code) for c in p]) for p in possible])
+                ))
+                if len(ambiguous):
+                    from chimerax.atomic import concise_residue_spec
+                    warn_base = ('The following groups of cysteines are clustered too close to automatically assign disulfide bonding and '
+                        'should be checked manually:\n{}')
+                    def residue_string(residues):
+                        return ', '.join(['{}{}{}'.format(c.chain_id, c.number,c.insertion_code) for c in residues])
+                    warn_str = warn_base.format('; '.join([residue_string(residues) for residues in ambiguous]))
+                    generic_warning(warn_str)
+                    log_str = 'ISOLDE warning: ' + warn_base.format(
+                        '<br>'+'<br>'.join([f'<a href="cxcmd:view {concise_residue_spec(self.session, residues)}">{residue_string(residues)}</a>' for residues in ambiguous])
+                    )
+                    self.session.logger.warning(log_str, is_html=True)
+        return DEREGISTER
+
+
+
+
 
     ###
     # ISOLDE event callbacks
@@ -171,6 +208,7 @@ class IsoldeMainWin(MainToolWindow):
 
     def _selected_model_changed_cb(self, trigger_name, m):
         self._update_model_menu_button(m)
+        self.session.triggers.add_handler('new frame', self._check_for_unspecified_disulfides)
     
     def _update_model_menu_button(self, m=None):
         mmb = self.master_model_menu_button

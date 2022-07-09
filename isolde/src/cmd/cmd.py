@@ -24,7 +24,7 @@ def isolde_start(session):
     ''' Start the ISOLDE GUI '''
     if not session.ui.is_gui:
         session.logger.warning("Sorry, ISOLDE currently requires ChimeraX to be in GUI mode")
-        return
+        return False
 
     get_singleton(session)
     return session.isolde
@@ -41,8 +41,16 @@ def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
         sp.device_index=gpu_device_index
 
 def isolde_select(session, model):
-    isolde = isolde_start(session)
-    isolde.selected_model = model
+    isolde = getattr(session, 'isolde', None)
+    if isolde is not None:
+        isolde.selected_model = model
+    else:
+        isolde = isolde_start(session)
+        def select_model(*_, m=model):
+            isolde.selected_model=m
+            from chimerax.core.triggerset import DEREGISTER
+            return DEREGISTER
+        isolde.triggers.add_handler(isolde.GUI_STARTED, select_model)
 
 def isolde_sim(session, cmd, atoms=None, discard_to=None):
     '''
@@ -171,13 +179,34 @@ def isolde_stop_ignoring(session, residues=None):
     isolde_ignore(session, residues, ignore=False)
 
 
-def isolde_tutorial(session):
-    from chimerax.help_viewer import show_url
-    import pathlib
-    import os
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    fname = os.path.join(root_dir, '..', 'docs', 'user', 'tutorials', 'isolde.html')
-    show_url(session, pathlib.Path(fname).as_uri())
+def _prep_tut_dir(session, tut_name, source_dir):
+    import os, shutil
+    dest_dir = os.path.join(os.getcwd(), os.path.split(source_dir)[-1])
+    session.logger.info(f'Copying tutorial files from {source_dir} to {dest_dir}')
+    shutil.copytree(source_dir, dest_dir)
+    session.logger.info(f'ISOLDE: Tutorial files for {tut_name} copied to {dest_dir}')
+
+
+_tut_info = {
+    'alphafold_cryoem_multimer': ('AlphaFold-multimer 7drt', '7drt')
+}
+def isolde_tutorial(session, prep=None):
+    if prep is None:
+        from chimerax.help_viewer import show_url
+        import pathlib
+        import os
+        root_dir = os.path.dirname(os.path.abspath(__file__))
+        fname = os.path.join(root_dir, '..', 'docs', 'user', 'tutorials', 'isolde.html')
+        show_url(session, pathlib.Path(fname).as_uri())
+    else:
+        tut_info = _tut_info.get(prep, None)
+        if tut_info is None:
+            raise UserError(f'Unrecognised tutorial name! Should be one of {";".join(_tut_info.keys())}')
+        name, dirname = tut_info
+        from chimerax.isolde.demo_data import DEMO_DATA_BASE_DIR
+        import os
+        _prep_tut_dir(session, name, os.path.join(DEMO_DATA_BASE_DIR, dirname))
+        
 
 _available_demos = {
     'crystal_intro': (
@@ -341,6 +370,9 @@ def register_isolde(logger):
 
     def register_isolde_tutorial():
         desc = CmdDesc(
+            keyword=[
+                ('prep', StringArg),
+            ],
             synopsis='Load a help page with worked examples using ISOLDE'
         )
         register('isolde tutorial', desc, isolde_tutorial, logger=logger)
