@@ -47,6 +47,10 @@ def choice_warning(message, allow_dont_ask_again=False, yesno=False):
             if reply==QMessageBox.Ok:
                 return True, False
             return False, False
+    if yesno:
+        if reply == QMessageBox.Yes:
+            return True
+        return False
     if reply == QMessageBox.Ok:
         return True
     return False
