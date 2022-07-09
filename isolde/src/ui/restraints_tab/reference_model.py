@@ -205,7 +205,7 @@ class ReferenceModelDialog(UI_Panel_Base):
                     'database. If this fails or you wish to use a different PAE matrix, use the '
                     '"Load PAE matrix" button in ISOLDE\'s reference model restraints widget.')
                 from chimerax.core.commands import run
-                run(self.session, f'alphafold pae #{model.id_string} uniprot {uniprot_id}')
+                run(self.session, f'alphafold pae #{model.id_string} uniprot {uniprot_id} plot false')
 
     def _populate_detail_tree(self, *_):
         self.detail_tree.clear()
