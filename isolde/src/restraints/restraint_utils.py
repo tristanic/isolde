@@ -21,7 +21,7 @@ KAPPA_MAX=30
 
 from chimerax.core.errors import UserError
 
-DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME = 'Reference Model Restraints'
+DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME = 'Reference Distance Restraints'
 
 def restrain_torsions_to_template(session, template_residues, restrained_residues,
     restrain_backbone=True, restrain_sidechains=True,
@@ -527,7 +527,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
               was downloaded from the AlphaFold database, leave this argument as None and the relevant PAE
               matrix will be automatically fetched. Otherwise, the matrix should be a 2D Numpy array with entry (i,j) 
               equal to the PAE of residue number i relative to residue number j.
-        * group_name (default = "Reference Model Restraints"):
+        * group_name (default = "Reference Distance Restraints"):
             - allows for the generation of multiple independent groups of restraints. Each unique name will
               create a new group. 
 
