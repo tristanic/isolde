@@ -326,6 +326,7 @@ def current_and_possible_disulfides(model, cutoff_distance=3.0):
         if len(nearby) > 1:
             if len(nearby) > 2:
                 ambiguous.add(frozenset([a.residue for a in nearby]))
+                continue
             others = [a for a in nearby if a != s]
             for a in others:
                 if a in s.neighbors:
