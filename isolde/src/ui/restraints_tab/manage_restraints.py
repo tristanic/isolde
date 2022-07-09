@@ -1,5 +1,5 @@
 from ..collapse_button import CollapsibleArea
-from ..ui_base import DefaultSpacerItem, UI_Panel_Base, DefaultHLayout, DefaultVLayout
+from ..ui_base import UI_Panel_Base, DefaultHLayout, DefaultVLayout, HorizontalLine
 from Qt.QtWidgets import QLabel, QPushButton, QMenu, QToolBar, QSlider, QGridLayout
 from Qt.QtGui import QIcon
 from Qt.QtCore import Qt, QSize
@@ -7,7 +7,7 @@ from .. import icon_dir, DEFAULT_ICON_SIZE
 
 class ManageRestraintsPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui, **kwargs):
-        super().__init__(gui, parent, title="Manage Adaptive Restraints", **kwargs)
+        super().__init__(gui, parent, title="Manage/Release Adaptive Restraints", **kwargs)
         cd = self.content = ManageRestraintsDialog(session, isolde, gui, self)
         self.setContentLayout(cd.main_layout)
 
@@ -19,6 +19,7 @@ class ManageRestraintsDialog(UI_Panel_Base):
         mf = self.main_frame
         ml = self.main_layout = DefaultVLayout()
 
+        ### DISTANCE RESTRAINTS SECTION
         dl = DefaultVLayout()
         dbl1 = DefaultHLayout()
         dbl1.addWidget(QLabel('Distance restraint group: '))
@@ -28,7 +29,9 @@ class ManageRestraintsDialog(UI_Panel_Base):
         db.setMenu(dm)
         dm.aboutToShow.connect(self._update_distance_group_menu)
         dbl1.addWidget(db)
-        dbl1.addWidget(QLabel(' Color scheme: '))
+        dl.addLayout(dbl1)
+        dchl = DefaultHLayout()
+        dchl.addWidget(QLabel(' Colors: '))
 
         from ..color_button import ThreeColorButton
         bsize =(DEFAULT_ICON_SIZE.width(), DEFAULT_ICON_SIZE.height())
@@ -38,10 +41,21 @@ class ManageRestraintsDialog(UI_Panel_Base):
         )
         dcb.setToolTip('<span>Set the colour map for the current restraint group</span>')
         dcb.color_changed.connect(self._distance_restraint_color_button_cb)
-        dbl1.addWidget(dcb)
+        dchl.addWidget(dcb)
+        ddb = self.distance_default_color_button = QPushButton('Reset')
+        ddb.setToolTip('<span>Reset colour scheme to default</span>')
+        def set_distance_colors_to_default():
+            from ..util import slot_disconnected
+            group = self.active_distance_restraint_group
+            group.set_default_colormap()
+            with slot_disconnected(dcb.color_changed, self._distance_restraint_color_button_cb):
+                dcb.color=group.get_colormap()
 
-        dbl1.addStretch()
-        dl.addLayout(dbl1)
+
+        ddb.clicked.connect(set_distance_colors_to_default)
+        dchl.addWidget(ddb)
+        dchl.addStretch()
+        dl.addLayout(dchl)
 
         dbl2 = QGridLayout()
         dbl2.addWidget(QLabel('Display threshold'),0,0,1,1)
@@ -90,10 +104,59 @@ class ManageRestraintsDialog(UI_Panel_Base):
             QIcon(os.path.join(icon_dir, 'red-x-icon.png')),
             'Remove\nall'
         )
+        remd.setToolTip('<span>Completely remove (delete) this restraint group</span>')
         remd.triggered.connect(lambda *_: run(self.session, f'close #{self.active_distance_restraint_group.id_string}'))
 
 
         ml.addLayout(dl)
+        ml.addWidget(HorizontalLine())
+        ### TORSION RESTRAINTS SECTION
+        tl = DefaultVLayout()
+        tbl1 = DefaultHLayout()
+        tl.addLayout(tbl1)
+        tbl1.addWidget(QLabel('Adaptive Torsion Restraints  '))
+        tbl1.addWidget(QLabel('Colors: '))
+        tcb = self.torsion_restraint_color_button = ThreeColorButton(
+            max_size=bsize, min_size=bsize, direction='0-', has_alpha_channel=False,
+            titles=('Outlier','Allowed','Favoured')
+        )
+        tcb.color_changed.connect(self._torsion_restraint_button_color_cb)
+        tbl1.addWidget(tcb)
+        tdb = self.torsion_default_color_button = QPushButton('Reset')
+        def set_default_torsion_colors():
+            self.torsion_restraint_mgr.set_default_colors()
+            self._update_torsion_restraint_button()
+        tdb.clicked.connect(set_default_torsion_colors)
+        tbl1.addWidget(tdb)
+        tbl1.addStretch()
+
+        ttb = self.torsion_restraints_toolbar = QToolBar()
+        ttb.setIconSize(DEFAULT_ICON_SIZE)
+        ttb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+
+        rata = ttb.addAction(
+            QIcon(os.path.join(icon_dir, 'release_all_torsions.png')),
+            'Release\nall selected'
+        )
+        rata.setToolTip('<span>Release all torsion restraints on the selected residues</span>')
+        rata.triggered.connect(lambda *_:
+            run(self.session, f'isolde release torsions #{self.isolde.selected_model.id_string}&sel'))
+        
+        rsta = ttb.addAction(
+            QIcon(os.path.join(icon_dir, 'release_sidechain_torsions.png')),
+            'Release\nselected sidechains'
+        )
+        rsta.setToolTip('<span>Release sidechain torsion restraints on the selected residues</span>')
+        rsta.triggered.connect(lambda *_:
+        run(self.session, f'isolde release torsions #{self.isolde.selected_model.id_string} backbone f'))
+        remt = ttb.addAction(
+            QIcon(os.path.join(icon_dir, 'red-x-icon.png')),
+            'Remove\nall'
+        )
+        remt.setToolTip('<span>Completely remove all restraints</span>')
+        remt.triggered.connect(lambda *_: run(self.session, f'close #{self.torsion_restraint_mgr.id_string}'))
+        tl.addWidget(ttb)
+        ml.addLayout(tl)
         
         self.container.expanded.connect(self._expanded_cb)
         self._isolde_trigger_handlers.append(
@@ -113,11 +176,17 @@ class ManageRestraintsDialog(UI_Panel_Base):
         run(self.session, f'isolde adj dist #{self.isolde.selected_model.id_string} displayThreshold {value/50} groupName "{self.active_distance_restraint_group.name}"', log=False)
 
 
-    def _distance_restraint_color_button_cb(self):
+    def _distance_restraint_color_button_cb(self, *_):
         dcb = self.distance_restraint_color_button
         self.active_distance_restraint_group.set_colormap(*dcb.color)
 
     def _expanded_cb(self):
+        tm = self.torsion_restraint_mgr
+        if tm is None:
+            self.torsion_restraints_toolbar.setEnabled(False)            
+        else:
+            self.torsion_restraints_toolbar.setEnabled(True)
+        self._update_torsion_restraint_button()
         ag = self.active_distance_restraint_group
         if ag is not None and not ag.was_deleted and ag.parent==self.isolde.selected_model:
             return
@@ -139,6 +208,25 @@ class ManageRestraintsDialog(UI_Panel_Base):
             return []
         from chimerax.isolde.molobject import AdaptiveDistanceRestraintMgr
         return [dm for dm in m.child_models() if isinstance(dm, AdaptiveDistanceRestraintMgr)]
+
+    def _update_torsion_restraint_button(self):
+        btn = self.torsion_restraint_color_button
+        tmgr = self.torsion_restraint_mgr
+        if tmgr is None:
+            btn.setEnabled(False)
+            self.torsion_default_color_button.setEnabled(False)
+            return
+        btn.setEnabled(True)
+        self.torsion_default_color_button.setEnabled(True)
+        from ..util import slot_disconnected
+        if tmgr is not None:
+            with slot_disconnected(btn.color_changed, self._torsion_restraint_button_color_cb):
+                btn.color=tmgr.get_color_scale()
+                
+    
+    def _torsion_restraint_button_color_cb(self, *_):
+        tmgr = self.torsion_restraint_mgr
+        tmgr.set_color_scale(*self.torsion_restraint_color_button.color)
 
     def _set_distance_restraint_tb_state(self):
         dtb = self.distance_restraint_toolbar
@@ -167,6 +255,7 @@ class ManageRestraintsDialog(UI_Panel_Base):
         if group is None:
             db.setText('(None)')
             self.distance_restraint_color_button.setEnabled(False)
+            self.distance_default_color_button.setEnabled(False)
             self.distance_restraint_display_threshold_slider.setEnabled(False)
         else:
             db.setText(group.name)
@@ -179,9 +268,16 @@ class ManageRestraintsDialog(UI_Panel_Base):
             ddsl.setEnabled(True)
             with slot_disconnected(ddsl.valueChanged, self._distance_display_slider_value_changed_cb):
                 ddsl.setValue(min(max(int(self.active_distance_restraint_group.display_threshold*50),0),100))
+            self.distance_default_color_button.setEnabled(True)
         self._set_distance_restraint_tb_state()
     
     active_distance_restraint_group = property(_get_active_distance_restraint_group, _set_active_distance_restraint_group)
-        
+
+    @property
+    def torsion_restraint_mgr(self):
+        if self.isolde.selected_model is None:
+            return None
+        from chimerax.isolde import session_extensions as sx
+        return sx.get_adaptive_dihedral_restraint_mgr(self.isolde.selected_model)    
 
 
