@@ -26,6 +26,12 @@ else:
 import os
 _base_path = os.path.dirname(os.path.abspath(__file__))
 
+class HorizontalLine(QFrame):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setFrameShape(QFrame.Shape.HLine)
+        self.setFrameShadow(QFrame.Shadow.Sunken)
+
 class QDoubleSpinBox(QDoubleSpinBox_Base):
     def event(self, event):
         # Prevent return key presses from being forwarded on and triggering the command line
@@ -208,9 +214,8 @@ class IsoldeTab(QWidget):
         tab_widget.addTab(self, name)
         hl = DefaultHLayout()
         self.setLayout(hl)
-        sa = self.scroll_area = QScrollArea(self)
+        sa = self.scroll_area = VerticalScrollArea(self)
         hl.addWidget(sa)
-        sa.setWidgetResizable(True)
         mf = self.main_frame = QFrame(sa)
         mf.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
         ml = self.main_layout = DefaultVLayout()
@@ -227,3 +232,16 @@ class IsoldeTab(QWidget):
     def populate(self):
         ''' Override in derived classes to populate self.main_frame with widgets'''
         pass
+
+class VerticalScrollArea(QScrollArea):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setWidgetResizable(True)
+        self.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+    def eventFilter(self, object, event):
+        from Qt.QtCore import QEvent
+        w = self.widget()
+        if object==w and event==QEvent.Resize:
+            self.setMinimumWidth(w.minimumSizeHint().width()+self.verticalScrollBar.width())
+        return False
