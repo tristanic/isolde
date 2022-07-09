@@ -67,9 +67,9 @@ class RegisterShiftDialog(UI_Panel_Base):
         if not len(atoms):
             return
         if self.towards_c_terminus.isChecked():
-            direction = -1
-        else:
             direction = 1
+        else:
+            direction = -1
         n = self.num_residues_spin_box.value() * direction
         from chimerax.isolde.manipulations.register_shift import ProteinRegisterShifter
         shifter = self._shifter = ProteinRegisterShifter(self.session, self.isolde, atoms)
