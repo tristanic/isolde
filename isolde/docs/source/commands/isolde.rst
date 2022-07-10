@@ -421,6 +421,7 @@ ChimeraX menu, choosing the "Startup" tab and adding "isolde shorthand" to the b
 
 The current list of shorthand commands is as follows:
 
+=====  ===================================================
 Alias  Equivalent full command
 =====  ===================================================
 st     isolde step {arguments}
