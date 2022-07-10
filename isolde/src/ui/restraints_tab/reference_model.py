@@ -323,7 +323,7 @@ class ReferenceModelDialog(UI_Panel_Base):
             selected_file = dlg.selectedFiles()[0]
         if selected_file is not None:
             from chimerax.core.commands import run
-            run(self.session,f'alphafold pae #{self._current_reference.id_string} file {selected_file} plot false')
+            run(self.session,f'alphafold pae #{self._current_reference.id_string} file "{selected_file}" plot false')
         self._pae_assigned_check()
 
     def apply_restraints(self, selected_only = False):
