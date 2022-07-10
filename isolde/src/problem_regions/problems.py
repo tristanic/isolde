@@ -7,7 +7,7 @@ class ProblemAggregator:
             'Standard torsion restraints': self.get_torsion_restraint_problems,
             'Standard distance restraints': self.get_distance_restraint_problems,
             'Adaptive torsion restraints': self.get_adaptive_torsion_restraint_problems,
-            'Adaptive distance restraints': self.get_adaptive_distance_restraint_problems,
+            'Reference distance restraints': self.get_adaptive_distance_restraint_problems,
         }
 
         self._validation_problem_getters = {
@@ -27,7 +27,7 @@ class ProblemAggregator:
         'Standard torsion restraints': ProperDihedralRestraint,
         'Standard distance restraints': DistanceRestraint,
         'Adaptive torsion restraints': AdaptiveDihedralRestraint,
-        'Adaptive distance restraints': AdaptiveDistanceRestraint,
+        'Reference distance restraints': AdaptiveDistanceRestraint,
         'Protein sidechains': Rotamer,
         'Protein backbone': Rama,
         'Clashes': Clash
@@ -112,7 +112,8 @@ class ProblemAggregator:
     @staticmethod
     def get_adaptive_distance_restraint_problems(structure):
         from chimerax.isolde import session_extensions as sx
-        drm = sx.get_adaptive_distance_restraint_mgr(structure, create=True)
+        from chimerax.isolde.restraints.restraint_utils import DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
+        drm = sx.get_adaptive_distance_restraint_mgr(structure, create=True, name=DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME)
         distances = drm.all_restraints
         distances = distances[distances.enableds]
         return distances[distances.unsatisfieds]
