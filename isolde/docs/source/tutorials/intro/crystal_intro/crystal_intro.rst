@@ -808,6 +808,15 @@ __ cxcmd:save\ ~/Desktop/isolde_tutorial.mtz\ #1
 If you have Phenix installed, you can prepare input files for it with my recommended
 refinement settings with:
 
-`isolde write phenixRef #1`__
+*isolde write phenixRef #1*
 
-__ cxcmd:isolde\ write\ phenixRef\ #1
+This is not a clickable command in the tutorial, since that would write the resulting 
+files into the **tutorial** directory rather than your current working directory. The 
+command provides various extra options - do
+
+`usage isolde write`__
+
+__ cxcmd:usage\ isolde\ write
+
+\... for more details.
+
