@@ -182,9 +182,14 @@ def isolde_stop_ignoring(session, residues=None):
 def _prep_tut_dir(session, tut_name, source_dir):
     import os, shutil
     dest_dir = os.path.join(os.getcwd(), os.path.split(source_dir)[-1])
-    session.logger.info(f'Copying tutorial files from {source_dir} to {dest_dir}')
     shutil.copytree(source_dir, dest_dir)
     session.logger.info(f'ISOLDE: Tutorial files for {tut_name} copied to {dest_dir}')
+    def cd_on_next_new_frame(*_):
+        from chimerax.core.commands import run
+        run(session, f'cd "{dest_dir}"', log=False)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+    session.triggers.add_handler('new frame', cd_on_next_new_frame)
 
 
 _tut_info = {
