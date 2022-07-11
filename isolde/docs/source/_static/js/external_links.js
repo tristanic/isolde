@@ -1,3 +1,3 @@
 $(document).ready(function () {
-  $('a[href^="http://"], a[href^="https://"]').not('a[class*=internal]').attr('target', '_blank');
+  $('a[href^="http://"], a[href^="https://"], a[href^="help:"]').not('a[class*=internal]').attr('target', '_blank');
 });
