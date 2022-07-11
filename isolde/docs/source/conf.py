@@ -98,6 +98,14 @@ html_theme = 'alabaster'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+html_js_files = [
+    'js/external_links.js', # Make links to external sites open in a new tab
+]
+
+html_css_files = [
+    'css/custom.css', # Add an arrow indicator to external links
+]
+
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
 #

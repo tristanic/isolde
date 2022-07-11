@@ -1,0 +1,7 @@
+a.reference.external:not([href*='cxcmd']):after {
+    content: '\2197';
+}
+a[href^='cxcmd']:before {
+    content: '\25B6';
+    padding-right: 5px;
+}
