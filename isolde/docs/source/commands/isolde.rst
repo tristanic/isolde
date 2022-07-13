@@ -446,10 +446,14 @@ cs     clipper set contourSensitivity {arguments}
 
 ..
   Because Sphinx makes all anchors lowercase whereas the links in the ChimeraX log are camelCase.
+  Also, to provide a generic link to "isolde write"
 
 .. raw:: html
 
   <span id="write-phenixRefineInput"></span>
+  <span id="write"></span>
+
+
 
 .. _`write phenixRefineInput`:
 

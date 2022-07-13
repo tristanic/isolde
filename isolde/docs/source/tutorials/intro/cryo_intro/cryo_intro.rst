@@ -23,12 +23,12 @@ Tutorial: Diagnosing and rebuilding errors in a high-resolution cryo-EM model
     :maxdepth: 2
 
 With the advent of the "resolution revolution" in electron cryo-microscopy,
-maps derived from this method have gone from fuzzy blobs only suitable for
+maps derived from this method went from fuzzy blobs only suitable for
 rigid-body docking or very tightly restrained flexible fitting to near-atomic
 resolutions amenable to *ab initio* model building methods. With (in the best
 cases) nearly every sidechain clearly and unambiguously resolved and no
-crystallographic phase problem to solve, it is easy to see why cryo-EM is
-rapidly gaining in popularity - particularly for handling of challenging targets
+crystallographic phase problem to solve, it is easy to see why cryo-EM
+rapidly gained in popularity - particularly for handling of challenging targets
 previously intractable to crystallisation. Perhaps the biggest feature setting
 cryo-EM apart from crystallography is that cryo-EM maps are independent of the
 atomic model, making model-building and refinement somewhat more
@@ -68,11 +68,11 @@ behaviour to diverge from that of the real-world molecule.
 
 In addition to the above, I would also like to add the disclaimer that the
 analysis below should not be construed as any form of critique of the *authors*
-of this model. At the time of writing, 6out is in fact among the best models in
+of this model. At the time this tutorial was originally written, 6out was in fact among the best models in
 the world for its resolution range (whether crystallographic or cryo-EM),
 produced by a highly-experienced team using state-of-the-art methods. In fact,
-using the same tools and techniques as  the authors of this model I am quite
-certain that I could not have done a  better job! Rather, the key take-home
+using the same tools and techniques as the authors of this model I am quite
+certain that I could not have done a better job! Rather, the key take-home
 message is one that those experienced in the field already know well: as the
 resolution of a map gets worse, the amount of prior information needed steadily
 increases. In ISOLDE's case, this information is encoded in the AMBER molecular
@@ -103,7 +103,7 @@ This should give you a scene looking something like this:
 This view is great for an overview of your model, but when model building we
 really want to get down amongst the weeds - that is, navigating *inside* the
 model at the atom-to-residue scale. This requires a specialised view mode. Try
-typing the following command:
+using the following command:
 
 `clipper assoc #2 to #1`__
 
@@ -116,8 +116,7 @@ This achieves two things. Most obviously, it sets up a new viewing mode:
 What is *not* immediately obvious is that this also rearranges the model and
 map in the Models layout, to tell ISOLDE that we want to be fitting the former
 into the latter. *(NOTE: if ISOLDE is already open you can achieve the same
-effect using the "Associate real-space map with current model" button on
-ISOLDE's Sim Settings tab)*.
+effect using the "Add map(s) to working model" widget on ISOLDE's General tab)*.
 
 To get a feel for this mode, try scrolling in using the mouse scroll wheel:
 
@@ -202,20 +201,19 @@ __ cxcmd:set\ bgColor\ white
 
 Map representations, meanwhile, can be adjusted either via ChimeraX's Map tab
 (use caution: these buttons will act on any selected maps, or all maps if no
-maps are explicitly selected), via the Volume Viewer, or via the "Show map
-settings dialogue" button on ISOLDE's "Sim settings" tab. Let's look at what the
+maps are explicitly selected), via the Volume Viewer, or via the "Non-crystallographic
+Map Settings" button on ISOLDE's "General" tab. Let's look at what the
 latter gives you:
 
 .. figure:: images/map_settings_dialog.png
 
-As well as allowing map-by-map control over visualisation style and colour via
-the buttons at bottom, this is where you tell ISOLDE whether to use a map as
-a molecular dynamics flexible fitting (MDFF) potential and if so, how strongly
-it should pull on the atoms.
+As well as allowing map-by-map control over visualisation style and colour, this
+is where you tell ISOLDE whether to use a map as a molecular dynamics flexible
+fitting (MDFF) potential and if so, how strongly it should pull on the atoms.
 
 *(Note: only maps that have been associated with the model via the "clipper
-assoc"  command or the "Associate real-space map with current model" button
-will appear in this drop-down menu)*
+assoc" command or the "Add map(s) to working model" widget will appear in this
+drop-down menu)*
 
 All real-space (i.e. non-crystallographic) maps are enabled for MDFF by default,
 and ISOLDE chooses a reasonable weight based on the map gradients in the
@@ -243,17 +241,9 @@ the ChimeraX command:
 
 __ cxcmd:addh
 
-*(NOTE: this does not always work correctly for ligands, particularly when the
-starting geometry is poor. Strategies to deal with this are under development.)*
-
 While important to the MD force field, most non-polar hydrogens are fairly
 uninteresting for model building purposes and only serve to clutter up the
-display. You can hide them (leaving the more important polar hydrogens
-displayed) using the command:
-
-`hide HC`__
-
-__ cxcmd:hide\ HC
+display. Hence, they are hidden by default. 
 
 Restraining waters
 ~~~~~~~~~~~~~~~~~~
@@ -277,11 +267,11 @@ __ cxcmd:isolde\ restrain\ ligands\ #1
 For each ligand with three or fewer heavy atoms, distance restraints will be
 added to surrounding heavy polar atoms within 3Å. If fewer than three distance
 restraints are created, the ligand will additionally be pinned to its current
-position with a distance restraint. These restraints are quite "soft" - just
-enough to prevent the ligand from flying  away, while still allowing substantial
-flexibility in case the starting geometry is poor. Restraints on individual
-ligands can be readily adjusted or removed  via ISOLDE's Rebuild tab (which
-we'll visit in earnest later).
+position. These restraints are quite "soft" - just enough to prevent the ligand
+from flying  away, while still allowing substantial flexibility in case the
+starting geometry is poor. Restraints on individual ligands can be readily
+adjusted or removed  via ISOLDE's Rebuild tab (which we'll visit in earnest
+later).
 
 Before we go ahead and start a simulation, let's take a quick look at ISOLDE's
 Validate tab. First, show the Ramachandran plot:
@@ -298,11 +288,11 @@ disproportionate number of residues clustering right on the border of the
 contour). These are some of the artefacts introduced by Ramachandran restraints,
 which can obscure the true picture of the model.
 
-While we're here, also have a look at the "Rotamers" panel. While there is a
+While we're here, also have a look at the "Rotamer Validation" panel. While there is a
 short list of 32 marginal rotamers, none are flagged as true *outliers* - that
 is, with a prior probability of less than 0.05%.
 
-Close the Rotamers panel, switch back to the Ramachandran plot and set it to
+Close the Rotamer Validation panel, switch back to the Ramachandran plot and set it to
 view the "Isoleucine or valine residues" subset, and let's watch what happens
 when we go ahead and start a simulation. First, select the  whole model:
 
@@ -310,20 +300,19 @@ when we go ahead and start a simulation. First, select the  whole model:
 
 __ cxcmd:select\ #1
 
-... and get a simulation started by either clicking ISOLDE's blue play button or
+\... and get a simulation started by either clicking ISOLDE's blue play button 
+(in the ISOLDE tab on the ribbon menu at the top of the ChimeraX screen) or
 using the command:
 
 `isolde sim start sel`__
 
 __ cxcmd:isolde\ sim\ start\ sel
 
-How long this takes will depend on your hardware. On a system with a strong GPU
-(e.g. a Nvidia GTX1070 or better) the model should begin moving in about 20
-seconds. On my MacBook Air it takes about 2 minutes. Note that under most
-circumstances you only really need to simulate the *entire* model twice: once
-at the start to allow the energy minimiser to alleviate clashes, and once at
-the end to settle it prior to writing coordinates for final refinement. For
-everything else you will want to work with smaller, more localised simulations.
+Note that under most circumstances you only really need to simulate the *entire*
+model twice: once at the start to allow the energy minimiser to alleviate
+clashes, and once at the end to settle it prior to writing coordinates for final
+refinement. For everything else you will want to work with smaller, more
+localised simulations.
 
 Anyway, back to the task at hand. Once the model starts moving, you should see
 the Ramachandran plot quickly go from this:
@@ -342,13 +331,9 @@ them will centre the view on one of these two residues, but which one ISOLDE
 chooses will be somewhat random. To specify exactly which residue to view, use
 ChimeraX's command line:
 
-`cview /A:57`__
+`view /A:57`__
 
-__ cxcmd:cview\ \/A:57
-
-*(NOTE: the "cview" command used here is very similar to the standard ChimeraX
-"view" command, except that the latter will leave the centre of rotation fixed
-on the centroid of the selection)*
+__ cxcmd:view\ \/A:57
 
 .. figure:: images/A57_rama_outlier.jpg
 
@@ -362,14 +347,14 @@ conformation just on the edge of favoured Ramachandran space. On starting a
 simulation, however, the oxygens repel each other creating a telltale outlier.
 In this case we can also see that the Ile57-Asn58 oxygen does not fit
 particularly well into the density, so the most obvious solution is to try
-flipping it using the tools on ISOLDE's Rebuild tab.
+flipping it using the "Flip peptide" button on the ISOLDE ribbon menu.
 
 If you're working on a machine with a strong GPU you could quite readily do this
 in the current whole-model simulation, but for better performance it's advisable
 to stop this one and start a more localised simulation encompassing just the
 problem area. Clicking ISOLDE's green "STOP" button will terminate the
-simulation while keeping the current coordinates (the adjacent buttons provide
-other options - hover over them for tooltips describing their functions).
+simulation while keeping the current coordinates (the red one will revert the 
+model to the state it was in when you started the simulation).
 
 Click the green "STOP" button, then *ctrl-click* on an atom in Ile57. Now click
 the play button. This will trigger ISOLDE to start a highly localised simulation
@@ -383,26 +368,23 @@ Before we actually go ahead and flip the bond, there is some minor housekeeping
 we need to do. The nitrogen in the Ile57-Asn58 peptide bond is involved in a
 distance restraint to a nearby water molecule (A662, for the record). This will
 no longer be valid once the bond is flipped, so it's best we remove it. Switch
-to ISOLDE's Rebuild tab and *ctrl-click* on the nitrogen. You will see a number
-of buttons become active, but the one we are interested in is right at the
-bottom:
-
-.. figure:: images/distance_restraints_remove.png
-
-Clicking the button containing the three red X's will disable all distance
-restraints involving this nitrogen. Since in this case there is only one, this
-will do the job we want. For finer control where an atom is involved in multiple
-distance restraints, you can *ctrl-shift-click* on the atom at the other end of
-the restraint then click the single X to the left of this button to selectively
-disable a single restraint.
+to ISOLDE's Restraints tab, expand the "Simple Distance Restraints" widget, and
+*ctrl-click* on the nitrogen. Click the "Release (any)" button - this will
+release all distance restraints involving any selected atoms. In this case we
+have just one atom selected with a single distance restraint, so it will do the
+job. For finer control where an atom is involved in multiple distance
+restraints, you can *ctrl-shift-click* on the atom at the other end of the
+restraint then click the "Release (internal)" button - this selectively 
+disables only restraints where both enpoint atoms are selected.
 
 Now it's time to flip that bond. ISOLDE uses a simple rule to decide which
 peptide bond will be flipped: each residue "owns" the peptide bond attached to
 its N-terminus. An easy way to remember is that if you select an alpha carbon,
 the directly-attached nitrogen is the one that will flip. *Ctrl-click* on the
-C-alpha atom of Asn58. The button we want is now in the top left of this panel:
+C-alpha atom of Asn58. The button we want now is the one labelled "Flip peptide"
+in the "Peptide bond" section of the top ribbon menu:
 
-.. figure:: images/selected_residue_panel.png
+.. figure:: images/flip_peptide_buttons.png
 
 Go ahead and click it, and take a look at the result:
 
@@ -417,10 +399,11 @@ Click the green stop button, and let's move on. *(NOTE: as an exercise you might
 consider applying the same correction to chains B and C.)*
 
 For another simple problem with a simple fix, hide the Ramachandran plot and
-show the Rotamers table. While before the simulation started there were no
-outliers listed here, now you should see at least a dozen. Scroll down until you
-find Trp A375 *(Since MD simulation involves some randomness, this may be some
-way down the list)*. Click on that row to take a closer look.
+show the Rotamer Validation widget. While before the simulation started there
+were no outliers listed here, now you should see around a dozen. Scroll down
+until you find Trp A375 *(Since MD simulation involves some randomness, this may
+be some way down the list, and may not be highlighted in red)*. Click on that
+row to take a closer look.
 
 .. figure:: images/trp_a375.jpg
 
@@ -428,32 +411,30 @@ This is a classic and surprisingly easy-to-make mistake with tryptophan
 residues. This residue has been fitted with its sidechain "backward" -
 approximately 180 degrees away from its true conformation. Note the pink marker
 adjacent to the CA-CB bond. This (an exclamation mark surrounded by a spiral
-when viewed side-on) is your visual indicator on the model that this is indeed a
-rotamer outlier. Like the Ramachandran indicators, it will change in real time
-as the model is adjusted.
+when viewed side-on) is your visual indicator on the model that this sidechain
+is in a disfavoured conformation. Like the Ramachandran indicators, it will
+change in real time as the model is adjusted.
 
-With this residue selected, go ahead and click play. Now, switch to the Rebuild
-tab and *ctrl-click* on any atom in the residue. To fix this, we want to use the
-tools in the second row of the selected residue panel:
+With this residue selected, go ahead and click "Start simulation". Now,
+*ctrl-click* on any atom in the residue to select it. This will enable the 
+"Preview next" button in the Rotamer section of ISOLDE's ribbon menu:
 
-.. figure:: images/selected_residue_panel.png
+.. figure:: images/rotamer_menu_section.png
 
-The two arrow buttons switch through previews of the most common rotamers
-(ordered by prior probability from most to least probable). Scrolling through
-should bring you to this near-perfect match to the density:
+As the name suggests, this button creates a preview of ideal rotamer coordinates for 
+the selected residue. Each click will bring up a new preview, in order from most 
+to least common. Keep clicking until you come to this near-perfect fit to the density:
 
 .. figure:: images/trp_a375_preview.jpg
 
-Now, look at the four buttons following the arrows. The first simply clears the
-preview. The second sets the atomic coordinates to match the preview, triggering
-a brief energy minimisation before the simulation moves on. *(NOTE: use this
-with care: do not click if the preview will introduce a severe clash - use the
-following button instead)* The third button sets restraints on the
-sidechain *chi* torsions to steer it smoothly towards the preview conformation,
-while the final button removes any restraints. Over on the right you will also
-see an "Auto" button - this is experimental and works in about 9 cases out of
-10. Feel free to try it if you like, but otherwise just use the second button
-to commit the preview and allow it to settle.
+Now, look at the two buttons to the right of "Preview next". The second sets the
+atomic coordinates to exactly match the preview, triggering a brief energy minimisation
+before the simulation moves on. *(NOTE: use this with care: do not click if the
+preview will introduce a severe clash - use the following button instead)* The
+third button sets restraints on the sidechain *chi* torsions to steer it
+smoothly towards the preview conformation. The final button in this panel 
+can be used to release those restraints later. In this case we're perfectly safe to 
+use the "Set coords" button, so do that now.
 
 If you zoom out a little, you'll see that the sidechain of His329 is stacked
 against that of Trp375 - but if you think about hydrogen bonding you'll see that
@@ -487,8 +468,14 @@ surroundings.
 Before we move on, don't forget to take a look at the equivalent residues on
 chains B and C!
 
-Switch back to the Validate tab, and have a look at the "General amino acid
-residues" Ramachandran plot. That cluster of marginal/outlying residues on the
+If you still have a simulation running, stop it now:
+
+`isolde sim stop`__
+
+__ cxcmd:isolde\ sim\ stop
+
+Switch back to the Validate tab, and re-launch the Ramachandran plot. Have a look 
+at the "General" plot. That cluster of marginal/outlying residues on the
 left looks suspicious. Let's take a closer look.
 
 .. figure:: images/Rama_general_383.png
@@ -497,19 +484,21 @@ This cluster corresponds to a somewhat weakly-resolved loop found on each of the
 three chains in the model. Of the three, the density around chain B seems the
 strongest, so let's focus on that one:
 
-`clipper spotlight; cview /B:383`__
+`view /B:383`__
 
-__ cxcmd:clipper\ spotlight;cview\ \/B:383
+__ view\ \/B:383
+
+.. figure:: images/ser_383_weak_density.jpg
 
 *(Note: in some subsequent run-throughs of this tutorial scenario, by the time
 I got to here the simulation had already rattled Ser383 in to place on its own.
 Don't be surprised if your model doesn't look exactly like the above)*
 
 The density here is rather weak and patchy, but good enough as it stands to show
-that this loop is probably mis-threaded (remember, you can adjust your contours
+that this loop is probably mis-modelled (remember, you can adjust your contours
 with *alt-scroll*). While it *is* possible to remodel using just this map, this
 provides us with the opportunity to try out a neat trick that often works well
-with cryo-EM maps. Many such maps are either somewhat over-sharpened or
+with cryo-EM density. Many such maps are either somewhat over-sharpened or
 sharpened to optimise the well-resolved regions at the expense of sites like
 this (although examples do exist of badly *under*-sharpened maps as well).
 Maps with a judicious amount of smoothing (or "blurring", if you prefer) are
@@ -519,18 +508,16 @@ you wish you can use external tools like *phenix.auto_sharpen* or *LocScale* to
 optimise the map sharpening, but ChimeraX provides a tool to smooth or sharpen
 the map to your specification:
 
-`volume gaussian #1 bfactor 50`__
+`volume gaussian #1 bfactor 150`__
 
-__ cxcmd:volume\ gaussian\ #1\ bfactor\ 50
+__ cxcmd:volume\ gaussian\ #1\ bfactor\ 150
 
-... will generate a new smoothed map (mathematically, the convolution of the
-existing one with a Gaussian with a standard deviation of about 0.8 Angstroms.
-Specifically, the B-factor is related to the standard deviation of the Gaussian
-as: :math:`B=8*pi^2*variance` (this is identical to the formalism describing
-atomic B-factors: in real space it describes how "blurred" they are; in
-reciprocal space it describes how quickly the Fourier amplitudes drop off with
-increasing resolution). Where it makes sense to do so, you can also sharpen maps
-by using a negative value for the bfactor argument.
+This will generate a new smoothed map (mathematically, the convolution of the 
+existing map with a Gaussian function). Specifically, the B-factor is related to
+the variance of the Gaussian as: :math:`B=8 \pi^2 \frac{\text{variance}}{3}`.
+This is identical to the formalism describing atomic B-factors: in real space it
+describes how "blurred" they are; in reciprocal space it describes how quickly
+the Fourier amplitudes drop off with increasing resolution. 
 
 You'll find that this command has also automatically hidden the existing map.
 Show it again by clicking the "closed-eye" icon in the top left of the Volume
@@ -538,8 +525,8 @@ Viewer:
 
 .. figure:: images/volume_hidden.png
 
-... and associate the new map with the model using either ISOLDE's "Associate
-real-space map with current model" button or
+\... and associate the new map with the model using either ISOLDE's "Add map(s) to
+working mode" widget or
 
 `clipper assoc #2 to #1`__
 
@@ -554,12 +541,12 @@ envelope is shown by the smoothed map at a low contour.
 
 .. figure:: images/sharp_and_smooth.jpg
 
-Switch back to ISOLDE's Rebuild tab, and *ctrl-click* on an atom from Pro382
-(at the tip of the loop). Now use the selection extension tool:
+Now *ctrl-click* on an atom from Pro382 (at the tip of the loop). Use the selection 
+tools from the bottom of the ISOLDE panel: 
 
 .. figure:: images/selection_extension.png
 
-... to extend the selection by two residues either side, and press play. The
+\... to extend the selection by two residues either side, and press play. The
 first and most obvious problem is that the Ser383 sidechain is pointing in the
 wrong direction (the pivot indicator is placed where it *should* be):
 
@@ -571,8 +558,8 @@ may find it more useful to do this with a temporary position restraint.  Pause
 the simulation, *ctrl-click* on the serine sidechain oxygen, then move the pivot
 indicator to  where you want it to go (don't worry about being too accurate -
 the restraint  will be quite soft, and we'll be removing it once it's settled
-anyway). Now,  find the panel second from the bottom of the Rebuild tab, and
-click the button containing an image of the pivot indicator. The result should
+anyway). Now, expand the "Position Restraints" widget at the top of ISOLDE's 
+Restraints tab, and click the button labelled "Pin to pivot". The result should
 look like this:
 
 .. figure:: images/position_restraint.png
@@ -601,10 +588,9 @@ nitrogen and the sidechain CD atom). While they are slightly less energetically
 favourable than the *trans* conformation and thus require some stabilisation
 from their local environment, this can be quite subtle. Let's go ahead and see
 if the *cis* conformation works better here. *Ctrl-click* to select the proline
-CA atom, then click the second button from top-left on the Selected residue
-panel:
+CA atom, then click the "Flip cis\<-\>trans" button on ISOLDE's ribbon menu:
 
-.. figure:: images/selected_residue_panel.png
+.. figure:: images/flip_peptide_buttons.png
 
 Give it a little time to settle (feel free to help with a little judicious
 tugging of atoms if you like, but in my case it was unnecessary), and...
@@ -619,23 +605,17 @@ done in well under a minute per chain).
 Don't stop your simulation just yet. Before we conclude the scripted portion of
 this tutorial, let's look at one more handy feature designed to let you "play"
 with tricky parts of the model without fear of causing irrevocable damage. Have
-a closer look at the simulation  control bar (the one with the play button):
+a closer look at the left hand side of ISOLDE's ribbon menu:
 
 .. figure:: ../../../tools/gui/images/simulation_controls.png
 
-We know what the play and (green) stop button do, but what are the others for?
-Well, the "Min/Equil" buttons switch between molecular dynamics and energy-
-minimisation modes (as it turns out, there are very few situations in which you
-actually need to touch these). The thermometer icon sets the simulation
-temperature - dial it down to zero if you want the atoms to settle to their
-local minimum then only move when disturbed; turn it up if you want the model
-to more actively explore conformational space (this is particularly useful
-early on when your model is fairly poor). However, the buttons we're most
-interested in are the green and red chequered flags.  Click the green one now.
-This saves a *checkpoint* - an instantaneous snapshot of the current simulation
-as it is right now, including the states of any interactively-applied
-restraints. Now, do something horrible to your model - just grab an atom with
-the right mouse button, and tug it hard out into empty space like this:
+We know what the play/pause and stop buttons do, but what are the others for?
+However, the buttons we're most interested in are the green and red chequered
+flags. Click the green one now. This saves a *checkpoint* - an instantaneous
+snapshot of the current simulation as it is right now, including the states of
+any interactively-applied restraints. Now, do something horrible to your model -
+just grab an atom with the right mouse button, and tug it hard out into empty
+space like this:
 
 .. figure:: images/gratuitous_violence.jpg
 
@@ -648,14 +628,6 @@ doesn't work out, come back and try something else. *(NOTES: a checkpoint is
 automatically saved upon starting a simulation. Checkpoints are only valid for
 the duration of the simulation they are created in.)*
 
-The two alternative red stop buttons are also related to the checkpointing
-function. The stop button pictured under a red chequered flag, as you might have
-guessed, stops the simulation and reverts to the last saved checkpoint. The
-plain red stop button, on the other hand, throws away everything that has
-happened in this simulation, returning the model to exactly the state it was
-before you pressed the play button. Pressing this will bring up a dialogue box
-asking you for confirmation before discarding your work.
-
 This concludes the scripted portion of this tutorial, covering the basic tools
 you'll find yourself using most in ISOLDE. There are others (in particular the
 secondary structure restraint and register shifting tools), but these only
@@ -667,22 +639,41 @@ There are still various other small issues worth addressing in this model, but
 why not have a browse through (either via the validation tab, or following
 a chain through end-to-end) and see what you can find for yourself?  If you want
 to take the latter approach (which is ultimately the best if you really want to
-be sure to find *everything*) the structure stepper tool can help:
+be sure to find *everything*) try starting with the command:
 
-.. figure:: images/structure_stepper.png
+`isolde stepTo first`__
 
-The arrow buttons take you forward and backward through the model in bite-sized
-chunks (two secondary structure elements plus their intervening loops at a
-time). If the Focus checkbox is checked, the view will refocus on the first
-residue of the current chunk. The chunk is selected, so if you encounter an
-issue just press play to begin a local simulation and correct it (to be
-efficient, go ahead and fix anything else you find in the same simulation). If
-at any time (outside of a running simulation) you wish to go back to the
-scrolling-sphere or "spotlight" visualisation mode, just click the button on the
-right. The stepper will remember where you left off, so you can pick up again
-whenever you want to. If you get lost or confused about the direction of the
-chain, remember that hovering your mouse over any atom will tell you its
-identity.
+__ cxcmd:isolde\ step\ first
+
+\... which, as the name might suggest, takes you to the first polymeric residue 
+in your model. Then, each successive `isolde step`__ command takes you to the 
+next residue along. ISOLDE will remember the last residue you stepped to, so don't
+be afraid to wander away if you need to.
+
+__ cxcmd:isolde\ step
+
+An extra tip: to cut down on typing some of the more long-winded commands, try 
+first using the command:
+
+`isolde shorthand`__
+
+__ cxcmd:isolde\ shorthand
+
+\... and checking the log for a list of new 2-4 character command aliases this 
+enables. Once you've done this, for the remainder of the session you can replace those
+"isolde step" commands with
+
+`st first`__
+
+__ cxcmd:st\ first
+
+and 
+
+`st`__
+
+__ cxcmd:st
+
+respectively.
 
 While going through, remember the very important rule: not every outlier is
 wrong, and *not* being an outlier doesn't make something *correct*. The ultimate
@@ -741,7 +732,8 @@ Ok, here are some of the things I found:
   oxygen. I'm actually rather surprised that this didn't happen on its own
   (don't be surprised if it did in your case), but a simple tug with the right
   mouse button gets it sitting stably. Note also the beautifully resolved but
-  unmodelled water site here.
+  unmodelled water site here - you can add one if you like with the command 
+  `isolde add water`_ or shorthand `aw`_ with no simulation running. 
 - incorrect rotamer at Ile A330 (*tt*, should be *mt*).
 - flipped peptide bond between His A337 and Ser A338
 - probably-incorrect rotamer at Thr A341 (modelled *p* conformation is favoured,
@@ -782,3 +774,7 @@ strong representation of the underlying physics, and fast feedback to tell us
 where things are wrong.
 
 __ cxcmd:volume\ gaussian\ #1.1.1.1\ sDev\ 1.5
+
+.. _isolde add water: cxcmd:isolde\ add\ water
+
+.. _aw: cxcmd:aw

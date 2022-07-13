@@ -15,6 +15,27 @@ multi-touch touchpad is a work in progress. Known issues with the latter are
 that clipping planes will not update when zooming, and recontouring of maps is
 not possible.**
 
+If you wish to leave this tutorial part-way through and return to it later, you
+can save the state (all open models, maps, restraints etc.) to a ChimeraX session 
+file via the File/Save menu option or with the command:
+
+*save tutorial_session.cxs*
+
+You can of course also save the working model to PDB or mmCIF - again, via the 
+menu or with your choice of the below commands:
+
+*save model.pdb #1*
+
+*save model.cif #1*
+
+To save without hydrogens, instead do:
+
+*sel ~H; save {your choice of filename and extension} selectedOnly true*
+
+The above commands will save to your current working directory. They are not 
+provided as links here because that would save them to the directory containing
+this tutorial file, which is probably *not* what you want.
+
 
 Tutorial: Fitting a new cryoEM map starting from an AlphaFold multimer prediction
 ---------------------------------------------------------------------------------
@@ -900,12 +921,27 @@ unfilled density) so you can come back to them later. Actually *placing* ligands
 is beyond the scope of this particular tutorial, but if you really want to have
 a go for yourself, try the command "al {3-letter residue code}".
 
+Finally, a friendly reminder for when you want to apply what you've learned above
+to a new dataset: models coming straight from ISOLDE are currently **not** ready
+for deposition to the wwPDB. There are two main reasons for this:
 
+* The AMBER forcefield underlying ISOLDE (which attempts to replicate conformational 
+  energies from quantum mechanical simulations of model compounds) differs in various
+  subtle ways from the libraries used for model validation (based on statistics 
+  derived from observations of high-resolution crystals). The validation report for 
+  a model settled in ISOLDE will give poor scores for bond length and angle RMSDs 
+  for this reason. 
 
+* More importantly, ISOLDE currently makes no attempt to refine B-factors. Since 
+  B-factors encode our estimate of atom mobility relative to the bulk of the model,
+  they are important in both cryo-EM and crystallography and should *always* be 
+  refined in a deposited model.
 
+For the above reasons, before deposition you should *always* run a final refinement
+in your choice of package. If you're using Phenix or REFMAC, the `isolde write`__
+commands can be used to write suitable input files to your current working directory.
 
-
-
+__ help:user/commands/isolde.html#write
 
 
 

@@ -110,7 +110,7 @@ Angstroms will not be restrained. The adjustment scheme looks like this:
 .. figure:: images/distance_restraint_pae_adjustments.png
 
 
-
+ 
 To interpret this, keep in mind that the force applied to a given atom is
 proportional to the *derivative* (that is, the slope) of the energy with
 respect to distance. In effect, for a pair of atoms that is close to the target
@@ -278,7 +278,7 @@ The mathematical form of the energy function is:
   Values of *kappa* less than 0.001 are automatically set to zero to avoid
   numerical instability.
 * *springConstant*: effective strength of each restraint when close to the
-  target angle, in :math:`kJ mol^{-1} rad{-2}`
+  target angle, in :math:`kJ mol^{-1} rad^{-2}`
 * *identicalSidechainsOnly*: only applicable if *templateResidues* is supplied
   and *sidechains* is true. If true, only sidechains of residues with the same
   identity in model and template will be restrained.
