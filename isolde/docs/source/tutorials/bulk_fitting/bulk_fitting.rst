@@ -26,8 +26,8 @@ recommended that you first work through the** :ref:`isolde_cryo_intro_tutorial`
 **tutorial before attempting this one.**
 
 **NOTE: This tutorial was originally written before the advent of AlphaFold2 and 
-the era of high-quality predicted structures, and is largely superseded by the 
-`alphafold_top_down_tutorial`_ tutorial based on the same map. It is included here
+the era of high-quality predicted structures, and is largely superseded by the** 
+:ref:`alphafold_top_down_tutorial` **tutorial based on the same map. It is included here
 primarily for historical purposes, and for those occasions where a high-quality 
 predicted model is not possible.**
 
