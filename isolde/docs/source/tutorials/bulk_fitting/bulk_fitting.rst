@@ -5,8 +5,7 @@ Bulk Flexible Fitting
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
-Internet. Please close ISOLDE and any open models before starting this
-tutorial.)**
+Internet. Please close any open models before starting this tutorial.)**
 
 **(The instructions in the tutorial below assume you are using a wired mouse
 with a scroll wheel doubling as the middle mouse button. While everything
@@ -25,6 +24,12 @@ Tutorial: Fitting 6mhz into emd_9118
 operation of ISOLDE. If this is your first time using it, it is highly
 recommended that you first work through the** :ref:`isolde_cryo_intro_tutorial`
 **tutorial before attempting this one.**
+
+**NOTE: This tutorial was originally written before the advent of AlphaFold2 and 
+the era of high-quality predicted structures, and is largely superseded by the 
+`alphafold_top_down_tutorial`_ tutorial based on the same map. It is included here
+primarily for historical purposes, and for those occasions where a high-quality 
+predicted model is not possible.**
 
 The *E. coli* LptB2FGC complex is responsible for extracting lipopolysaccharide
 (LPS) out of the inner membrane, as part of the transport chain bringing it to
@@ -96,18 +101,16 @@ First, select chains A and G:
 
 __ cxcmd:select\ \#1/A,G
 
-Now, you'll want to make use of two different right mouse button modes from
-ChimeraX's left-hand-side toolbar, "translate selected models" and "rotate
-selected models". The icons look like this:
+Now, you'll want to find and click the "Move model" button on the "Right Mouse"
+tab of the ChimeraX top ribbon menu. This mode allows you to use the right mouse 
+to move each *whole* model that has at least some part selected. Right-click-and-drag
+to translate the model, and hold shift (**with the right mouse button already pressed**)
+to rotate.
 
-.. figure:: images/translate_and_rotate_selected_model_icons.png
-
-**(NOTE: each of these modes moves each *whole* model that has at least some
-part selected.)**
 
 In the starting configuration, chain G is overlapping its target density, but
 rotated about 45 degrees and shifted 10-20 Angstroms in the (-z) direction from
-its best fit. Use the rotate and translate tools to get it chains A and G
+its best fit. Use the rotate and translate tools to get chains A and G
 *reasonably* close to their density. If you're having trouble lining things up,
 use the below commands to get the model close enough for the next step:
 
@@ -128,15 +131,24 @@ __ cxcmd:fitmap\ \#1/A,G\ inMap\ \#2
 Restrained flexible fitting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now, go ahead and start isolde:
+If you haven't already, go ahead and start isolde:
 
 `isolde start`__
 
 __ cxcmd:isolde\ start
 
+\... and tell it you want to work on this model (using the "Working on:" drop-down menu at 
+top, or via the following command).
+
+`isolde select #1`__
+
+__ cxcmd:isolde\ select\ #1
+
+
+
 To use your map for fitting in ISOLDE, it must be "associated" with the model.
-You can do this using the "Associate real-space map with current model" button
-on the ISOLDE GUI, or the command:
+You can do this using the "Add map(s) to working model" widget on ISOLDE's General
+tab, or via the command:
 
 `clipper assoc #2 to #1`__
 
@@ -153,7 +165,7 @@ under ISOLDE's "Show map settings dialog":
 
 .. figure:: images/map_settings_dialog.png
 
-... but that's a matter of personal  preference. If you do so, your view should
+\... but that's a matter of personal  preference. If you do so, your view should
 now look something like this:
 
 .. figure:: images/spotlight_mode.jpg
@@ -164,7 +176,7 @@ be needing it from this point on.
 If you were paying attention during the rigid-body fitting, you'll have noticed
 that we still have some rather large shifts to do. To make sure we can see
 all the map, we'll need to increase the mask radius (using the "Mask radius"
-spin box on ISOLDE's "Sim settings" tab). Go ahead and increase this to 16.
+spin box on ISOLDE's General tab). Go ahead and increase this to 16.
 
 .. figure:: images/mask_radius_spinbox.png
 
@@ -183,12 +195,6 @@ We'll also need to add hydrogens:
 
 __ cxcmd:addh
 
-I prefer to hide the non-polar hydrogen atoms to reduce clutter:
-
-`hide HC`__
-
-__ cxcmd:hide\ HC
-
 To get a good picture of the task ahead, let's expand the map mask to cover the
 whole model. Select all atoms:
 
@@ -196,12 +202,11 @@ whole model. Select all atoms:
 
 __ cxcmd:select\ \#1
 
-... and either click the "mask to selection button" on the bottom right of
-the ISOLDE GUI:
+\... and either click the "mask to selection button" on ISOLDE's ribbon menu:
 
 .. figure:: images/mask_to_sel_button.png
 
-... or use the following command:
+\... or use the following command:
 
 `clipper isolate #1 mask 16`__
 
@@ -217,7 +222,7 @@ revealing just how far chains B and F still need to move:
 Now, the challenge of flexible fitting over such long distances is that between
 your starting and target configuration is a very convoluted landscape, with many
 local minima to get trapped in. A naive implementation is almost certain to get
-trapped and/or ruin the model, depending upon the weighting of the map. The
+trapped and/or ruin the model, depending upon the weighting of the map. One
 answer is to use some restraint scheme that biases local geometry to a known
 target, while still maintaining the flexibility to allow large conformational
 changes where necessary. There are many possible such schemes; ISOLDE's is based
@@ -225,7 +230,7 @@ upon a generalised form (`courtesy of our benevolent overlords at Google`__)
 that effectively acts as a superset of the most common ones. These "adaptive"
 distance restraints can adopt a wide range of energy profiles such as these:
 
-__ https://arxiv.org/pdf/1701.03077.pdf
+__ https://openaccess.thecvf.com/content_CVPR_2019/html/Barron_A_General_and_Adaptive_Robust_Loss_Function_CVPR_2019_paper.html
 
 .. figure:: images/adaptive_energy_function.png
 
@@ -273,7 +278,7 @@ Reminder: you can see the full set of options for this command using
 
 __ cxcmd:usage\ isolde\ restrain
 
-... which will print a short synopsis to the ChimeraX Log window, with a link to
+\... which will print a short synopsis to the ChimeraX Log window, with a link to
 `more extensive documentation`__.
 
 __ help:user/commands/isolde_restrain.html
@@ -308,13 +313,18 @@ imposed by the map - but importantly, the local conformation is still imposed
 by the restraints coloured in green.
 
 If you find this display to be overwhelming, you can limit drawing to only those
-restraints strained beyond a threshold, e.g.
+restraints strained beyond some threshold using the "Manage/Release Adaptive Restraints"
+widget: 
+
+.. figure:: images/manage_restraints_widget.png
+
+\... or via the command line:
 
 `isolde adjust distances #1 displayThreshold 0.5`__
 
 __ cxcmd:isolde\ adjust\ distances\ \#1\ displayThreshold\ 0.5
 
-... where the threshold is a fraction of the well half-width.
+\... where the threshold is a fraction of the well half-width.
 
 For this initial fitting, you might also find it useful to hide sidechains:
 
@@ -332,8 +342,8 @@ __ cxcmd:hide\ ~@CA
 fitting, and you will need to carefully inspect with sidechains displayed later.)
 
 Our main job is getting chains B and F fitted - and it's quite clear  they won't
-make it on their own. This is where ISOLDE's "tug selection" mouse mode becomes
-useful:
+make it on their own. This is where ISOLDE's "tug selection" mouse mode (found on 
+the ISOLDE tab of the top ribbon menu) becomes useful:
 
 .. figure:: images/tug_selection_button.png
 
@@ -361,7 +371,7 @@ like mine you'll see that the helices at the interface of chains F and G
 (approx. residues 23-55 of chain F and 298-354 of chain G) are still quite
 badly out:
 
-`cview /F:23-55|/G:298-354`__
+`/F:23-55|/G:298-354`__
 
 __ cxcmd:view\ /F:23-55|/G:298-354
 
@@ -376,7 +386,8 @@ ISOLDE's green stop button, or run:
 
 __ cxcmd:isolde\ sim\ stop
 
-This automatically reverts to the default all-atom display.
+This automatically reverts to the default all-atom display (or more precisely, 
+the way you had the atoms displayed before the simulation started).
 
 Looking closely at the offending region of chain G reveals part of the problem:
 while the two helices spanning residues 304-354 don't appear to change
@@ -386,21 +397,31 @@ strained restraints. Further, the loop from 298-304 is completely different in
 this map compared to the starting model. Time to start selectively removing
 restraints.
 
-The *isolde release distances* command offers a range of flexible options here.
-First up, the restraints on residues 298-304 clearly make no real sense at all,
-so let's release them entirely (with an extra residue padding either side):
+The "Manage/Release Adaptive Restraints" widget and/or the *isolde release
+distances* command offer a range of flexible options here. First up, the
+restraints on residues 298-304 clearly make no real sense at all, so let's
+release them entirely (with an extra residue padding either side):
 
 `select /G:297-305`__
 
 __ cxcmd:select\ /G:297-305
 
-`cview sel`__
+`view sel`__
 
-__ cxcmd:cview\ sel
+__ cxcmd:view\ sel
+
+Now, either click the "Release all selected" button, or use the command:
 
 `isolde release distances sel`__
 
 __ cxcmd:isolde\ release\ distances\ sel
+
+(*Tip: if you first run the command* `isolde shorthand`_ *then you can get the 
+same effect with the two-character command* `rd`_.) 
+
+.. _isolde shorthand: cxcmd:isolde\ shorthand
+
+.. _rd: cxcmd:rd
 
 Then, for residues 306-354, we'll keep all restraints between atoms in these
 residues but release all restraints to their surroundings:
@@ -409,7 +430,13 @@ residues but release all restraints to their surroundings:
 
 __ cxcmd:isolde\ release\ distances\ /G:306-354\ externalOnly\ true
 
-**(NOTE: restraints may also be added, adjusted and released during simulations,
+Or, with shorthand:
+
+`sel /G:306-354; rd ext t`__
+
+__ cxcmd:sel\ /G:306-354;rd\ ext\ t
+
+**(NOTE: restraints may be added, adjusted and released during simulations,
 but adding will incur a short delay)**
 
 Now, let's start up a new simulation:
@@ -424,7 +451,7 @@ placed, pointing to the wrong side of the facing helix and generally getting in
 the way (from the distance restraints, it looks like this may be an error in the
 original coordinates):
 
-`cview /G:319`__
+`view /G:319`__
 
 __ cxcmd:view\ /G:319
 
@@ -455,43 +482,44 @@ __ cxcmd:isolde\ adjust\ distances\ \#1\ displayThreshold\ 0
 something is wrong - it looks like these residues need to shift one step in
 register towards the C-terminus. This is quite straightforward:
 
-__ cxcmd:cview\ /G:303-321
+__ cxcmd:view\ /G:303-321
 
 `select /G:303-321`__
 
 __ cxcmd:select\ /G:303-321
 
-`isolde release distances selAtoms`__
+`isolde release distances sel ext t`__
 
-__ cxcmd:isolde\ release\ distances\ selAtoms
+__ cxcmd:isolde\ release\ distances\ sel\ ext t
 
-Now, switch to ISOLDE's "Rebuild" tab, set the register shifter widget to 1 and
-click its start button:
+Now, find and expand the "Register Shift Protein" widget on ISOLDE's
+"Restraints" tab, set the register shifter widget to shift by 1 residue towards
+the C terminus and click its "Go" button:
 
 .. figure:: images/register_shift_widget.png
 
-... and resume the simulation:
+\... and resume the simulation:
 
-`isolde sim pause`__
+`isolde sim resume`__
 
-__ cxcmd:isolde\ sim\ pause
+__ cxcmd:isolde\ sim\ resume
 
 Watch the register shifter work its magic:
 
 .. figure:: images/register_shift.jpg
 
-... then click its red 'X' button to release its restraints (you may find you
+\... then click its red 'X' button to release its restraints (you may find you
 need to manually adjust some of the bulkier sidechains). While the helix now
 looks good, the 298-304 loop still needs a little work:
 
-`cview /G:297-303`__
+`view /G:297-303`__
 
-__ cxcmd:cview\ /G:297-303
+__ cxcmd:view\ /G:297-303
 
 .. figure:: images/G298-304_misfit_helix.jpg
 
-... but fits readily and convincingly after a little work with mouse tugging and
-the tools on ISOLDE's rebuild tab:
+\... but fits readily and convincingly after a little playing around (*hint: it
+appears that Pro299 should be in* cis):
 
 .. figure:: images/G298-304_refitted.jpg
 
@@ -504,6 +532,6 @@ release all the adaptive restraints using:
 
 __ cxcmd:isolde\ release\ distances\ \#1
 
-... and move on to the finer details.
+\... and move on to the finer details.
 
 .. figure:: images/fitted.jpg
