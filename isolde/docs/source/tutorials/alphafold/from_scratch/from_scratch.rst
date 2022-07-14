@@ -5,8 +5,7 @@ Top-Down Modelling with AlphaFold
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
-Internet. Please close ISOLDE and any open models before starting this
-tutorial.)**
+Internet. Please close any open models before starting this tutorial.)**
 
 **(The instructions in the tutorial below assume you are using a wired mouse
 with a scroll wheel doubling as the middle mouse button. While everything
@@ -37,24 +36,24 @@ was incomplete.
  .. _6mhz: https://www.rcsb.org/structure/6mhz
  .. _EMD-9118: https://www.emdataresource.org/EMD-9118
 
-The advent of `AlphaFold 2`_ (and in particular their `online database`_
-of precomputed models) has fundamentally and irrevocably changed the face of
+The advent of `AlphaFold 2`_ (and in particular their `online database`_ of
+precomputed models) fundamentally and irrevocably changed the face of
 experimental model building. As demonstrated in `their paper`_ and others
 (including `our own`_), in most cases the accuracy of AlphaFold predictions for
 well-structured regions approaches that of high-resolution experimental
 structures, and dramatically improves upon most existing low-resolution
 structures (at least, those for which there was no high-resolution reference
-model at the time of building and deposition). Even better, AlphaFold turns out to be
-very, very good at predicting just *how* accurate its predictions are, both at a
-per-residue level via its predicted local distance difference test (pLDDT)
-scoring, and in its estimate of the distance error between each pair of residues
-via the predicted aligned error (PAE) matrix (more on those measures later).
-This promises to dramatically ease the "average" model-building task: where
-previously it was commonly necessary to build residue-by-residue into density by
-some combination of automatic and manual methods, in most cases it is now both
-easier and less error-prone to take a "top-down" approach, starting from
-near-complete models comprising the high-confidence regions of AlphaFold predictions
-for each chain and flexibly fitting into your new map.
+model at the time of building and deposition). Even better, AlphaFold turns out
+to be very, very good at predicting just *how* accurate its predictions are,
+both at a per-residue level via its predicted local distance difference test
+(pLDDT) scoring, and in its estimate of the distance error between each pair of
+residues via the predicted aligned error (PAE) matrix (more on those measures
+later). This promises to dramatically ease the "average" model-building task:
+where previously it was commonly necessary to build residue-by-residue into
+density by some combination of automatic and manual methods, in most cases it is
+now both easier and less error-prone to take a "top-down" approach, starting
+from near-complete models comprising the high-confidence regions of AlphaFold
+predictions for each chain and flexibly fitting into your new map.
 
 .. _their paper: `AlphaFold 2`_
 .. _online database: https://alphafold.ebi.ac.uk/
@@ -86,7 +85,8 @@ rigid-body fitted and chains B and F well out of density:
 
 Now, this is where we really start to deviate from the original tutorial. We're 
 not going to use this model directly - instead, we're going to use it to set the 
-positions of the AlphaFold models for each chain. First, though, let's start ISOLDE:
+positions of the AlphaFold models for each chain. If you haven't already, let's 
+start ISOLDE:
 
 `isolde start`__
 
@@ -100,13 +100,9 @@ the following:
 
 .. _here: https://alphafold.ebi.ac.uk/download
 
-`alphafold match #1`__
+`alphafold match #1 trim false`__
 
-__ cxcmd:alphafold\ match\ \#1
-
-*(Note: As of ISOLDE 1.3 the automatic restraint options described below will
-only work for models fetched in this way. Support for custom models is in
-development.)*
+__ cxcmd:alphafold\ match\ \#1\ trim\ false
 
 Your display should now look something like this:
 
@@ -115,10 +111,14 @@ Your display should now look something like this:
 Each AlphaFold model has been overlaid and had its chain ID reassigned to match
 its corresponding chain in the original model. The cartoon is coloured to
 reflect AlphaFold's confidence in its prediction for each residue (`pLDDT
-scores`_), scaling from red (pLDDT==0) through orange (pLDDT==50), yellow
-(pLDDT==70), light blue (pLDDT==90) to dark blue (pLDDT==100). By default, the
+scores`_), scaling from red (pLDDT=0) through orange (pLDDT=50), yellow
+(pLDDT=70), light blue (pLDDT=90) to dark blue (pLDDT=100). By default, the
 model is trimmed to match the sequence in the mmCIF file (reflecting what was in
-the experiment, not just what was originally modelled). **(IMPORTANT NOTE:
+the experiment, not just what was originally modelled), but here we've specified 
+"trim false" to fetch each complete chain. That will be important later, since 
+weighting of distance restraints by confidence requires the complete original model. 
+
+**(IMPORTANT NOTE:
 residues with pLDDT scores less than about 50 are generally junk and their
 coordinates should not be interpreted in any way. Nevertheless, it may on
 occasion be useful to keep them present to start with, to act as raw material
@@ -141,7 +141,7 @@ __ cxcmd:volume\ \#2\ sdLevel\ 3.5
 
 Considering that the AlphaFold predictions for their geometry are quite
 confident, it makes sense to keep these in for now - we can always decide
-whether or not to keep them once we're done refitting. For now, let's pull the
+whether or not to remove them once we're done refitting. For now, let's pull the
 map contour back to a reasonable level:
 
 `volume #2 sdLevel 6`__
@@ -150,8 +150,7 @@ __ cxcmd:volume\ \#2\ sdLevel\ 6
 
 Now, before we go ahead and start refitting with ISOLDE, there's a few things we
 must do. First, the "alphafold match" command collected each chain as its own
-model - for ISOLDE's purposes we need to combine them all into a *single* model.
-As of ChimeraX 1.3, that's really easy - just do:
+model - for ISOLDE's purposes we need to combine them all into a *single* model:
 
 `combine #3`__
 
@@ -163,19 +162,24 @@ entry:
 
 .. figure:: images/combination_models_panel.png
 
-This is the one we're going to actually work on from here. Go to the "Working
-on:" drop-down menu at the top of the ISOLDE panel, and choose "4. combination".
-Or, just click the following command:
+This is the one we're going to actually work on from here. 
+
+First, we may as well close the original 6mhz:
+
+`close #1`__
+
+__ cxcmd:close\ \#1
+
+
+Now, go to the "Working on:" drop-down menu at the top of the ISOLDE panel, and
+choose "4. combination". Or, just click the following command:
 
 `isolde select #4`__
 
 __ cxcmd:isolde\ select\ \#4
 
-At this point you can close the original 6mhz:
-
-`close #1`__
-
-__ cxcmd:close\ \#1
+(*Note: since we just freed up the model #1 space by closing 6mhz, the working model 
+will become the new model #1*)
 
 \... and to make life easier, let's hide the original individual models from
 AlphaFold **(DON'T close these yet - we're still going to need them in a bit.)**
@@ -184,21 +188,21 @@ AlphaFold **(DON'T close these yet - we're still going to need them in a bit.)**
 
 __ cxcmd:hide\ \#3\ models
 
-Now, associate the map with the working model, either using the "Associate
-real-space map with current model" button or, equivalently:
+Now, associate the map with the working model, either using the "Add map(s)
+to working model" widget or, equivalently:
 
-`clipper assoc #2 to #4`__
+`clipper assoc #2 to #1`__
 
-__ cxcmd:clipper\ assoc\ \#2\ to\ \#4
+__ cxcmd:clipper\ assoc\ \#2\ to\ \#1
 
 For a map at this sort of resolution, you might want to increase the spotlight
 radius from the default 12 to around 20 Angstroms. You can do this interactively
-using the "Spotlight radius" box on ISOLDE's Sim settings tab, or using the
+using the "Spotlight radius" box on ISOLDE's General tab, or using the
 command:
 
-`clipper spotlight #4 radius 20`__
+`clipper spotlight #1 radius 20`__
 
-__ cxcmd:clipper\ spot\ \#4\ radius\ 20
+__ cxcmd:clipper\ spot\ \#1\ radius\ 20
 
 Things should now look something like this:
 
@@ -212,9 +216,9 @@ things go in the original :ref:`bulk_fitting_tutorial` tutorial) - but the much
 bigger issue is that we have a very serious clash between those newly-added
 domains at top. To take a look, do:
 
-`view #4/F:149`__
+`view #1/F:149`__
 
-__ cxcmd:view\ \#4\/F:149
+__ cxcmd:view\ \#1\/F:149
 
 .. figure:: images/bad_clash.jpg
 
@@ -223,21 +227,21 @@ coordinates by first doing "isolde ignore /F" to temporarily exclude chain F
 from simulations while we refit chains A and G - but there's a much easier
 solution that addresses both of the above problems simultaneously. First, zoom
 out so the whole model is visible, go to ISOLDE's Sim settings tab and set the
-"Mask radius" box to 12.0. Then, select the whole model with `sel #4`_ and click
-ISOLDE's mask to selection button (second from bottom right). You'll also
+"Mask radius" box to 12.0. Then, select the whole model with `sel #1`_ and click
+ISOLDE's mask to selection button in the top ribbon menu. You'll also
 probably find this next bit easier if you switch the map view from wireframe to
-transparent surface ("Show map settings dialogue" button, then click the button
-that looks like a melted ice cube). Your view should now look like this:
+transparent surface (using the "Non-crystallographic Map Settings" widget). 
+Your view should now look like this:
 
-.. _sel #4: cxcmd:sel\ \#4
+.. _sel #1: cxcmd:sel\ \#1
 
 .. figure:: images/model_covered.jpg
 
 Now, select chains B and F:
 
-`sel #4/B,F`__
+`sel #1/B,F`__
 
-__ cxcmd:sel\ \#4\/B,F
+__ cxcmd:sel\ \#1\/B,F
 
 Then, go to the "Right Mouse" tab on the ChimeraX top ribbon menu, and choose
 the "Move atoms" button in the "Movement" section. **(WARNING: Be VERY careful
@@ -264,15 +268,15 @@ can hold shift to switch from dragging to rotating):
 
 \... and get it the rest of the way with the command:
 
-`fit sel in #4 moveWholeMolecules false`__
+`fit sel in #1 moveWholeMolecules false`__
 
-__ cxcmd:fit\ sel\ in\ \#4\ moveWhole\ f
+__ cxcmd:fit\ sel\ in\ \#1\ moveWhole\ f
 
 Now would also be a good time to bring the full atom view back:
 
-`show #4`__
+`show #1`__
 
-__ cxcmd:show\ \#4
+__ cxcmd:show\ \#1
 
 If all has gone well, your view should now look something like this:
 
@@ -281,9 +285,12 @@ If all has gone well, your view should now look something like this:
 So, that deals with our biggest issues. There are just two more things to take
 care of before we get started. First, the easy one: add hydrogens.
 
-`addh #4`__
+`addh #1`__
 
-__ cxcmd:addh\ \#4
+__ cxcmd:addh\ \#1
+
+\... and before we forget, set the mask radius back to 4 Angstroms using the 
+spinbox on ISOLDE's General tab.
 
 Now, we need to restrain the model to make sure the local geometry remains
 sensible while refitting (remember, at any site where the model remains well out
@@ -308,15 +315,18 @@ __ https://alphafold.ebi.ac.uk/entry/P0ADC6
 
 .. figure:: images/pae_chain_g.png
 
-Starting with ISOLDE 1.3, the "isolde restrain distances" and "isolde restrain
-torsions" commands each include a new optional argument, "adjustForConfidence".
-In the torsion case, the adjustment is performed based on pLDDT *(NOTE: this
-assumes the B-factors in the reference model are actually pLDDT values. If this
-is not the case, you will get nonsensical results)*. The adjustments to the
-restraints are somewhat heuristic at this point and are plotted below.
-Qualitatively, a given restraint gets weaker (lower spring constant), falls off
-more quickly outside its harmonic well (lower alpha), and gets a narrower
-harmonic well (increased kappa) as the pLDDT reduces (see
+Since ISOLDE 1.3, it has been possible to tell ISOLDE to automatically adjust
+the parameters of each torsion and distance restraint based on AlphaFold's
+confidence in its prediction of the local geometry. This can be achieved via the
+"Reference Models" widget on ISOLDE's Restraints tab, or via the optional
+"adjustForConfidence" argument to the "isolde restrain distances" and "isolde
+restrain torsions" commands. In the torsion case, the adjustment is performed
+based on pLDDT *(NOTE: this assumes the B-factors in the reference model are
+actually pLDDT values. If this is not the case, you will get nonsensical
+results)*. The adjustments to the restraints are somewhat heuristic and are
+plotted below. Qualitatively, a given restraint gets weaker (lower spring
+constant), falls off more quickly outside its harmonic well (lower alpha), and
+gets a narrower harmonic well (increased kappa) as the pLDDT reduces (see
 :ref:`adaptive_dihedral_restraint_cmd` for the meaning of these terms). Residues
 for which the template pLDDT value is less than 50 are *not* restrained. The
 plots shown below are the result of the command with default parameters - if you
@@ -327,20 +337,19 @@ this tutorial.
 
 .. figure:: images/torsion_restraint_plddt_adjustments.png
 
-In a similar manner, distance restraints are reweighted based on the PAE matrix - see 
-:ref:`isolde_restrain_distances_cmd`. As the PAE between residues for a given atom pair 
-increases, the restraint strength (kappa) decreases, the flat-bottom tolerance increases, 
-and the rate of fall-off outside the (harmonic + flat bottom) region increases. As for
-the torsion restraints, the default profiles (below) may be tweaked by setting custom 
-kappa, tolerance and fallOff terms.   
+In a similar manner, distance restraints are reweighted based on the PAE matrix
+- see :ref:`isolde_restrain_distances_cmd`. As the PAE between residues for a
+given atom pair increases, the restraint strength (kappa) decreases, the
+flat-bottom tolerance increases, and the rate of fall-off outside the (harmonic
++ flat bottom) region increases. As for the torsion restraints, the default
+profiles (below) may be tweaked by setting custom kappa, tolerance and fallOff
+terms.   
 
 .. figure:: images/distance_restraint_pae_adjustments.png
 
-**(REMINDER: The 'adjustForConfidence true' argument for 'isolde restrain distances'
-currently only works for single-chain models fetched from the AlphaFold database. This is because 
-it uses information in the model's mmCIF header to find and download the associated 
-PAE matrix. Future versions will support the use of custom models with user-provided 
-PAE matrices.)**
+**(REMINDER: The 'adjustForConfidence true' argument for 'isolde restrain
+distances' requires the reference model to be the unmodified original output from 
+AlphaFold - that is, with no residues added or removed)**
 
 To understand how these will be used, let's first take a closer look at that PAE matrix for 
 chain G. Note the color scale - dark green is an expected error of zero (in reality, the 
@@ -352,7 +361,25 @@ like with the colours scaled to that range:
 
 .. figure:: images/pae_chain_g_scaled_to_4A.png
 
-Anyway, let's go ahead and apply those restraints. This needs to be done chain-by-chain. Looking
+If you prefer to work via the GUI, the Options section of the Reference Models 
+widget provides sliders allowing you to interactively adjust the nominal strength
+and "fuzziness" of the restraints prior to applying them, and gives a preview of 
+what the resulting potential would look like for a restraint with perfect confidence:
+
+.. figure:: images/reference_model_options_panel.png
+
+
+Anyway, let's go ahead and apply those restraints. Switch to ISOLDE's Restraints tab and 
+expand the Reference Models widget. Choose "3.1: AlphaFold LPTB_ECOLI chain A" in the 
+"Reference model:" drop-down menu. Because this reference model was downloaded from the 
+EBI AlphaFold database, ISOLDE already knows where to find its PAE matrix and will load it.
+If in future you want to use a prediction you've generated yourself, you can use the "Load 
+PAE matrix" to load it from the .json file you should have received alongside the predicted 
+model. The widget should now look like this:
+
+.. figure:: images/reference_model_widget.png
+
+This needs to be done chain-by-chain. Looking
 at the Models panel we see that our working model is model #4 and the reference models are grouped
 under model #3. So...
 
