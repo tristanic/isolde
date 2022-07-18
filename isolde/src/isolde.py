@@ -1339,6 +1339,8 @@ class Isolde():
         from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger('simulation terminated', None)
+        from chimerax.core.commands import run
+        run(self.session, f'clipper spot #{self.selected_model.id_string}', log=False)
         from chimerax.clipper import get_map_mgr
         m = self.selected_model
         mmgr = get_map_mgr(m)
