@@ -1,7 +1,7 @@
 .. _alphafold_multimer_cryoem_tutorial:
 
-Building Into CryoEM Maps with AlphaFold Models
-===============================================
+Building Into CryoEM Maps With Your Own AlphaFold Multimer Models
+=================================================================
 
 **NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. Unless the necessary files have been
