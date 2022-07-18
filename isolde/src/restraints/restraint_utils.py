@@ -438,7 +438,7 @@ def _get_template_alignment(template_residues, restrained_residues,
     return tr, rr
 
 def restrain_atom_distances_to_template(session, template_residues, restrained_residues,
-    protein=True, nucleic=True, custom_atom_names=[],
+    protein=True, nucleic=True, custom_atom_names=[], per_chain=False,
     distance_cutoff=8, alignment_cutoff=5, well_half_width = 0.1,
     kappa = 10, tolerance = 0.025, fall_off = 2, display_threshold=None,
     adjust_for_confidence=False, use_coordinate_alignment=True, confidence_type='pae', pae_matrix=None,
@@ -470,6 +470,9 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         * custom_atom_names(default = empty list):
             - Provide the names of any other atoms you wish to restrain (e.g.
               ligand atoms) here.
+        * per_chain(default = False):
+            - If False, distance restraints will be added between as well as within
+              chains. If Talse, only intra-chain distances will be restrained.
         * distance_cutoff (default = 8):
             - for each CA atom in `restrained_residues`, a distance restraint
               will be created between it and every other CA atom where the
@@ -570,9 +573,6 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
             chains = set()
             for trs in template_residues:
                 chains.update(set(trs.unique_chain_ids))
-            if len(chains) != 1:
-                pass
-                #raise UserError('Weighting according to PAE is currently only supported for single-chain templates!')
             if pae_matrix is None:
                 if hasattr(template, 'alphafold_pae'):
                     pae_matrix = template.alphafold_pae._pae_matrix
@@ -582,7 +582,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 else:
                     raise UserError('Adjusting restraints for confidence requires a PAE matrix, but none was provided and none is currently '
                     'associated with this model!')
-            # Symmetrify the PAE matrix by taking the lowest value for each (i,j) pair
+            # Symmetrify the PAE matrix by taking the lowest value for each (i,j)/(j,i) pair
             pae_matrix = numpy.minimum(pae_matrix, pae_matrix.T)
         elif confidence_type=='plddt':
             confidence_multiplier = plddt_multiplier(template_us.atoms)
@@ -657,65 +657,54 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
                 dr.enabled = True
 
     if all(trs == rrs for trs, rrs in zip(template_residues, restrained_residues)):
-        # If the template is identical to the model, we can just go ahead and restrain
-
-        return [apply_restraints(trs, rrs, adjust_for_confidence, confidence_type) for trs, rrs in zip(template_residues, restrained_residues)]
+        if per_chain:
+            # If the template is identical to the model, we can just go ahead and restrain
+            return [apply_restraints(trs, rrs, adjust_for_confidence, confidence_type) for trs, rrs in zip(template_residues, restrained_residues)]
+        else:
+            from chimerax.atomic import concatenate
+            trs = concatenate(template_residues)
+            rrs = concatenate(template_residues)
+            return apply_restraints(trs, rrs, adjust_for_confidence, confidence_type)
     else:
+        def split_chains(residues):
+            split_residues = []
+            for cid in residues.unique_chain_ids:
+                split_residues.append(residues[residues.chain_ids==cid])
+            return split_residues
         if not use_coordinate_alignment:
             atrs, arrs = sequence_align_all_residues(session, template_residues, restrained_residues)
-            return apply_restraints(atrs, arrs, adjust_for_confidence, confidence_type)
+            if not per_chain:
+                return apply_restraints(atrs, arrs, adjust_for_confidence, confidence_type)
+            else:
+                return [apply_restraints(trs, rrs, adjust_for_confidence, confidence_type) for trs, rrs in zip(
+                    split_chains(atrs), split_chains(arrs)
+                )]
         else:
             # If we're not simply restraining the model to itself, we need to do an
             # alignment to get a matching pair of residue sequences
             tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
                 session, template_residues, restrained_residues
             ))
+            tpas = [tpa]
+            rpas = [rpa]
+            if per_chain:
+                tpas = split_chains(tpas[0])
+                rpas = split_chains(rpas[0])
             from chimerax.std_commands import align
-            while len(tpa) >3 and len(rpa) >3:
-                try:
-                    ta, ra, *_ = align.align(session, tpa, rpa, move=False,
-                        cutoff_distance=alignment_cutoff)
-                except IterationError:
-                    log.info(('No further alignments of 3 or more residues found.'))
-                    break
-                tr, rr = [ta.residues, ra.residues]
-                apply_restraints(tr, rr, adjust_for_confidence, confidence_type)
-                tpa = tpa.subtract(ta)
-                rpa = rpa.subtract(ra)
+            for tpa, rpa in zip(tpas, rpas):
+                while len(tpa) >3 and len(rpa) >3:
+                    try:
+                        ta, ra, *_ = align.align(session, tpa, rpa, move=False,
+                            cutoff_distance=alignment_cutoff)
+                    except IterationError:
+                        # log.info(('No further alignments of 3 or more residues found.'))
+                        break
+                    tr, rr = [ta.residues, ra.residues]
+                    apply_restraints(tr, rr, adjust_for_confidence, confidence_type)
+                    tpa = tpa.subtract(ta)
+                    rpa = rpa.subtract(ra)
 
 
-
-        # while len(template_residues) != 0 and len(restrained_residues) != 0:
-        #     found_trs = []
-        #     found_rrs = []
-        #     remain_trs = []
-        #     remain_rrs = []
-        #     for trs, rrs in zip(template_residues, restrained_residues):
-        #         try:
-        #             ftrs, frrs = _get_template_alignment(
-        #                 trs, rrs, cutoff_distance = alignment_cutoff,
-        #                 overlay_template = False, always_raise_errors = True
-        #             )
-        #         except IterationError:
-        #             log.info(("No sufficient alignment found for {} residues "
-        #                 "in template chain {} and {} residues in restrained "
-        #                 "model chain {}").format(len(trs), trs.chain_ids[0],
-        #                 len(rrs), rrs.chain_ids[0]))
-        #             continue
-        #         found_trs.append(ftrs)
-        #         found_rrs.append(frrs)
-        #         rtrs = trs.subtract(ftrs)
-        #         rrrs = rrs.subtract(frrs)
-        #         if len(rtrs) > 3 and len(rrrs) > 3:
-        #             remain_trs.append(rtrs)
-        #             remain_rrs.append(rrrs)
-        #     template_residues = remain_trs
-        #     restrained_residues = remain_rrs
-        #
-        #     if len(found_trs):
-        #         trs = concatenate(found_trs)
-        #         rrs = concatenate(found_rrs)
-        #         apply_restraints(trs, rrs)
 
 def plddt_multiplier(atoms):
     '''

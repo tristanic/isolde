@@ -8,11 +8,11 @@
 
 from chimerax.core.errors import UserError
 
-def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **kwargs):
+def restrain_distances(session, atoms, template_atoms=None, **kwargs):
     valid_args = set((
-        'protein', 'nucleic', 'custom_atom_names', 'distance_cutoff',
+        'protein', 'nucleic', 'custom_atom_names', 'per_chain', 'distance_cutoff',
         'alignment_cutoff', 'well_half_width', 'kappa', 'tolerance', 'fall_off',
-        'display_threshold', 'group_name'
+        'display_threshold', 'group_name', 
     ))
     log = session.logger
 
@@ -22,20 +22,19 @@ def restrain_distances(session, atoms, template_atoms=None, per_chain=False, **k
         log.warning('You must provide one template selection for each restrained selection!')
         return
 
-    if per_chain and (template_atoms is not None):
-        log.warning('perChain argument is only valid when restraining atoms to '
-            'their initial conformation, not when restraining to a template.')
-        return
+    # if per_chain and (template_atoms is not None):
+    #     log.warning('perChain argument is only valid when restraining atoms to '
+    #         'their initial conformation, not when restraining to a template.')
+    #     return
 
     model_residues = [mas.unique_residues for mas in atoms]
-    if per_chain:
+    if template_atoms is None:
         split_residues=[]
         for residues in model_residues:
             chain_ids = residues.unique_chain_ids
             for cid in chain_ids:
                 split_residues.append(residues[residues.chain_ids==cid])
         model_residues = split_residues
-    if template_atoms is None:
         template_residues = model_residues
     else:
         template_residues = [tas.unique_residues for tas in template_atoms]
