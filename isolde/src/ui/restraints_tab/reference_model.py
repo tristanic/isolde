@@ -382,11 +382,8 @@ class ReferenceModelDialog(UI_Panel_Base):
             run(self.session, cmd)
         
         torsion_options = self.options.torsion_options
-        plddt_reasons = {
-            'out of range': 'Some b-factors are over 100, but pLDDT values should be provided on a 0-100 or 0-1 scale.',
-            'inverted': 'High pLDDT values correspond to high confidence, but the median value for unstructured residues is higher than the median value for structured ones.',
-            'different within residues': 'For models with pLDDT scores in the B-factor column, all atoms in a residue typically have the same score assigned. That is not true for this model.'
-        }
+        from chimerax.isolde.reference_model.alphafold import plddt_failure_reasons as plddt_reasons
+
         if len(torsion_pairs):
             adjust_for_confidence = torsion_options['adjust for confidence']
             if adjust_for_confidence:

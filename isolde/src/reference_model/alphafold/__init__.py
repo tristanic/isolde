@@ -71,3 +71,9 @@ def b_factors_look_like_plddt(m):
         if not numpy.allclose(r.atoms.bfactors, r.atoms.bfactors.mean()):
             return (False, 'different within residues')
     return (True, None)
+
+plddt_failure_reasons = {
+    'out of range': 'Some b-factors are over 100, but pLDDT values should be provided on a 0-100 or 0-1 scale.',
+    'inverted': 'High pLDDT values correspond to high confidence, but the median value for unstructured residues is higher than the median value for structured ones.',
+    'different within residues': 'For models with pLDDT scores in the B-factor column, all atoms in a residue typically have the same score assigned. That is not true for this model.'
+}
