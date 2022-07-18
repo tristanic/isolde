@@ -368,54 +368,72 @@ what the resulting potential would look like for a restraint with perfect confid
 
 .. figure:: images/reference_model_options_panel.png
 
+Anyway, let's go ahead and apply those restraints. First, let's show the reference models 
+again:
 
-Anyway, let's go ahead and apply those restraints. Switch to ISOLDE's Restraints tab and 
-expand the Reference Models widget. Choose "3.1: AlphaFold LPTB_ECOLI chain A" in the 
-"Reference model:" drop-down menu. Because this reference model was downloaded from the 
-EBI AlphaFold database, ISOLDE already knows where to find its PAE matrix and will load it.
-If in future you want to use a prediction you've generated yourself, you can use the "Load 
-PAE matrix" to load it from the .json file you should have received alongside the predicted 
-model. The widget should now look like this:
+`show #3 models`__
+
+__ cxcmd:show\ #3\ models
+
+Now, switch to ISOLDE's Restraints tab and expand the Reference Models widget.
+Choose "3.1: AlphaFold LPTB_ECOLI chain A" in the "Reference model:" drop-down
+menu. Because this reference model was downloaded from the EBI AlphaFold
+database, ISOLDE already knows where to find its PAE matrix and will load it. If
+in future you want to use a prediction you've generated yourself, you can use
+the "Load PAE matrix" to load it from the .json file you should have received
+alongside the predicted model. Check the "Distances" and "Torsions" checkboxes
+restraining model chain A to template chain A. The widget should now look like
+this:
 
 .. figure:: images/reference_model_widget.png
 
-This needs to be done chain-by-chain. Looking
-at the Models panel we see that our working model is model #4 and the reference models are grouped
-under model #3. So...
+In this case, where the four reference chains are independent models, this step
+needs to be repeated for each model chain/reference chain combination. If you
+have a multi-chain reference model generated using AlphaFold-multimer, this
+widget will allow you to restrain multiple chains simultaneously (see
+:ref:`alphafold_multimer_cryoem_tutorial`). On each application of restraints, the 
+equivalent command(s) will be echoed to the log. These look like this:
 
-`isolde restrain torsions #4/A template #3/A adjustForConfidence true`__
+`isolde restrain torsions #1/A template #3/A adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ torsions\ \#4\/A\ template\ \#3\/A\ adjustForConfidence\ true
+__ cxcmd: isolde\ restrain\ torsions\ \#1\/A\ template\ \#3\/A\ adjustForConfidence\ true
 
-`isolde restrain torsions #4/B template #3/B adjustForConfidence true`__
+`isolde restrain torsions #1/B template #3/B adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ torsions\ \#4\/B\ template\ \#3\/B\ adjustForConfidence\ true
+__ cxcmd: isolde\ restrain\ torsions\ \#1\/B\ template\ \#3\/B\ adjustForConfidence\ true
 
-`isolde restrain torsions #4/F template #3/F adjustForConfidence true`__
+`isolde restrain torsions #1/F template #3/F adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ torsions\ \#4\/F\ template\ \#3\/F\ adjustForConfidence\ true
+__ cxcmd: isolde\ restrain\ torsions\ \#1\/F\ template\ \#3\/F\ adjustForConfidence\ true
 
-`isolde restrain torsions #4/G template #3/G adjustForConfidence true`__
+`isolde restrain torsions #1/G template #3/G adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ torsions\ \#4\/G\ template\ \#3\/G\ adjustForConfidence\ true
+__ cxcmd: isolde\ restrain\ torsions\ \#1\/G\ template\ \#3\/G\ adjustForConfidence\ true
 
 \... and the distance restraints:
 
-`isolde restrain distances #4/A template #3/A adjustForConfidence true`__
+`isolde restrain distances #1/A template #3/A adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ dist\ \#4\/A\ template\ \#3\/A\ adj\ t
+__ cxcmd: isolde\ restrain\ dist\ \#1\/A\ template\ \#3\/A\ adj\ t
 
-`isolde restrain distances #4/B template #3/B adjustForConfidence true`__
+`isolde restrain distances #1/B template #3/B adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ dist\ \#4\/B\ template\ \#3\/B\ adj\ t
+__ cxcmd: isolde\ restrain\ dist\ \#1\/B\ template\ \#3\/B\ adj\ t
 
-`isolde restrain distances #4/F template #3/F adjustForConfidence true`__
+`isolde restrain distances #1/F template #3/F adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ dist\ \#4\/F\ template\ \#3\/F\ adj\ t
+__ cxcmd: isolde\ restrain\ dist\ \#1\/F\ template\ \#3\/F\ adj\ t
 
-`isolde restrain distances #4/G template #3/G adjustForConfidence true`__
+`isolde restrain distances #1/G template #3/G adjustForConfidence true`__
 
-__ cxcmd: isolde\ restrain\ dist\ \#4\/G\ template\ \#3\/G\ adj\ t
+__ cxcmd: isolde\ restrain\ dist\ \#1\/G\ template\ \#3\/G\ adj\ t
+
+
+We no longer need the reference models, so we can go ahead and close them:
+
+`close #3`__
+
+__ cxcmd:close\ #3
 
 Now your model should look something like this:
 
@@ -425,23 +443,25 @@ Now your model should look something like this:
 
 .. figure:: images/all_restrained_detail.jpg
 
-Of course, right now all the restraints look completely satisfied - because of course they 
-are, since the working and reference models are identical. That's about to change. Zoom out
-so you can see the whole model, set the mask radius back to 5 or 6 Angstroms, and switch back 
-to spotlight mode (bottom right button). Now, select the whole model:
+Of course, right now all the restraints look completely satisfied - because of
+course they are, since the working and reference models are identical. That's
+about to change. Zoom out so you can see the whole model, and switch back to
+spotlight mode (using the button on the ISOLDE ribbon menu). Now, select the
+whole model:
 
-`sel #4`__
+`sel #1`__
 
-__ cxcmd:sel\ \#4
+__ cxcmd:sel\ \#1
 
-\... and you're ready to start a simulation running. If you're not running on a 
-machine with a high-end GPU (ideally, a GTX 1060 or better), you might want to 
-set the "Sim Fidelity" mode to "Quick" using the radio buttons on the Sim settings 
-tab first. This makes some simplifications to the MD environment to speed it up 
-substantially at the expense of some fine detail - but remember that (a) everything
-is now quite tightly restrained, and (b) we can always go back to high-fidelity mode
-to clean up the details once this initial fitting is done. Anyway, go ahead and start
-the simulation, either by pressing the play button, or using:
+\... and you're ready to start a simulation running. If you're not running on a
+machine with a high-end GPU (ideally, a GTX 1060 or better), you might want to
+set the "Sim Fidelity" mode to "Quick" using the "Simulation Fidelity/Speed"
+widget on the General tab first. This makes some simplifications to the MD
+environment to speed it up substantially at the expense of some fine detail -
+but remember that (a) everything is now quite tightly restrained, and (b) we can
+always go back to high-fidelity mode to clean up the details once this initial
+fitting is done. Anyway, go ahead and start the simulation, either by pressing
+the play button, or using:
 
 `isolde sim start sel`__
 
@@ -462,16 +482,16 @@ Just keep an eye on it, and stop the simulation when it appears no further bulk 
 happening (typically 30-60 seconds on a GTX 1080 GPU). Now, let's first hide all the satisfied
 distance restraints:
 
-`isolde adjust distances #4 displayThreshold 0.5`__
+`isolde adjust distances #1 displayThreshold 0.5`__
 
-__ cxcmd:isolde\ adj\ dist\ \#4\ disp\ 0.5
+__ cxcmd:isolde\ adj\ dist\ \#1\ disp\ 0.5
 
 \... and take a look at a few notable sites. First, the cleft between the 124-139 and 169-186 
 helices on chain A:
 
-`view #4/A:124-139,169-186`__
+`view #1/A:124-139,169-186`__
 
-__ cxcmd:view\ \#4\/A:123-139,169-186
+__ cxcmd:view\ \#1\/A:123-139,169-186
 
 .. figure:: images/A124-139_helix_cleft.jpg
 
@@ -488,28 +508,14 @@ restraints involving at least one selected atom  For maximum specificity, howeve
 "to" argument to specify a second set of atoms; this will release only those restraints between the
 main selection and the "to" selection. For example:
 
-`isolde release distances #4/A:164-186 to #4/A:124-126,139-154`__
+`isolde release distances #1/A:164-186 to #1/A:124-126,139-154`__
 
-__ cxcmd:isolde\ release\ distances\ \#4\/A:164-186\ to\ \#4\/A:124-126,139-154
+__ cxcmd:isolde\ release\ distances\ \#1\/A:164-186\ to\ \#1\/A:124-126,139-154
 
 \... should selectively release the restraints across this gap.
 
-Now, on to a site that was previously challenging but has become straightforward. The loop from 
-287-297 of chain F, along with most of the following helix, typically came out one residue out 
-of register when starting from the original 6mhz, and required quite a bit of manual intervention
-to fix. Let's take a look at it here:
-
-`view #4/F:287-297`__
-
-__ cxcmd:view\ \#4\/F:287-297
-
-.. figure:: images/F287-297_loop.jpg
-
-With some minor caveats, it all looks rather good! Two exceptions are the distance restraints
-on Pro F291 which are obviously wrong in this map, and the Tyr F80 rotamer pointing the wrong
-way. We should go ahead and release those. This can be done with the "isolde release distances" 
-and "isolde release torsions" command respectively - but let's make life a bit easier (and less 
-wordy) by activating ISOLDE's shorthand:
+Now, you'll probably agree that the above command is a bit wordy. To cut down on
+typing, you can activate ISOLDE's shorthand:
 
 `isolde shorthand`__
 
@@ -527,50 +533,40 @@ atoms, "rt" will release all torsion restraints for residues with at least one
 atom selected. The optional arguments to the full commands are still valid, so
 e.g. "rd ext t" will preserve distance restraints where *both* atoms are
 currently selected; "rt backbone f" will release only the torsion restraints on
-sidechains. Go ahead and try this, either by manually selecting then typing for
-yourself, or:
+sidechains. So, if you first select residues 164-186 of chain A in whichever way 
+you prefer, the above "isolde release distances" command reduces to:
 
-`sel /F:291;rd`__
+`rd to #1/A:124-126,139-154`__
 
-__ cxcmd:sel\ \/F:291;rd
+__ cxcmd:rd\ to\ #1/A:124-126,139-154
 
-`sel /F:80; ra`__
+The "Manage/Release Adaptive Restraints" widget on ISOLDE's Restraints tab also allows you 
+to selectively release restraints without any typing needed.
 
-__ cxcmd:sel\ \/F:80;ra
+Now, on to a site that was previously challenging but has become straightforward. The loop from 
+300-306 of chain G, along with most of the following helix, typically came out one residue out 
+of register when starting from the original 6mhz, and required quite a bit of manual intervention
+to fix. Let's take a look at it here:
 
-It wouldn't hurt to run a quick simulation to apply this:
+`sel #1/G:300-306; view sel`__
 
-`sel /F:80,291; isolde sim start sel`__
+__ cxcmd:sel\ \#1\/G:300-306;view\ sel
 
-__ cxcmd:sel\ \/F:80,291;isolde\ sim\ start\ sel
+.. figure:: images/G300-306_fitted.jpg 
 
-.. figure:: images/F80_291_corrected.jpg
-  
-That's better. Now, we can also inspect along the rest of the previously
-out-of-register stretch to see how it's settled. You can do that either by
-simply dragging the display along the helix, but if you want to be more
-systematic try using the "isolde step" (shorthand "st") command:
+Where previously it was difficult-but-tractable to rebuild this manually into the density, now it 
+looks practically perfect as-is! One minor caveat is Pro299 - if you'll recall, in the 
+:ref:`bulk_fitting_tutorial` I ultimately concluded it was probably in *cis*, but AlphaFold thinks 
+it should be *trans*. It's honestly hard to say for certain at this resolution - and even in the 
+significantly higher resolution `6s8n`__ (3.1 Angstroms, released about 6 months after 6mhz) it's 
+still quite ambiguous, with both *cis* and *trans* conformations looking a bit strained. All in 
+all, probably best to go with AlphaFold on this one.
 
-`st /F:291`__
+__ https://www.rcsb.org/structure/6S8N
 
-__ cxcmd:st\ \#4/F:291
 
-\... then simply repeat the command `st`__ to move residue-by-residue along the
-chain from that point. Stop for now when you get to Phe310.
 
-__ cxcmd:st
 
-I hope you'll agree that with the exception of a few minor rotamer issues (e.g.
-Met 303 - if you want to take care of this, you know what to do by now)
-
-.. figure:: images/Met_F303_rotamer.jpg
-
-\... everything's looking pretty good. While there are other details to clean up
-here and there, most of them are rather minor and won't be covered here -
-they're the sort of thing you tackle by settling in with some nice music and
-running through residue-by-residue once the big things are all done. The last
-thing I'd like to tackle for the purposes of this tutorial is that pair of
-poorly-resolved domains at top.
 
 **(NOTE: this region is right on the edge of what can be described as "resolved"
 in this map, and the question of whether it should be modelled at all really
@@ -590,21 +586,21 @@ of the map in Fourier space; the result is often good at showing connectivity
 and the overall "envelope" where a more sharpened map just looks like noise.
 Let's go ahead and do this. First:
 
-`volume gaussian #4 bfactor 300`__
+`volume gaussian #1 bfactor 300`__
 
-__ cxcmd:vol\ gaus\ \#4\ bfactor\ 300
+__ cxcmd:vol\ gaus\ \#1\ bfactor\ 300
 
 \... and associate it with your model for ISOLDE's purposes:
 
-`clipper assoc #1 to #4`__
+`clipper assoc #2 to #1`__
 
-__ cxcmd:clipper\ assoc\ \#1\ to\ \#4
+__ cxcmd:clipper\ assoc\ \#2\ to\ \#1
 
 Now, focus your view around the region we're interested in:
 
-`view #4/F:209`__
+`view #1/F:209`__
 
-__ cxcmd:view\ \#4\/F:209
+__ cxcmd:view\ \#1\/F:209
 
 \... and adjust your map contour levels for both maps to around 3.6 sigma
 (remember: alt-scroll to adjust contours, ctrl-scroll to select which map is to
@@ -684,9 +680,9 @@ settle of the complete model.
 
 __ cxcmd:isolde\ sim\ stop
 
-`isolde sim start #4`__
+`isolde sim start #1`__
 
-__ cxcmd:isolde\ sim\ start\ \#4
+__ cxcmd:isolde\ sim\ start\ \#1
 
 Let that settle for a minute or so, then stop.
 
@@ -694,15 +690,17 @@ While there is of course more that can (and should) be done with this model
 before downstream use, that's where we'll leave this tutorial. The next
 advisable step would be a thorough residue-by-residue checkup *(hint: you can go
 to the first residue in the model with* `st first`__ *and step through from
-there)*, releasing restraints where they don't agree with the map and making
-adjustments in short sims as necessary. Given the poor residue around those top
-domains there's not a whole lot more ISOLDE can do to help there - but the
-result is at least good enough to help guide further experiments in future.
-Another thing that ISOLDE can't yet do (at least not without a lot of effort
-first) is help with modelling the bound lipopolysaccharide - while in theory
-this could certainly be parameterised for MD, in practice using current tools
-this would be a very challenging project in its own right. This is, however,
-something that is likely to change in the reasonably near future - watch this
-space!
+there with repeated* `st`__ *commands)*, releasing restraints where they don't
+agree with the map and making adjustments in short sims as necessary. Given the
+poor residue around those top domains there's not a whole lot more ISOLDE can do
+to help there - but the result is at least good enough to help guide further
+experiments in future. Another thing that ISOLDE can't yet do (at least not
+without a lot of effort first) is help with modelling the bound
+lipopolysaccharide - while in theory this could certainly be parameterised for
+MD, in practice using current tools this would be a very challenging project in
+its own right. This is, however, something that is likely to change in the
+reasonably near future - watch this space!
 
 __ cxcmd:st\ first
+
+__ cxcmd:st
