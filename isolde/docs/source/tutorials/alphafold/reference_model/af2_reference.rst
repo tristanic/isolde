@@ -140,8 +140,7 @@ unfavourable states (driving the R-factors up, but generally making the problems
 easier to diagnose and fix).   
 
 Anyway, let's throw out what we just did and revert to the initial state of the
-model. Hit the big red stop button and click OK on the dialogue that pops up, or
-equivalently:
+model. Hit the big red stop button, or equivalently:
 
 `isolde sim stop discardTo start`__
 
@@ -153,15 +152,15 @@ AlphaFold database - you can see the list of organisms* `here`_ *)*:
 
 .. _here: https://alphafold.ebi.ac.uk/download
 
-`alphafold match #1 trim true`__
+`alphafold match #1 trim false`__
 
-__ cxcmd:alphafold\ match\ \#1\ trim\ true
+__ cxcmd:alphafold\ match\ \#1\ trim\ false
 
-The optional "trim true" argument causes ChimeraX to automatically trim the
+The optional "trim" argument tells ChimeraX whether or not to automatically trim the
 predicted models to include only those residues present in the experimental
-construct according to the sequences stored in the mmCIF file *(Note: this may
-be more than what is actually modelled in the experimental structure)*. Your
-display should now look like this:
+construct according to the sequences stored in the mmCIF file. In order for 
+confidence-based weighting of reference distance restraints to work correctly, this
+**must** be set to false. Your display should now look like this:
 
 .. figure:: images/model_with_alphafold_overlay.jpg
 
@@ -180,8 +179,8 @@ AlphaFold actually provides *two* different measures of confidence in its
 predictions, each of which is really useful in its own way. The pLDDT score, a
 measure of confidence in the conformation and immediate local environment of a
 residue, is a fairly natural measure to use to adjust the weights of
-torsion-space reference model restraints. This is achieved with the new argument
-"adjustForConfidence true" added to the "isolde restrain torsions" command. The
+torsion-space reference model restraints. This is achieved with the argument
+"adjustForConfidence true" of the "isolde restrain torsions" command. The
 overall effect of the adjustment scheme is shown below - qualitatively speaking,
 reducing pLDDT will lead to both weaker and "fuzzier" restraints on the matching
 residue. Residues for which the reference model pLDDT values are less than 50
@@ -189,7 +188,12 @@ will *not* be restrained.
 
 .. figure:: images/torsion_restraint_plddt_adjustments.png
 
-So let's go ahead and apply these:
+So let's go ahead and apply these. You can do this chain-by-chain with the Reference
+Models widget on ISOLDE's Restraints tab:
+
+.. figure:: images/reference_models_widget_torsions.png
+
+\... or using the commands:
 
 `isolde restrain torsions #1/A template #2/A adjustForConfidence true`__
 
@@ -245,10 +249,10 @@ better. Let's see what that matrix looks like rescaled to that range:
 .. figure:: images/PAE_chain_A_4A_color_scale.png
 
 Distance restraints will only be applied on a given pair of atoms if their
-reference positions are less than 8 **and** the PAE between their parent
-residues is less than or equal to 4 angstroms (i.e. where they correspond to a
-green dot on the above plot). For residues meeting those criteria,
-representative plots of the restraint potentials are shown below.
+reference positions are less than 8 Angstroms apart **and** the PAE between
+their parent residues is less than or equal to 4 angstroms (i.e. where they
+correspond to a green dot on the above plot). For residues meeting those
+criteria, representative plots of the restraint potentials are shown below.
 
 .. figure:: images/distance_restraint_pae_adjustments.png
 
@@ -270,7 +274,12 @@ model/template residue pairs strictly based on sequence alignment only, which
 makes sure that restraints between confidently-predicted atoms are assigned no
 matter how badly placed they are in the working model.  
 
-Anyway, let's make it happen.
+Anyway, let's make it happen. Again, you can do this via the Reference Models
+widget:
+
+.. figure:: images/reference_models_widget_distances.png
+
+\... or via commands:
 
 `isolde restrain distances #1/A template #2/A adjustForConfidence true
 useCoordinateAlignment false`__
@@ -293,8 +302,8 @@ __ cxcmd:hide\ \#!2\ models
 
 __ cxcmd:sel\ #1
 
-\... and expand the map to cover it (second button from bottom right of the
-ISOLDE panel, or)
+\... and expand the map to cover it using the "Mask to selection" button on ISOLDE's
+ribbon menu, or:
 
 `clipper isolate sel`__
 
@@ -312,7 +321,8 @@ display setting of only the top-level "container" model for the maps, without
 changing the display settings of the maps themselves. This is important to make
 it easy to get back exactly the same view as we had before)*
 
-Also, let's hide all the restraints that are close to satisfied:
+Also, let's hide all the restraints that are close to satisfied via the Manage/Release
+Adaptive Restraints widget, or:
 
 `isolde adjust distances #1 displayThreshold 0.5`__
 
@@ -369,7 +379,13 @@ distance restraints that ISOLDE is unable to fix it automatically.
 
 That's alright. We'll get to fixing that in a bit. First, though, let's take a
 quick inventory of what ISOLDE *has* been able to do with the aid of these
-restraints. Take another look at the Ramachandran plots:
+restraints. Stop the simulation:
+
+`isolde sim stop`__
+
+__ cxcmd:isolde\ sim\ stop
+
+\... and take another look at the Ramachandran plots:
 
 .. figure:: images/settle_with_restraints_ramaplots.png
 
@@ -437,7 +453,7 @@ If you find the display too busy, `hide the AlphaFold model`__ again. Now, let's
 try the simplest (and often fastest) approach - just directly helping out with a
 bit of right-mouse tugging. 
 
-__ cxcmd:hide\ #!2 model
+__ cxcmd:hide\ #!2\ model
 
 A good place to start might be `Asn 372`__, buried in the hydrophobic core when
 it wants to be exposed to solvent. Rotate your view so you're looking along the
@@ -462,7 +478,7 @@ N-terminal residues of the strand to fall into place:
 Play around with the rest of the strand - a good next move might be to pull
 Arg375 outwards. When you're done, hit the red checkered flag to revert to the
 original bad geometry and we'll try using the register shifter instead (this
-widget on the Rebuild tab):
+widget on the Restraints tab):
 
 .. figure:: images/register_shifter.png
 
@@ -481,12 +497,12 @@ N-terminus. So, select the residues you want to shift:
 
 __ cxcmd:sel\ #1\/A:367-378
 
-\... dial up "-1" in the register shifter, then click its button. When it's done
-(it should only take a few seconds), click its red 'X' to release the position
-restraints. While Arg375 might still need a little manual help, the rest should
-just fall into place. Take a little time to clean up the surroundings *(hint:
-Ile351 should really point into the core)*, and when you're ready click the
-green STOP button to stop the simulation and commit the results.
+\... dial up the desired shift in the register shifter, then click its button.
+When it's done (it should only take a few seconds), click its red 'X' to release
+the position restraints. While Arg375 might still need a little manual help, the
+rest should just fall into place. Take a little time to clean up the
+surroundings *(hint: Ile351 should really point into the core)*, and when you're
+ready click the green STOP button to stop the simulation and commit the results.
 
 If you're on the "Problem Zones" tab when you stop the simulation the table will
 automatically update; otherwise, switch there and click the Update button now.
@@ -567,9 +583,9 @@ top is *completely* wrong (albeit only predicted with low confidence):
 As with the previous case, you'll want to go ahead and release these restraints.
 While remodelling this area, you'll probably also notice a few symmetry clashes.
 If you want to fix these (and it's clear that it's the symmetry-related atoms
-that are wrong), stop your simulation then hover over one of the offending
-symmetry atoms to get the chain ID and residue number. Then do "view #1/{chain
-ID}:{residue number}" to go there and fix it before moving on. Don't be afraid
+that are wrong), stop your simulation then double-click on one of the offending
+symmetry atoms to select and centre the view on its "real" equivalent, allowing 
+you to start a local simulation to fix it before moving on. Don't be afraid
 to use a few judicious position restraints if the local density is poor.
 
 Anyway, keep on working your way through until the table is empty. This
@@ -582,17 +598,18 @@ residue in your structure with "st first" and continue stepping through by
 repeating the "st" command)* But before doing that, it would be a *very* good 
 idea to run a refinement at this point to make sure you're working with the 
 best possible maps. To write input ready for *phenix.refine*, first navigate 
-to a suitable directory with:
+to a suitable directory with the command:
 
-`cd browse`__
-
-__ cxcmd:cd\ browse
+cd browse
 
 \... then do:
 
-`isolde write phenixRefineInput #1 numProcessors 6`__
+isolde write phenixRefineInput #1 numProcessors 6
 
-__ cxcmd:isolde\ write\ phenixRef\ #1\ numProcessors\ 6
+*(NOTE: due to the way these interactive tutorials are implemented, you will need
+to type - or copy/paste - these commands into the command line yourself, otherwise 
+the files will be written to the wrong directory.)*
+
 
 This will write a snapshot of your current model (without hydrogens unless you 
 use the optional "includeHydrogens true" argument) along with an MTZ file and 
