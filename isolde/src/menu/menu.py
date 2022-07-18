@@ -35,12 +35,16 @@ def prepare_isolde_menu(session):
 
                 spec.loader.exec_module(foo)
                 tooltip = getattr(foo, 'tooltip', '')
+                display_name = getattr(foo, 'display_name', None)
                 menu_labels = os.path.normpath(e_path[0]).split(os.sep)
                 formatted_labels = ['ISOLDE']
                 for label in menu_labels:
                     if len(label) and label != '.':
                         formatted_labels.append(format_label(label))
-                menu_entry = format_label(file)
+                if display_name is None:
+                    menu_entry = format_label(file)
+                else:
+                    menu_entry = display_name
                 # def f(session=session):
                 #     print('Running script')
                 #     foo.run_script(session)

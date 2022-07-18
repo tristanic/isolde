@@ -8,8 +8,8 @@
 
 from chimerax.atomic import selected_residues, Residue
 from chimerax.core.errors import UserError
-
 tooltip = ('Add an OXT atom to a C-terminal amino acid residue.')
+display_name = 'Add OXT'
 
 def add_oxt(session, residue):
     catom = residue.find_atom('C')
