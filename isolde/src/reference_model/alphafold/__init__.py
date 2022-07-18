@@ -77,3 +77,20 @@ plddt_failure_reasons = {
     'inverted': 'High pLDDT values correspond to high confidence, but the median value for unstructured residues is higher than the median value for structured ones.',
     'different within residues': 'For models with pLDDT scores in the B-factor column, all atoms in a residue typically have the same score assigned. That is not true for this model.'
 }
+
+def convert_plddt_to_b_factors(m):
+    from chimerax.core.errors import UserError
+    looks_like, reason = b_factors_look_like_plddt(m)
+    if not looks_like:
+        raise UserError('The values in the B-factor column of this model do not look like pLDDT values. '
+            f'{plddt_failure_reasons[reason]}')
+    bvals = m.atoms.bfactors
+    # Normalise to (0..1)
+    if max(bvals) > 1:
+        bvals /= 100
+    import numpy
+    from math import pi
+    # From the supplementary info of https://doi.org/10.1126/science.abj8754
+    err = 1.5*numpy.exp(4*(0.7-bvals))
+    m.atoms.bfactors = 8*pi**2*err*2/3
+    
