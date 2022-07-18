@@ -557,6 +557,15 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         if len(template_us) != 1:
             raise UserError('Template residues must be from a single model! '
                 'Residues are {} in {}'.format(trs.numbers, ','.join(s.id_string for s in trs.structures)))
+    unique_template_chain_ids = set()
+    unique_model_chain_ids = set()
+    if not per_chain:
+        for trs, rrs in zip(template_residues, restrained_residues):
+            unique_template_chain_ids.update(trs.unique_chain_ids)
+            unique_model_chain_ids.update(rrs.unique_chain_ids)
+        if len(trs) < len(rrs):
+            raise UserError('If `per_chain` is False, each template chain can only be used for one chain in your working model!')
+
     template = template_us[0]
     restrained_model = restrained_us[0]
     from ..atomic.util import correct_pseudosymmetric_sidechain_atoms
@@ -682,14 +691,21 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         else:
             # If we're not simply restraining the model to itself, we need to do an
             # alignment to get a matching pair of residue sequences
-            tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
-                session, template_residues, restrained_residues
-            ))
-            tpas = [tpa]
-            rpas = [rpa]
-            if per_chain:
-                tpas = split_chains(tpas[0])
-                rpas = split_chains(rpas[0])
+            if not per_chain:
+                tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
+                    session, template_residues, restrained_residues
+                ))
+                tpas = [tpa]
+                rpas = [rpa]
+            else:
+                tpas = []
+                rpas = []
+                for trs, rrs in zip(template_residues, restrained_residues):
+                    tpa, rpa = paired_principal_atoms(sequence_align_all_residues(
+                        session, [trs],[rrs]
+                    ))
+                    tpas.append(tpa)
+                    rpas.append(rpa)
             from chimerax.std_commands import align
             for tpa, rpa in zip(tpas, rpas):
                 while len(tpa) >3 and len(rpa) >3:

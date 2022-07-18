@@ -364,8 +364,15 @@ class ReferenceModelDialog(UI_Panel_Base):
                 self.session.logger.warning('"Adjust for PAE" is checked in the distance restraint options, but '
                     'the reference model has no PAE matrix assigned. This option has been ignored.')
                 adjust_for_confidence = False
+            restrain_interfaces = distance_options["restrain interfaces"]
+            if restrain_interfaces:
+                if len(set(ref_sigs)) < len(ref_sigs):
+                    self.session.logger.warning('The same chain is being used to restrain distances for two different '
+                        'chains in your working model, which is incompatible with the "Restrain Interfaces" option. This '
+                        'option is ignored - distances across chain boundaries will not be restrained.')
+                    restrain_interfaces=False
             cmd = (f'isolde restrain distances {model_sigs} template {ref_sigs} '
-                f'perchain {not distance_options["restrain interfaces"]} '
+                f'perchain {not restrain_interfaces} '
                 f'adjustForConfidence {adjust_for_confidence} '
                 f'useCoordinateAlignment {distance_options["use coordinate alignment"]} '
                 f'kappa {distance_options["strength"]:.2f} '
