@@ -193,7 +193,8 @@ def _prep_tut_dir(session, tut_name, source_dir):
 
 
 _tut_info = {
-    'alphafold_cryoem_multimer': ('AlphaFold-multimer 7drt', '7drt')
+    'alphafold_cryoem_multimer': ('AlphaFold-multimer 7drt', '7drt'),
+    'alphafold_mr': ('Molecular replacement with AlphaFold models', '3now')
 }
 def isolde_tutorial(session, prep=None):
     if prep is None:
