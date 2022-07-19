@@ -419,7 +419,6 @@ class XmapSettingsDialogBase(MapSettingsDialog):
             ms = QTreeWidgetItem(parent)
             ms.setText(self.NAME_COLUMN, mapset.base_name)
             ms.setText(self.ID_COLUMN, mapset.id_string)
-            self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
             ret[mapset.name] = (ms, maps)
         return ret            
 
@@ -476,7 +475,6 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
             ms.setText(self.NAME_COLUMN, mapset.base_name)
             ms.setText(self.ID_COLUMN, mapset.id_string)
             self.add_live_recalc_checkbox(ms, self.LIVE_COLUMN, mapset)
-            self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
             ret[mapset.name] = (ms, maps)
         return ret            
 
@@ -576,7 +574,6 @@ class NXmapSettingsDialog(MapSettingsDialog):
             ms = QTreeWidgetItem(parent)
             ms.setText(self.NAME_COLUMN, mapset.name)
             ms.setText(self.ID_COLUMN, mapset.id_string)
-            self.add_display_menu_checkbox(ms, self.DISPLAY_COLUMN, mapset)
             ret[mapset.name] = (ms, mapset.all_maps)
         return ret
         
