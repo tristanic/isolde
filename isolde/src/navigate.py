@@ -214,9 +214,9 @@ class ResidueStepper(StateManager):
             vd = c.view_direction()
             dist = numpy.linalg.norm(cofr-origin)
             cp = v.clip_planes
-            ncm, fcm = _get_clip_distances(session, dist)
-            cp.set_clip_position('near', origin + vd*dist*(1-ncm), v)
-            cp.set_clip_position('far', origin + vd*dist*(1+fcm), v)
+            ncp, fcp = _get_clip_points(session, dist)
+            cp.set_clip_position('near', ncp, v)
+            cp.set_clip_position('far', fcp, v)
             if c.name=='orthographic':
                 c.field_width = fw+frac*(nfw-fw)
 
@@ -348,11 +348,13 @@ class ResidueStepper(StateManager):
         self._max_interpolate_distance = data['interp_distance']
         self._view_distance = data['view_distance']
 
-def _get_clip_distances(session, dist):
+def _get_clip_points(session, dist):
     from chimerax.clipper.mousemodes import ZoomMouseMode
     mm = [b.mode for b in session.ui.mouse_modes.bindings if isinstance(b.mode, ZoomMouseMode)]
+    c = session.view.camera
     if len(mm):
         zmm = mm[0]
-        return (zmm.adjusted_clip_multiplier(zmm.near_clip_multiplier, dist),
-        zmm.adjusted_clip_multiplier(zmm.far_clip_multiplier, dist))
-    return (0.5, 0.5)
+        o = c.position.origin()
+        vd = c.view_direction()
+        return (zmm.near_clip_point(o, vd*dist, dist), zmm.far_clip_point(o, vd*dist, dist))
+    return (o+vd*dist*0.5, o+vd*dist*1.5)
