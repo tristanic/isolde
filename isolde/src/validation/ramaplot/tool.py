@@ -206,7 +206,7 @@ class RamaMainWin(MainToolWindow):
                 dummy.setEnabled(False)
             for c in chains:
                 def restrict_to_chain(*_, chain=c):
-                    self.restrict_to_chain(c.chain_id)
+                    self.restrict_to_chain(chain.chain_id)
                 ca = chain_menu.addAction(c.chain_id)
                 ca.triggered.connect(restrict_to_chain)
         chain_menu.aboutToShow.connect(populate_chain_menu)
