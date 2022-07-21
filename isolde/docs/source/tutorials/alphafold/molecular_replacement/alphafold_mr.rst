@@ -92,11 +92,12 @@ As described above, the sensible approach here is to break the predicted model i
 domains for molecular replacement. For this tutorial, I've done that using 
 `phenix.process_predicted_model`__, which does three things:
 
+__ https://phenix-online.org/version_docs/dev-4380/reference/process_predicted_model.html
+
 * Converts the pLDDT values in the model to estimated B-factors,
 * Breaks the model into domains based on analysis of the PAE matrix, and
 * Trims off low-confidence loops and tails.
 
-__ https://phenix-online.org/version_docs/dev-4380/reference/process_predicted_model.html
 
 From there, I've run molecular replacement with `Phaser`__, leading to a very high-confidence
 solution (Log-Likelihood Gain 2331, translation function Z-score 47). That's where we're going
@@ -342,7 +343,7 @@ reflections - the displayed maps should be slightly more informative since they 
 reflections.
 
 You'll probably want to re-contour the maps - after a big rearrangement like this the map 
-sigma values can change quite substantially. Remember, *shift-scroll* to adjust the contour 
+sigma values can change quite substantially. Remember, *alt-scroll* to adjust the contour 
 of a map, and *ctrl-scroll* to select the map to contour. I'd suggest setting the mFo-DFc 
 map to +/- 3 sigma, the sharpened 2mFo-DFc map to 1.5 sigma, and the unsharpened 2mFo-DFc 
 to 1 sigma (approximately - the exact values don't matter).
@@ -462,7 +463,7 @@ do this using shorthand commands:
 
 `rd`__
 
-__cxcmd:rd
+__ cxcmd:rd
 
 to release all distance restraints on the selected atoms;
 
@@ -472,7 +473,7 @@ __ cxcmd:rt
 
 to release all torsion restraints on the selected *residues*; or
 
-`ra`
+`ra`__
 
 __ cxcmd:ra
 
@@ -482,7 +483,7 @@ The Phe is close enough to fall into density on its own once released, but the M
 need some help - I'd recommend just tugging it into position with the right mouse button.
 They should now look something like this:
 
-.. figure:: phe747-met752_fixed.jpg
+.. figure:: images/phe747-met752_fixed.jpg
 
 Now for that C-terminus. First, release the restraints on the tail residues:
 
@@ -501,6 +502,48 @@ conformation, but a little helpful tugging should get you there:
 .. figure:: images/c_term_helix.jpg
 
 Once you get there, go ahead and stop your simulation.
+
+From here, there are many ways you can attack the remaining rebuilding tasks. 
+Perhaps the best way at this early stage is to use ISOLDE's "Problem Zones" 
+widget, which looks for the largest spatial clusters of unsatisfied restraints,
+clashes, and geometry outliers. Switch to that tab now and click the Update 
+button at bottom right. Click the top entry that appears in the table. The 
+result should look something like this (although the precise numbers will 
+of course differ):
+
+.. figure:: images/problem_zones.png
+
+The atoms associated with the problems in the cluster are selected and the view 
+is centred on them, so all you have to do is click play or:
+
+`ss`__
+
+__ cxcmd:ss
+
+\... to start working on it. Now, this region might look a little ugly and 
+daunting at first, but it's actually one of the easiest cases to deal with: 
+spend a little time looking around in it, and you'll realise that the vast 
+majority of the issues are simply due to the restraints disagreeing slightly
+with the density (this is actually the interface between the two legs of the "V",
+which of course shifted quite a bit in our first step). Given that the density 
+here is nice and strong, simply releasing the distance restraints on the 
+mobile selection should solve most of our problems. If you've cleared the 
+selection, click the "Within map mask" button at the bottom of the ISOLDE window
+to select all atoms currently in the map. Then, go to the "Manage/Release 
+Adaptive Restraints" widget on ISOLDE's Restraints tab, and click the 
+"Release all selected" button in the distance restraints (top) section:
+
+.. figure:: images/release_distance_restraints.png
+
+\... or just use the command:
+
+`rd`__
+
+__ cxcmd:rd
+
+
+
+
 
 
 
