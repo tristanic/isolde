@@ -418,7 +418,8 @@ class Isolde():
         Can be set.
         '''
         m = self._selected_model
-        if m is not None and m.was_deleted:
+        if m is not None and not hasattr(m, 'session'):
+            # model was deleted
             self.change_selected_model(None)
         return self._selected_model
 
