@@ -366,7 +366,7 @@ class ReferenceModelDialog(UI_Panel_Base):
                 adjust_for_confidence = False
             restrain_interfaces = distance_options["restrain interfaces"]
             if restrain_interfaces:
-                if len(set(ref_sigs)) < len(ref_sigs):
+                if len(set([c.chain_id for c in distance_pairs.values()])) < len(distance_pairs.values()):
                     self.session.logger.warning('The same chain is being used to restrain distances for two different '
                         'chains in your working model, which is incompatible with the "Restrain Interfaces" option. This '
                         'option is ignored - distances across chain boundaries will not be restrained.')
