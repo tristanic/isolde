@@ -225,7 +225,8 @@ void Dihedral_Mgr<DType>::_delete_dihedrals(const std::set<DType *> &delete_list
         }
         auto rit = _residue_map.find(d->residue());
         if (rit != _residue_map.end()) {
-            _residue_map.erase(rit);
+            auto& dmap = rit->second;
+            dmap.erase(d->name());
         }
         delete d;
     }
