@@ -78,7 +78,7 @@ public:
      *  and returns a pointer to the dihedral. If any dihedral atoms can't be
      *  found, returns nullptr.
      */
-    DType* new_dihedral(Residue *res, const std::string &dname);
+    DType* new_dihedral(Residue *res, const std::string &dname, bool check_existing=true);
 
     //! Attempt to create a new dihedral for the given residue and parameters
     /*! If successful, adds the dihedral to the Dihedral_Mgr internal mapping,
@@ -87,7 +87,7 @@ public:
      */
     DType* new_dihedral(Residue *res, const std::string &dname,
         const std::vector<std::string> &anames, const std::vector<bool> &external,
-        const size_t &first_internal_atom);
+        const size_t &first_internal_atom, bool check_existing=true);
     size_t size() const {return _residue_map.size();}
     size_t bucket_count() const {return _residue_map.bucket_count();}
     void reserve(const size_t &n) {_residue_map.reserve(n);}

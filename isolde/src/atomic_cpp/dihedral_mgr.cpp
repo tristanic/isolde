@@ -40,7 +40,7 @@ void Dihedral_Mgr<DType>::add_dihedral_def(const std::string &rname,
     const std::vector<bool> &externals)
 {
     Amap &am = _residue_name_map[rname];
-    if (am.find(rname) == am.end()) {
+    if (am.find(dname) == am.end()) {
         am[dname] = d_def(anames, externals);
     } else {
         throw std::runtime_error("Dihedral definition already exists!");
@@ -87,8 +87,19 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
 template <class DType>
 DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
     const std::vector<std::string> &anames, const std::vector<bool> &external,
-    const size_t &first_internal_atom)
+    const size_t &first_internal_atom, bool check_existing)
 {
+    if (check_existing)
+    {
+        if (_residue_map.count(res) != 0)
+        {
+            const auto& dm = _residue_map[res];
+            if (dm.count(dname) != 0)
+                throw std::runtime_error("Trying to create a dihedral that already exists!");
+        }
+
+    }
+
     Atom* found_atoms[4];
     Atom* this_atom;
     bool found=false;
@@ -152,7 +163,7 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname,
 } //new_dihedral
 
 template <class DType>
-DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
+DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname, bool check_existing)
 {
     const d_def &ddef = get_dihedral_def(res->name(), dname);
     bool found=false;
@@ -171,7 +182,7 @@ DType* Dihedral_Mgr<DType>::new_dihedral(Residue *res, const std::string &dname)
         return nullptr;
     }
 
-    return new_dihedral(res, dname, anames, external, first_internal_atom);
+    return new_dihedral(res, dname, anames, external, first_internal_atom, check_existing);
 
 } //new_dihedral
 
@@ -192,7 +203,7 @@ DType* Dihedral_Mgr<DType>::get_dihedral(Residue *res, const std::string &name, 
         throw std::out_of_range("Dihedral not found!");
         return nullptr;
     }
-    return new_dihedral(res, name);
+    return new_dihedral(res, name, false);
 }
 
 template <class DType>
