@@ -527,7 +527,7 @@ class XmapStaticSettingsDialog(XmapSettingsDialogBase):
                     go, dag = choice_warning('Since this map was generated from precalculated '
                     'amplitudes and phases, ISOLDE has no way of determining '
                     'whether it is suitable for fitting simulations. If generated '
-                    'from crystallographic data, you should ensure that it is a'
+                    'from crystallographic data, you should ensure that it is a '
                     '2Fo-Fc (or similar) map calculated with the free reflections '
                     'excluded. Are you sure you want to continue?', allow_dont_ask_again=True)
                     if not go:
