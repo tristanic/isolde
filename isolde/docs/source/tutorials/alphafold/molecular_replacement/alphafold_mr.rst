@@ -39,7 +39,7 @@ this tutorial file, which is probably *not* what you want.
 Tutorial: Flexibly fitting an AlphaFold model to match a molecular replacement solution
 ---------------------------------------------------------------------------------------
 
-*Level: Moderate*
+*Level: Moderate to Hard*
 
 .. toctree::
     :maxdepth: 2
@@ -541,9 +541,306 @@ Adaptive Restraints" widget on ISOLDE's Restraints tab, and click the
 
 __ cxcmd:rd
 
+For this site, you shouldn't need to do much more than let it settle for a 
+little bit. While a handful of sidechains are clearly out of position, it's 
+up to you whether to handle them now - saving them for the later detailed 
+cleanup is an entirely valid strategy. When the simulation shows no more 
+sign of concerted bulk movement, stop it. 
 
+`isolde sim stop`__
 
+__ cxcmd:isolde\ sim\ stop
 
+Let's move on to something slightly more challenging. Just outside this region,
+the 179-184 loop is badly out:
+
+`sel :179-184; view sel`__
+
+__ cxcmd:sel\ :179-184;view\ sel
+
+.. figure:: images/179-185_loop.jpg
+
+*(NOTE: this is the same site tackled at the end of the video accompanying our - 
+not published at the time of ISOLDE 1.4's release - 2022 CCP4 Study Weekend manuscript,
+but that used the pre-existing AlphaFold-EBI model for UNIPROT sequence Q9VHW4, where 
+3now is actually Q960B1. The difference between the two sequences is only two fairly innocuous 
+point mutations, but for whatever reason this loop is actually substantially better in 
+the newer model. In the AlphaFold-EBI model Trp185 (right hand side of the above image) 
+and Leu150 had rotamers assigned which placed them on the opposite "side" of each other,
+and the loop itself was in a dramatically different conformation. The job here is 
+much easier by comparison.)*
+
+By now you probably know what to do. Start a simulation:
+
+`ss`__
+
+__ cxcmd:ss
+
+\... then release the restraints and rebuild. It should come out looking like this:
+
+.. figure:: images/179-185_loop_corrected.jpg
+
+Now, let's try something a bit more... ok, *much* more challenging. Residues 455-479 
+are modelled as a short alpha-helix out on the end of a clearly highly-flexible arm. 
+In the deposited model *(comparing to the known solution is cheating a bit, I know - 
+but bear with me for teaching purposes)* this is in a dramatically different position,
+packed into a crystallographic interface:
+
+.. figure:: images/455-479_loop.jpg
+
+    Short blue and long red dashed lines connect equivalent N- and C-terminal residues 
+    respectively.
+
+Now, the biggest problem when modelling a big change like this is that the map is masked 
+around where the atoms are *now*, not where you want them to be. While you *could* 
+increase the mask radius substantially, that comes at a big performance cost. There's a 
+neat trick you can use, though. First, focus on the region containing the unfilled density 
+where this loop should go:
+
+`view :636 pad 0.5`__
+
+__ cxcmd:view\ :636\ 0.5
+
+.. figure:: images/unfilled_density.jpg
+
+\... Hmm. Actually, hold that thought. At the top of this image, it's clear that some 
+symmetry atoms are poking out into the density we want to fit. Let's take care of that 
+first. *Double-click* on any symmetry atom to recentre the view on its equivalent 
+real atom.
+
+.. figure:: images/recentred_on_bad_loop.jpg
+
+Not the greatest fit in the world here! By now you know the drill: explore along the 
+chain in one direction until the model is back in register with the density, take note,
+then explore in the other direction for the same. Select the stretch in between and 
+start a simulation:
+
+`sel :356-374; ss`__
+
+__ cxcmd:sel\ :356-374;ss
+
+Release the local restraints:
+
+`ra`__
+
+__ cxcmd:ra
+
+\... and rebuild, starting from one end. Don't expect perfection yet - due to the
+surrounding messiness this region is legitimately difficult. You'll probably find 
+it easy enough to rebuild the first few residues from each end, but things will 
+get more confusing from there. It would be quite a reasonable strategy to just 
+delete the worst residues for now and build them back later, but it is possible to
+get there without resorting to that. Anyway, once you've done your best, stop 
+the sim.
+
+Back to what we were doing:
+
+`view :636`__
+
+__ cxcmd:view\ :636
+
+The restraints on this side are *also* fighting the density, so do a little more 
+light rebuilding:
+
+`sel :634-640; ss`__
+
+__ cxcmd:sel\ :634-640;ss
+
+`ra`__
+
+__ cxcmd:ra
+
+In my case, only Asp635 needed a little extra help. When done, stop your simulation.
+
+Now, centre the view roughly in between His 636 and the symmetry copy of Asp362, 
+and expand the spotlight radius out to 25 Angstroms using the spinbox on ISOLDE's
+General tab or:
+
+`clipper spotlight radius 25`__
+
+__ cxcmd:clipper\ spotlight\ radius\ 25
+
+The aim here is to get all the density corresponding to our unfitted loop visible at 
+once:
+
+.. figure:: images/expanded_spotlight.jpg 
+
+Now, what we're going to do is take a snapshot of this segment of difference 
+density. Look at the "Dynamic Crystallographic Map Settings" widget to get the model 
+ID of the mFo-DFc map (2.1.1.3). Then:
+
+`vol copy #2.1.1.3; show #2.1.1.3 model`__
+
+__ cxcmd: vol\ copy\ #2.1.1.3;show\ #2.1.1.3\ model
+
+The copy will appear in the Models panel as model #1, and will have exactly the 
+same style and contour as your existing mFo-DFc map making it effectively invisible. 
+We're also only really interested in the positive contour in this case. Let's
+make some adjustments to get it to stand out:
+
+`vol #1 style surface transparency 0.5 sdLevel 2 color yellow`__
+
+__ cxcmd: vol\ #1\ style\ surface\ transparency\ 0.5\ sdLevel\ 2\ color\ yellow
+
+Set the spotlight radius back to 15:
+
+`clipper spot radius 15`__
+
+__ cxcmd:clipper\ spot\ rad\ 15
+
+.. figure:: images/copied_map_fragment.jpg
+
+The point of this map is to give you a temporary visual guide for the rearrangement -
+since it isn't associated with the model it isn't clipped by the spotlight, and 
+doesn't play any physical role in the simulation.
+
+Now, before starting a simulation for a very large rearrangement like this, it 
+is very important to select not only the atoms you want to *move*, but also those 
+that they will be *contacting* once moved into the target position. Remember, in order 
+to keep simulations as responsive as possible, ISOLDE only simulates a small region 
+around your selection - if ISOLDE hides a residue when starting a simulation, the 
+simulation doesn't actually know that residue exists at all! It's easy enough to make
+the selection manually with *ctrl-click*, *ctrl-shift-click*, ChimeraX's up/down key 
+selection promotion/demotion mechanism, and/or ISOLDE's selection manipulation buttons.
+Otherwise, just use the command below:
+
+`sel :454-480,590-600,634-638;ss`__
+
+__ cxcmd:sel\ :454-480,590-600,634-638;ss
+
+When things start moving, pause the simulation:
+
+`isolde sim pause`__
+
+__ cxcmd:isolde\ sim\ pause
+
+.. figure:: images/loop_sim_messy.jpg
+
+This is still a very messy view, with the loop protruding way out into the symmetry 
+atoms and effectively hidden. To make life easier, we can temporarily hide those:
+
+`hide #2.3 model`__
+
+__ cxcmd:hide\ #2.3\ model
+
+\... and also hide our live maps for the time being:
+
+`hide #!2.1 model`__
+
+__ cxcmd:hide\ #!2.1\ model
+
+*(NOTE: if you haven't seen it before, the "#!" operator tells ChimeraX to set the 
+hide flag only on model 2.1, while leaving the flags on its sub-models unchanged. 
+That makes sure that when we reinstate it, the current hide/show state of all the 
+maps will be retained.)*
+
+.. figure:: images/loop_sim_less_messy.jpg
+
+This gives us something a little easier to start from. The first thing we'll want to 
+do is release most of the clearly-wrong restraints. Let's leave the restraints in the 
+helix in place for now, and release the flanking coil segments:
+
+`sel :454-460,470-480; ra`__
+
+__ cxcmd:sel\ :454-460,470-480;ra
+
+The next step will be easier if we first do a little detective work. Look along the 
+density corresponding to the loop, looking for bulky sidechains. Here, I've marked 
+the biggest ones using the "Point" right-mouse mode on ChimeraX's Markers tab:
+
+.. figure:: images/marked_big_sidechains.jpg
+
+A good place to start would be the stretch of density in the foreground below, which 
+from the way it connects in the vicinity of Asp480 clearly corresponds to the 
+C-terminal arm of the loop (show/hide the Map Manager (model 2.1) on the Models
+panel to convince yourself of this).
+
+.. figure:: images/loop_cterm_arm.jpg
+
+Trace along the strand to this until you get to the first sidechain blob I've marked 
+(between Leu596 and Tyr638). The pocket this projects into looks very hydrophobic 
+(surrounded primarily by carbon atoms), and the shape is very "Ile-like":
+
+.. figure:: images/ile_density.jpg
+
+Go back to Asp480, and trace along the protein chain looking for a match (from the 
+distance, we want something around 6-10 residues from Asp480). Ile472 looks like a 
+strong contender. *ctrl-click* its C-beta atom (the first carbon of the sidechain) 
+to select:
+
+.. figure:: images/ile_472.jpg
+
+Now, move back to the target density. Place the crosshairs about where you'd expect 
+the C-beta to sit in the density. Go to the "Position Restraints" widget on ISOLDE's 
+Restraints tab, and click the "Pin to pivot" button. Your view should now look like 
+this:
+
+.. figure:: images/ile_472_pin.jpg
+
+    Pardon the yellow-on-yellow colour scheme here - I didn't think quite this far 
+    ahead when choosing the map colour!
+
+Let's see if this makes sense. Resume the simulation:
+
+`isolde sim resume`__
+
+__ cxcmd:isolde\ sim\ resume
+
+You'll probably need to give the Ile a little help to get all the way into position
+(if like me you placed markers, don't forget to switch the right mouse button back to
+tugging mode on the ribbon menu or with `ui mousemode right "isolde tug atom"`__ first!).
+Once it's there, reinstate the view of ISOLDE's live maps and symmetry atoms with:
+
+__ cxcmd:ui\ mousemode\ right\ "isolde\ tug\ atom"
+
+`show #2.3|#!2.1 models`__
+
+__ cxcmd:show\ #2.3|#!2.1\ models
+
+Don't worry about the helix just yet - a good sanity-check would be to see how well you 
+can get the stretch between Ile472 and Asp480 to fit the density. Here's where I got 
+to after some playing:
+
+.. figure:: images/loop_cterm_fitted.jpg
+
+I think that clearly shows we're on the right track! That's reassuring... now would 
+be a very good time to take a checkpoint. 
+
+.. figure:: images/save_checkpoint.png
+
+Now, move back to Ile472 and start rebuilding N-terminal to it *(you'll need to release 
+some restraints on the helix - turns most of it isn't strictly helical in this case after 
+all)*. Whenever you feel the temporary map is no longer needed, go ahead and close it with:
+
+`close #1`__
+
+__ cxcmd:close\ #1
+
+With the exception of the N-terminal arm, the density here is very strong - keep at it
+and you should progress fairly straightforwardly. In places where tugging feels a bit 
+confusing or imprecise, try using temporary position restraints like the one we applied 
+to Ile472 to help. Here's where I ended up (the labelled residues correspond to the
+bulky sidechain densities I originally marked in the temporary map).
+
+.. figure:: images/loop_fitted.jpg
+
+If you've managed to get this far, congratulations! You've just tackled what is 
+arguably the hardest part of this case study. While there is still quite a bit of 
+work needed to bring this model to "final" quality, most of it is quite 
+straightforward using the toolkit you've just learned. My general strategy 
+from here would be to keep working through the "Problem Zones" widget until 
+it finds no more clusters. At that point I'd run a refinement (you can prepare 
+input for *phenix.refine* with the `isolde write phenixRefineInput`__ command)
+to improve the model B-factors while I take a coffee break. Starting a fresh 
+ISOLDE session with the resulting model should give you better-quality maps for 
+the final end-to-end polish (just `st`__ through from first to last residue, 
+starting little micro-sims to explore/correct any issues you find). After that,
+I'd save and run what in most cases would be the final refinement (in some 
+particularly challenging datasets you might need another round or two).
+
+__ help:user/commands/isolde.html#write-phenixRefineInput
+
+__ cxcmd:st
 
 
 
