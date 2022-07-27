@@ -21,7 +21,7 @@ def _property_factory(name):
 def autodoc(cls):
     _init_docstring = '''
         Initialise the simulation parameters, specifying any non-default
-        values.\n'''
+        values.\n\nParams:\n\n'''
     _param_list = ''
     for key, val in cls._default_params.items():
         if type(val[0]) == float:
@@ -32,7 +32,7 @@ def autodoc(cls):
             val1 = ''
         else:
             val1 = val[1]
-        _param_list += '\t@param {:>} \t {} {}\n'.format(key, val0, val1).expandtabs(20)
+        _param_list += '\t* {:>}: \t {} {}\n'.format(key, val0, val1).expandtabs(20)
     cls.__init__.__doc__ = _init_docstring+_param_list
     return cls
 
