@@ -8,17 +8,21 @@ of the basic tools in ISOLDE, and differ primarily in the source of data. If
 this is your first time using ISOLDE, just pick the one most relevant to your
 situation.)*
 
-.. toctree::
-    :maxdepth: 1
 
 Introductory
 ------------
+
+.. toctree::
+    :maxdepth: 1
 
     intro/crystal_intro/crystal_intro
     intro/cryo_intro/cryo_intro
 
 Intermediate to Advanced
 ------------------------
+
+.. toctree::
+    :maxdepth: 1
 
     alphafold/from_scratch/from_scratch
     alphafold/reference_model/af2_reference
@@ -27,5 +31,8 @@ Intermediate to Advanced
 
 Superseded
 ----------
+
+.. toctree::
+    :maxdepth: 1
 
     bulk_fitting/bulk_fitting

@@ -1,3 +1,9 @@
+.. toctree::
+   :maxdepth: 3
+
+   isolde_restrain
+   isolde_remote
+
 The ISOLDE Command Line
 -----------------------
 
