@@ -89,7 +89,8 @@ class Isolde():
     '''
     The master ISOLDE class, primarily designed to be used by the ISOLDE GUI as
     the front-end interface for starting, controlling and analysing interactive
-    simulations. Should only be used as a session-level singleton.
+    simulations. Should only be used as a session-level singleton. Once initialised
+    will be accessible as :py:attr:`session.isolde`.
     '''
     ####
     # Environment information
