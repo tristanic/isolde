@@ -821,8 +821,8 @@ def restrain_secondary_structure(session, residues, target):
     '''
     Restrain all amino acid residues in a selection to a target secondary
     structure. Secondary structure restraints consist of dihedral restraints
-    on phi and psi, and distance restraints on (CA(n)-CA(n+2)) and
-    (O(n)-O(n+4)).
+    on phi and psi, distance restraints on (CA(n)-CA(n+2)) and
+    (O(n)-O(n+4)), and H-bonds between adjacent beta-strands.
 
     Args:
         * atoms:
