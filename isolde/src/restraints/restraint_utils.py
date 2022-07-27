@@ -796,26 +796,6 @@ def _categorise_strand_pair(strands, hbonds):
 BETA_H_BOND_DISTANCE = 2.9
 BETA_H_BOND_STD = 0.08
 
-def restrain_as_beta_sheets(session, residues, minimum_length=2):
-    from ..util import find_contiguous_fragments
-    strands = find_contiguous_fragments(residues)
-    m = residues.unique_structures[0]
-    from chimerax.hbonds import find_hbonds
-    # Filter out any overly-short strands
-    strands = [s for s in strands if len(s) >= minimum_length]
-    strand_pair_dict = {}
-    for i, strand in enumerate(strands):
-        for other_strand in strands[i+1:]:
-            strand_donors = strand.atoms[strand.atoms.names=='N']
-            strand_acceptors = strand.atoms[strand.atoms.names=='O']
-            other_donors = other_strand.atoms[strand.atoms.names=='N']
-            other_acceptors = other_strand.atoms[strand.atoms.names=='O']
-            dh = find_hbonds(session, [m], donors=strand_donors, acceptors=other_acceptors)
-            ah = find_hbonds(session, [m], donors=other_donors, acceptors=strand_acceptors)
-            if not len(dh) and not len(ah):
-                continue
-            pair_type = _categorise_strand_pair([strand, other_strand], dh+ah)
-
 def release_ss_restraints(residues):
     from chimerax.isolde import session_extensions as sx
     from chimerax.atomic import Residue
