@@ -258,7 +258,6 @@ def register_isolde_restrain(logger):
                 ('fall_off', FloatArg),
                 ('display_threshold', FloatArg),
                 ('adjust_for_confidence', BoolArg),
-                ('confidence_type', EnumOf(['plddt','pae'])),
                 ('group_name', StringArg)
             ]
         )
