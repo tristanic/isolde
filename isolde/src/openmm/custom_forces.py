@@ -363,8 +363,14 @@ class _Map_Force_Base(CustomCompoundBondForce):
             self.updateParametersInContext(context)
             self.update_needed = False
 
-class CubicInterpMapForce(_Map_Force_Base):
+class CubicInterpMapForce_Old(_Map_Force_Base):
     '''
+    (DEPRECATED. Uses the OpenMM :py:class:`Continuous3DFunction`, which pre-calculates
+    64 spline parameters per map point. The memory cost of this becomes prohibitive 
+    for large maps, and the spline calculation causes slow simulation startup times.
+    The newer :py:class:`CubicInterpMapForce` simply uploads the map values to the GPU 
+    as a discrete array, and performs the cubic interpolation on the fly.)
+
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with tricubic interpolation of values.
     '''
@@ -431,15 +437,9 @@ class CubicInterpMapForce(_Map_Force_Base):
         final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
         return final_func
 
-class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
+class CubicInterpMapForce(_Map_Force_Base):
     '''
-    The Continuous3DFunction pre-calculates the 64 coefficients per voxel
-    necessary to quickly interpolate anywhere in the volume. This makes it
-    extremely fast, but the coefficients are stored on the GPU as a single 1D
-    array. In both OpenCL and CUDA, the size of a single array is limited to
-    (signed) INTMAX = 2**31-1 bytes - allowing a maximum of just over 8M voxels.
-    Beyond that, we need to fall back to the slower but more memory-efficient
-    approach of recalculating the interpolation coefficients as needed.
+    Creates a MDFF potential from a 3D map of density values.
     '''
     def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
         '''
@@ -551,9 +551,9 @@ class CubicInterpMapForce_Low_Memory(_Map_Force_Base):
 
 class LinearInterpMapForce(_Map_Force_Base):
     '''
-    NOTE: This class is deprecated, since there is almost no situation in which
+    NOTE: This class is deprecated, since there is no conceivable situation in which
     it is superior to either :class:`CubicInterpMapForce` or
-    :class:`CubicInterpMapForce_Low_Memory`.
+    :class:`CubicInterpMapForce_Old`.
 
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with trilinear interpolation of values.
@@ -1841,7 +1841,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
 
 class GBSAForce(customgbforces.GBSAGBnForce):
     '''
-    Wrapper around :py:class:`openmm.GBSAGBn2Force` which implements the
+    Wrapper around :py:class:`openmm.GBSAGBnForce` which implements the
     generalised Born GB-Neck2 implicit solvent implementation.
     '''
     def __init__(self, solventDielectric=78.5, soluteDielectric=1,
