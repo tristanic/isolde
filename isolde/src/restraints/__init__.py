@@ -18,6 +18,7 @@ from ..molobject import (
     DistanceRestraintMgr,
     AdaptiveDistanceRestraintMgr,
     ProperDihedralRestraintMgr,
+    AdaptiveDihedralRestraintMgr,
     RotamerRestraintMgr,
     ChiralRestraintMgr
     )
@@ -29,6 +30,7 @@ from ..molobject import (
     DistanceRestraint,
     AdaptiveDistanceRestraint,
     ProperDihedralRestraint,
+    AdaptiveDihedralRestraint,
     RotamerRestraint,
     ChiralRestraint
     )
@@ -40,6 +42,7 @@ from ..molarray import (
     DistanceRestraints,
     AdaptiveDistanceRestraints,
     ProperDihedralRestraints,
+    AdaptiveDihedralRestraints,
     RotamerRestraints,
     ChiralRestraints
     )
@@ -47,5 +50,7 @@ from ..molarray import (
 from .restraint_utils import (
     restrain_torsions_to_template,
     restrain_ca_distances_to_template,
-    restrain_small_ligands
+    restrain_atom_distances_to_template,
+    restrain_small_ligands,
+    restrain_secondary_structure
 )
