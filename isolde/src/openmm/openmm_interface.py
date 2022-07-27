@@ -896,13 +896,22 @@ class Sim_Manager:
         make sure that the other atom is included in the fixed selection to
         prevent it drifting unrestrained.
         '''
-        dr_m = self.distance_restraint_mgr
-        drs = dr_m.atoms_restraints(mobile_atoms)
-        from chimerax.atomic import concatenate
-        dr_atoms = concatenate(drs.atoms, remove_duplicates=True)
-        remainder = dr_atoms.subtract(dr_atoms.intersect(mobile_atoms))
-        remainder = remainder.subtract(remainder.intersect(fixed_atoms))
-        fixed_atoms = concatenate((fixed_atoms, remainder.unique_residues.atoms))
+        mgrs = []
+        mgrs.append(self.distance_restraint_mgr)
+        from chimerax.isolde.restraints import AdaptiveDistanceRestraintMgr
+        for m in self.isolde.selected_model.child_models():
+            if isinstance(m, AdaptiveDistanceRestraintMgr):
+                mgrs.append(m)
+        remainders = []
+        for dr_m in mgrs:
+            drs = dr_m.atoms_restraints(mobile_atoms)
+            from chimerax.atomic import concatenate
+            dr_atoms = concatenate(drs.atoms, remove_duplicates=True)
+            remainder = dr_atoms.subtract(dr_atoms.intersect(mobile_atoms))
+            remainder = remainder.subtract(remainder.intersect(fixed_atoms))
+            remainders.append(remainder)
+        remainder = concatenate(remainders)
+        fixed_atoms = concatenate((fixed_atoms, remainder.unique_residues.atoms))        
         return fixed_atoms
 
     def _add_fixed_atoms_from_excluded_residues(self, mobile_atoms, fixed_atoms, excluded_residues):
