@@ -626,7 +626,7 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
         axes.set_xlabel('Deviation (Angstroms)')
         axes.set_ylabel('Force (kJ/mol/A)')
 
-        self.canvas.setToolTip('<span>Example applied force for a target distance of 3 Angstroms and a PAE of 100. '
+        self.canvas.setToolTip('<span>Example applied force for a target distance of 3 Angstroms and a PAE of 0.2. '
             'Lower-confidence and/or longer-range restraints will be both fuzzier and weaker than this.</span>')
 
 
