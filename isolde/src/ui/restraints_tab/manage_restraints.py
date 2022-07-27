@@ -118,7 +118,7 @@ class ManageRestraintsDialog(UI_Panel_Base):
         tbl1.addWidget(QLabel('Colors: '))
         tcb = self.torsion_restraint_color_button = ThreeColorButton(
             max_size=bsize, min_size=bsize, direction='0-', has_alpha_channel=False,
-            titles=('Outlier','Allowed','Favoured')
+            titles=('Severely strained','Moderately strained','Satisfied')
         )
         tcb.color_changed.connect(self._torsion_restraint_button_color_cb)
         tbl1.addWidget(tcb)
