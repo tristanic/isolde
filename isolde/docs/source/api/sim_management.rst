@@ -64,7 +64,7 @@ MDFF Potentials
     .. autoclass:: CubicInterpMapForce
         :members:
 
-    .. autoclass:: CubicInterpMapForce_Low_Memory
+    .. autoclass:: CubicInterpMapForce_Old
         :members:
 
     .. autoclass:: LinearInterpMapForce

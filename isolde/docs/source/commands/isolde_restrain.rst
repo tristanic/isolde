@@ -24,6 +24,7 @@ Syntax: isolde restrain distances *atoms* [**templateAtoms** *atoms*]
 [**fallOff** *number* (2.0)]
 [**useCoordinateAlignment** *true/false* (true)]
 [**adjustForConfidence** *true/false* (false)]
+[**groupName** *string* ("Reference Distance Restraints")]
 
 Creates a "web" of adaptive distance restraints between nearby atoms,
 restraining them either to their current geometry or to that of a template.
@@ -54,10 +55,9 @@ The algorithm ISOLDE uses to determine which atoms to restrain is as follows:
    list of other (non-hydrogen) atom names with the customAtomNames argument,
    but this should rarely be necessary.
 
-If *templateAtoms* is provided and *useCoordinateAlignment* is True, steps 2-6 are performed. Otherwise,
-steps 4-6 are omitted. If the model is used as its own reference and 
-*perChain* is true, only the **intra** chain distances will be restrained, with
-no restraints between chains.
+If *templateAtoms* is provided and *useCoordinateAlignment* is True, steps 2-6
+are performed. Otherwise, steps 4-6 are omitted. If *perChain* is true, only the
+**intra** chain distances will be restrained, with no restraints between chains.
 
 2. A sequence alignment is performed for each pair of chains, yielding lists
    of corresponding residues.
@@ -100,17 +100,22 @@ where
 
 .. figure:: images/adaptive_energy_function.png
 
-If *adjustForConfidence* is True, the template is expected to be a predicted 
-model fetched from the AlphaFold database (e.g. using the *alphafold match* command).
-In this case the associated predicted aligned error (PAE) matrix will be 
-fetched from the database, and used to adjust the parameters for each 
-individual distance restraint. Atom pairs with a mutual PAE greater than 4 
-Angstroms will not be restrained. The adjustment scheme looks like this:
+If *adjustForConfidence* is True, the template is expected to be a predicted
+model with an associated predicted aligned error (PAE) matrix. If the template
+was fetched from the AlphaFold database (e.g. using the *alphafold match*
+command) then the PAE matrix will be fetched automatically; otherwise you will
+have to provide it - you can do so using ISOLDE's "Reference Models" widget, the
+ChimeraX "AlphaFold Error Plot" tool (*Tools/Structure Prediction/AlphaFold
+Error Plot*), or the ``alphafold pae`` command. Values in the PAE matrix will be
+used to adjust the parameters for each individual distance restraint. Pairs with
+"perfect" confidence (PAE=0.2) will be assigned the restraint parameters
+specified in the command arguments; lower-confidence restraints will be made
+both weaker and "fuzzier". Atom pairs with a mutual PAE greater than 4 Angstroms
+will not be restrained. The adjustment scheme looks like this:
 
 .. figure:: images/distance_restraint_pae_adjustments.png
 
 
- 
 To interpret this, keep in mind that the force applied to a given atom is
 proportional to the *derivative* (that is, the slope) of the energy with
 respect to distance. In effect, for a pair of atoms that is close to the target
@@ -123,17 +128,21 @@ flatten out at a rate specified by :math:`\alpha`.
 The value of :math:`\alpha` for a given restraint is determined by the
 combination of *fallOff* and the target distance, based on the idea that larger
 distances are inherently less certain. Specifically,
-:math:`\alpha = -2 -\text{fallOff} ln(\text{target})`. Small (or negative
+:math:`\alpha = 1 -\text{fallOff} ln(\text{target})`. Small (or negative
 - **not** generally recommended) values of *fallOff* will cause the restraints
 to stay quite strong with increasing distances (like a ball rolling into a
 funnel), whereas large values cause them to quickly flatten off (like a golf
 ball rolling into its cup - only falling into place when *very* close to the
 target).
 
-Finally, the parameter *kappa* sets the overall strength of the restraints.
+The parameter *kappa* sets the overall strength of the restraints.
 The effective spring constant for a given restraint within its "harmonic" range
 is :math:`k=\frac{\kappa}{(\text{wellHalfWidth}*\text{(target distance)})^2}`
 :math:`kJ mol^{-1} nm^{-2}`.
+
+The *groupName* argument allows you to, if you wish, create multiple independent
+groups of adaptive distance restraints by specifying a unique name for each group. 
+
 
 isolde restrain single distance
 ===============================
@@ -142,6 +151,7 @@ Syntax: isolde restrain single distance *atoms* *minDist* *maxDist*
 [**strength** *number* (20)]
 [**wellHalfWidth** *number* ((*minDist*+*maxDist*)/10)]
 [**confidence** *number* (-2)]
+[**groupName** *string* ("Reference Distance Restraints")]
 
 Restrain the distance between a single pair of atoms. The arguments *minDist*
 and *maxDist* specify the range of distances between which no force will be
@@ -153,6 +163,7 @@ and the tolerance becomes (*maxDist*-*minDist*)/2.
   region) in the energy formula. If not specifies, it defaults to 1/5 of the
   target distance.
 * *confidence*: Corresponds to :math:`\alpha` in the energy formula.
+* *groupName*: Restraint group to add this restraint to. 
 
 isolde release distances
 ========================
@@ -162,6 +173,7 @@ Syntax: isolde release distances *atoms* [**to** *atoms*]
 [**externalOnly** *true/false* (false)] [**longerThan** *number*]
 [**strainedOnly** *true/false* (false)] [**stretchLimit** *number* (1.2)]
 [**compressionLimit** *number* (0.8)]
+[**groupName** *string* ("Reference Distance Restraints")]
 
 Release a selection of adaptive distance restraints. *(NOTE: released restraints
 cannot currently be reinstated, but may be re-created using the "isolde restrain
@@ -190,6 +202,7 @@ tuning of the selection to release:
 * *compressionLimit* (**ignored unless strainedOnly is true**): ratio of
   current distance to target distance below which restraints will be
   released.
+* *groupName*: restraint group to which the command will be applied.
 
 isolde adjust distances
 =======================
@@ -197,7 +210,8 @@ isolde adjust distances
 Syntax: isolde adjust distances *atoms* [**internalOnly** *true/false* (false)]
 [**externalOnly** *true/false* (false)] [**kappa** *number*]
 [**wellHalfWidth** *number*] [**tolerance** *number*] [**fallOff** *number*]
-[**displayThreshold** *number*] 
+[**displayThreshold** *number*] [**groupName** *string* ("Reference Distance Restraints")]
+
 
 Adjust the strength and/or display properties of a set of adaptive distance
 restraints.
@@ -217,6 +231,7 @@ restraints.
   example, to only show restraints deviating more than 10% from their targets,
   set *displayThreshold* to 0.1. To show all restraints, set displayThreshold to
   0.
+* *groupName*: restraint group to which the command will be applied.
 
 .. _adaptive_dihedral_restraint_cmd:
 

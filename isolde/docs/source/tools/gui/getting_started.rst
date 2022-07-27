@@ -10,29 +10,40 @@ Getting Started
     :depth: 3
 
 **(If you are reading this from within the ChimeraX Help browser,
-you may prefer trying out the :ref:`isolde_intro_tutorial` interactive
+you may prefer trying out the** :ref:`isolde_intro_tutorial` **interactive
 tutorial.)**
 
 Starting ISOLDE
 ---------------
 
 Assuming you already have ISOLDE installed (if not, you can do so via
-*Tools/More Tools...* in the ChimeraX menu), then you can start it up via
-*Tools/General/ISOLDE* or by typing ``isolde start`` in the command line. This
-should yield a new floating panel looking something like this:
+*Tools/More Tools...* in the ChimeraX menu), then you have three different 
+ways to start it up:
+
+* by typing ``isolde start`` in the command line;
+* via the ChimeraX top menu: *Tools/General/ISOLDE*; or
+* by clicking the "Start ISOLDE" button on the ISOLDE tab of the ChimeraX ribbon menu:
+
+.. figure:: images/ribbon_menu_start_isolde.png
+
+Whichever way you choose, the result should be a new floating panel looking 
+something like this:
 
 .. image:: images/isolde_initial_screen.png
     :alt: Initial GUI appearance
 
 *(NOTE: the ISOLDE panel is designed to be similar in size to the ChimeraX Log
 panel on most machines, and will "dock" there if dragged onto it. If working
-with a single display I recommend doing this.)*
+with a single display this is highly recommended)*
 
-If you already have a model loaded, you'll probably notice that it's gained a
-few (but hopefully not **too** many) new features like those in the image below.
-If not, go ahead and load a model using the standard ChimeraX interface. If you
-have multiple models open, you can choose the one you want to work on using the
-"Working on:" drop-down menu at the top-left of the ISOLDE panel.
+ISOLDE is designed to only work on a single model at a time. You can choose 
+the model to work on using the "Working on:" drop-down menu at the top of the 
+ISOLDE panel, or using the ``isolde select`` command. Doing so will trigger a 
+few changes. First, the model will be initialised into ISOLDE's default view 
+scheme: a greatly-reduced ribbon representation, with a sphere of displayed 
+atoms around the display centre. Second, ISOLDE's live geometry markup 
+(highlighting suspicious protein backbone and sidechain conformations) will 
+be added to the model:
 
 .. figure:: images/basic_display.png
     :alt: Basic rota/rama/omega markup
@@ -70,13 +81,13 @@ have multiple models open, you can choose the one you want to work on using the
     |   | clearly preferred conformations that have been well          |
     |   | characterised by studying high-resolution structures. The    |
     |   | best-established method for characterising backbone          |
-    |   | conformation is via the Ramachandran plot, a plot of the phi |
-    |   | (C-N-CA-C) and psi (N-CA-C-N) dihedral angles against each   |
+    |   | conformation is the Ramachandran plot, a plot of the *phi*   |
+    |   | (C-N-CA-C) and *psi* (N-CA-C-N) dihedral angles against each |
     |   | other.                                                       |
     |   |                                                              |
-    |   | The probabilities of finding different (phi, psi)            |
+    |   | The probabilities of finding different (*phi, psi*)          |
     |   | combinations have been mapped out in high detail for         |
-    |   | various groups of amino acids (MolProbity_). While ISOLDE    |
+    |   | `various groups of amino acids`__. While ISOLDE              |
     |   | also provides a Ramachandran plot, the current probability   |
     |   | score for each protein residue is mapped in real time to the |
     |   | colour of its alpha carbon (CA) atom as shown. Green denotes |
@@ -85,7 +96,7 @@ have multiple models open, you can choose the one you want to work on using the
     |   | needs very strong support to justify it).                    |
     +---+--------------------------------------------------------------+
 
-.. _MolProbity: https://doi.org/10.1107/S0907444909042073
+__ https://doi.org/10.1107/S0907444909042073
 
 
 *(Note: The rotamer, peptide bond and Ramachandran markups described above
@@ -98,8 +109,8 @@ ISOLDE installed, you can add them to any loaded model using the* ``rama`` *and*
 Preparing a model for simulation
 --------------------------------
 
-*(Note: if you just want to load up a model and maps ready to play with, just
-click the "Load demo" button in the top left of the ISOLDE panel)*
+*(Note: if you just want to load up a model and maps ready to play with, use the
+command* ``isolde demo crystal_intro`` *)*
 
 While getting a clear picture of potential problems in a model is already
 somewhat useful, what ISOLDE is really all about is *fixing* them. To do that,
@@ -110,24 +121,22 @@ imposes a few requirements:
 
       That is, each residue must have a corresponding definition in the MD
       *forcefield* dictating all the details of bond lengths, angles, charges,
-      atomic radii etc. As of version 1.0b3, ISOLDE supports protein, nucleic
-      acid, most common sugars, water, metal ions, and approx. 13,000 of the
-      more common ligands in the Chemical Components Dictionary. If your ligand
-      is not recognised, you will need to provide AMBER-compatible parameters in
-      the `OpenMM ffXML format`__.
+      atomic radii etc. The version of the AMBER forcefield built in to ISOLDE
+      supports protein, nucleic acid, most common sugars, water, metal ions, and
+      approx. 13,000 of the more common ligands in the Chemical Components
+      Dictionary. If your ligand is not recognised, it may still be possible to 
+      parameterise it in ISOLDE using the "Residue Parameterisation" widget on 
+      ISOLDE's General tab (see below). Otherwise, if you are familiar with 
+      MD parameterisation you can provide your own AMBER-compatible parameters 
+      in the `OpenMM ffXML format`__ via the "Load residue parameters" button 
+      in the same widget (this can also be used to load any parameters you 
+      generated in a previous session).
 
       __ http://docs.openmm.org/7.0.0/userguide/application.html#creating-force-fields
 
-      These can be conveniently converted from AMBER .mol2 and .frcmod files
-      using ParmEd_. One convenient option for preparing the .mol2 and .frcmod
-      files themselves is Phenix AmberPrep_.
-
-.. _ParmEd: https://parmed.github.io/ParmEd/html/index.html
-
-.. _AmberPrep: https://www.phenix-online.org/documentation/reference/amber.html
-
-      An integrated ligand paramterisation framework is planned for a future
-      release.
+      One important current limitation is that parameterisation of custom 
+      ligands which covalently bind to one or more other residues is *not*
+      supported.
 
   2.  Each individual residue must be complete, including all hydrogens
 
@@ -150,17 +159,26 @@ imposes a few requirements:
         \.. as is this dangling C-terminus
 
       Additionally, for all protein residues other than proline, sidechain
-      truncations to CA, CB, CG or CD are allowed.
+      truncations to CA, CB, CG or CD are allowed. For truncations that 
+      ISOLDE doesn't support, the "Unparameterised Residues" widget on 
+      ISOLDE's Validation tab can be used to fill in the missing atoms.
 
       The most convenient way to add hydrogens (in a manner that follows the
-      above rules) is by using the ChimeraX `addh`` command. Type ``usage addh``
+      above rules) is by using the ChimeraX ``addh`` command. Type ``usage addh``
       in the ChimeraX command line for complete instructions, but in most cases
-      ``addh hbond true`` will give you the most desirable result.
+      the straightforward ``addh`` will give you the most desirable result.
+    
 
       *(Note: if you have metal ions present and your geometry is not perfect,
       you may find* ``addh`` *refusing to protonate one or more nearby peptide
-      nitrogens. If you run into this issue try adding the argument*
-      ``metalDist 1.0`` *to your* ``addh`` *command.)*
+      nitrogens. The resulting incomplete residue will be flagged by ISOLDE's 
+      Unparameterised Residues widget, which can be used to build in the missing
+      hydrogen. Incorrect geometry on ligands is another common cause of*
+      ``addh`` *errors. In these cases you can either correct them with 
+      the Unparameterised Residues widget, or delete hydrogens and try again 
+      with* ``addh template true`` *to tell ChimeraX to use the reference 
+      geometry stored in the Chemical Components Dictionary to define 
+      the chemistry.)*
 
       In general, I recommend adding sidechains wherever possible - even if
       there is minimal density to support them, in the MD environment the
@@ -177,13 +195,18 @@ imposes a few requirements:
       "mutate" the residue to its own identity will give you a complete
       sidechain.
 
-      **(IMPORTANT NOTE: Never perform edits that add or remove atoms
-      while a simulation is running)**
+      **(NOTE: You should not perform edits that add or remove atoms
+      while a simulation is running.)**
 
   3.  Alternative conformations (altlocs - that is, the same atom in two or more
       different places) are not currently supported. This is usually not a
       problem, since at the resolutions ISOLDE can help the most altlocs aren't
-      generally resolvable in the data anyway!
+      generally resolvable in the data anyway! Any defined altlocs remain with 
+      the model and will be written to the output, but cannot be visualised. This 
+      can of course be dangerous - any large rearrangement will act only on the 
+      *current* altloc, leaving the other invisibly in its original position. 
+      For this reason, ISOLDE checks for the presence of altlocs when initialising 
+      a model, and offers to remove them if present.
 
 .. _adding-maps:
 
@@ -194,7 +217,7 @@ The primary use of ISOLDE is of course the fitting and refinement of an atomic
 model into one or more experimental maps. This is achieved via an interactive
 implementation of `molecular dynamics flexible fitting (MDFF)`__. In brief, MDFF
 converts your map into a field of potential energies overlaid on a molecular
-dynamics simulation, with each feeling a force proportional to the energy
+dynamics simulation, with each atom feeling a force proportional to the energy
 gradient at its current position. In effect, this causes atoms to "fall" into
 the high-density regions of the map.
 
@@ -211,26 +234,36 @@ Real-space maps
 ~~~~~~~~~~~~~~~
 
 **(NOTE: within ChimeraX, you may prefer to familiarise yourself with the
-use of real-space maps in the interactive :ref:`bulk_fitting_tutorial` tutorial.)**
+use of real-space maps in the interactive** :ref:`bulk_fitting_tutorial` 
+**tutorial.)**
 
 Any real-space map format recognised by ChimeraX can be used as a MDFF
-potential by ISOLDE with a few simple steps. Simply load your model, e.g.
+potential by ISOLDE with a few simple steps. Simply load your map along 
+with your model, e.g.
 
 ``open 6eyd; open 3983 from emdb``
 
 If the model and map are not perfectly aligned, you can easily obtain an
 optimised rigid-body fit using ChimeraX's ``fitmap`` command.
 
-``fitmap #1 inMap #2 moveWholeMolecules false``
+``fitmap #1 inMap #2``
+
+**(NOTE: by default, fitmap fits the model by changing the rigid-body 
+transform mapping model coordinates to scene coordinates, rather than 
+changing the model coordinates themselves. ISOLDE, on the other hand,
+for performance reasons expects the map(s) and model to be in the same 
+absolute reference frame (with model coordinates identical to scene 
+coordinates). For this reason, you should do any rigid-body fitting
+BEFORE selecting the model for ISOLDE - upon initialisation the model 
+coordinates will be updated to place the model in the same absolute 
+frame as the map. If you have good reason to do a rigid-body shift 
+AFTER initialising the model, adding the argument "moveWholeMolecules false"
+will tell fitmap to update coordinates without changing the transform.)**
 
 Once aligned, the map may be associated with the model either by using the
-"Associate real-space map with current model" button on the ISOLDE "Sim
-settings" tab, or
+"Add map(s) to working model" widget on the ISOLDE General tab, or
 
-``clipper associate #2 toModel #1``
-
-**(IMPORTANT NOTE: rigid-body fitting of the model into the map must be done
-BEFORE running "clipper associate".)**
+``clipper associate #2 to #1``
 
 This should change your view of the model and map from something like this:
 
@@ -245,9 +278,10 @@ to a visualisation mode similar to the traditional crystallographic view:
     Default Clipper/ISOLDE "spotlight" model/map view. The map appears as a
     sphere of density around the centre of rotation. Residues with atoms within
     the spotlight radius have their atoms shown; the remainder of the molecule
-    is shown as a cartoon. You can adjust the spotlight radius using the command
-    ``clipper spotlight radius <radius>`` - but keep in mind that radii much larger
-    than about 20Å will cause noticeable lag in navigation.
+    is shown as a minimalist cartoon. You can adjust the spotlight radius using
+    the command ``clipper spotlight radius <radius>`` or using the "Mask and
+    spotlight settings" widget on ISOLDE's General tab - but keep in mind that
+    large radii will begin to cause noticeable lag in navigation.
 
 Upon registration, ISOLDE automatically registers the map as a MDFF potential.
 The coupling constant (defining how strongly the map "pulls" on atoms) is
@@ -262,28 +296,43 @@ corresponding to the amplitude component of the Fourier transform of the
 electron density in the crystal environment. In order to generate a real-space
 map, the amplitudes must be combined with a matching set of phases. The core
 challenge in crystallography is that the original phase information is not
-measurable, and hence estimates may be obtained by other means. Initial phases
-are typically obtained by molecular replacement with a close homologue, and/or
-anomalous scattering by one or more types of heavy atom in the crystal. These
-are then improved by building and refining your model into the map - as the
-quality of the model improves, the quality of the map improves, allowing
-further improvement to the model, etc..
+measurable, and hence estimates must be obtained by other means. Historically,
+initial phases were typically obtained either by molecular replacement with the
+conserved cores of close homologues, and/or anomalous scattering by one or more
+types of heavy atom in the crystal. In the modern era of reliable protein
+structure prediction, by far the most common method is molecular replacement
+using the high-confidence components of predicted models. The initial phases are
+then improved by building and refining your model into the map - as the quality
+of the model improves, the quality of the map improves, allowing further
+improvement to the model, etc..
 
-Initial solution of the phase problem (e.g. with the aid of *Phaser*) and, if
-necessary, building of as much of the model as possible using tools like
-*phenix.autobuild* should already have happened before you load your model
-into ISOLDE. At this point, you have two choices:
+Initial solution of the phase problem (e.g. with the aid of `Phaser`_) should 
+have already happened before you load your model into ISOLDE. If the molecular 
+replacement solution is marginal and/or highly incomplete, it would be a good 
+idea to use an auto-building tool such as `phenix.autobuild`_ to extend it first. 
+See :ref:`alphafold_mr_tutorial` to see how you can use the molecular replacement 
+solution to relatively quickly fit a complete predicted model to the data.
+  
+.. _Phaser: https://scripts.iucr.org/cgi-bin/paper?he5368
+
+.. _phenix.autobuild: https://phenix-online.org/documentation/reference/autobuild.html
+
+When loading structure factors, you have two choices:
 
 * Use "live" maps calculated directly from your model and the experimental
   amplitudes (preferred); or
 * Use "static" maps derived from pre-calculated amplitudes and phases
-  (e.g. as output from *phenix.refine* or *phenix.maps*).
+  (e.g. as output from *Phaser*, `phenix.refine`_ or `phenix.maps`_).
+
+.. _phenix.refine: https://phenix-online.org/documentation/reference/refinement.html
+
+.. _phenix.maps: https://phenix-online.org/documentation/reference/maps.html
 
 Both options have their own pros and cons, and are described in detail below.
 In either case, the input is an MTZ file. ISOLDE will automatically generate
 live or static maps (or a combination of both types) depending on what it
 finds in the loaded file. Crystallographic maps may be added to the model
-currently selected in ISOLDE using the "Load crystallographic dataset" button,
+currently selected in ISOLDE using the "Add map(s) to working model" widget,
 or added to any atomic model using a command such as:
 
 ``open reflections.mtz structureModel #1``
@@ -305,40 +354,39 @@ safely closed via ChimeraX's model panel:
 Static (pre-calculated) crystallographic maps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-**(WARNING: in many refinement packages (including PHENIX) the default
-behaviour is to include the free reflections when generating maps for
-visualisation and manual model building. By Parseval's theorem this is
-equivalent in effect to including these reflections when refining in reciprocal
-space. While this may be OK when changing only a small fraction of the model, a
-typical MDFF session re-fits every atom to the map. While there is still some
-argument as to the final effect of this, using maps including the free set WILL
-render R_free and R_free-R_work unreliable as measures of the quality of fit.
-Unfortunately there is no way to determine whether an arbitrary set of
-amplitudes and phases includes the free set or not, so it is up to you to ensure
-that free reflections are NOT included. A template for a suitable phenix.maps
-input file is provided below. For the above reasons, all static maps will be
-disabled as MDFF potentials by default, and must be explicitly enabled for
-simulation using the controls under the "Show map settings dialogue" button.)**
+**(WARNING: in many refinement packages (including Phenix) the default behaviour
+is to include the free reflections when generating maps for visualisation and
+manual model building. By Parseval's theorem this is equivalent in effect to
+including these reflections when refining in reciprocal space. While this may be
+OK when changing only a small fraction of the model, a typical MDFF session
+re-fits every atom to the map. While there is still some argument as to the
+final effect of this, using maps including the free set WILL render Rfree and
+Rfree-Rwork unreliable as measures of the quality of fit. Unfortunately there
+is no way to determine whether an arbitrary set of amplitudes and phases
+includes the free set or not, so it is up to you to ensure that free reflections
+are NOT included. A template for a suitable phenix.maps input file is provided
+below. For the above reasons, all static maps will be disabled as MDFF
+potentials by default, and must be explicitly enabled for simulation using the
+controls in the "Precalculated Crystallographic Map Settings" widget.)**
 
-The Clipper plugin uses some very simple heuristics to decide on the treatment
-of a given set of amplitudes and phases. In brief, if the name of the amplitude
-column is "F" or "FWT" or contains a 2, the resulting map will be treated as
-standard map (that is, displayed with a single positive contour and used as a
-MDFF potential). Any map  for which the amplitude column name is "FC" or
-contains "CALC" (case-insensitive) will be treated as an Fcalc map and hidden by
-default. Any column name not matching the above criteria will result in a
-difference map (equal positive and negative displayed contours, not used for
-MDFF).
+The Clipper plugin uses some very simple name-based heuristics to decide whether a
+given set of amplitudes and phases are normal (2Fo-Fc) or difference (Fo-Fc) maps.
+If it gets this wrong, you can change it on the "Precalculated Crystallographic
+Map Settings" widget (where you can also adjust display styles and colours): 
 
-Live crystallographic maps **(EXPERIMENTAL)**
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. figure:: images/precalc_maps_panel.png
 
-**(NOTE: This feature is still experimental and undergoing further
-development. While it works well given good-quality data, its handling of
-outliers and pathologies such as ice rings, beam-stop shadows, anisotropy
-etc. is minimal to non-existent. If the R-factors calculated are more than
-~5% higher than those calculated by your favourite refinement package, you
-may be safer sticking with pre-calculated maps for now.)**
+Live crystallographic maps
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**(NOTE: While ISOLDE's live crystallographic maps work well in the majority of 
+cases, there is currently no handling of severe data pathologies such as twinning,
+strong translational non-crystallographic symmetry, strong ice rings, etc.. In 
+such cases your choices are to work with maps pre-calculated using a package 
+designed to handle these, or to pre-process the F/sigF data elsewhere to reduce 
+the effects of these problems.)**
+
+.. figure:: images/dynamic_maps_panel.png
 
 If your MTZ file contains experimental intensities (I/sigI) or amplitudes
 (F/sigF), then a set of live sigma-a weighted crystallographic maps will be
@@ -346,18 +394,19 @@ generated directly from the combination of these with phases calculated from the
 atomic model. Unlike with the pre-calculated maps, any changes to the atomic
 model automatically triggers a recalculation of all live maps. This happens in
 the background, with minimal effect on graphical performance other than a slight
-pause when the visualisation of the new maps is loaded in.
+hitch when the visualisation of the new maps is loaded in.
 
-*(NOTE: live updating can be toggled using the "Live crystallographic map
-calculation" checkbox that appears on the "Sim settings" tab when a live dataset
-is associated with the selected model)*
+*(NOTE: live updating for a given dataset can be toggled using the checkbox in 
+the "Live?" column of the "Dynamic Crystallographic Map Settings" widget.)*
 
-*(NOTE: live map updates do not update the MDFF potential while a simulation is
-running. The potential will only change once the simulation is finished.)*
+*(NOTE: live map updates do not update the MDFF potential - that is, the fitting
+force the mobile atoms feel - while a simulation is running. The potential will
+only change on starting a new simulation.)*
 
-Working directly with the experimental data has the distinct advantage that
-ISOLDE can know and control exactly what goes into each map. Three maps
-will be generated for visualisation purposes:
+Besides the obvious advantage of providing near-real-time feedback on your model
+improvement progress, working directly with the experimental data ensures that 
+ISOLDE knows and controls exactly what goes into each map. Three maps will be 
+generated for visualisation purposes:
 
 * a standard 2mFo-DFc map
 * a 2mFo-DFc map with a moderate amount of B-factor sharpening or
@@ -365,12 +414,12 @@ will be generated for visualisation purposes:
   heuristically based on resolution)
 * a mFo-DFc difference map
 
-Each of the above maps is generated using the full set of reflections, and
-for this reason is blocked from use as a MDFF potential. Instead, ISOLDE
-also creates a special map (helpfully named "(LIVE) MDFF potential")
-optimised for use as a MDFF potential (including exclusion of the free set).
-This map is hidden by default, but can be displayed via the Model Panel at
-any time.
+Each of the above maps is generated using the full set of reflections, and for
+this reason is blocked from use as a MDFF potential. Instead, ISOLDE also
+creates a special map (helpfully named "(LIVE) MDFF potential") optimised for
+use as a MDFF potential (including exclusion of the free set). This map is
+hidden by default, but can be displayed via the Model Panel or the "Dynamic
+Crystallographic Map Settings" widget at any time.
 
 
 `phenix.maps` template

@@ -10,27 +10,28 @@ Identifying problem "hotspots"
 Overview
 --------
 
-At the early stages of model building where many things may be wrong with your 
+At the early stages of model building where many things may be wrong with your
 model, working through residue-by-residue is rarely the best use of your time.
-Rather, you want to find and fix the biggest problems first - because once 
-those are sorted out, the remaining clean-up generally becomes much, much 
-easier. While one approach might be to browse through the Ramachandran and
-rotamer validation tools to inspect outliers one-by-one, arguably a more 
-productive solution is to look for regions where many problems (whether they 
-be geometry outliers or violations of reference-model restraints) are clustered
-in the same space. It is often the case that such clusters all share the 
-same root cause - fix that, and many other things will fix themselves. This 
-is where the *Problem Zones* tab comes in:
+Rather, you want to find and fix the biggest problems first - because once those
+are sorted out, the remaining clean-up generally becomes much, much easier.
+While one approach might be to browse through the Ramachandran and rotamer
+validation tools to inspect outliers one-by-one, arguably a more productive
+solution is to look for regions where many problems (whether they be geometry
+outliers, clashes or violations of reference-model restraints) are clustered in
+the same space. It is often the case that such clusters all share the same root
+cause - fix that, and many other things will fix themselves. This is where the
+*Problem Zones* tab comes in:
 
 .. figure:: images/problem_zones_tab.png
     :alt: ISOLDE problem zone tab
 
-    A particularly populated problem zone tab from the :ref:`alphafold_reference_tutorial`
-    tutorial.
+    A particularly populated problem zone tab from the
+    :ref:`alphafold_reference_tutorial` tutorial.
 
-Under the hood, this tool uses a spatial clustering algorithm known as 
-`DBSCAN`_. This has two controllable parameters (*Dist cutoff* and *Min cluster size*)
-underneath the table. The algorithm works as follows:
+Under the hood, this tool uses a spatial clustering algorithm known as
+`DBSCAN`_. This has two controllable parameters (*Dist cutoff* and *Min cluster
+size*) which you can adjust using the combo boxes underneath the table. The
+algorithm works as follows:
 
 For each "problem" point, a sphere with radius *dist cutoff* is searched for 
 other problem points. If the resulting group (including the original point)

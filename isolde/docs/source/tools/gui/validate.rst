@@ -7,9 +7,9 @@ Monitoring the quality of your model
 .. contents::
     :local:
 
-While ISOLDE's live annotations help you see at a glance where the problems are
-in whatever part of the model you happen to be looking at, it is of course still
-important to have access to a quick summary of *all* its known (potential)
+While ISOLDE's live annotations help you see at a glance where likely problems
+are in whatever part of the model you happen to be looking at, it is of course
+still important to have access to a quick overview summary of potential
 problems. This is handled on the `Validate` tab on the ISOLDE panel. If you
 click there, you'll intially be greeted by this rather boring view:
 
@@ -20,68 +20,8 @@ click there, you'll intially be greeted by this rather boring view:
 
 Let's go through and look at what each of these buttons does.
 
-The Ramachandran plot
----------------------
-
-Clicking the **Show** button on the *Ramachandran Plot* bar will give you a view
-that looks something like this:
-
-.. figure:: images/validate_tab_rama_plot.png
-    :alt: The Ramachandran plot
-
-    The Ramachandran plot for "general" amino acids
-
-In brief, the Ramachandran plot plots the angle of the *phi* (φ) dihedral
-"entering" the residue against that of the *psi* (ψ) dihedral "exiting" it.
-
-.. figure:: images/phi_dihedral.png
-    :alt: The phi dihedral
-
-    The four atoms making up the *phi* (φ) dihedral.
-
-.. figure:: images/psi_dihedral.png
-    :alt: The psi dihedral
-
-    The four atoms making up the *psi* (ψ) dihedral.
-
-Since atoms are physical objects that *really* don't like to overlap with each
-other, only some combinations of φ and ψ are possible (and only a much smaller
-proportion of the range of possible combinations are *favourable*). That is
-what the Ramachandran plot is telling you.
-
-The yellow contour line represents  the 2% cut-off: 98% of all well-resolved
-residues in very high-resolution  structures are found within these contours.
-Unsurprisingly, they mostly  represent the well-defined secondary structures:
-the big yellow blob in the top left corresonds to α-helices, while the slightly
-smaller middle-left blob  corresponds to β-strands. Residues within these
-contours are said to be in  "favoured" conformations.
-
-The purple line, meanwhile, represents the boundary of the far more generous
-"allowed" region. The precise value of this contour varies slightly depending on
-the Ramachandran category, but for the general case only about 5 in 10,000
-residues should be found outside it, in what is known as "outlier" space.
-
-Note that as well as the given cut-off contours, the background is shaded
-according to probability as well. A residue outside the contour but still on a
-grey zone may still be correct (but should be very carefully checked), but one
-sitting on a white background is almost certainly wrong.
-
-As you can see from the example image above, the size and colour of each point
-scales with its probability, making outliers very difficult to ignore. Clicking
-on any point in the plot will take you to the corresponding residue in the main
-window and select it, so (if you don't already have a simulation running),
-clicking the play button will immediately start a localised simulation allowing
-you to work on it.
-
-The drop-down menu below the plot allows you to limit its scope to only the
-residues currently selected in the main *ChimeraX* window. This can be useful
-if, for example, you wish to consider only a single chain. While a simulation is
-running, the plot will be limited to only the mobile residues. While visible,
-the Ramachandran plot updates automatically whenever the atomic coordinates
-change.
-
-Peptide Bond Geometry validation
---------------------------------
+Peptide Bond Validation
+-----------------------
 
 .. figure:: images/validate_tab_peptide_geometry.png
     :alt: Peptide bond geometry validation
@@ -156,6 +96,74 @@ below case).
 
     A happy-looking *cis*-proline.
 
+The Ramachandran plot
+---------------------
+
+Expanding the *Ramachandran Plot* widget will expose a rather minimalist GUI -
+just a button to launch the Ramachandran Plot widget and some options to 
+control how it behaves during simulations:
+
+.. figure:: images/validate_tab_rama_plot.png
+
+Clicking the "Launch Ramachandran Plot" button will launch the plot as a separate 
+widget (this is also available without starting ISOLDE via the ChimeraX menu: 
+*Tools/Validation/Ramachandran Plot*):
+
+.. figure:: images/rama_plot_general_case.png
+
+    The Ramachandran plot for "general" amino acids
+
+In brief, the Ramachandran plot plots the angle of the *phi* (φ) dihedral
+"entering" the residue against that of the *psi* (ψ) dihedral "exiting" it.
+
+.. figure:: images/phi_dihedral.png
+    :alt: The phi dihedral
+
+    The four atoms making up the *phi* (φ) dihedral.
+
+.. figure:: images/psi_dihedral.png
+    :alt: The psi dihedral
+
+    The four atoms making up the *psi* (ψ) dihedral.
+
+Since atoms are physical objects that *really* don't like to overlap with each
+other, only some combinations of φ and ψ are possible (and only a much smaller
+proportion of the range of possible combinations are *favourable*). That is
+what the Ramachandran plot is telling you.
+
+The yellow contour line represents  the 2% cut-off: 98% of all well-resolved
+residues in very high-resolution  structures are found within these contours.
+Unsurprisingly, they mostly  represent the well-defined secondary structures:
+the big yellow blob in the top left corresonds to α-helices, while the slightly
+smaller middle-left blob  corresponds to β-strands. Residues within these
+contours are said to be in  "favoured" conformations.
+
+The purple line, meanwhile, represents the boundary of the far more generous
+"allowed" region. The precise value of this contour varies slightly depending on
+the Ramachandran category, but for the general case only about 5 in 10,000
+residues should be found outside it, in what is known as "outlier" space.
+
+Note that as well as the given cut-off contours, the background is also shaded
+according to probability. A residue outside the contour but still on a grey zone
+may still be correct (but should be very carefully checked), but one sitting on
+a white background is almost certainly wrong.
+
+As you can see from the example image above, the size and colour of each point
+scales with its probability, making outliers very difficult to ignore. Hovering
+the mouse over any point in the plot will bring up a tooltip with its identity,
+and clicking the point will take you to the corresponding residue in the main
+window and select it.
+
+The drop-down menus at the top of the Ramachandran Plot widget provide various
+options allowing you to limit the view to an individual chain or a custom
+selection, plot only disfavoured and/or outlier residues, and switch between 
+individual residue classes (or show plots for all classes side-by-side). 
+
+While the Ramachandran widget is active, any changes to model coordinates will 
+automatically update the plot. Note that this comes with some performance cost
+(particularly for very large models) - if that becomes problematic, you should 
+close the plot widget during simulations.
+
 Rotamer Validation
 ------------------
 .. figure:: images/validate_tab_rotamers.png
@@ -168,21 +176,21 @@ to the offending residue.
 Clashes
 -------
 
-The behaviour of this widget is subtly different depending on whether a
-simulation is currently running. Outside of simulations, clashes are determined
-based on simple pairwise distances:
+This table lists any pairwise atomic clashes (that is, non-bonded atoms that are 
+closer together than the sum of their van der Waals radii should allow).
 
-.. figure:: images/clash_table_no_sim.png
-    :alt: clash widget with no simulation running
+.. figure:: images/clashes_widget.png 
+    
+Clicking on an entry in the table will select and focus the view on the
+offending atom(s). Most minor clashes should be straightforwardly resolved by
+energy minimisation, and once your model is successfully running in simulations
+this table should be nearly empty. For particularly severe clashes where parts
+of the model are entangled with each other, some work will be needed before you
+can safely start simulations (see :ref:`dealing-with-clashes`).
 
-While a simulation is running, the table is instead populated by a list of atoms
-experiencing large net forces:
+Unparameterised Residues
+------------------------
 
-.. figure:: images/clash_table_during_sim.png
-    :alt: clash widget during a simulation
+.. figure:: images/unparam_residues_widget.png
 
-In either case, clicking on an entry in the table will focus the view on the
-offending atom(s). In general, during a simulation the clash table will only be
-populated (a) if updated before minimisation is complete; or (b) if the
-minimiser is unable to resolve one or more severe clashes (see
-:ref:`dealing-with-clashes`).
+See :ref:`unrecognised_residues`.

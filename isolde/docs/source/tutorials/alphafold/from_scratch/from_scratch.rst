@@ -1,7 +1,7 @@
 .. _alphafold_top_down_tutorial:
 
-Top-Down Modelling with AlphaFold
-=================================
+Top-Down Modelling with AlphaFold-DB Models
+===========================================
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the

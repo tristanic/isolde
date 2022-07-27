@@ -38,6 +38,3 @@ RegularGridInterpolator
     .. autoclass:: RegularGridInterpolator
         :members:
 
-Testing
-~~~~~~~
-    test_interpolator

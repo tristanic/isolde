@@ -1,5 +1,5 @@
-Accessing ISOLDE GUI functions from Python
-==========================================
+The primary ISOLDE object
+=========================
 
 .. toctree::
    :maxdepth: 2

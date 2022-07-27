@@ -20,12 +20,3 @@ ProteinRegisterShifter
     .. autoclass:: ProteinRegisterShifter
         :members:
 
-Backrub
-~~~~~~~
-
-.. automodule:: chimerax.isolde.refine
-
-    .. automethod:: chimerax.isolde.refine.apply_backrub
-
-    .. autoclass:: Backrub
-        :members:

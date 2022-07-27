@@ -7,24 +7,15 @@ Visualisation and Navigation
 .. contents::
     :local:
 
-**(NEW in 1.0b3: if you're viewing this from within ChimeraX, you may prefer
-using the interactive :ref:`isolde_intro_tutorial` tutorial to acquaint yourself
-with ISOLDE's controls.)**
-
-*(General note: if you open a large model in ChimeraX it will often
-automatically switch to its high-quality rendering mode with full shadows and
-ambient occlusion. While beautiful, this is sadly too slow to work with ISOLDE.
-You can switch back to simple lighting by clicking the yellow spotlight button
-in ChimeraX's top panel, or entering "lighting simple" in the ChimeraX command
-line)*
+**(NOTE: if you're viewing this from within ChimeraX, you may prefer using one
+of the the interactive introductory** :ref:`isolde-tutorials` **to acquaint
+yourself with ISOLDE's controls.)**
 
 General layout
 --------------
 
-After loading a model and map (see :ref:`preparing-a-model`) or simply clicking
-"Load demo", your ChimeraX display should look something like the screenshot
-below (you may need to use the standard ChimeraX atom display controls to set
-the atom display styles to your liking first).
+After loading a model and map (see :ref:`preparing-a-model`), your ChimeraX
+display should look something like the screenshot below.
 
 .. figure:: images/loaded_model.jpg
     :alt: Model/Map display in ChimeraX window
@@ -51,46 +42,48 @@ Next (if you're working with a crystal structure) you might notice that your
 model has been joined by one or more darker copies of itself. These are the
 symmetry contacts in the crystal lattice. The symmetry atoms are non-interactive
 "ghosts" - while they will update instantly when the "real" atoms change, you
-cannot select or move them, and they won't contribute to simulations. Hovering
-your mouse over one, however, will give you a popup telling you its name and
-symmetry operator:
+cannot select or move them, and they won't contribute to simulations. However,
+you can still do useful things with them. Hovering your mouse over one will
+give you a popup telling you its name and symmetry operator:
 
 .. figure:: images/symmetry_tooltip.png
     :alt: Symmetry tooltip
 
     Symmetry atoms know who they are
 
+
+\... while double-clicking one will re-centre the view on its equivalent atom 
+in the "real" model.
+
 You'll also note that you can no longer see all of the atoms (nor all of the
-map). By default atom display is restricted to residues approaching within 15Å
-of the central pivot point, while the map is restricted to a 12Å sphere. You can
-adjust the display radius at any time (or simply return to this display mode)
-using the ``clipper spotlight`` command. Other display options suited to
-isolating issues in low-resolution maps will be discussed  below.
+map). By default atom display is restricted to residues approaching within 16Å
+of the central pivot point, while the map is restricted to a 13Å sphere. You can
+adjust the display radius at any time using the "Mask and Spotlight Settings" 
+widget on ISOLDE's General tab:
+
+.. figure:: images/mask_and_spotlight_settings.png
+
+\... or using the command ``clipper spotlight radius {value in Angstroms}``.
+Other display options suited to isolating issues in low-resolution maps will be
+discussed below.
 
 Zooming and Panning
 -------------------
 
-*(NOTE: Some ChimeraX functions may change the behaviour of the centre of
-rotation to a mode incompatible with the behaviour described below. If you
-find things not behaving as they should (e.g. the pivot indicator no longer
-remains in the centre of the screen), type ``cofr center showpivot true`` in the
-ChimeraX command line or just click the ISOLDE Spotlight Mode button)*
-
-If you've spent some time using ChimeraX before, you've probably already tried
-to zoom in using the scroll wheel. That won't work in ISOLDE: since model
-building requires regular adjustment of map contours, the scroll wheel is
-co-opted to perform that all-important function. A special zoom mode (designed
-to bring you inside the model while fading out background details) has instead
-been mapped to **shift-right-click-and-drag**. You can adjust the relative
-thickness of the slab you view (that is, the distance between front and back
-clipping planes) using **shift-scroll**. Panning (that is, translating the
-display up-down and left-right) is the ChimeraX standard
-**middle-click-and-drag**.
+Just like in the rest of ChimeraX, you can zoom in and out using your mouse
+scroll wheel. There is, however, one key difference: you will find now that the
+front and rear clipping planes move closer together when zooming in, and further
+apart when zooming out. Where the standard ChimeraX zoom mode looks at the
+molecule from outside (akin to looking through an ultra-powerful microscope),
+this mode is designed to bring you *inside* the molecule to better focus on the
+atomic details. You can adjust the distance between the clipping planes with
+**shift-scroll**. Panning (that is, translating the display up-down and
+left-right) is the ChimeraX standard **middle-click-and-drag**.
 
 Adjusting the maps
 ------------------
 
-Adjusting map contour levels is done using **mouse scroll**. The current contour
+Adjusting map contour levels is done using **alt-scroll**. The current contour
 level along with the map being adjusted will appear in the status bar:
 
 .. image:: images/map_scroll_status.png
@@ -106,54 +99,67 @@ current choice in the GUI window and showing its name in the status bar:
 The last chosen map will be remembered for contouring purposes until the next
 use of **ctrl-scroll**.
 
-Options for visualisation of individual maps are available via the  *Show map
-settings* button on ISOLDE's *Sim settings* tab. That should give you something
-like this:
+Options for visualisation of individual maps are available via the *Dynamic
+Crystallographic Map Settings*, *Precalculated Crystallographic Map Settings*,
+and *Non-crystallographic Map Settings* widgets on ISOLDE's *General* tab. These
+widgets are very similar to each other; we'll just use the dynamic maps version 
+for illustration here.
 
-.. figure:: images/map_settings_dialog.png
-    :alt: Map settings dialog
+.. figure:: images/dynamic_maps_panel.png
 
-    Control panel for individual map settings
+============== =============================================================
+Column         Function
+============== =============================================================
+Name           Provides both the name of each map, and (for crystallographic
+                maps) the structure factor file they derive from.
 
-    +------------+-------------------------------------------------------------+
-    | *Top left* | Drop-down menu to choose the map to adjust                  |
-    +------------+-------------------------------------------------------------+
-    | *Top*      | Choose whether or not this map should behave as a MDFF      |
-    | *right*    | potential (disabled for live x-ray maps)                    |
-    +------------+-------------------------------------------------------------+
-    | *Middle*   | How strongly this map "pulls" on atoms. This will be        |
-    |            | important later.                                            |
-    +------------+-------------------------------------------------------------+
-    | |surf|     | Switch to an opaque surface representation                  |
-    +------------+-------------------------------------------------------------+
-    | |trans|    | Switch to a transparent surface representation              |
-    +------------+-------------------------------------------------------------+
-    | |mesh|     | Switch to a mesh representation                             |
-    +------------+-------------------------------------------------------------+
-    | |color|    | Set (a) custom colour(s) (single colour for standard maps,  |
-    |            | or two colours for difference maps)                         |
-    +------------+-------------------------------------------------------------+
+ID             The identifier for each map/map set in the ChimeraX models 
+                hierarchy. You can use this on the command-line when you 
+                need to refer to specific maps.
 
-    Personally, I like to display the smoothest of my loaded maps in mesh
-    representation at a low contour, and the sharpest in transparent surface
-    representation at a higher contour - but this is a matter of individual
-    preference.
+Live?          (Specific to dynamic maps)
+                Controls whether to automatically recalculate structure 
+                factors and maps for this map group when the model changes.
 
-.. |surf| image:: ../../../../src/resources/mapsurf.png
-.. |trans| image:: ../../../../src/resources/icecube.png
-.. |mesh| image:: ../../../../src/resources/mesh.png
-.. |color| image:: ../../../../src/resources/rainbow.png
+Show           Controls the visibility of each map.
+
+Style          Controls the representation of each map. Options are 
+                wireframe (|mesh|), transparent surface (|trans|) or 
+                opaque surface (|surf|).
+
+Colour         Set the map colour(s) (one for a normal map,
+                two for a difference map).
+
+Diff map?      Choose whether this map should be shown as a normal map 
+                (single contour) or difference map (+/- contours).
+
+MDFF?          Control whether a map is to be used as a fitting potential.
+                A red X in this column means the corresponding map is not 
+                suitable for MDFF.
+
+Weight         The coupling constant defining how strongly the map will 
+                pull on model atoms (normalised to the overall map RMSD).
+============== =============================================================
+     
+.. |surf| image:: images/mapsurf.png
+          :width: 20
+
+.. |trans| image:: images/icecube.png
+          :width: 20
+
+.. |mesh| image:: images/mesh.png
+          :width: 20
 
 Selecting atoms
 ---------------
 
 While ISOLDE is running, it makes a few changes to how mouse-based selection
-works. Specifically, only atoms in the currently selected model will be
-selectable. Further, while a simulation is running only the mobile atoms will
-be selectable. Other than that, behaviour is quite similar to standard ChimeraX:
+works. Specifically, only atoms in ISOLDE's current working model will be
+mouse-selectable. Further, while a simulation is running only the mobile atoms will
+be mouse-selectable. Other than that, behaviour is quite similar to standard ChimeraX:
 
     * **ctrl-click (and drag)**: select an atom (group of atoms), discarding any
-                                 previous selection. Modifiers:
+      previous selection. Modifiers:
 
         - **shift** : next selection adds to any existing selection
         - **alt**   : next selection is subtracted from any existing selection.
@@ -165,58 +171,35 @@ whole chains, then the whole model. **Down arrow** will progressively roll back
 previous **up arrow** presses. I highly recommend familiarising yourself with
 how this works.
 
-Masking the maps
-----------------
+Navigating and Masking
+----------------------
 
 While the default Spotlight Mode is useful for general "browsing" through your
-model, it does not lend itself well to systematic exploration and evaluation /
-diagnosis of errors. As the model gets larger and the resolution gets lower, it
-gets easier and easier to get lost. Not only that, but it is fairly common for
-systematic errors in lower resolution models to span anywhere up to dozens of
-residues - trying to evaluate these using the spherical map view can easily
-become a frustrating exercise in trying to see the forest through the trees!
+model, it does not lend itself well to systematic exploration and
+evaluation/diagnosis of errors. As the model gets larger and the resolution gets
+lower, it gets easier and easier to get lost. Not only that, but it is fairly
+common for systematic errors in lower resolution models to span anywhere up to
+dozens of residues - trying to evaluate these using the spherical map view can
+easily become a frustrating exercise in trying to see the forest through the
+trees!
 
-This is where the map masking toolbar found at the bottom right of the ISOLDE
-panel becomes useful:
+ISOLDE provides a number of different tools to ease these challenges. For 
+systematic end-to-end exploration of a model there is the ``isolde step`` 
+command which will take you residue-by-residue through all polymeric chains.
+To isolate a complex region from the rest of the model and map, you can use 
+the "Mask to selection" button on ISOLDE's top ribbon menu:
 
-.. figure:: images/map_masking_toolbar.png
-    :alt: Map masking toolbar
+.. figure:: images/mask_to_sel.png
 
-    Useful buttons for map/model visualisation
+Select the atoms you want to isolate then click "Mask to selection" to show 
+only those residues and their immediate neighbours, and mask the map to cover 
+the selection:
 
-    +---------------+------------------------------------------------------+
-    | *Focus*       | If checked, stepping or masking will re-focus the    |
-    |               | main view on the atomic selection.                   |
-    +---------------+------------------------------------------------------+
-    | |stepper|     | Clicking the right (left) arrow button will step     |
-    |               | forward (back) through the structure in overlapping  |
-    |               | steps of two secondary structure elements at a time  |
-    |               | (plus flanking unstructured loops/turns). At each    |
-    |               | step the maps are masked to cover the resulting      |
-    |               | selection with some surrounding context, while       |
-    |               | distant atoms are hidden. If the focus checkbox is   |
-    |               | checked, the view will be re-focused on the first    |
-    |               | residue in the selection (taking into account the    |
-    |               | direction of the step).                              |
-    +---------------+------------------------------------------------------+
-    | |mask|        | Displays all currently selected atoms plus immediate |
-    |               | surrounds and masks the maps to the selection. All   |
-    |               | atoms distant to the selection will be hidden.       |
-    +---------------+------------------------------------------------------+
-    | |spot|        | Returns to spotlight (scrolling sphere) mode.        |
-    +---------------+------------------------------------------------------+
+.. figure:: images/masked_region.jpg
 
-.. |stepper| image:: ../../../../src/resources/stepper.png
-                :scale: 75 %
-
-.. |mask| image:: ../../../../src/resources/mask_to_sel.png
-                :scale: 50 %
-
-.. |spot| image:: ../../../../src/resources/spotlight.png
-                :scale: 50 %
-
-You may also isolate any arbitrary selection of atoms using the ``clipper
-isolate`` command.
+The same funcionality is available through the ``clipper isolate`` command. 
+Click the "Spotlight mode" button or enter the command ``clipper spotlight``
+to return to the default visualisation behaviour.
 
 Now that you know your way around, it's time to move on to
 :ref:`starting-a-simulation`.

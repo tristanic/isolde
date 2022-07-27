@@ -1,12 +1,6 @@
 The ISOLDE Command Line
 -----------------------
 
-.. toctree::
-    :maxdepth: 2
-
-    isolde_restrain
-    isolde_remote
-
 While the primary mode of control of ISOLDE is via :ref:`isolde_gui`, if you
 prefer you can also perform many tasks via the command line, such as launching
 the GUI (:ref:`start`), starting, stopping and pausing simulations (:ref:`sim`),
@@ -20,7 +14,7 @@ particular, :ref:`adaptive_restraint_schemes`.
 isolde tutorial
 ===============
 
-Brings up the ISOLDE :ref:`isolde_tutorials` help page, providing interactive
+Brings up the ISOLDE :ref:`isolde-tutorials` help page, providing interactive
 case studies for working on models in ISOLDE.
 
 .. _demo:
@@ -122,7 +116,12 @@ either to the starting state or the last saved checkpoint.
 isolde sim pause
 ~~~~~~~~~~~~~~~~
 
-Pauses/resumes the current simulation.
+Pauses the current simulation.
+
+isolde sim resume
+~~~~~~~~~~~~~~~~~
+
+Resumes a paused simulation.
 
 .. _pepflip:
 
@@ -452,8 +451,6 @@ cs     clipper set contourSensitivity {arguments}
 
   <span id="write-phenixRefineInput"></span>
   <span id="write"></span>
-
-
 
 .. _`write phenixRefineInput`:
 

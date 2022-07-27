@@ -1,4 +1,4 @@
-.. _isolde_tutorials:
+.. _isolde-tutorials:
 
 Tutorials
 =========
@@ -11,10 +11,21 @@ situation.)*
 .. toctree::
     :maxdepth: 1
 
+Introductory
+------------
+
     intro/crystal_intro/crystal_intro
     intro/cryo_intro/cryo_intro
-    bulk_fitting/bulk_fitting
+
+Intermediate to Advanced
+------------------------
+
     alphafold/from_scratch/from_scratch
     alphafold/reference_model/af2_reference
     alphafold/multimer/alphafold_multimer_cryoem
     alphafold/molecular_replacement/alphafold_mr
+
+Superseded
+----------
+
+    bulk_fitting/bulk_fitting

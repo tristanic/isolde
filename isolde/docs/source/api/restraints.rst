@@ -22,11 +22,15 @@ appear as a child model to the main :py:class:`chimerax.AtomicStructure`.
 
 General Utilities
 -----------------
-    ..automethod:: restrain_torsions_to_template
+    .. automethod:: chimerax.isolde.restraints.restrain_torsions_to_template
 
-    ..automethod:: restrain_ca_distances_to_template
+    .. automethod:: chimerax.isolde.restraints.restrain_atom_distances_to_template
 
-    ..automethod:: restrain_small_ligands
+    .. automethod:: chimerax.isolde.restraints.restrain_small_ligands
+
+    .. automethod:: chimerax.isolde.restraints.restrain_secondary_structure
+
+    .. automethod:: chimerax.isolde.restraints.restrain_ca_distances_to_template
 
 Change Tracking
 ---------------
@@ -90,7 +94,7 @@ TuggableAtomsMgr
 
 TuggableAtom
 ~~~~~~~~~~~~~
-    See :py:class:`Positon_Restraint`
+    See :py:class:`Position_Restraint`
 
 TuggableAtoms
 ~~~~~~~~~~~~~~
@@ -151,6 +155,25 @@ ProperDihedralRestraint
 ProperDihedralRestraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
     .. autoclass:: ProperDihedralRestraints
+        :members:
+
+Adaptive Dihedral Restraints
+----------------------------
+
+AdaptiveDihedralRestraintMgr
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: AdaptiveDihedralRestraintMgr
+        :members:
+        :inherited-members:
+    
+AdaptiveDihedralRestraint
+~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: AdaptiveDihedralRestraint
+        :members:
+
+AdaptiveDihedralRestraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+    .. autoclass:: AdaptiveDihedralRestraints
         :members:
 
 Chirality Restraints

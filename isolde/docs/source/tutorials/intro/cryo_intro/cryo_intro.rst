@@ -607,7 +607,7 @@ this tutorial, let's look at one more handy feature designed to let you "play"
 with tricky parts of the model without fear of causing irrevocable damage. Have
 a closer look at the left hand side of ISOLDE's ribbon menu:
 
-.. figure:: ../../../tools/gui/images/simulation_controls.png
+.. figure:: images/simulation_controls.png
 
 We know what the play/pause and stop buttons do, but what are the others for?
 However, the buttons we're most interested in are the green and red chequered

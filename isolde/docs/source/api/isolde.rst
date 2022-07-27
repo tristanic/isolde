@@ -4,7 +4,7 @@ ISOLDE Python API
 .. toctree::
    :maxdepth: 3
 
-   gui_control
+   isolde_main
    core_objects
    interpolation
    live_validation
