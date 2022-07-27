@@ -209,9 +209,12 @@ def _adjust_torsion_restraint_terms_for_plddt(score):
 
 def restrain_ca_distances_to_template(template_residues, restrained_residues,
     distance_cutoff=8, spring_constant = 500):
-    '''
-    Creates a "web" of distance restraints between nearby CA atoms, restraining
-    one set of residues to the same spatial organisation as another.
+    
+    ''' 
+    (Deprecated - for most purposes
+    :py:func:`restrain_atom_distances_to_template()` should be used.) Creates a
+    "web" of distance restraints between nearby CA atoms, restraining one set of
+    residues to the same spatial organisation as another.
 
     Args:
         * template_residues:
@@ -228,8 +231,9 @@ def restrain_ca_distances_to_template(template_residues, restrained_residues,
               equivalent atom in `template_residues` is within `distance_cutoff`
               of its template equivalent.
         * spring_constant (default = 500):
-            - the strength of each restraint, in :math:`kJ mol^{-1} nm^{-2}`
+            - the strength of each restraint, in :math:`kJ mol^{-1} nm^{-2}` 
     '''
+
     from chimerax.isolde import session_extensions as sx
     if len(template_residues) != len(restrained_residues):
         raise TypeError('Template and restrained residue arrays must be the same length!')
