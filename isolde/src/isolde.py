@@ -169,17 +169,18 @@ class Isolde():
         self._log = Logger('isolde.log')
         self.checkpoint_disabled_reasons = {}
 
+        self.params = IsoldeParams()
         '''
         A :class:`IsoldeParams` instance containing basic parameters controlling
         how the interactive simulation selection is defined and displayed.
         '''
-        self.params = IsoldeParams()
 
+        sp = self.sim_params = SimParams()
         '''
         Parameters controlling the initialisation and behaviour of the
         simulation.
         '''
-        sp = self.sim_params = SimParams()
+
         sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr
