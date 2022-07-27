@@ -94,7 +94,6 @@ class _Defaults:
         'TUGGABLE_HYDROGENS':         'polar',
         'RESTRAIN_PEPTIDE_OMEGA':     True,
         'DISPLAY_OMEGA_RESTRAINTS':   False,
-        'MAX_CUBIC_MAP_SIZE':         5e6, # Switch to on-the-fly cubic interpolation above this size
 
         'SIM_FIDELITY_MODE':          'High',
 

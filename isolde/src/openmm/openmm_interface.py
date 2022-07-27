@@ -2498,14 +2498,11 @@ class Sim_Handler:
             * volume:
                 - a :py:class:`chimerax.Volume` instance
         '''
-        from .custom_forces import (CubicInterpMapForce,
-            CubicInterpMapForce_Low_Memory
-            )
+        from .custom_forces import CubicInterpMapForce
         v = volume
         region = list(v.region)
         # Ensure that the region ijk step size is [1,1,1]
         region[-1] = [1,1,1]
-        #v.new_region(ijk_min=region[0], ijk_max=region[1], ijk_step=[1,1,1])
         data = v.region_matrix(region=region)
         if any (dim < 3 for dim in data.shape):
             # Not enough of this map is covering the atoms. Leave it out.
@@ -2514,12 +2511,6 @@ class Sim_Handler:
             data_copy = numpy.empty(data.shape, numpy.float32)
             data_copy[:] = data
             data = data_copy
-        if data.size < self._params.max_cubic_map_size:
-            Map_Force = CubicInterpMapForce
-        else:
-            print("Map is too large for fast cubic interpolation on the GPU!"\
-                  +" Switching to slower, more memory-efficient implementation.")
-            Map_Force = CubicInterpMapForce_Low_Memory
         from chimerax.geometry import Place
         tf = v.data.xyz_to_ijk_transform
         # Shift the transform to the origin of the region
@@ -2530,7 +2521,7 @@ class Sim_Handler:
         # particles in this force, it needs a unique name so it doesn't
         # interfere with other instances of the same force.
         suffix = str(len(self.mdff_forces)+1)
-        f = Map_Force(data, region_tf.matrix, suffix, units='angstroms')
+        f = CubicInterpMapForce(data, region_tf.matrix, suffix, units='angstroms')
         f.setForceGroup(MAP_FORCE_GROUP)
         self.all_forces.append(f)
         self._system.addForce(f)
