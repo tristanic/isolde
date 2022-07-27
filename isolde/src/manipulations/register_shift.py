@@ -188,9 +188,14 @@ class ProteinRegisterShifter:
 
         # clear any rotamer, backbone and distance restraints on
         # extended selection
-        isolde.release_rotamers(xr)
-        isolde.clear_secondary_structure_restraints_for_selection(residues = xr)
-        isolde.release_xyz_restraints_on_selected_atoms(sel = xr.atoms)
+        from chimerax.isolde.restraints.restraint_utils import release_ss_restraints
+        release_ss_restraints(xr)
+        from chimerax.isolde import session_extensions as sx
+        prm = sx.get_position_restraint_mgr(isolde.selected_model)
+        prm.get_restraints(xr.atoms).enableds=False
+        drm = sx.get_proper_dihedral_restraint_mgr(isolde.selected_model)
+        drs = drm.get_all_restraints_for_residues(xr)
+        drs[drs.dihedrals.names!='omega'].enableds=False
 
         self._positions_along_spline = (p.indices(xr) - spline_start_index).astype(float)
 
@@ -203,7 +208,8 @@ class ProteinRegisterShifter:
         no longer be used.
         '''
         if self._extended_residues is not None:
-            self.isolde.release_xyz_restraints_on_selected_atoms(sel = self._extended_residues.atoms)
+            prs = self._pr_mgr.get_restraints(self._extended_residues.atoms)
+            prs.enableds=False            
         isolde = self.isolde
         if isolde.simulation_running and self._handler is not None:
             isolde.sim_handler.triggers.remove_handler(self._handler)
@@ -241,7 +247,8 @@ class ProteinRegisterShifter:
         # Release restraints on atoms outside of the spline
         out_a = xr[outside].atoms
         if len(out_a):
-            isolde.release_xyz_restraints_on_selected_atoms(sel = out_a)
+            prs = self._pr_mgr.get_restraints(out_a)
+            out_a.enableds = False
 
         # Update the restraints on atoms inside of the spline
         in_a = xa[inside]
