@@ -112,7 +112,9 @@ def get_distance_restraint_mgr(model, create=True):
     if create:
         return DistanceRestraintMgr(model)
 
-def get_adaptive_distance_restraint_mgr(model, name='Adaptive Distance Restraints',
+from chimerax.isolde.restraints.restraint_utils import DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME
+
+def get_adaptive_distance_restraint_mgr(model, name=DEFAULT_ADAPTIVE_RESTRAINT_GROUP_NAME,
         create=True):
     '''
     Get a :class:`AdaptiveDistanceRestraintMgr` for the given model, creating
