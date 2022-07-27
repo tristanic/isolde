@@ -1988,8 +1988,8 @@ class MDFFMgr(_RestraintMgr):
         randomly perturbed by up to 0.25 A along each axis, and the gradient at
         that point is calculated based on linear interpolation of surrounding
         voxels. The gradients are ranked in increasing order of value, and the
-        the value at the given `percentile` is selected. The final `global_k` is
-        selected such that :math:`value * global_k = scaling_constant`.
+        the value at the given `percentile` is selected. The final global_k is
+        selected such that value * global_k = scaling_constant.
 
         Args:
             * distance_cutoff:
