@@ -750,7 +750,7 @@ class Sim_Manager:
         from .. import session_extensions as sx
         m = self.model
         mobile_res = mobile_atoms.unique_residues
-        rama_a = self.RamaAnnotator = sx.get_RamaAnnotator(m)
+        rama_a = self.RamaAnnotator = sx.get_rama_annotator(m)
         rota_a = self.rota_annotator = sx.get_rota_annotator(m)
         rama_a.restrict_to_selected_residues(mobile_res)
         rota_a.restrict_to_selected_residues(mobile_res)

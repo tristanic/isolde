@@ -18,7 +18,7 @@ class SimTester:
         rama_m = self.rama_mgr = session_extensions.get_ramachandran_mgr(session)
         rota_m = self.rota_mgr = session_extensions.get_rotamer_mgr(session)
 
-        rama_a = self.RamaAnnotator = session_extensions.get_RamaAnnotator(model)
+        rama_a = self.RamaAnnotator = session_extensions.get_rama_annotator(model)
         rota_a = self.rota_annotator = session_extensions.get_rota_annotator(model)
 
         pdr_m = self.proper_dihedral_restraint_mgr = session_extensions.get_proper_dihedral_restraint_mgr(model)

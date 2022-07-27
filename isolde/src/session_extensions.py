@@ -213,7 +213,7 @@ def get_rota_annotator(model, create=True):
     if create:
         return RotamerAnnotator(model)
 
-def get_RamaAnnotator(model, create=True):
+def get_rama_annotator(model, create=True):
     '''
     Get the :class:`RamaAnnotator` for the given model, optionally creating it
     if it doesn't yet exist.

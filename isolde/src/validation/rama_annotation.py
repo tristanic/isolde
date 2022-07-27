@@ -32,7 +32,7 @@ class RamaAnnotator(Model):
     .. code-block:: python
 
         from chimerax.isolde import session_extensions as sx
-        ra = sx.get_RamaAnnotator(atomic_model)
+        ra = sx.get_rama_annotator(atomic_model)
 
     creates the :py:class:`RamaAnnotator` if it doesn't exist, or returns
     the existing one if it does.
