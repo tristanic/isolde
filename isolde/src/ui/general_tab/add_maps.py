@@ -87,6 +87,6 @@ class MapAddDialog(UI_Panel_Base):
         if selected_file is not None:
             from chimerax.core.commands import run
             oversamp = self.crystal_oversample_spinbox.value()
-            run(self.session, f'clipper open "{selected_file}" structureModel #{self.isolde.selected_model.id_string} overSampling {oversamp:.1f}')
+            run(self.session, f'clipper open "{selected_file}" structureModel #{self.isolde.selected_model.id_string} overSampling {oversamp:.1f} autoFree f')
             
         
