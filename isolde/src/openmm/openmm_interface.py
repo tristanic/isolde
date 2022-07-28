@@ -746,14 +746,22 @@ class Sim_Manager:
         '''
         self._current_checkpoint.revert()
 
+
+    @property
+    def rama_annotator(self):
+        from chimerax.isolde import session_extensions as sx
+        return sx.get_rama_annotator(self.model)
+    
+    @property
+    def rota_annotator(self):
+        from chimerax.isolde import session_extensions as sx
+        return sx.get_rota_annotator(self.model)
+
     def _prepare_validation_managers(self, mobile_atoms):
         from .. import session_extensions as sx
-        m = self.model
         mobile_res = mobile_atoms.unique_residues
-        rama_a = self.RamaAnnotator = sx.get_rama_annotator(m)
-        rota_a = self.rota_annotator = sx.get_rota_annotator(m)
-        rama_a.restrict_to_selected_residues(mobile_res)
-        rota_a.restrict_to_selected_residues(mobile_res)
+        self.rama_annotator.restrict_to_selected_residues(mobile_res)
+        self.rota_annotator.restrict_to_selected_residues(mobile_res)
 
     def _prepare_restraint_managers(self):
         from .. import session_extensions as sx
@@ -1056,7 +1064,7 @@ class Sim_Manager:
             generic_warning(msg)
 
     def _rama_a_sim_end_cb(self, *_):
-        self.RamaAnnotator.track_whole_model = True
+        self.rama_annotator.track_whole_model = True
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
