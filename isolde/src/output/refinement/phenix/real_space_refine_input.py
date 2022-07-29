@@ -72,7 +72,6 @@ absolute_angle_tolerance = 0.01
 refinement {{
     run = *minimization_global rigid_body local_grid_search morphing \
         simulated_annealing *adp
-    nqh_flips = False
     max_iterations = 100
     macro_cycles = 5
     target_bonds_rmsd = 0.01
