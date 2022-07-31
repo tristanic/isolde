@@ -13,7 +13,7 @@ General Principles
 Dihedrals are the key fundamental units defining many aspects of a molecule's
 structure: backbone "twist" or secondary structure, peptide bond conformation,
 rotamer (sidechain) conformation, planarity, chirality, etc. Fast methods for
-finding, measuring and tracking them are thus vital to ISOLDE's success.
+finding, measuring and tracking them are thus a core part of ISOLDE.
 
 Each of the groups below are arranged in essentially the same way, so I will
 explain the layout using proper dihedrals as an example. There are three key
@@ -33,7 +33,7 @@ Python classes:
 
 Some general key points:
     * In general, the C++ :cpp:class:`ProperDihedral` objects are only created
-      when needed. :py:func:`ProperDihedralMgr.get_dihedral` by default will
+      when needed. :py:func:`ProperDihedralMgr.get_dihedrals` by default will
       work through the input list of residues, returning dihedrals that already
       exist and attempting to create those that don't.
     * If any constituent atom in a C++ :cpp:class:`ProperDihedral` is deleted,
@@ -62,7 +62,7 @@ Some general key points:
 
             angles = proper_dihedrals.angles
 
-      ... is very fast, whereas:
+      \... is very fast, whereas:
 
         .. code-block:: python
 
@@ -70,7 +70,7 @@ Some general key points:
             for d in proper_dihedrals:
                 angles.append(d.angle)
 
-      is very slow, since it involves creating and deleting a
+      is very slow, since it involves creating and deleting a Python
       :py:class:`ProperDihedral` for every iteration of the loop.
 
 .. automodule:: chimerax.isolde.atomic

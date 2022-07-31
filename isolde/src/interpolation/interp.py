@@ -67,7 +67,7 @@ class RegularGridInterpolator:
 
     While in theory any number of dimensions is supported, in practice memory
     limitations make it impractical beyond 4-5 dimensions for most situations.
-    For example, to handle interpolation over a 360 range with periodic wrapping
+    For example, to handle interpolation over a 360 degree range with periodic wrapping
     on a 10 degree grid requires 39 points per axis. For three dimensions the
     resulting grid contains about 60k points; four dimensions contains about
     2.3 million; five dimensions 90 million and six dimensions 3.5 billion (that
