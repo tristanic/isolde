@@ -117,12 +117,12 @@ def set_his_protonation_state(residue, position='ND'):
     hd1_dihedral_atoms = [residue.find_atom(name) for name in ('ND1', 'CE1', 'NE2')]
     if not all(hd1_dihedral_atoms):
         raise TypeError('This residue is missing at least one necessary heavy atom!')
-    if position in ('ND', 'both'):
+    if position in ('ND', 'BOTH'):
         atom = add_dihedral_atom('HD1', 'H', *hd1_dihedral_atoms, bond_length, angle, dihedral, bonded=True)
         nd1 = hd1_dihedral_atoms[0]
         atom.bfactor = nd1.bfactor
         atom.occupancy = nd1.occupancy
-    if position in ('NE', 'both'):
+    if position in ('NE', 'BOTH'):
         atom = add_dihedral_atom('HE2', 'H', *hd1_dihedral_atoms[::-1], bond_length, angle, dihedral, bonded=True)
         ne2 = hd1_dihedral_atoms[-1]
         atom.bfactor = ne2.bfactor
