@@ -12,7 +12,7 @@ def restrain_distances(session, atoms, template_atoms=None, **kwargs):
     valid_args = set((
         'protein', 'nucleic', 'custom_atom_names', 'per_chain', 'distance_cutoff',
         'alignment_cutoff', 'well_half_width', 'kappa', 'tolerance', 'fall_off',
-        'display_threshold', 'group_name', 
+        'display_threshold', 'group_name', 'use_coordinate_alignment'
     ))
     log = session.logger
 

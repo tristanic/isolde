@@ -223,16 +223,33 @@ class ReferenceModelDialog(UI_Panel_Base):
         from collections import defaultdict
         alignments = defaultdict(list)
         dssp_cache = {}
+        # MatchMaker's use_ss option doesn't get used, so just set all scores equal to force it 
+        # to ignore secondary structure
+        ss_scores = {
+        ('H', 'H'): 1.0,
+        ('S', 'S'): 1.0,
+        ('O', 'O'): 1.0,
+        ('S', 'H'): 1.0,
+        ('H', 'S'): 1.0,
+        ('S', 'O'): 1.0,
+        ('O', 'S'): 1.0,
+        ('H', 'O'): 1.0,
+        ('O', 'H'): 1.0
+    }
         for mc in model_chains:
             for rc in ref_chains:
                 score, s1, s2 = align(self.session, mc, rc, defaults['matrix'],
-                'nw', defaults['gap_open'], defaults['gap_extend'], dssp_cache
+                'nw', defaults['gap_open'], defaults['gap_extend'], dssp_cache,
+                ss_matrix=ss_scores
                 )
                 num_identical=0
+                num_different=0
                 for c1, c2 in zip(s1.characters, s2.characters):
                     if c1==c2:
                         num_identical += 1
-                identity = num_identical/len(s1.ungapped())
+                    elif c1!='.' and c2 !='.':
+                        num_different+=1
+                identity = num_identical/(num_identical+num_different)
                 coverage = len(s1.ungapped())/len(mc.ungapped())
                 # ref chain, alignment score, fractional identity, coverage, model seq, ref seq
                 if identity > self.IDENTITY_CUTOFF:
@@ -498,10 +515,10 @@ class DistanceRestraintWeightSlider(QSlider):
     @property
     def weight(self):
         '''
-        Minimum 2, maximum 100
+        Minimum 1, maximum 50
         '''
         from math import exp, floor
-        val = 2*exp(self.value()/50)
+        val = exp(self.value()/50)
         if val < 20:
             return round(val, 1)
         return floor(val)
@@ -654,9 +671,9 @@ class DistanceRestraintFuzzinessIndicator(FuzzinessIndicatorBase):
             forces[i] = dr.applied_force
         # Switch to Angstrom units
         forces = forces/10
-        if forces.max() > 10:
-            self.axes.set_ylim([0,25])
-        else:self.axes.set_ylim([0,10])
+        if forces.max() > 5:
+            self.axes.set_ylim([0,15])
+        else:self.axes.set_ylim([0,5])
         
         plot = getattr(self, '_plot', None)
         if plot is None:

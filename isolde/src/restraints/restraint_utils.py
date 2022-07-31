@@ -567,7 +567,7 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
         for trs, rrs in zip(template_residues, restrained_residues):
             unique_template_chain_ids.update(trs.unique_chain_ids)
             unique_model_chain_ids.update(rrs.unique_chain_ids)
-        if len(trs) < len(rrs):
+        if len(unique_template_chain_ids) < len(unique_model_chain_ids):
             raise UserError('If `per_chain` is False, each template chain can only be used for one chain in your working model!')
 
     template = template_us[0]
