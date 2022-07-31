@@ -60,7 +60,10 @@ class _MyAPI(BundleAPI):
 
     @staticmethod
     def initialize(session, bundle_info):
-        #initialize_openmm()
+        # TEMPORARY HACK - REMOVE FOR 1.5
+        from .alphafold_patch import alphafold_monkeypatch
+        alphafold_monkeypatch(session)
+        # END HACK
         register_ignored_residues_attr(session)
         register_domain_cluster_attr(session)
         register_model_isolde_init_attr(session)
