@@ -101,7 +101,7 @@ with the surroundings.
     <Dependency name="ChimeraX-Core" version="~=1.4.dev202203030220"/>
     <Dependency name="ChimeraX-Atomic" version="~=1.36"/>
     <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=7.0"/>
-    <Dependency name="ChimeraX-Clipper" version="~=0.18.0"/>
+    <Dependency name="ChimeraX-Clipper" version="~=0.19.0.dev0"/>
     <Dependency name="ChimeraX-Arrays" build="true" version="~=1.0"/>
   </Dependencies>
 
