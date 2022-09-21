@@ -866,7 +866,7 @@ def restrain_secondary_structure(session, residues, target):
     import numpy
     backbone_atoms = residues.atoms[numpy.in1d(residues.atoms.names, ['N','CA','C','O'])]
     existing_drs = dr_m.atoms_restraints(backbone_atoms)
-    existing_drs.enableds=True
+    existing_drs.enableds=False
     from ..util import find_contiguous_fragments
     fragments = find_contiguous_fragments(residues)
     for frag in fragments:
