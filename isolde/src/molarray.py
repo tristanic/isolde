@@ -83,7 +83,7 @@ class _Dihedrals(Collection):
     instantiate directly.
     '''
     def __init__(self, c_pointers, single_class, array_class):
-        super().__init__(c_pointers, single_class, array_class)
+        super().__init__(c_pointers, single_class)
 
     @property
     def _natoms(self):
@@ -207,7 +207,7 @@ class ProperDihedrals(_Dihedrals):
 
 class Ramas(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Rama, Ramas)
+        super().__init__(c_pointers, Rama)
 
     @property
     def omega_dihedrals(self):
@@ -303,7 +303,7 @@ class Ramas(Collection):
 
 class Rotamers(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, Rotamer, Rotamers)
+        super().__init__(c_pointers, Rotamer)
 
     residues = cvec_property('rotamer_residue', cptr, astype=convert.residues, read_only=True,
                 doc=':py:class:`chimerax.Residue` this rotamer belongs to. Read only.')
@@ -345,7 +345,7 @@ class PositionRestraints(Collection):
             single_type = PositionRestraint
         if poly_type is None:
             poly_type = PositionRestraints
-        super().__init__(c_pointers, single_type, poly_type)
+        super().__init__(c_pointers, single_type)
 
     @property
     def _bond_cylinder_transforms(self):
@@ -427,7 +427,7 @@ class TuggableAtoms(PositionRestraints):
 
 class MDFFAtoms(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, MDFFAtom, MDFFAtoms)
+        super().__init__(c_pointers, MDFFAtom)
 
     def clear_sim_indices(self):
         '''
@@ -474,7 +474,7 @@ class MDFFAtoms(Collection):
 
 class DistanceRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, DistanceRestraint, DistanceRestraints)
+        super().__init__(c_pointers, DistanceRestraint)
 
     @property
     def _bond_cylinder_transforms(self):
@@ -553,8 +553,7 @@ class DistanceRestraints(Collection):
 
 class AdaptiveDistanceRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, AdaptiveDistanceRestraint,
-            AdaptiveDistanceRestraints)
+        super().__init__(c_pointers, AdaptiveDistanceRestraint)
 
     @property
     def _bond_transforms(self):
@@ -646,7 +645,7 @@ class AdaptiveDistanceRestraints(Collection):
 
 class ChiralRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, ChiralRestraint, ChiralRestraints)
+        super().__init__(c_pointers, ChiralRestraint)
 
     def clear_sim_indices(self):
         f = c_function('chiral_restraint_clear_sim_index',
@@ -729,7 +728,7 @@ class _ProperDihedralRestraints_Base(Collection):
 
     def __init__(self, c_pointers=None, singular_py_class=None,
             array_py_class=None):
-        super().__init__(c_pointers, singular_py_class, array_py_class)
+        super().__init__(c_pointers, singular_py_class)
 
     @classmethod
     def _c_function_prefix(cls):
@@ -876,7 +875,7 @@ class AdaptiveDihedralRestraints(_ProperDihedralRestraints_Base):
 
 class RotamerRestraints(Collection):
     def __init__(self, c_pointers=None):
-        super().__init__(c_pointers, RotamerRestraint, RotamerRestraints)
+        super().__init__(c_pointers, RotamerRestraint)
 
     def set_spring_constant(self, k):
         '''

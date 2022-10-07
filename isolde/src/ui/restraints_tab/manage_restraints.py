@@ -36,7 +36,7 @@ class ManageRestraintsDialog(UI_Panel_Base):
         from ..color_button import ThreeColorButton
         bsize =(DEFAULT_ICON_SIZE.width(), DEFAULT_ICON_SIZE.height())
         dcb = self.distance_restraint_color_button = ThreeColorButton(
-            max_size=bsize, min_size=bsize, direction='0+', has_alpha_channel=False,
+            max_size=bsize, direction='0+', has_alpha_channel=False,
             titles=('Overly compressed', 'Optimally satisfied', 'Overly stretched')
         )
         dcb.setToolTip('<span>Set the colour map for the current restraint group</span>')
@@ -117,7 +117,7 @@ class ManageRestraintsDialog(UI_Panel_Base):
         tbl1.addWidget(QLabel('Adaptive Torsion Restraints  '))
         tbl1.addWidget(QLabel('Colors: '))
         tcb = self.torsion_restraint_color_button = ThreeColorButton(
-            max_size=bsize, min_size=bsize, direction='0-', has_alpha_channel=False,
+            max_size=bsize, direction='0-', has_alpha_channel=False,
             titles=('Severely strained','Moderately strained','Satisfied')
         )
         tcb.color_changed.connect(self._torsion_restraint_button_color_cb)
