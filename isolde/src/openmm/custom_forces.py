@@ -43,7 +43,7 @@ pyobject = molc.pyobject
 set_c_pointer = molc.set_c_pointer
 pointer = molc.pointer
 size_t = molc.size_t
-from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+from numpy import int8, uint8, int32, uint32, float64, float32, byte
 from ..ctypes import convert_and_sanitize_numpy_array
 from ..util import compiled_lib_extension
 libdir = os.path.dirname(os.path.abspath(__file__))
@@ -214,7 +214,7 @@ class _Map_Force_Base(CustomCompoundBondForce):
 
     def _initialize_transform_arguments(self, suffix):
         tf = self._transform
-        tfi = self._tf_term_indices = numpy.zeros(tf.shape, numpy.int)
+        tfi = self._tf_term_indices = numpy.zeros(tf.shape, int)
         for i in range(3):
             for j in range(3):
                 tfi[i][j] = self.addGlobalParameter(

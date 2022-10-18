@@ -21,7 +21,7 @@ set_c_pointer = molc.set_c_pointer
 pointer = molc.pointer
 size_t = molc.size_t
 
-from numpy import uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+from numpy import uint8, int32, uint32, float64, float32, byte
 import ctypes
 import numpy
 

@@ -30,7 +30,7 @@ from chimerax.atomic import ctypes_support as convert
 
 from chimerax.core.models import Model, Drawing
 
-from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+from numpy import int8, uint8, int32, uint32, float64, float32, byte
 import json
 
 from .util import compiled_lib_extension
@@ -341,8 +341,8 @@ class ChiralMgr(_DihedralMgr):
         snums = []
         for sname_list in (s1_names, s2_names, s3_names):
             snums.append(len(sname_list))
-            sname_objs.append(numpy.array(sname_list, numpy.object))
-        ext = numpy.empty(3, numpy.bool)
+            sname_objs.append(numpy.array(sname_list, object))
+        ext = numpy.empty(3, bool)
         ext[:] = externals
 
         f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
@@ -533,9 +533,9 @@ class ProperDihedralMgr(_DihedralMgr):
             for d_key, d_data in res_data.items():
                 if type(d_data) != list:
                     continue
-                externals = numpy.zeros(4, numpy.bool)
+                externals = numpy.zeros(4, bool)
                 if type(d_data[1]) == list and d_data[1][0] in (0,1):
-                    externals = numpy.array(d_data[1]).astype(numpy.bool)
+                    externals = numpy.array(d_data[1]).astype(bool)
                 d_data = d_data[0]
                 self.add_dihedral_def(res_key, d_key, d_data, externals)
 
@@ -594,7 +594,7 @@ class ProperDihedralMgr(_DihedralMgr):
                         args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                         ctypes.POINTER(ctypes.c_bool)))
         import numpy
-        emask = numpy.zeros(4, numpy.bool)
+        emask = numpy.zeros(4, bool)
         if external_mask is not None:
             emask[:] = external_mask
         rk = ctypes.py_object()
@@ -743,7 +743,7 @@ class ProperDihedralMgr(_DihedralMgr):
         ))
         import numpy
         n = len(residues)
-        ret = numpy.empty(n, numpy.bool)
+        ret = numpy.empty(n, bool)
         key = ctypes.py_object()
         key.value = name
         f(self._c_pointer, residues._c_pointers, ctypes.byref(key), n, pointer(ret))
@@ -1203,7 +1203,7 @@ class RamaMgr:
         n = len(ramas)
         coords = numpy.empty((n,3), float64)
         colors = numpy.empty((n, 4), uint8)
-        selecteds = numpy.empty(n, npy_bool)
+        selecteds = numpy.empty(n, bool)
         count = f(self._c_pointer, ramas._c_pointers, n, hide_favored,
             pointer(coords), pointer(colors), pointer(selecteds))
         return (coords[0:count], colors[0:count], selecteds[0:count])
@@ -1395,7 +1395,7 @@ class RotaMgr:
         for aa, data in rd.items():
             rdata = [(name, d) for (name, d) in data.items()]
             rdata = sorted(rdata, key=lambda d: d[1]['freq'], reverse=True)
-            names = numpy.array([d[0] for d in rdata], numpy.object)
+            names = numpy.array([d[0] for d in rdata], object)
             n = len(names)
             frequencies = numpy.array([d[1]['freq'] for d in rdata], float64)
             angles = numpy.concatenate(
@@ -1535,7 +1535,7 @@ class RotaMgr:
                     moving_atom_counts.append(len(ma))
                     moving_atom_names.extend(ma)
                     mac = numpy.array(moving_atom_counts, numpy.uint8)
-                    man = numpy.array(moving_atom_names, numpy.object)
+                    man = numpy.array(moving_atom_names, object)
                 f(self._c_pointer, ctypes.byref(key), nchi, val_nchi, symm,
                     pointer(mac), pointer(man))
 
@@ -4812,11 +4812,11 @@ class Rama(State):
             doc = 'The :class:`chimerax.Residue` to which this Rama belongs. Read only.')
     ca_atom = c_property('rama_ca_atom', cptr, astype=convert.atom_or_none, read_only = True,
             doc = 'The alpha carbon :py:class:`chimerax.Atom` of the amino acid residue. Read only.')
-    valid = c_property('rama_is_valid', npy_bool, read_only = True,
+    valid = c_property('rama_is_valid', bool, read_only = True,
             doc = 'True if this residue has all three of omega, phi and psi. Read only.')
-    visible = c_property('rama_visible', npy_bool, read_only = True,
+    visible = c_property('rama_visible', bool, read_only = True,
             doc = 'True if the alpha carbon of this residue is visible. Read only.')
-    visible_ignoring_ribbon = c_property('rama_only_hidden_by_ribbon', npy_bool, read_only=True,
+    visible_ignoring_ribbon = c_property('rama_only_hidden_by_ribbon', bool, read_only=True,
             doc = 'True if the only thing hiding the alpha carbon is the ribbon display. Read only.')
     score = c_property('rama_score', float64, read_only = True,
             doc = 'The score of this residue on the MolProbity Ramachandran contours. Read only.')
@@ -4947,7 +4947,7 @@ class Rotamer(State):
                 doc='Number of dihedrals defining this rotamer. Read only.')
     num_targets = c_property('rotamer_num_target_defs', uint32, read_only=True,
                 doc='Number of available target conformations. Read only.')
-    visible = c_property('rotamer_visible', npy_bool, read_only=True,
+    visible = c_property('rotamer_visible', bool, read_only=True,
                 doc='True if the CA-CB bond of the rotamer is visible. Read only.')
     center = c_property('rotamer_center', float64, value_count=3, read_only=True,
             doc = 'Returns mid-point between the CA and CB atoms. Read only.')
@@ -5013,9 +5013,9 @@ class PositionRestraint(State):
         doc = 'Returns the vector ("bond") connecting the atom to its target. Read only.')
     spring_constant = c_property('position_restraint_k', float64,
         doc = 'Restraint spring constant in :math:`kJ mol^{-1} nm^{-2}`. Can be written')
-    enabled = c_property('position_restraint_enabled', npy_bool,
+    enabled = c_property('position_restraint_enabled', bool,
         doc = 'Enable/disable this position restraint.')
-    visible = c_property('position_restraint_visible', npy_bool, read_only=True,
+    visible = c_property('position_restraint_visible', bool, read_only=True,
         doc = 'Check whether this restraint is currently visible. Read only.')
     sim_index = c_property('position_restraint_sim_index', int32,
         doc = '''
@@ -5094,7 +5094,7 @@ class MDFFAtom(State):
 
     mgr = c_property('mdff_atom_get_manager', cptr, astype=_mdff_mgr, read_only=True,
         doc=':class:`MDFFMgr` for this atom and map. Read only.')
-    enabled = c_property('mdff_atom_enabled', npy_bool,
+    enabled = c_property('mdff_atom_enabled', bool,
         doc='Enable/disable MDFF tugging on this atom or get its current state.')
     atom = c_property('mdff_atom_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='Returns the ChimeraX Atom. Read only.')
@@ -5156,9 +5156,9 @@ class DistanceRestraint(State):
 
     mgr = c_property('distance_restraint_get_manager', cptr, astype=_distance_restraint_mgr, read_only=True,
         doc=':class:`DistanceRestraintMgr` for this restraint. Read only.')
-    enabled =c_property('distance_restraint_enabled', npy_bool,
+    enabled =c_property('distance_restraint_enabled', bool,
             doc = 'Enable/disable this restraint or get its current state.')
-    visible = c_property('distance_restraint_visible', npy_bool, read_only = True,
+    visible = c_property('distance_restraint_visible', bool, read_only = True,
             doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
     atoms = c_property('distance_restraint_atoms', cptr, 2, astype=convert.atom_pair, read_only=True,
             doc = 'Returns a tuple of :py:class:`chimerax.Atoms` pointing to the pair of restrained atoms. Read only.' )
@@ -5170,9 +5170,9 @@ class DistanceRestraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     satisfied_limit = c_property('distance_restraint_satisfied_limit', float64, 
             doc = 'Deviation from target distance (in Angstroms) beyond which this restraint will be considered unsatisfied.')
-    satisfied = c_property('distance_restraint_satisfied', npy_bool, read_only=True,
+    satisfied = c_property('distance_restraint_satisfied', bool, read_only=True,
             doc = 'Returns true if deviation from target distance is less than satisfied_limit. Read only.')
-    unsatisfied = c_property('distance_restraint_unsatisfied', npy_bool, read_only=True,
+    unsatisfied = c_property('distance_restraint_unsatisfied', bool, read_only=True,
             doc = 'Returns true if deviation from target distance is greater than or equal to satisfied_limit. Read only.')
     center = c_property('distance_restraint_center', float64, value_count=3, read_only=True,
             doc = 'Returns the mid-point between the two restrained atoms. Read only.')
@@ -5247,9 +5247,9 @@ class AdaptiveDistanceRestraint(State):
 
     mgr = c_property('adaptive_distance_restraint_get_manager', cptr, astype=_adaptive_distance_restraint_mgr, read_only=True,
         doc=':class:`AdaptiveDistanceRestraintMgr` for this restraint. Read only.')
-    enabled =c_property('adaptive_distance_restraint_enabled', npy_bool,
+    enabled =c_property('adaptive_distance_restraint_enabled', bool,
             doc = 'Enable/disable this restraint or get its current state.')
-    visible = c_property('adaptive_distance_restraint_visible', npy_bool, read_only = True,
+    visible = c_property('adaptive_distance_restraint_visible', bool, read_only = True,
             doc = 'Restraint will be visible if it is enabled and both atoms are visible.')
     atoms = c_property('adaptive_distance_restraint_atoms', cptr, 2, astype=convert.atom_pair, read_only=True,
             doc = 'Returns a tuple of :py:class:`chimerax.Atoms` pointing to the pair of restrained atoms. Read only.' )
@@ -5275,9 +5275,9 @@ class AdaptiveDistanceRestraint(State):
             doc = 'Total force currently being applied to this restraint. Read only.')
     satisfied_limit = c_property('adaptive_distance_restraint_satisfied_limit', float64, 
             doc = 'Deviation from target distance (in Angstroms) beyond which this restraint will be considered unsatisfied.')
-    satisfied = c_property('adaptive_distance_restraint_satisfied', npy_bool, read_only=True,
+    satisfied = c_property('adaptive_distance_restraint_satisfied', bool, read_only=True,
             doc = 'Returns true if deviation from target distance is less than satisfied_limit. Read only.')
-    unsatisfied = c_property('adaptive_distance_restraint_unsatisfied', npy_bool, read_only=True,
+    unsatisfied = c_property('adaptive_distance_restraint_unsatisfied', bool, read_only=True,
             doc = 'Returns true if deviation from target distance is greater than or equal to satisfied_limit. Read only.')
     center = c_property('adaptive_distance_restraint_center', float64, value_count=3, read_only=True,
             doc = 'Returns the mid-point between the two restrained atoms. Read only.')
@@ -5362,15 +5362,15 @@ class ChiralRestraint(State):
         doc = 'Difference between current and target angle in radians. Read only.')
     cutoff = c_property('chiral_restraint_cutoff', float64,
         doc = 'Cutoff angle offset below which no restraint will be applied. Can be set.')
-    enabled = c_property('chiral_restraint_enabled', npy_bool,
+    enabled = c_property('chiral_restraint_enabled', bool,
         doc = 'Enable/disable this restraint or get its current state.')
     spring_constant = c_property('chiral_restraint_k', float64,
         doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
     satisfied_limit = c_property('chiral_restraint_satisfied_limit', float64, 
         doc = 'Deviation from target angle beyond which restraint will be considered unsatisfied.')
-    satisfied = c_property('chiral_restraint_satisfied', npy_bool, read_only=True,
+    satisfied = c_property('chiral_restraint_satisfied', bool, read_only=True,
         doc='Returns True if the current deviation from the target angle is less than satisfied_limit.')
-    unsatisfied = c_property('chiral_restraint_unsatisfied', npy_bool, read_only=True,
+    unsatisfied = c_property('chiral_restraint_unsatisfied', bool, read_only=True,
         doc='Returns True if the current deviation from the target angle is greater than or equal to satisfied_limit.')
     sim_index = c_property('chiral_restraint_sim_index', int32,
         doc='''
@@ -5437,11 +5437,11 @@ class _ProperDihedralRestraint_Base(State):
             doc = 'The restrained :py:class:`{}`. Read only.'.format(cls.__name__))
         cls.offset = c_property(cls._C_FUNCTION_PREFIX+'_offset', float64, read_only = True,
             doc = 'Difference between current and target angle in radians. Read only.')
-        cls.enabled = c_property(cls._C_FUNCTION_PREFIX+'_enabled', npy_bool,
+        cls.enabled = c_property(cls._C_FUNCTION_PREFIX+'_enabled', bool,
             doc = 'Enable/disable this restraint or get its current state.')
-        cls.display = c_property(cls._C_FUNCTION_PREFIX+'_display', npy_bool,
+        cls.display = c_property(cls._C_FUNCTION_PREFIX+'_display', bool,
             doc = 'Set whether you want this restraint to be displayed when active.')
-        cls.visible = c_property(cls._C_FUNCTION_PREFIX+'_visible', npy_bool, read_only=True,
+        cls.visible = c_property(cls._C_FUNCTION_PREFIX+'_visible', bool, read_only=True,
             doc = 'Is this restraint currently visible? Read-only.')
         cls.spring_constant = c_property(cls._C_FUNCTION_PREFIX+'_k', float64,
             doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
@@ -5449,9 +5449,9 @@ class _ProperDihedralRestraint_Base(State):
             doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
         cls.satisfied_limit = c_property(cls._C_FUNCTION_PREFIX+'_satisfied_limit', float64, 
             doc = 'Deviation from target angle beyond which restraint will be considered unsatisfied.')
-        cls.satisfied = c_property(cls._C_FUNCTION_PREFIX+'_satisfied', npy_bool, read_only=True,
+        cls.satisfied = c_property(cls._C_FUNCTION_PREFIX+'_satisfied', bool, read_only=True,
             doc='Returns True if the current deviation from the target angle is less than satisfied_limit.')
-        cls.unsatisfied = c_property(cls._C_FUNCTION_PREFIX+'_unsatisfied', npy_bool, read_only=True,
+        cls.unsatisfied = c_property(cls._C_FUNCTION_PREFIX+'_unsatisfied', bool, read_only=True,
             doc='Returns True if the current deviation from the target angle is greater than or equal to satisfied_limit.')
 
 
@@ -5582,7 +5582,7 @@ class RotamerRestraint(State):
         doc = ':py:class:`Rotamer` to be restrained. Read only.')
     residue = c_property('rotamer_restraint_residue', cptr, astype=convert.residue_or_none, read_only=True,
         doc = ':py:class:`chimerax.Residue` to be restrained. Read only.')
-    enabled = c_property('rotamer_restraint_enabled', npy_bool,
+    enabled = c_property('rotamer_restraint_enabled', bool,
         doc = 'Enable/disable chi dihedral restraints. Returns False if any chi restraint is disabled.')
     target_index = c_property('rotamer_restraint_target_index', int32,
         doc = '''

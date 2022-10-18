@@ -261,7 +261,7 @@ def generate_interpolator_data(data_dir, cache_dir, file_prefix, wrap_axes = Tru
         # future runs
 
         outfile = open(os.path.join(cache_dir, file_prefix+'.pickle'), 'w+b')
-        axis_lengths = numpy.array(axis_lengths, numpy.int)
+        axis_lengths = numpy.array(axis_lengths, int)
 
 
         pickle.dump((ndim, axis_lengths, min_vals, max_vals, grid_data), outfile)

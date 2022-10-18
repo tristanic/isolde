@@ -158,7 +158,7 @@ def domains_from_pae_matrix(pae_matrix, pae_power=1, pae_cutoff=5, graph_resolut
     # Note that as of 19 August 2021 `KeyError`s can still happen - this has been reported to the
     # NetworkX developers (https://github.com/networkx/networkx/issues/4992) and possible fixes are being 
     # explored.
-    weights = (weights * 1e6).astype(numpy.int)
+    weights = (weights * 1e6).astype(int)
 
     g = nx.Graph()
     size = weights.shape[0]

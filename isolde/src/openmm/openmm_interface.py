@@ -25,7 +25,7 @@ pointer = molc.pointer
 size_t = molc.size_t
 # object map lookups
 
-from numpy import int8, uint8, int32, uint32, float64, float32, byte, bool as npy_bool
+from numpy import int8, uint8, int32, uint32, float64, float32, byte
 
 from openmm import unit, openmm
 
@@ -241,7 +241,7 @@ class OpenMM_Thread_Handler:
         '''Has the current thread finished its task?'''
         f = c_function('openmm_thread_handler_thread_finished',
             args=(ctypes.c_void_p,),
-            ret=npy_bool)
+            ret=bool)
         return f(self._c_pointer)
 
     def finalize_thread(self):
@@ -269,7 +269,7 @@ class OpenMM_Thread_Handler:
         f = c_function('openmm_thread_handler_unstable_atoms',
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p))
         n = self.natoms
-        ret = numpy.empty(n, numpy.bool)
+        ret = numpy.empty(n, bool)
         f(self._c_pointer, n, pointer(ret))
         return ret
 
@@ -1650,7 +1650,7 @@ class Sim_Handler:
         sorted_forces = numpy.sort(force_mags)[::-1]
         fmask = (sorted_forces > max_force)
         sc = self._sim_construct
-        mmask = numpy.zeros(fmask.shape, numpy.bool)
+        mmask = numpy.zeros(fmask.shape, bool)
         mmask[sc.all_atoms.indices(sc.mobile_atoms)] = True
 
         mask = numpy.logical_and(fmask, mmask[sort_i])

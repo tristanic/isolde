@@ -9,7 +9,7 @@
 
 
 import numpy
-from numpy import uint8, int32, uint32, float64, float32, uintp, byte, bool as npy_bool, integer, empty, array
+from numpy import uint8, int32, uint32, float64, float32, uintp, byte, integer, empty, array
 from chimerax.atomic import molc
 # from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
 #     set_c_pointer, pointer, size_t
@@ -261,11 +261,11 @@ class Ramas(Collection):
             doc = 'Returns a :class:`chimerax.Residues` instance giving the residue to which each Rama belongs. Read only.')
     ca_atoms = cvec_property('rama_ca_atom', cptr, astype=convert.atoms, read_only = True,
             doc = 'Returns a :class:`chimerax.Atoms` instance giving the alpha carbon of each amino acid residue. Read only.')
-    valids = cvec_property('rama_is_valid', npy_bool, read_only = True,
+    valids = cvec_property('rama_is_valid', bool, read_only = True,
             doc = 'True for each residue that has all three of omega, phi and psi. Read only.')
-    visibles = cvec_property('rama_visible', npy_bool, read_only = True,
+    visibles = cvec_property('rama_visible', bool, read_only = True,
             doc = 'True for each residue whose alpha carbon is visible. Read only.')
-    visibles_ignoring_ribbon = cvec_property('rama_only_hidden_by_ribbon', npy_bool, read_only=True,
+    visibles_ignoring_ribbon = cvec_property('rama_only_hidden_by_ribbon', bool, read_only=True,
             doc = 'True if the only thing hiding the alpha carbon is the ribbon display. Read only.')
     scores = cvec_property('rama_score', float64, read_only = True,
             doc = 'The score of each residue on the MolProbity Ramachandran contours. Read only.')
@@ -311,7 +311,7 @@ class Rotamers(Collection):
                 doc='P-value for the current conformation of this rotamer. Read only.')
     ca_cb_bonds = cvec_property('rotamer_ca_cb_bond', cptr, astype=convert.bonds, read_only=True,
                 doc='The "stem" :py:class:`chimerax.Bond` of this rotamer. Read only.')
-    visibles = cvec_property('rotamer_visible', npy_bool, read_only=True,
+    visibles = cvec_property('rotamer_visible', bool, read_only=True,
                 doc='True for each rotamer whose CA-CB bond is visible')
     centers = cvec_property('rotamer_center', float64, value_count=3, read_only=True,
             doc = 'Returns mid-point between the CA and CB atoms for each rotamer. Read only.')
@@ -374,9 +374,9 @@ class PositionRestraints(Collection):
         doc = 'Returns the vectors ("bonds") connecting each atom to its target. Read only.')
     spring_constants = cvec_property('position_restraint_k', float64,
         doc = 'Restraint spring constants in :math:`kJ mol^{-1} nm^{-2}`. Can be written')
-    enableds = cvec_property('position_restraint_enabled', npy_bool,
+    enableds = cvec_property('position_restraint_enabled', bool,
         doc = 'Enable/disable position restraints with a Numpy boolean array.')
-    visibles = cvec_property('position_restraint_visible', npy_bool, read_only=True,
+    visibles = cvec_property('position_restraint_visible', bool, read_only=True,
         doc = 'Returns a boolean mask giving the currently visible restraints. Read only.')
     sim_indices = cvec_property('position_restraint_sim_index', int32,
         doc = '''
@@ -437,7 +437,7 @@ class MDFFAtoms(Collection):
             args=(ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
 
-    enableds = cvec_property('mdff_atom_enabled', npy_bool,
+    enableds = cvec_property('mdff_atom_enabled', bool,
         doc='Enable/disable MDFF tugging on each atom or get the current states.')
     atoms = cvec_property('mdff_atom_atom', cptr, astype=convert.atoms, read_only=True,
         doc='Returns the :py:class:`chimerax.Atom`. Read only.')
@@ -506,9 +506,9 @@ class DistanceRestraints(Collection):
             args = (ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointers, len(self))
 
-    enableds =cvec_property('distance_restraint_enabled', npy_bool,
+    enableds =cvec_property('distance_restraint_enabled', bool,
             doc = 'Enable/disable these restraints or get their current states.')
-    visibles = cvec_property('distance_restraint_visible', npy_bool, read_only = True,
+    visibles = cvec_property('distance_restraint_visible', bool, read_only = True,
             doc = 'Each restraint will be visible if it is enabled and both atoms are visible.')
     atoms = cvec_property('distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
             doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
@@ -520,9 +520,9 @@ class DistanceRestraints(Collection):
             doc = 'Current distances between restrained atoms in Angstroms. Read only.')
     satisfied_limits = cvec_property('distance_restraint_satisfied_limit', float64, 
             doc = 'Deviations from target distances (in Angstroms) beyond which restraints will be considered unsatisfied.')
-    satisfieds = cvec_property('distance_restraint_satisfied', npy_bool, read_only=True,
+    satisfieds = cvec_property('distance_restraint_satisfied', bool, read_only=True,
             doc = 'Returns true for restraints whose deviations from their target distances are less than satisfied_limit. Read only.')
-    unsatisfieds = cvec_property('distance_restraint_unsatisfied', npy_bool, read_only=True,
+    unsatisfieds = cvec_property('distance_restraint_unsatisfied', bool, read_only=True,
             doc = 'Returns true for restraints whose deviations from their target distances are greater than or equal to satisfied_limit. Read only.')
     centers = cvec_property('distance_restraint_center', float64, value_count=3, read_only=True,
             doc = 'Returns the mid-point between the two restrained atoms for each restraint. Read only.')
@@ -582,9 +582,9 @@ class AdaptiveDistanceRestraints(Collection):
         f(self._c_pointers, len(self))
 
 
-    enableds =cvec_property('adaptive_distance_restraint_enabled', npy_bool,
+    enableds =cvec_property('adaptive_distance_restraint_enabled', bool,
             doc = 'Enable/disable these restraints or get their current states.')
-    visibles = cvec_property('adaptive_distance_restraint_visible', npy_bool, read_only = True,
+    visibles = cvec_property('adaptive_distance_restraint_visible', bool, read_only = True,
             doc = 'Each restraint will be visible if it is enabled and both atoms are visible.')
     atoms = cvec_property('adaptive_distance_restraint_atoms', cptr, 2, astype=_atoms_pair, read_only=True,
             doc = 'Returns a 2-tuple of :class:`Atoms` containing the restrained atoms. Read only.' )
@@ -610,9 +610,9 @@ class AdaptiveDistanceRestraints(Collection):
             doc = 'Total force currently being applied to each restraint. Read only.')
     satisfied_limits = cvec_property('adaptive_distance_restraint_satisfied_limit', float64, 
             doc = 'Deviations from target distances (in Angstroms) beyond which restraints will be considered unsatisfied.')
-    satisfieds = cvec_property('adaptive_distance_restraint_satisfied', npy_bool, read_only=True,
+    satisfieds = cvec_property('adaptive_distance_restraint_satisfied', bool, read_only=True,
             doc = 'Returns true for restraints whose deviations from their target distances are less than satisfied_limit. Read only.')
-    unsatisfieds = cvec_property('adaptive_distance_restraint_unsatisfied', npy_bool, read_only=True,
+    unsatisfieds = cvec_property('adaptive_distance_restraint_unsatisfied', bool, read_only=True,
             doc = 'Returns true for restraints whose deviations from their target distances are greater than or equal to satisfied_limit. Read only.')
     centers = cvec_property('adaptive_distance_restraint_center', float64, value_count=3, read_only=True,
             doc = 'Returns the mid-point between the two restrained atoms for each restraint. Read only.')
@@ -687,15 +687,15 @@ class ChiralRestraints(Collection):
         doc = 'Differences between current and target angles in radians. Read only.')
     cutoffs = cvec_property('chiral_restraint_cutoff', float64,
         doc = 'Cutoff angle offsets below which no restraint will be applied. Can be set.')
-    enableds = cvec_property('chiral_restraint_enabled', npy_bool,
+    enableds = cvec_property('chiral_restraint_enabled', bool,
         doc = 'Enable/disable each restraint or get their current states.')
     spring_constants = cvec_property('chiral_restraint_k', float64,
         doc = 'Get/set the spring constants for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
     satisfied_limits = cvec_property('chiral_restraint_satisfied_limit', float64, 
         doc = 'Deviations from target angle beyond which restraint will be considered unsatisfied.')
-    satisfieds = cvec_property('chiral_restraint_satisfied', npy_bool, read_only=True,
+    satisfieds = cvec_property('chiral_restraint_satisfied', bool, read_only=True,
         doc='Returns True for all restraints where the current deviation from the target angle is less than satisfied_limit.')
-    unsatisfieds = cvec_property('chiral_restraint_unsatisfied', npy_bool, read_only=True,
+    unsatisfieds = cvec_property('chiral_restraint_unsatisfied', bool, read_only=True,
         doc='Returns True for all restraints where the current deviation from the target angle is greater than or equal to satisfied_limit.')
     sim_indices = cvec_property('chiral_restraint_sim_index', int32,
         doc='''
@@ -780,19 +780,19 @@ class _ProperDihedralRestraints_Base(Collection):
             doc = 'The restrained :py:class:`{ProperDihedrals}`. Read only.')
         cls.offsets = cvec_property(cls._C_FUNCTION_PREFIX+'_offset', float64, read_only = True,
             doc = 'Difference between current and target angles in radians. Read only.')
-        cls.enableds = cvec_property(cls._C_FUNCTION_PREFIX+'_enabled', npy_bool,
+        cls.enableds = cvec_property(cls._C_FUNCTION_PREFIX+'_enabled', bool,
             doc = 'Enable/disable each restraint or get their current states.')
-        cls.displays = cvec_property(cls._C_FUNCTION_PREFIX+'_display', npy_bool,
+        cls.displays = cvec_property(cls._C_FUNCTION_PREFIX+'_display', bool,
             doc = 'Set whether you want each restraint to be displayed when active.')
-        cls.visibles = cvec_property(cls._C_FUNCTION_PREFIX+'_visible', npy_bool, read_only=True,
+        cls.visibles = cvec_property(cls._C_FUNCTION_PREFIX+'_visible', bool, read_only=True,
             doc = 'Is each restraint currently visible? Read-only.')
         cls.spring_constants = cvec_property(cls._C_FUNCTION_PREFIX+'_k', float64,
             doc = 'Get/set the spring constant for each restraint in :math:`kJ mol^{-1} rad^{-2}`')
         cls.satisfied_limits = cvec_property(cls._C_FUNCTION_PREFIX+'_satisfied_limit', float64, 
             doc = 'Deviations from target angle beyond which restraint will be considered unsatisfied.')
-        cls.satisfieds = cvec_property(cls._C_FUNCTION_PREFIX+'_satisfied', npy_bool, read_only=True,
+        cls.satisfieds = cvec_property(cls._C_FUNCTION_PREFIX+'_satisfied', bool, read_only=True,
             doc='Returns True for restraints where the current deviation from the target angle is less than satisfied_limit.')
-        cls.unsatisfieds = cvec_property(cls._C_FUNCTION_PREFIX+'_unsatisfied', npy_bool, read_only=True,
+        cls.unsatisfieds = cvec_property(cls._C_FUNCTION_PREFIX+'_unsatisfied', bool, read_only=True,
             doc='Returns True for restraints where the current deviation from the target angle is greater than or equal to satisfied_limit.')
         cls.annotation_colors = cvec_property(cls._C_FUNCTION_PREFIX+'_annotation_color', uint8, 4, read_only=True,
             doc = 'Get the annotation color for each restraint according to the current colormap. Read only.')
@@ -893,7 +893,7 @@ class RotamerRestraints(Collection):
         doc = ':py:class:`Rotamers` to be restrained. Read only.')
     residues = cvec_property('rotamer_restraint_residue', cptr, astype=convert.residues, read_only=True,
         doc = ':py:class:`chimerax.Residues` to be restrained. Read only.')
-    enableds = cvec_property('rotamer_restraint_enabled', npy_bool,
+    enableds = cvec_property('rotamer_restraint_enabled', bool,
         doc = '''
         Enable/disable chi dihedral restraints. Returns False for any rotamer
         where at least one chi restraint is disabled.

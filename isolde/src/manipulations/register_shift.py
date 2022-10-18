@@ -290,5 +290,5 @@ class ProteinRegisterShifter:
         #             rest.target = t
         #             rest.spring_constant = k
         #             r_list.append(restraints.index(rest))
-        # r_list = numpy.array(r_list, numpy.int)
+        # r_list = numpy.array(r_list, int)
         # isolde._sim_interface.update_position_restraints(restraints[r_list])

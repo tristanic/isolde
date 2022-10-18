@@ -122,8 +122,8 @@ def compare_torsions(session, model_residues, ref_residues, alignment_cutoff=2):
 
     backbone_mean_error = numpy.empty(n_res)
     sidechain_mean_error = numpy.empty(n_res)
-    twists = numpy.zeros(n_res, numpy.bool)
-    cis_trans_flips = numpy.zeros(n_res, numpy.bool)
+    twists = numpy.zeros(n_res, bool)
+    cis_trans_flips = numpy.zeros(n_res, bool)
     target_num_chi = numpy.zeros(n_res, int)
 
     deltas = {
