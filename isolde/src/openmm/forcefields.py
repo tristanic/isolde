@@ -62,17 +62,16 @@ def _background_load_ff(name, ff_files, openmm_version, isolde_version):
     pickle_file = os.path.join(cache_dir,'ff_{}.pickle'.format(name))
     try:
         import pickle
-        infile = open(pickle_file, 'rb')
-        forcefield, cached_openmm_version, cached_isolde_version = pickle.load(infile)
+        with open(pickle_file, 'rb') as infile:
+            forcefield, cached_openmm_version, cached_isolde_version = pickle.load(infile)
         if cached_openmm_version != openmm_version or cached_isolde_version != isolde_version:
             raise RuntimeError('Cached forcefield is out of date.')
         return {name: forcefield}
     except:
         print('Forcefield cache not found or out of date. Regenerating from ffXML files. This is normal if running ISOLDE for the first time, or after upgrading OpenMM.')
         ff = _define_forcefield(ff_files)
-        outfile = open(pickle_file, 'wb')
-        pickle.dump((ff, openmm_version, isolde_version), outfile)
-        outfile.close()
+        with open(pickle_file, 'wb') as outfile:
+            pickle.dump((ff, openmm_version, isolde_version), outfile)
         print('Done loading forcefield')
         return {name: ff}
 
