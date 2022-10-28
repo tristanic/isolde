@@ -69,7 +69,7 @@ master_doc = 'isolde'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -195,10 +195,10 @@ def setup(app):
 # Monkeypatch to prevent "attribute = None" type documentation for attributes
 # that are actually object instances
 
-from sphinx.ext.autodoc import (
-    ClassLevelDocumenter, InstanceAttributeDocumenter)
+# from sphinx.ext.autodoc import (
+#     ClassLevelDocumenter, InstanceAttributeDocumenter)
 
-def iad_add_directive_header(self, sig):
-    ClassLevelDocumenter.add_directive_header(self, sig)
+# def iad_add_directive_header(self, sig):
+#     ClassLevelDocumenter.add_directive_header(self, sig)
 
-InstanceAttributeDocumenter.add_directive_header = iad_add_directive_header
+# InstanceAttributeDocumenter.add_directive_header = iad_add_directive_header
