@@ -1563,7 +1563,7 @@ class Sim_Handler:
     def _prepare_sim(self):
         logger = self.session.logger
         params = self._params
-        if params.use_gbsa:
+        if params.use_gbsa and not hasattr(self, '_gbsa_force'):
             self.initialize_implicit_solvent(params)
         integrator = self._prepare_integrator(params)
         platform = openmm.Platform.getPlatformByName(params.platform)
