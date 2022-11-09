@@ -98,7 +98,7 @@ __ cxcmd:open\ 20205\ from\ emdb
 
 This should give you a scene looking something like this:
 
-.. figure:: images/6out_initial_open.png
+.. figure:: images/6out_initial_open.jpg
 
 This view is great for an overview of your model, but when model building we
 really want to get down amongst the weeds - that is, navigating *inside* the
@@ -111,7 +111,7 @@ __ cxcmd:clipper\ assoc\ #2\ to\ #1
 
 This achieves two things. Most obviously, it sets up a new viewing mode:
 
-.. figure:: images/clipper_assoc.png
+.. figure:: images/clipper_assoc.jpg
 
 What is *not* immediately obvious is that this also rearranges the model and
 map in the Models layout, to tell ISOLDE that we want to be fitting the former
@@ -171,7 +171,7 @@ the Models widget should dock as a tab on top of the Log. Now do the same for
 the Volume Viewer and ISOLDE widgets. Your ChimeraX window should now look like
 this:
 
-.. figure:: images/docked_widgets.png
+.. figure:: images/docked_widgets.jpg
 
 If you prefer, you can also keep the ISOLDE panel "floating". If so, I'd
 recommend making it non-dockable by right-clicking anywhere in the panel and
@@ -562,7 +562,7 @@ anyway). Now, expand the "Position Restraints" widget at the top of ISOLDE's
 Restraints tab, and click the button labelled "Pin to pivot". The result should
 look like this:
 
-.. figure:: images/position_restraint.png
+.. figure:: images/position_restraint.jpg
 
 The oxygen is now connected by a dashed line to a yellow "pin" indicating the
 target position. Press play to continue the simulation and see the result.

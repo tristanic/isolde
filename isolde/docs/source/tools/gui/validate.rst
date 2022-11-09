@@ -109,7 +109,7 @@ Clicking the "Launch Ramachandran Plot" button will launch the plot as a separat
 widget (this is also available without starting ISOLDE via the ChimeraX menu: 
 *Tools/Validation/Ramachandran Plot*):
 
-.. figure:: images/rama_plot_general_case.png
+.. figure:: images/rama_plot_general_case.jpg
 
     The Ramachandran plot for "general" amino acids
 

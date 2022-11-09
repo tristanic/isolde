@@ -511,7 +511,7 @@ button at bottom right. Click the top entry that appears in the table. The
 result should look something like this (although the precise numbers will 
 of course differ):
 
-.. figure:: images/problem_zones.png
+.. figure:: images/problem_zones.jpg
 
 The atoms associated with the problems in the cluster are selected and the view 
 is centred on them, so all you have to do is click play or:

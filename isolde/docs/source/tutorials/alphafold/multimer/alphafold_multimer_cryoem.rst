@@ -307,7 +307,7 @@ __ cxcmd:close\ #1;isolde\ select\ #3
 
 Click "Update" in the clashes widget, then click on the top entry in the table.
 
-.. figure:: images/model_2_worst_clash.png
+.. figure:: images/model_2_worst_clash.jpg
 
 While not ideal, a clash like this (simply requiring the atoms to push apart) is
 trivial for ISOLDE to deal with, and will not be an issue. Click through the
@@ -350,7 +350,7 @@ Explore a bit, and you'll notice that many of the most serious problems are
 clustered in the red tail at the C-terminus of Wntless (chain C... for reasons
 unclear, ColabFold models always start at chain B):
 
-.. figure:: images/model_2_ramaplot.png
+.. figure:: images/model_2_ramaplot.jpg
 
 It has been noted by multiple groups now that these very-low-confidence regions
 in AlphaFold2 models are actually excellent predictors of local disorder. In
@@ -366,7 +366,7 @@ __ cxcmd:del\ #1/C:499-541
 
 The Ramachandran plot looks immediately somewhat better:
 
-.. figure:: images/pruned_ramaplot.png
+.. figure:: images/pruned_ramaplot.jpg
 
 Let's move forward. Close the Ramachandran plot by clicking its window close
 button or using the command:
@@ -456,7 +456,7 @@ weighting of distance restraints by PAE, click the "Load PAE matrix" button and
 choose the file "7drt_20b0f_unrelaxed_rank_2_model_5_scores.json". If you have
 done things correctly, your display should now look something like this:
 
-.. figure:: images/reference_model_pae_assigned.png
+.. figure:: images/reference_model_pae_assigned.jpg
 
 Check all four checkboxes under "Distances" and "Torsions". While the parameters
 of the restraints to be applied may be fine-tuned somewhat on the "Options"
@@ -506,7 +506,7 @@ __ cxcmd:sel\ #1
 
 \... and either click the "Start simulation" button on ISOLDE's ribbon menu:
 
-.. figure:: images/start_sim_button.png
+.. figure:: images/start_sim_button.jpg
 
 \... or use the command:
 
@@ -618,7 +618,7 @@ PHE residues to select it, then find the "Preview next" rotamer button on
 ISOLDE's ribbon menu and click it until you find a rotamer reasonably close to
 the density:
 
-.. figure:: images/adjust_rotamers.png
+.. figure:: images/adjust_rotamers.jpg
 
 \... then click the adjacent "Set coords" button. Do the same for the second
 PHE, then resume the simulation.
@@ -778,7 +778,7 @@ helices was all a bit off in the starting geometry. Fixing that's pretty trivial
 (or, given the quality of the density, simply releasing *all* the restraints).
 Instead, click on the **second** row in the table.
 
-.. figure:: images/biggest_problem_zone.png
+.. figure:: images/biggest_problem_zone.jpg
 
 Yuck. That isn't even *close* to correct (if you've **really** been paying
 attention, you'll note that this is the same loop that was clashing horribly in

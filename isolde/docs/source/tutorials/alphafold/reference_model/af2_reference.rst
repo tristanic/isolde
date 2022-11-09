@@ -110,7 +110,7 @@ Before we get started properly, take a quick browse through the Ramachandran
 plots *(on the Validate tab)*. Click on a few outliers to see them in context,
 and try to picture what needs to be done to correct them.
 
-.. figure:: images/starting_ramaplots.png
+.. figure:: images/starting_ramaplots.jpg
 
 Now, have a look at what happens if we start a simulation *without* any
 reference restraints:
@@ -121,7 +121,7 @@ __ cxcmd:isolde\ sim\ start\ \#1
 
 After things start moving, take another look at the Ramachandran plots:
 
-.. figure:: images/settle_no_restraints_ramaplots.png
+.. figure:: images/settle_no_restraints_ramaplots.jpg
 
 Some clear improvements there. In my session, it's down to 40 outliers and 89
 allowed (from 82/159) - and rotamer outliers are down to 34 (from 161). But
@@ -387,7 +387,7 @@ __ cxcmd:isolde\ sim\ stop
 
 \... and take another look at the Ramachandran plots:
 
-.. figure:: images/settle_with_restraints_ramaplots.png
+.. figure:: images/settle_with_restraints_ramaplots.jpg
 
 Now we're getting somewhere! We're clearly still not done yet, but the
 statistics are starting to look much more like a real-world protein. We're down

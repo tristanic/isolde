@@ -45,7 +45,7 @@ atoms around the display centre. Second, ISOLDE's live geometry markup
 (highlighting suspicious protein backbone and sidechain conformations) will 
 be added to the model:
 
-.. figure:: images/basic_display.png
+.. figure:: images/basic_display.jpg
     :alt: Basic rota/rama/omega markup
 
     Basics of ISOLDE validation markup (*sans* map)
@@ -267,12 +267,12 @@ Once aligned, the map may be associated with the model either by using the
 
 This should change your view of the model and map from something like this:
 
-.. figure:: images/6eyd_with_map_initial.png
+.. figure:: images/6eyd_with_map_initial.jpg
     :alt: Default ChimeraX model/map view
 
 to a visualisation mode similar to the traditional crystallographic view:
 
-.. figure:: images/6eyd_with_map_clipper.png
+.. figure:: images/6eyd_with_map_clipper.jpg
     :alt: View after registering map with Clipper
 
     Default Clipper/ISOLDE "spotlight" model/map view. The map appears as a
