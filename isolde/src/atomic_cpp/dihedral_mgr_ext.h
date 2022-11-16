@@ -128,7 +128,7 @@ proper_dihedral_mgr_get_dihedrals(void *mgr, void *residues, pyobject_t *name, s
                ProperDihedral *d = m->get_dihedral(r[i], dname, (bool)create);
                if (d != nullptr)
                    dvec.push_back(d);
-           } catch (std::out_of_range) {continue;}
+           } catch (std::out_of_range&) {continue;}
        }
        void **dptr;
        PyObject *da = python_voidp_array(dvec.size(), &dptr);
@@ -152,7 +152,7 @@ proper_dihedral_mgr_residue_has_dihedral(void *mgr, void *residues, pyobject_t *
         for (size_t i=0; i<n; ++i) {
             try {
                 has_dihedral[i] = (m->get_dihedral(r[i], dname, true) != nullptr);
-            } catch (std::out_of_range) {
+            } catch (std::out_of_range&) {
                 has_dihedral[i] = false;
             }
         }

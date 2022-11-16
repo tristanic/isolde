@@ -79,7 +79,7 @@ void Dihedral_Mgr<DType>::add_dihedral(DType* d)
             Dmap &dm = _residue_map[r];
             dm[name] = d;
         }
-    } catch(std::runtime_error) {
+    } catch(std::runtime_error&) {
         return;
     }
 } //add_dihedral

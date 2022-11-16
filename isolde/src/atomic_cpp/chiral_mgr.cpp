@@ -56,7 +56,7 @@ const Chiral_Def& ChiralMgr::get_chiral_def(
 {
     try {
         return _defs.at(resname).at(atom_name);
-    } catch (std::out_of_range) {
+    } catch (std::out_of_range&) {
         throw std::out_of_range("No chiral is registered for that atom name/residue name combination!");
     }
 }

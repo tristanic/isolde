@@ -117,7 +117,7 @@ chiral_mgr_get_chiral(void *mgr, void *atom, size_t n, npy_bool create)
                 ChiralCenter *c = m->get_chiral(*a++, create);
                 if (c!=nullptr)
                     cvec.push_back(c);
-            } catch(std::out_of_range) { continue; }
+            } catch(std::out_of_range&) { continue; }
         }
         void **cptr;
         PyObject *ca = python_voidp_array(cvec.size(), &cptr);

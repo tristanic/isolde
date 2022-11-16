@@ -60,7 +60,7 @@ public:
     const d_def& get_dihedral_def(const std::string &rname, const std::string &dname) {
         try {
             return _residue_name_map.at(rname).at(dname);
-        } catch (std::out_of_range) {
+        } catch (std::out_of_range&) {
             throw std::out_of_range("No dihedral with that name is registered for this residue type!");
         }
     }

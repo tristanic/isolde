@@ -257,7 +257,7 @@ void RamaMgr::validate(Rama **rama, size_t n, double *scores, uint8_t *r_cases)
         double *adata = case_angles.data();
         try { //DELETEME
             interpolator.interpolate(adata, case_n, case_scores.data());
-        } catch (std::out_of_range) {
+        } catch (std::out_of_range&) {
             std::cerr << "Bad data on case " << cit.first << ":"; //DELETEME
             for (size_t i=0; i<case_n; i+=2) { //DELETEME
                 std::cerr << " " << adata[i] << ", " << adata[i+1] << "; "; //DELETEME
