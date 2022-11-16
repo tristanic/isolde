@@ -2493,7 +2493,7 @@ class Sim_Handler:
             * atoms:
                 - a :py:class:`chimerax.Atoms` instance
         '''
-        indices = self._atoms.indices(fixed_atoms).tolist()
+        indices = self._atoms.indices(atoms).tolist()
         masses = atoms.elements.masses
         sys = self.system
         for index, mass in zip(indices, masses):
