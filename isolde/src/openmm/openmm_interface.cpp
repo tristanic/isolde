@@ -12,12 +12,13 @@
 
 #define PYINSTANCE_EXPORT
 #include <iostream>
-#include "../molc.h"
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+
 #include "openmm_interface.h"
 #include "minimize.h"
-#include <pyinstance/PythonInstance.instantiate.h>
 
-template class pyinstance::PythonInstance<isolde::OpenMM_Thread_Handler>;
 
 using namespace isolde;
 
@@ -162,7 +163,7 @@ void OpenMM_Thread_Handler::_reinitialize_context_threaded()
     }
 }
 
-std::vector<size_t> OpenMM_Thread_Handler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities)
+std::vector<size_t> OpenMM_Thread_Handler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities) const
 {
     std::vector<size_t> fast_indices;
     size_t i=0;
@@ -280,275 +281,77 @@ void OpenMM_Thread_Handler::set_smoothing_alpha(const double &alpha)
 
 // PYTHON INTERFACE BELOW
 
-SET_PYTHON_INSTANCE(openmm_thread_handler, OpenMM_Thread_Handler)
-GET_PYTHON_INSTANCES(openmm_thread_handler, OpenMM_Thread_Handler)
 
-extern "C" EXPORT void*
-openmm_thread_handler_new(void *context)
-{
-    OpenMM::Context *c = static_cast<OpenMM::Context *>(context);
-    try {
-        OpenMM_Thread_Handler *h = new OpenMM_Thread_Handler(c);
-        return h;
-    } catch (...) {
-        molc_error();
-        return 0;
-    }
-}
+namespace py=pybind11;
+using OTH = OpenMM_Thread_Handler;
 
-extern "C" EXPORT void
-openmm_thread_handler_delete(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        delete h;
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT size_t
-openmm_thread_handler_num_atoms(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->natoms();
-    } catch (...) {
-        molc_error();
-        return 0;
-    }
-}
-
-extern "C" EXPORT double
-openmm_thread_handler_smoothing_alpha(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->smoothing_alpha();
-    } catch (...) {
-        molc_error();
-        return -1;
-    }
-}
-
-extern "C" EXPORT void
-set_openmm_thread_handler_smoothing_alpha(void *handler, double alpha)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->set_smoothing_alpha(alpha);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-
-extern "C" EXPORT void
-openmm_thread_handler_step(void *handler, size_t steps, npy_bool smooth)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->step_threaded(steps, smooth);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_minimize(void *handler, double tolerance, int max_iterations)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->minimize_threaded(tolerance, max_iterations);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-extern "C" EXPORT npy_bool
-openmm_thread_handler_thread_finished(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->thread_finished();
-    } catch (...) {
-        molc_error();
-        return false;
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_finalize_thread(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->finalize_thread();
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT npy_bool
-openmm_thread_handler_unstable(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->unstable();
-    } catch(...) {
-        molc_error();
-        return false;
-    }
-}
-
-extern "C" EXPORT npy_bool
-openmm_thread_handler_converged(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->converged();
-    } catch(...) {
-        molc_error();
-        return false;
-    }
-}
-
-
-extern "C" EXPORT npy_bool
-openmm_thread_handler_clashing(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->clash_detected();
-    } catch(...) {
-        molc_error();
-        return false;
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_unstable_atoms(void *handler, size_t n, npy_bool *unstable)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        auto fast_indices = h->overly_fast_atoms(h->final_state().getVelocities());
-        for (auto i: fast_indices)
-            unstable[i] = true;
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_last_coords(void *handler, size_t n, double *coords)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        auto sim_coords = h->get_coords_in_angstroms(h->initial_state());
-        if (n != h->natoms())
-            throw std::logic_error("Mismatch between number of atoms and output array size!");
-        for (const auto &coord: sim_coords) {
-            for (size_t i=0; i<3; ++i)
-                *coords++ = coord[i];
+PYBIND11_MODULE(_openmm_async, m) {
+    m.doc() = "Manager for running and updating an OpenMM simulation in an asynchronous "
+        "threaded manner.";
+    py::class_<OTH>(m, "OpenMM_Thread_Handler")
+        .def(py::init([](uintptr_t context)
+        {
+            auto c = reinterpret_cast<OpenMM::Context*>(context);
+            OTH* th = new OTH(c);
+            return std::unique_ptr<OTH>(th);
+        }))
+        .def_property_readonly("num_atoms", &OTH::natoms)
+        .def_property("smoothing_alpha", &OTH::smoothing_alpha, &OTH::set_smoothing_alpha)
+        .def("step", &OTH::step_threaded)
+        .def("minimize", &OTH::minimize_threaded)
+        .def("thread_finished", &OTH::thread_finished)
+        .def("finalize_thread", &OTH::finalize_thread)
+        .def("unstable", &OTH::unstable)
+        .def_property_readonly("minimization_converged", &OTH::converged)
+        .def_property_readonly("clashing", &OTH::clash_detected)
+        .def_property_readonly("unstable_atoms", [](const OTH& self){
+            auto fast_indices = self.overly_fast_atoms(self.final_state().getVelocities());
+            auto ret = py::array_t<bool>(self.natoms());
+            ret[py::make_tuple(py::ellipsis())]=false;
+            bool* ptr = (bool*)ret.request().ptr;
+            for (const auto& i: fast_indices) ptr[i]=true;
+            return ret;
+        })
+        .def_property_readonly("last_coords", [](OTH& self) {
+            auto ret = py::array_t<double>({self.natoms(), (size_t)3});
+            double* ptr = (double*)ret.request().ptr;
+            auto sim_coords = self.get_coords_in_angstroms(self.initial_state());
+            for (const auto& coord: sim_coords) {
+                for (size_t i=0; i<3; ++i)
+                    *ptr++ = coord[i];
+            }
+            return ret;
+        })
+        .def_property("current_coords", 
+        [](OTH& self) {
+            auto ret = py::array_t<double>({self.natoms(), (size_t)3});
+            double* ptr = (double*)ret.request().ptr;
+            auto sim_coords = self.get_coords_in_angstroms(self.final_state());
+            for (const auto& coord: sim_coords) {
+                for (size_t i=0; i<3; ++i)
+                    *ptr++ = coord[i];
+            }
+            return ret;
+        },
+        [](OTH& self, const py::array_t<double> coords) {
+            double* ptr = (double*)coords.request().ptr;
+            self.set_coords_in_angstroms(ptr, coords.shape(0));
         }
-    } catch (...) {
-        molc_error();
-    }
-}
+        
+        )
+        .def_property_readonly("smoothed_coords", [](OTH& self) {
+            auto ret = py::array_t<double>({self.natoms(), (size_t)3});
+            double* ptr = (double*)ret.request().ptr;
+            auto sim_coords = self.get_smoothed_coords_in_angstroms();
+            for (const auto& coord: sim_coords) {
+                for (size_t i=0; i<3; ++i)
+                    *ptr++ = coord[i];
+            }
+            return ret;
+        })
+        .def_property("min_thread_period", &OTH::get_minimum_thread_time_in_ms, &OTH::set_minimum_thread_time_in_ms)
+        .def("reinitialize_context_and_keep_state", &OTH::reinitialize_context_and_keep_state)
+        .def("reinitialize_context_and_keep_state_threaded", &OTH::reinitialize_context_threaded)
+        ;
 
-extern "C" EXPORT void
-openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        auto sim_coords = h->get_coords_in_angstroms(h->final_state());
-        if (n != h->natoms())
-            throw std::logic_error("Mismatch between number of atoms and output array size!");
-        for (const auto &coord: sim_coords) {
-            for (size_t i=0; i<3; ++i)
-                *coords++ = coord[i];
-        }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_smoothed_coords(void *handler, size_t n, double *coords)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        if (n != h->natoms())
-            throw std::logic_error("Mismatch between number of atoms and output array size!");
-        auto sim_coords = h->get_smoothed_coords_in_angstroms();
-        for (const auto &coord: sim_coords) {
-            for (size_t i=0; i<3; ++i)
-                *coords++ = coord[i];
-        }
-    } catch (...) {
-        molc_error();
-    }
-
-}
-
-extern "C" EXPORT void
-set_openmm_thread_handler_current_coords(void *handler, size_t n, double *coords)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->set_coords_in_angstroms(coords, n);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-extern "C" EXPORT double
-openmm_thread_handler_min_thread_period(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        return h->get_minimum_thread_time_in_ms();
-    } catch (...) {
-        molc_error();
-        return 0;
-    }
-}
-
-extern "C" EXPORT void
-set_openmm_thread_handler_min_thread_period(void *handler, double time_ms)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->set_minimum_thread_time_in_ms(time_ms);
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_reinitialize_context_and_keep_state(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->reinitialize_context_and_keep_state();
-    } catch (...) {
-        molc_error();
-    }
-}
-
-extern "C" EXPORT void
-openmm_thread_handler_reinitialize_context_and_keep_state_threaded(void *handler)
-{
-    OpenMM_Thread_Handler *h = static_cast<OpenMM_Thread_Handler *>(handler);
-    try {
-        h->reinitialize_context_threaded();
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-// extern "C" EXPORT void
-// openmm_thread_handler_initial_positions(void *handler, size_t n, double *coords)
+};

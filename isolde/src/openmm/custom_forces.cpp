@@ -10,219 +10,157 @@
 
 
 
-#ifdef _WIN32
-# define EXPORT __declspec(dllexport)
-#else
-# define EXPORT __attribute__((__visibility__("default")))
-#endif
 
-#include "../molc.h"
-#include <vector>
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
 #include <OpenMM.h>
 
-extern "C"
-{
+namespace py=pybind11;
+PYBIND11_MODULE(_openmm_force_ext, m) {
+    m.doc() = "Extra functions providing C++ array-style getters/setters for select OpenMM custom forces.";
 
-EXPORT void
-cmaptorsionforce_add_torsions(void *force, size_t n, int *map_indices, int *d1_indices, int *d2_indices, int *force_indices)
-{
-    OpenMM::CMAPTorsionForce *f = static_cast<OpenMM::CMAPTorsionForce *>(force);
-    try {
-        int *d1 = d1_indices, *d2 = d2_indices;
+    m.def("cmaptorsionforce_add_torsions", [](uintptr_t force, py::array_t<int> map_indices, py::array_t<int> phi_indices, py::array_t<int> psi_indices) {
+        auto f = reinterpret_cast<OpenMM::CMAPTorsionForce *>(force);
+        auto n = map_indices.shape(0);
+        py::array_t<int> force_indices(n);
+        auto fi = (int*)force_indices.request().ptr;
         for (size_t i=0; i<n; ++i) {
-            *(force_indices++) = f->addTorsion(*(map_indices++), d1[0], d1[1], d1[2], d1[3], d2[0], d2[1], d2[2], d2[3]);
-            d1 += 4; d2 += 4;
+            *(fi++) = f->addTorsion(map_indices.at(i), phi_indices.at(i,0), phi_indices.at(i,1), phi_indices.at(i,2), phi_indices.at(i,3), psi_indices.at(i,0), psi_indices.at(i,1), psi_indices.at(i,2), psi_indices.at(i,3));
         }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-EXPORT void
-customcompoundbondforce_add_bonds(void *force, size_t n, int *p_indices, double *params, int *f_indices)
-{
-    OpenMM::CustomCompoundBondForce *f = static_cast<OpenMM::CustomCompoundBondForce *>(force);
-    try {
+        return force_indices;
+    })
+    .def("customcompoundbondforce_add_bonds", [](uintptr_t force, py::array_t<int>p_indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomCompoundBondForce *>(force);
         int n_params = f->getNumPerBondParameters();
         std::vector<double> param_vec(n_params);
         int n_particles = f->getNumParticlesPerBond();
         std::vector<int> particles(n_particles);
-        for (size_t i=0; i<n; ++i) {
+        auto n = p_indices.shape(0);
+        py::array_t<int> force_indices(n);
+        auto fi = (int*)force_indices.request().ptr; 
+        for (size_t i=0; i<n; ++i)
+        {
             for (int j=0; j<n_params; ++j)
-                param_vec[j] = *params++;
-            for (int j=0; j<n_particles; ++j)
-                particles[j] = *(p_indices++);
-            *(f_indices++) = f->addBond(particles, param_vec);
-        }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-EXPORT void
-customcompoundbondforce_update_bond_parameters(void *force, size_t n, int *indices, double *params)
-{
-    OpenMM::CustomCompoundBondForce *f = static_cast<OpenMM::CustomCompoundBondForce *>(force);
-    try {
-        int n_params = f->getNumPerBondParameters();
-        std::vector<double> param_vec(n_params);
-        int n_particles = f->getNumParticlesPerBond();
-        std::vector<int> particles(n_particles);
-        for (size_t i=0; i<n; ++i) {
-            int index = *(indices++);
-            f->getBondParameters(index, particles, param_vec);
-            for (int j=0; j<n_params; ++j) {
-                param_vec[j] = *params++;
+                param_vec[j]=params.at(i,j);
+            if (n_particles > 1) {
+                for (int j=0; j<n_particles; ++j)
+                    particles[j] = p_indices.at(i,j);
+            } else {
+                particles[0] = p_indices.at(i);
             }
+            *(fi++) = f->addBond(particles, param_vec);
+        }
+        return force_indices;
+    })
+    .def("customcompoundbondforce_update_bond_parameters", [](uintptr_t force, py::array_t<int> indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomCompoundBondForce *>(force);
+        auto n_params = f->getNumPerBondParameters();
+        std::vector<double> param_vec(n_params);
+        std::vector<int> particles(f->getNumParticlesPerBond());
+        for (size_t i=0; i < indices.shape(0); ++i)
+        {
+            auto index = indices.at(i);
+            f->getBondParameters(index, particles, param_vec);
+            for (int j=0; j<n_params; ++j)
+                param_vec[j] = params.at(i,j);
             f->setBondParameters(index, particles, param_vec);
         }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-EXPORT void
-custombondforce_add_bonds(void *force, size_t n, int *p_indices, double *params, int *f_indices)
-{
-    OpenMM::CustomBondForce *f = static_cast<OpenMM::CustomBondForce *>(force);
-    try {
+    })
+    .def("custombondforce_add_bonds", [](uintptr_t force, py::array_t<int> p_indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomBondForce *>(force);
+        auto n_params = f->getNumPerBondParameters();
+        std::vector<double> param_vec(n_params);
+        int p1, p2;
+        auto n = p_indices.shape(0);
+        py::array_t<int> force_indices(n);
+        auto fi = (int*)force_indices.request().ptr;
+        for (size_t i=0; i<n; ++i)
+        {
+            for (int j=0; j<n_params; ++j)
+                param_vec[j] = params.at(i,j);
+            p1 = p_indices.at(i,0);
+            p2 = p_indices.at(i,1);
+            *(fi++) = f->addBond(p1, p2, param_vec);
+        }
+        return force_indices;
+    })
+    .def("custombondforce_update_bond_parameters", [](uintptr_t force, py::array_t<int> indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomBondForce *>(force);
         int n_params = f->getNumPerBondParameters();
         std::vector<double> param_vec(n_params);
         int p1, p2;
-        for (size_t i=0; i<n; ++i) {
+        auto n = indices.shape(0);
+        for (size_t i=0; i<n; ++i)
+        {
+            int index = indices.at(i);
+            f-> getBondParameters(index, p1, p2, param_vec);
             for (int j=0; j<n_params; ++j)
-                param_vec[j] = *params++;
-            p1 = *(p_indices++);
-            p2 = *(p_indices++);
-            *(f_indices++) = f->addBond(p1, p2, param_vec);
+                param_vec[j] = params.at(i,j);
+            f->setBondParameters(index, p1, p2, param_vec);
         }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-EXPORT void
-custombondforce_update_bond_parameters(void *force, size_t n, int *indices, double *params)
-{
-    OpenMM::CustomBondForce *f = static_cast<OpenMM::CustomBondForce *>(force);
-    try {
-        int n_params = f->getNumPerBondParameters();
+    })
+    .def("customexternalforce_add_particles", [](uintptr_t force, py::array_t<int> particle_indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomExternalForce *>(force);
+        auto n_params = f->getNumPerParticleParameters();
+        auto n = particle_indices.shape(0);
         std::vector<double> param_vec(n_params);
-        int particle1, particle2;
-        for (size_t i=0; i<n; ++i) {
-            int index = *(indices++);
-            f->getBondParameters(index, particle1, particle2, param_vec);
-            for (int j=0; j<n_params; ++j) {
-                param_vec[j] = *params++;
-            }
-            f->setBondParameters(index, particle1, particle2, param_vec);
-        }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-EXPORT void
-customexternalforce_add_particles(void *force, size_t n, int *particle_indices, double *params, int *force_indices)
-{
-    OpenMM::CustomExternalForce *f = static_cast<OpenMM::CustomExternalForce *>(force);
-    try {
-        int n_params = f->getNumPerParticleParameters();
-        std::vector<double> param_vec(n_params);
-        for (size_t i=0; i<n; ++i) {
+        py::array_t<int> force_indices(n);
+        auto fi = (int*)force_indices.request().ptr;
+        for (size_t i=0; i<n; ++i)
+        {
             for (int j=0; j<n_params; ++j)
-                param_vec[j] = *params++;
-            *(force_indices++) = f->addParticle(*(particle_indices++), param_vec);
+                param_vec[j] = params.at(i,j);
+            *(fi++) = f->addParticle(particle_indices.at(i), param_vec);
         }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-EXPORT void
-customexternalforce_update_particle_parameters(void *force, size_t n, int *indices, double *params)
-{
-    OpenMM::CustomExternalForce *f = static_cast<OpenMM::CustomExternalForce *>(force);
-    try {
-        int n_params = f->getNumPerParticleParameters();
-        std::vector<double> param_vec(n_params);
+        return force_indices;
+    })
+    .def("customexternalforce_update_particle_parameters", [](uintptr_t force, py::array_t<int> indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomExternalForce *>(force);
+        auto n_params = f->getNumPerParticleParameters();
+        auto n = indices.shape(0);
         int particle;
+        std::vector<double> param_vec(n_params);
         for (size_t i=0; i<n; ++i) {
-            int index = *(indices++);
+            int index = indices.at(i);
             f->getParticleParameters(index, particle, param_vec);
-            for (int j=0; j<n_params; ++j) {
-                param_vec[j] = *params++;
-            }
+            for (int j=0; j<n_params; ++j)
+                param_vec[j] = params.at(i,j);
             f->setParticleParameters(index, particle, param_vec);
         }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-EXPORT void
-customtorsionforce_add_torsions(void *force, size_t n, int *particle_indices, double *params, int *force_indices)
-{
-    OpenMM::CustomTorsionForce *f = static_cast<OpenMM::CustomTorsionForce *>(force);
-    try {
-        int n_params = f->getNumPerTorsionParameters();
+    })
+    .def("customtorsionforce_add_torsions", [](uintptr_t force, py::array_t<int> particle_indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomTorsionForce *>(force);
+        auto n_params = f->getNumPerTorsionParameters();
+        auto n = particle_indices.shape(0);
         std::vector<double> param_vec(n_params);
-        std::vector<int> p(4);
-        for (size_t i=0; i<n; ++i) {
-            for (int j=0; j<n_params; ++j) {
-                param_vec[j] = *params++;
-            }
-            for (size_t j=0; j<4; ++j) {
-                p[j] = *(particle_indices++);
-            }
-            *(force_indices++) = f->addTorsion(p[0], p[1], p[2], p[3], param_vec);
+        py::array_t<int> force_indices(n);
+        auto fi = (int*)force_indices.request().ptr;
+        auto pi = particle_indices;
+        for (size_t i=0; i<n; ++i)
+        {
+            for (int j=0; j<n_params; ++j)
+                param_vec[j] = params.at(i,j);
+            *(fi++) = f->addTorsion(pi.at(i,0), pi.at(i,1), pi.at(i,2), pi.at(i,3), param_vec);
         }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-EXPORT void
-customtorsionforce_update_torsion_parameters(void *force, size_t n, int *indices, double *params)
-{
-    OpenMM::CustomTorsionForce *f = static_cast<OpenMM::CustomTorsionForce *>(force);
-    try {
-        int n_params = f->getNumPerTorsionParameters();
+        return force_indices;
+    })
+    .def("customtorsionforce_update_torsion_parameters", [](uintptr_t force, py::array_t<int> indices, py::array_t<double> params) {
+        auto f = reinterpret_cast<OpenMM::CustomTorsionForce *>(force);
+        auto n_params = f->getNumPerTorsionParameters();
+        auto n = indices.shape(0);
         std::vector<double> param_vec(n_params);
         int p1, p2, p3, p4;
-        for (size_t i=0; i<n; ++i) {
-            int index = *(indices++);
+        for (size_t i=0; i<n; ++i)
+        {
+            auto index = indices.at(i);
             f->getTorsionParameters(index, p1, p2, p3, p4, param_vec);
             for (int j=0; j<n_params; ++j) {
-                param_vec[j] = *params++;
+                param_vec[j] = params.at(i,j);
             }
             f->setTorsionParameters(index, p1, p2, p3, p4, param_vec);
         }
-    } catch (...) {
-        molc_error();
-    }
-}
+    })
+    ;
+};
 
-EXPORT void
-customgbforce_add_particles(void *force, size_t n, double* params)
-{
-    OpenMM::CustomGBForce *f = static_cast<OpenMM::CustomGBForce *>(force);
-    try
-    {
-        int n_params = f->getNumPerParticleParameters();
-        std::vector<double> param_vec(n_params);
-        for (size_t i=0; i<n; ++i) {
-            for (int j=0; j<n_params; ++j) {
-                param_vec[j] = *params++;
-            }
-            f->addParticle(param_vec);
-        }
-    } catch (...) {
-        molc_error();
-    }
-}
-
-
-} // extern "C"

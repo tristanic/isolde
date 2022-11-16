@@ -55,7 +55,6 @@ with the surroundings.
     <SourceFile>src/interpolation/nd_interp.cpp</SourceFile>
   </CLibrary>
   <CLibrary name="molc" usesNumpy="true">
-    <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
     <SourceFile>src/atomic_cpp/dihedral.cpp</SourceFile>
     <SourceFile>src/atomic_cpp/dihedral_mgr.cpp</SourceFile>
     <SourceFile>src/atomic_cpp/chiral.cpp</SourceFile>
@@ -76,24 +75,33 @@ with the surroundings.
     <Library>arrays</Library>
     <Library>pyinstance</Library>
   </CLibrary>
-  <CLibrary name="openmm" usesNumpy="true">
+  <CModule name="_openmm_async">
+      <Library platform="mac">OpenMM</Library>
+      <Library platform="linux">OpenMM</Library>
+      <Library platform="windows">OpenMM.lib</Library>
+      <IncludeDir>extern/openmm/openmmapi/include</IncludeDir>
+      <IncludeDir>extern/openmm/serialization/include</IncludeDir>
+      <IncludeDir>extern/openmm/olla/include</IncludeDir>
+      <IncludeDir>extern/pybind11/include</IncludeDir>
+      <IncludeDir>src/deps/lbfgs/include</IncludeDir>
+      <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
+      <SourceFile>src/openmm/minimize.cpp</SourceFile>
+      <SourceFile>src/deps/lbfgs/src/lbfgs.c</SourceFile>
+  </CModule>
+
+
+  <CModule name="_openmm_force_ext" usesNumpy="true">
       <Library platform="mac">OpenMM</Library>
       <Library platform="linux">OpenMM</Library>
       <Library platform="windows">OpenMM.lib</Library>
       <Library>atomstruct</Library>
       <Library>pyinstance</Library>
-      <CompileArgument platform="mac">-mmacosx-version-min=10.12</CompileArgument>
-      <!-- <CompileArgument>-fno-stack-protector</CompileArgument> -->
       <IncludeDir>extern/openmm/openmmapi/include</IncludeDir>
       <IncludeDir>extern/openmm/serialization/include</IncludeDir>
       <IncludeDir>extern/openmm/olla/include</IncludeDir>
-      <LibraryDir>/home/tic20/.local/share/ChimeraX/1.3/site-packages/openmm/lib</LibraryDir>
-      <IncludeDir>src/deps/lbfgs/include</IncludeDir>
-      <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
+      <IncludeDir>extern/pybind11/include</IncludeDir>
       <SourceFile>src/openmm/custom_forces.cpp</SourceFile>
-      <SourceFile>src/openmm/minimize.cpp</SourceFile>
-      <SourceFile>src/deps/lbfgs/src/lbfgs.c</SourceFile>
-  </CLibrary>
+  </CModule>
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>

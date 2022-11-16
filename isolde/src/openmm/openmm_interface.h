@@ -19,12 +19,11 @@
 #include <exception>
 #include <stdexcept>
 #include <OpenMM.h>
-#include <pyinstance/PythonInstance.declare.h>
 
 namespace isolde
 {
 
-class OpenMM_Thread_Handler: public pyinstance::PythonInstance<OpenMM_Thread_Handler>
+class OpenMM_Thread_Handler
 {
 public:
     typedef std::chrono::duration<double, std::ratio<1,1000>> milliseconds;
@@ -96,7 +95,7 @@ public:
         _thread = std::thread(&OpenMM_Thread_Handler::_minimize_threaded, this, tolerance, max_iterations);
     }
 
-    std::vector<size_t> overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities);
+    std::vector<size_t> overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities) const;
 
     std::vector<OpenMM::Vec3> get_coords_in_angstroms(const OpenMM::State& state);
     std::vector<OpenMM::Vec3> get_smoothed_coords_in_angstroms();

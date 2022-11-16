@@ -30,32 +30,8 @@ def _strip_units(x):
         return x.value_in_unit_system(unit.md_unit_system)
     return x
 
-import os, sys, glob
-import ctypes
-from chimerax.atomic import molc
-# from chimerax.atomic.molc import CFunctions, string, cptr, pyobject, \
-#     set_c_pointer, pointer, size_t
 
-CFunctions = molc.CFunctions
-string = molc.string
-cptr = molc.cptr
-pyobject = molc.pyobject
-set_c_pointer = molc.set_c_pointer
-pointer = molc.pointer
-size_t = molc.size_t
-from numpy import int8, uint8, int32, uint32, float64, float32, byte
-from ..ctypes import convert_and_sanitize_numpy_array
-from ..util import compiled_lib_extension
-libdir = os.path.dirname(os.path.abspath(__file__))
-libfile = os.path.join(libdir, '..', 'libopenmm.'+compiled_lib_extension())
-
-_c_functions = CFunctions(os.path.splitext(libfile)[0])
-c_property = _c_functions.c_property
-cvec_property = _c_functions.cvec_property
-c_function = _c_functions.c_function
-c_array_function = _c_functions.c_array_function
-
-
+from chimerax.isolde import _openmm_force_ext
 
 
 
@@ -100,19 +76,10 @@ class AmberCMAPForce(CMAPTorsionForce):
                 - a (nx4) NumPy integer array giving the indices of the atoms
                   from each psi dihedral in the simulation
         '''
-        f = c_function('cmaptorsionforce_add_torsions',
-            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_int32)))
+
         ml = self._map_loader
-        n = len(resnames)
-        map_indices = numpy.array([ml[name] for name in resnames], int32)
-        phi_i = convert_and_sanitize_numpy_array(phi_indices, int32)
-        psi_i = convert_and_sanitize_numpy_array(psi_indices, int32)
-        ret = numpy.empty(n, int32)
-        f(int(self.this), n, pointer(map_indices), pointer(phi_i), pointer(psi_i),
-            pointer(ret))
-        return ret
+        map_indices = numpy.array([ml[name] for name in resnames], numpy.int32)
+        return _openmm_force_ext.cmaptorsionforce_add_torsions(int(self.this), map_indices, phi_indices, psi_indices)
 
     def addTorsion(self, resname, phi_indices, psi_indices):
         '''
@@ -251,7 +218,7 @@ class _Map_Force_Base(CustomCompoundBondForce):
         if context is not None:
             context.setParameter(self._map_scale_factor_name, scale_factor)
         else:
-            self.setGlobalParameterDefaultValue(self,_map_scale_factor_index, scale_factor)
+            self.setGlobalParameterDefaultValue(self._map_scale_factor_index, scale_factor)
             self.update_needed = True
 
     def update_transform(self, transform, context=None, units='angstroms'):
@@ -295,17 +262,11 @@ class _Map_Force_Base(CustomCompoundBondForce):
                 - A Boolean array defining which atoms are to be enabled
                   in the force.
         '''
-        f = c_function('customcompoundbondforce_add_bonds',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,2), float64)
+        params = numpy.empty((n,2), numpy.float64)
         params[:,0] = ks
         params[:,1] = enableds
-        ret = numpy.empty(n, int32)
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.customcompoundbondforce_add_bonds(int(self.this), indices, params)
 
     def update_atoms(self, indices, ks, enableds):
         '''
@@ -323,15 +284,11 @@ class _Map_Force_Base(CustomCompoundBondForce):
                 - A Boolean array defining which atoms are to be enabled
                   in the force.
         '''
-        f = c_function('customcompoundbondforce_update_bond_parameters',
-            args = (ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,2), float64)
+        params = numpy.empty((n,2), numpy.float64)
         params[:,0] = ks
         params[:,1] = enableds
-        f(int(self.this), n, pointer(ind), pointer(params))
+        _openmm_force_ext.customcompoundbondforce_update_bond_parameters(int(self.this), indices, params)
         self.update_needed = True
 
     def update_atom(self, index, k, enabled):
@@ -801,23 +758,18 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
                   restraint outside of the central well. Values less than one
                   cause the applied force to fall off with increasing distance.
         '''
-        f = c_function('custombondforce_add_bonds',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(targets)
-        ind = numpy.empty((n,2), int32)
+        ind = numpy.empty((n,2), numpy.int32)
         for i, ai in enumerate(atom_indices):
             ind[:,i] = ai
-        params = numpy.empty((n,6), float64)
+        params = numpy.empty((n,6), numpy.float64)
         params[:,0] = enableds
         params[:,1] = kappas
         params[:,2] = cs
         params[:,3] = targets
         params[:,4] = tolerances
         params[:,5] = alphas
-        ret = numpy.empty(n, int32)
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.custombondforce_add_bonds(int(self.this), ind, params)
 
     def update_target(self, index, enabled=None, kappa=None, c=None,
             target=None, tolerance=None, alpha=None):
@@ -893,19 +845,15 @@ class AdaptiveDistanceRestraintForce(CustomBondForce):
                   restraint outside of the central well. Values less than one
                   cause the applied force to fall off with increasing distance.
         '''
-        f = c_function('custombondforce_update_bond_parameters',
-            args=(ctypes.c_void_p, ctypes.c_size_t,
-            ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,6), float64)
+        params = numpy.empty((n,6), numpy.float64)
         params[:,0] = enableds
         params[:,1] = kappas
         params[:,2] = cs
         params[:,3] = targets
         params[:,4] = tolerances
         params[:,5] = alphas
-        f(int(self.this), n, pointer(ind), pointer(params))
+        _openmm_force_ext.custombondforce_update_bond_parameters(int(self.this), indices, params)
         self.update_needed = True
 
 
@@ -986,20 +934,15 @@ class TopOutBondForce(CustomBondForce):
             * targets:
                 - a float array of target distances in nanometers
         '''
-        f = c_function('custombondforce_add_bonds',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(targets)
-        ind = numpy.empty((n,2), int32)
+        ind = numpy.empty((n,2), numpy.int32)
         for i, ai in enumerate(atom_indices):
             ind[:,i] = ai
-        params = numpy.empty((n,3), float64)
+        params = numpy.empty((n,3), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
-        ret = numpy.empty(n, int32)
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.custombondforce_add_bonds(int(self.this), ind, params)
 
 
     def update_target(self, index, enabled=None, k = None, target=None):
@@ -1052,16 +995,12 @@ class TopOutBondForce(CustomBondForce):
             * targets:
                 - the new target distances in nanometres
         '''
-        f = c_function('custombondforce_update_bond_parameters',
-            args=(ctypes.c_void_p, ctypes.c_size_t,
-            ctypes.POINTER(ctypes.c_int32), ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,3), float64)
+        params = numpy.empty((n,3), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
-        f(int(self.this), n, pointer(ind), pointer(params))
+        _openmm_force_ext.custombondforce_update_bond_parameters(int(self.this), indices, params)
         self.update_needed = True
 
 
@@ -1141,18 +1080,12 @@ class TopOutRestraintForce(CustomExternalForce):
             * targets:
                 - a (nx3) float array of (x,y,z) target positions in nanometres
         '''
-        f = c_function('customexternalforce_add_particles',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        ret = numpy.empty(n, int32)
-        params = numpy.empty((n,5), float64)
+        params = numpy.empty((n,5), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2:] = targets
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.customexternalforce_add_particles(int(self.this), indices, params)
 
     def update_target(self, index, enabled=None, k=None, target=None):
         '''
@@ -1203,18 +1136,14 @@ class TopOutRestraintForce(CustomExternalForce):
                 - A (nx3) float array providing the new target (x,y,z) positions
                   in nanometres.
         '''
-        f = c_function('customexternalforce_update_particle_parameters',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        if len(targets) !=n or len(spring_constants) !=n:
+        if len(enableds)!=n or len(targets) !=n or len(spring_constants) !=n:
             raise TypeError('Parameter array lengths must match number of indices!')
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,5), float64)
+        params = numpy.empty((n,5), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2:] = targets
-        f(int(self.this), n, pointer(ind), pointer(params))
+        _openmm_force_ext.customexternalforce_update_particle_parameters(int(self.this), indices, params)
         self.update_needed = True
 
     def release_restraint(self, index):
@@ -1285,21 +1214,16 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
                 - Cutoff angle (below which no force is applied) for each
                   restraint in radians.
         '''
-        f = c_function('customtorsionforce_add_torsions',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(targets)
         ind = numpy.empty((n,4), numpy.int32)
         for i, ai in enumerate(atom_indices):
             ind[:,i] = ai
-        params = numpy.empty((n,4), float64)
+        params = numpy.empty((n,4), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         params[:,3] = numpy.cos(cutoffs)
-        ret = numpy.empty(n, numpy.int32)
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.customtorsionforce_add_torsions(int(self.this), ind, params)
 
     def update_target(self, index, enabled=None, k = None, target = None, cutoff = None):
         '''
@@ -1319,7 +1243,7 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             * cutoff:
                 - set the cutoff angle in radians. None keeps the current value.
         '''
-        # For compatibility with int32
+        # For compatibility with numpy.int32
         index = int(index)
         current_params = self.getTorsionParameters(index)
         indices = current_params[0:4]
@@ -1358,17 +1282,13 @@ class FlatBottomTorsionRestraintForce(CustomTorsionForce):
             * cutoffs:
                 - the new cutoff angles in radians
         '''
-        f = c_function('customtorsionforce_update_torsion_parameters',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,4), float64)
+        params = numpy.empty((n,4), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         params[:,3] = numpy.cos(cutoffs)
-        f(int(self.this), n, pointer(ind), pointer(params))
+        _openmm_force_ext.customtorsionforce_update_torsion_parameters(int(self.this), indices, params)
         self.update_needed = True
 
 class TopOutTorsionForce(CustomTorsionForce):
@@ -1453,22 +1373,17 @@ class TopOutTorsionForce(CustomTorsionForce):
                   zero. Values less than 0 are not allowed, and will be
                   automatically set to 0.
         '''
-        f = c_function('customtorsionforce_add_torsions',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(targets)
         ind = numpy.empty((n,4), numpy.int32)
         for i, ai in enumerate(atom_indices):
             ind[:,i] = ai
-        params = numpy.empty((n,4), float64)
+        params = numpy.empty((n,4), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         params[:,3] = kappas
         params[:,3][params[:,3]<0] = 0
-        ret = numpy.empty(n, numpy.int32)
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.customtorsionforce_add_torsions(int(self.this), ind, params)
 
     def update_target(self, index, enabled=None, k = None, target = None, kappa = None):
         '''
@@ -1488,7 +1403,7 @@ class TopOutTorsionForce(CustomTorsionForce):
             * kappa:
                 - set the kappa (approximate units of inverse square radians)
         '''
-        # For compatibility with int32
+        # For compatibility with numpy.int32
         index = int(index)
         current_params = self.getTorsionParameters(index)
         indices = current_params[0:4]
@@ -1527,17 +1442,13 @@ class TopOutTorsionForce(CustomTorsionForce):
             * cutoffs:
                 - the new kappas in inverse square radians
         '''
-        f = c_function('customtorsionforce_update_torsion_parameters',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,4), float64)
+        params = numpy.empty((n,4), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         params[:,3] = kappas
-        f(int(self.this), n, pointer(ind), pointer(params))
+        _openmm_force_ext.customtorsionforce_update_torsion_parameters(int(self.this), indices, params)
         self.update_needed = True
 
 class AdaptiveTorsionForce(CustomTorsionForce):
@@ -1638,23 +1549,18 @@ class AdaptiveTorsionForce(CustomTorsionForce):
                   that are not already within the well will be repelled from
                   it). Again, this is not recommended.
         '''
-        f = c_function('customtorsionforce_add_torsions',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int32)))
         n = len(targets)
         ind = numpy.empty((n,4), numpy.int32)
         for i, ai in enumerate(atom_indices):
             ind[:,i] = ai
-        params = numpy.empty((n,5), float64)
+        params = numpy.empty((n,5), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         params[:,3] = kappas
         params[:,3][params[:,3]<0] = 0
         params[:,4] = alphas
-        ret = numpy.empty(n, numpy.int32)
-        f(int(self.this), n, pointer(ind), pointer(params), pointer(ret))
-        return ret
+        return _openmm_force_ext.customtorsionforce_add_torsions(int(self.this), ind, params)
 
     def update_target(self, index, enabled=None, k = None, target = None,
             kappa = None, alpha = None):
@@ -1722,20 +1628,15 @@ class AdaptiveTorsionForce(CustomTorsionForce):
                 - the new alphas (steepness of the potential outside the well -
                   typically between 0 and 1)
         '''
-        f = c_function('customtorsionforce_update_torsion_parameters',
-            args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_int32),
-                ctypes.POINTER(ctypes.c_double)))
         n = len(indices)
-        ind = convert_and_sanitize_numpy_array(indices, int32)
-        params = numpy.empty((n,5), float64)
+        params = numpy.empty((n,5), numpy.float64)
         params[:,0] = enableds
         params[:,1] = spring_constants
         params[:,2] = targets
         params[:,3] = kappas
         params[:,4] = alphas
-        f(int(self.this), n, pointer(ind), pointer(params))
-        self.update_needed = True
-
+        _openmm_force_ext.customtorsionforce_update_torsion_parameters(int(self.this), indices, params)
+        self.update_needed=True
 
 class TorsionNCSForce(CustomCompoundBondForce):
     '''
