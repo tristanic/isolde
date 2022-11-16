@@ -1739,6 +1739,7 @@ class Sim_Handler:
                 - A :py:class:`ProperDihedralRestraint` or
                   :py:class:`ChiralRestraint` instance.
         '''
+        from math import cos
         force = self._dihedral_restraint_force
         all_atoms = self._atoms
         dihedral_atoms = restraint.dihedral.atoms
