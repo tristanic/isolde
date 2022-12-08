@@ -53,9 +53,9 @@ endif
 
 ifeq ($(OS),Linux)
 ifndef RELEASE
-CHIMERAX_APP = /usr/libexec/UCSF-ChimeraX-daily
+CHIMERAX_APP = chimerax-daily
 else
-CHIMERAX_APP = /usr/libexec/UCSF-ChimeraX
+CHIMERAX_APP = chimerax
 endif
 endif
 
@@ -72,7 +72,7 @@ CHIMERAX_EXE = $(CHIMERAX_APP)/Contents/bin/ChimeraX
 export MACOSX_DEPLOYMENT_TARGET=10.13
 endif
 ifeq ($(OS),Linux)
-CHIMERAX_EXE = $(CHIMERAX_APP)/bin/ChimeraX
+CHIMERAX_EXE = $(CHIMERAX_APP)
 endif
 
 BUNDLE_BASE_NAME = $(subst ChimeraX-,,$(BUNDLE_NAME))
