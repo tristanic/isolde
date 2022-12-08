@@ -4509,7 +4509,7 @@ class RotamerRestraintMgr(_RestraintMgr):
         Directly set the coordinates of the associated residue to match the
         current preview. NOTE: if a simulation is running this change will be
         ignored unless you immediately run
-        :func:`Sim_Handler.push_coords_to_sim`!
+        :func:`SimHandler.push_coords_to_sim`!
 
         Args:
             * rotamer:

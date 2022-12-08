@@ -23,13 +23,13 @@
 namespace isolde
 {
 
-class OpenMM_Thread_Handler
+class OpenmmThreadHandler
 {
 public:
     typedef std::chrono::duration<double, std::ratio<1,1000>> milliseconds;
-    OpenMM_Thread_Handler() {}
-    ~OpenMM_Thread_Handler() { if (_thread_running) _thread.join(); }
-    OpenMM_Thread_Handler(OpenMM::Context* context);
+    OpenmmThreadHandler() {}
+    ~OpenmmThreadHandler() { if (_thread_running) _thread.join(); }
+    OpenmmThreadHandler(OpenMM::Context* context);
 
     OpenMM::Integrator& integrator() { return _context->getIntegrator();}
 
@@ -53,7 +53,7 @@ public:
           _thread_finished=false;
           _thread_running=true;
           _thread_except = nullptr;
-        _thread = std::thread(&OpenMM_Thread_Handler::_step_threaded, this, steps, average);
+        _thread = std::thread(&OpenmmThreadHandler::_step_threaded, this, steps, average);
     }
 
     void set_minimum_thread_time_in_ms(double time)
@@ -72,7 +72,7 @@ public:
         finalize_thread();
         _thread_running = true;
         _thread_finished = false;
-        _thread = std::thread(&OpenMM_Thread_Handler::_reinitialize_context_threaded, this);
+        _thread = std::thread(&OpenmmThreadHandler::_reinitialize_context_threaded, this);
     }
 
     void reinitialize_context_and_keep_state()
@@ -92,7 +92,7 @@ public:
         _thread_except = nullptr;
         _thread_running = true;
         _thread_finished = false;
-        _thread = std::thread(&OpenMM_Thread_Handler::_minimize_threaded, this, tolerance, max_iterations);
+        _thread = std::thread(&OpenmmThreadHandler::_minimize_threaded, this, tolerance, max_iterations);
     }
 
     std::vector<size_t> overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities) const;

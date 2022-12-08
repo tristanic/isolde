@@ -70,10 +70,10 @@ class SimTester:
 
 
         from ..openmm import openmm_interface, sim_param_mgr
-        sim_construct = self.sim_construct = openmm_interface.Sim_Construct(model, all_sim_atoms, mobile_atoms, fixed_atoms)
+        sim_construct = self.sim_construct = openmm_interface.SimConstruct(model, all_sim_atoms, mobile_atoms, fixed_atoms)
         sim_params = self.params = sim_param_mgr.SimParams()
 
-        sim_handler = self.sim_handler = openmm_interface.Sim_Handler(session, sim_params, sim_construct)
+        sim_handler = self.sim_handler = openmm_interface.SimHandler(session, sim_params, sim_construct)
 
         sim_handler.initialize_restraint_forces()
 

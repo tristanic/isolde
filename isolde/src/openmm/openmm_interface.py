@@ -21,9 +21,9 @@ RESTRAINT_FORCE_GROUP=2
 
 from chimerax.isolde.delayed_reaction import delayed_reaction
 
-from chimerax.isolde._openmm_async import OpenMM_Thread_Handler as _OpenMM_Thread_Handler_Base
+from chimerax.isolde._openmm_async import OpenmmThreadHandler as _OpenmmThreadHandlerBase
 
-class OpenMM_Thread_Handler(_OpenMM_Thread_Handler_Base):
+class OpenmmThreadHandler(_OpenmmThreadHandlerBase):
     def __init__(self, context, params):
         super().__init__(int(context.this))
         self.params = params
@@ -108,7 +108,7 @@ class OpenMM_Thread_Handler(_OpenMM_Thread_Handler_Base):
 
 
 
-class Sim_Construct:
+class SimConstruct:
     '''
     Container class defining the ChimeraX atoms (all, mobile and fixed)
     in a simulation. Also responsible for storing the visualisation state of
@@ -277,10 +277,9 @@ class Sim_Construct:
             sym.spotlight_mode = self.spotlight_mode
 
 
-
-class Sim_Manager:
+class SimManager:
     '''
-    Responsible for creating the :py:class:`Sim_Handler` and managing the
+    Responsible for creating the :py:class:`SimHandler` and managing the
     high-level control of the simulation. Handles all the necessary callbacks
     for automatically updating restraints in the simulation whenever their
     parameters change.
@@ -299,7 +298,7 @@ class Sim_Manager:
             * Expands the fixed atom selection to include any non-mobile
               residues containing atoms participating in distance restraints
               with mobile atoms
-            * Creates the :py:class:`Sim_Construct` object
+            * Creates the :py:class:`SimConstruct` object
             * Prepares the molecule visualisation for simulation (masking maps
               to the mobile selection, hiding atoms not in the simulation, etc.)
             * Prepares the MDFF managers (NOTE: this *must* be done after the
@@ -307,7 +306,7 @@ class Sim_Manager:
               has a region covering the mobile selection with sufficient padding)
             * Prepares all necessary callbacks to update the simulation when
               the parameters of restraints, mdff atom proxies etc. change.
-            * Creates the :py:class:`Sim_Handler`
+            * Creates the :py:class:`SimHandler`
             * Adds all existing restraints and MDFF atom proxies to the
               simulation.
 
@@ -360,7 +359,7 @@ class Sim_Manager:
             from chimerax.core.errors import UserError
             raise UserError('Selection leads to a simulation with no mobile atoms!')
 
-        sc = self.sim_construct = Sim_Construct(model, mobile_atoms, fixed_atoms, excluded_atoms)
+        sc = self.sim_construct = SimConstruct(model, mobile_atoms, fixed_atoms, excluded_atoms)
         self.prepare_sim_visualisation()
 
         logger.status('Preparing simulation handler')
@@ -368,7 +367,7 @@ class Sim_Manager:
         sh = self.sim_handler = None
         uh = self._update_handlers = []
         try:
-            sh = self.sim_handler = Sim_Handler(session, sim_params, sc,
+            sh = self.sim_handler = SimHandler(session, sim_params, sc,
                 isolde.forcefield_mgr)
         except Exception as e:
             self._sim_end_cb(None, None)
@@ -410,7 +409,7 @@ class Sim_Manager:
             pt.report_interval = report_interval
             pt.start()
         else:
-            pt = self._performance_tracker = Sim_Performance_Tracker(self.sim_handler, report_interval, self.session.logger.status)
+            pt = self._performance_tracker = SimPerformanceTracker(self.sim_handler, report_interval, self.session.logger.status)
             pt.start()
 
     def stop_reporting_performance(self):
@@ -502,7 +501,7 @@ class Sim_Manager:
         (including the state of all restraints) that can be returned to at any
         time, discarding any changes since the checkpoint was saved.
 
-        :py:class:`Sim_Manager` automatically saves a checkpoint when the
+        :py:class:`SimManager` automatically saves a checkpoint when the
         simulation is started. This method allows the saving of an intermediate
         state - particularly useful before experimenting on an ambiguous
         region of your map. Each call to :func:`checkpoint` overwrites the
@@ -1059,11 +1058,11 @@ class Sim_Manager:
 
 
 
-class Sim_Handler:
+class SimHandler:
     '''
     Responsible for creating a :py:class:`openmm.Simulation`, instantiating and
     populating the custom force objects, managing the creation and calling of
-    :py:class:`OpenMM_Thread_Handler`, and generally handling all the OpenMM
+    :py:class:`OpenmmThreadHandler`, and generally handling all the OpenMM
     side of simulation management.
     '''
     def __init__(self, session, sim_params, sim_construct, forcefield_mgr):
@@ -1087,7 +1086,7 @@ class Sim_Handler:
             * sim_params:
                 - a :py:class:`SimParams` instance
             * sim_construct:
-                - a :py:class:`Sim_Construct` instance
+                - a :py:class:`SimConstruct` instance
             * forcefield_mgr:
                 - a class that behaves as a
                   {name: :py:class:`OpenMM::ForceField`} dict.
@@ -1190,7 +1189,7 @@ class Sim_Handler:
         if self.thread_handler is not None:
             self.thread_handler.smoothing = flag
 
-    smoothing.__doc__ = OpenMM_Thread_Handler.smoothing.__doc__
+    smoothing.__doc__ = OpenmmThreadHandler.smoothing.__doc__
 
     @property
     def smoothing_alpha(self):
@@ -1202,7 +1201,7 @@ class Sim_Handler:
         if self.thread_handler is not None:
             self.thread_handler.smoothing_alpha = alpha
 
-    smoothing_alpha.__doc__ = OpenMM_Thread_Handler.smoothing_alpha.__doc__
+    smoothing_alpha.__doc__ = OpenmmThreadHandler.smoothing_alpha.__doc__
 
     @property
     def minimize(self):
@@ -1358,7 +1357,7 @@ class Sim_Handler:
         c = self._context = s.context
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
-        self._thread_handler = OpenMM_Thread_Handler(c, params)
+        self._thread_handler = OpenmmThreadHandler(c, params)
         self.smoothing = params.trajectory_smoothing
         self.smoothing_alpha = params.smoothing_alpha
         logger.status('')
@@ -1549,7 +1548,7 @@ class Sim_Handler:
     @property
     def thread_handler(self):
         '''
-        Returns the :py:class:`OpenMM_Thread_Handler` object.
+        Returns the :py:class:`OpenmmThreadHandler` object.
         '''
         return self._thread_handler
 
@@ -1585,7 +1584,7 @@ class Sim_Handler:
     def stop(self, reason=None):
         '''
         Stop the simulation. This will destroy the
-        :cpp:class:`OpenMM_Thread_Handler` object, rendering the Python class
+        :cpp:class:`OpenmmThreadHandler` object, rendering the Python class
         unusable.
         '''
         self._stop = True
@@ -1608,7 +1607,7 @@ class Sim_Handler:
         '''
         This must be called after any changes to force objects to ensure
         the changes are pushed to the simulation context. This happens
-        automatically when changes are made through the :py:class:`Sim_Manager`
+        automatically when changes are made through the :py:class:`SimManager`
         API.
         '''
         if not self.sim_running:
@@ -2555,7 +2554,7 @@ class Sim_Handler:
         f.setReactionFieldDielectric(1.0)
 
 
-class Map_Scale_Optimizer:
+class MapScaleOptimizer:
     '''
     Tool to optimise the magnification of the map(s) used for MDFF, by finding
     the magnification factor that minimises the conformational energy of the
@@ -2760,7 +2759,7 @@ class Map_Scale_Optimizer:
 
 
 
-class Sim_Performance_Tracker:
+class SimPerformanceTracker:
     c = 0
     def __init__(self, sim_handler, report_interval=50, log_func=None):
         self._ri = report_interval

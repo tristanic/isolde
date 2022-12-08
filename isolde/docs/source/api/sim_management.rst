@@ -15,7 +15,7 @@ To be more specific, each call to
 
 .. code:: python
 
-    OpenMM_Thread_Handler.step(n)
+    OpenmmThreadHandler.step(n)
 
 spawns a C++ thread tasked with running n simulation steps, during which time an
 arbitrary number of graphics updates may occur. The thread will terminate after
@@ -32,24 +32,24 @@ SimParams
     .. autoclass:: SimParams
         :members:
 
-Sim_Construct
+SimConstruct
 ~~~~~~~~~~~~~
-    .. autoclass:: Sim_Construct
+    .. autoclass:: SimConstruct
         :members:
 
-Sim_Manager
+SimManager
 ~~~~~~~~~~~
-    .. autoclass:: Sim_Manager
+    .. autoclass:: SimManager
         :members:
 
-Sim_Handler
+SimHandler
 ~~~~~~~~~~~
-    .. autoclass:: Sim_Handler
+    .. autoclass:: SimHandler
         :members:
 
-OpenMM_Thread_Handler
+OpenmmThreadHandler
 ~~~~~~~~~~~~~~~~~~~~~
-    .. autoclass:: OpenMM_Thread_Handler
+    .. autoclass:: OpenmmThreadHandler
         :members:
 
 Custom Forces

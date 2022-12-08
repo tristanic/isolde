@@ -279,7 +279,7 @@ class Isolde():
         # Settings for OpenMM
         ####
 
-        # Placeholder for the openmm_interface.Sim_Handler object used to perform
+        # Placeholder for the openmm_interface.SimHandler object used to perform
         # simulation setup and management
         self._sim_manager = None
 
@@ -371,7 +371,7 @@ class Isolde():
     @property
     def sim_handler(self):
         '''
-        Returns the :class:`isolde.openmm.Sim_Handler` instance controlling
+        Returns the :class:`isolde.openmm.SimHandler` instance controlling
         the currently running simulation, or None if no simulation is running.
         Read only.
         '''
@@ -393,7 +393,7 @@ class Isolde():
     @property
     def sim_manager(self):
         '''
-        Returns the :class:`isolde.openmm.Sim_Manager` instance providing
+        Returns the :class:`isolde.openmm.SimManager` instance providing
         high-level control over the current simulation. If no simulation is
         currently defined, returns None. Read only.
         '''
@@ -851,7 +851,7 @@ class Isolde():
         self.session.logger.status(
             'Initialising simulation. Please be patient...',
             color='red')
-        from .openmm.openmm_interface import Sim_Manager
+        from .openmm.openmm_interface import SimManager
         sm = self.selected_model
         main_sel = self._last_main_sel = sm.atoms[sm.atoms.selected]
         if not self.selected_model_has_mdff_enabled and getattr(self, '_warn_on_no_maps', True):
@@ -870,7 +870,7 @@ class Isolde():
             else:
                 self.session.logger.warning(warn_str)
         try:
-            sm = self._sim_manager = Sim_Manager(self, self.selected_model, main_sel,
+            sm = self._sim_manager = SimManager(self, self.selected_model, main_sel,
                 self.params, self.sim_params, excluded_residues = self.ignored_residues)
         except ValueError as e:
             err_text = str(e)

@@ -22,14 +22,14 @@
 
 using namespace isolde;
 
-OpenMM_Thread_Handler::OpenMM_Thread_Handler(OpenMM::Context* context)
+OpenmmThreadHandler::OpenmmThreadHandler(OpenMM::Context* context)
     : _context(context)
 {
     _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
     _natoms = _starting_state.getPositions().size();
 }
 
-void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
+void OpenmmThreadHandler::_step_threaded(size_t steps, bool smooth)
 {
     try
     {
@@ -77,7 +77,7 @@ void OpenMM_Thread_Handler::_step_threaded(size_t steps, bool smooth)
     }
 }
 
-void OpenMM_Thread_Handler::_apply_smoothing(const OpenMM::State& state)
+void OpenmmThreadHandler::_apply_smoothing(const OpenMM::State& state)
 {
     const auto& coords = state.getPositions();
     if (_smoothed_coords.size() == 0) {
@@ -93,7 +93,7 @@ void OpenMM_Thread_Handler::_apply_smoothing(const OpenMM::State& state)
 }
 
 
-void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_iterations)
+void OpenmmThreadHandler::_minimize_threaded(const double &tolerance, int max_iterations)
 {
     // std::cout << "Starting minimization with tolerance of " << tolerance << " and max iterations per round of " << max_iterations << std::endl;
     try
@@ -144,7 +144,7 @@ void OpenMM_Thread_Handler::_minimize_threaded(const double &tolerance, int max_
     }
 }
 
-void OpenMM_Thread_Handler::_reinitialize_context_threaded()
+void OpenmmThreadHandler::_reinitialize_context_threaded()
 {
     try
     {
@@ -163,7 +163,7 @@ void OpenMM_Thread_Handler::_reinitialize_context_threaded()
     }
 }
 
-std::vector<size_t> OpenMM_Thread_Handler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities) const
+std::vector<size_t> OpenmmThreadHandler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities) const
 {
     std::vector<size_t> fast_indices;
     size_t i=0;
@@ -175,7 +175,7 @@ std::vector<size_t> OpenMM_Thread_Handler::overly_fast_atoms(const std::vector<O
     return fast_indices;
 }
 
-std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_coords_in_angstroms(const OpenMM::State& state)
+std::vector<OpenMM::Vec3> OpenmmThreadHandler::get_coords_in_angstroms(const OpenMM::State& state)
 {
     finalize_thread();
     const auto &coords_nm = state.getPositions();
@@ -189,7 +189,7 @@ std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_coords_in_angstroms(const O
     return coords_ang;
 }
 
-std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_smoothed_coords_in_angstroms()
+std::vector<OpenMM::Vec3> OpenmmThreadHandler::get_smoothed_coords_in_angstroms()
 {
     finalize_thread();
     if (!_smoothing) {
@@ -205,7 +205,7 @@ std::vector<OpenMM::Vec3> OpenMM_Thread_Handler::get_smoothed_coords_in_angstrom
     return coords_ang;
 }
 
-void OpenMM_Thread_Handler::set_coords_in_angstroms(const std::vector<OpenMM::Vec3>& coords_ang)
+void OpenmmThreadHandler::set_coords_in_angstroms(const std::vector<OpenMM::Vec3>& coords_ang)
 {
     finalize_thread();
     std::vector<OpenMM::Vec3> coords_nm(_natoms);
@@ -221,7 +221,7 @@ void OpenMM_Thread_Handler::set_coords_in_angstroms(const std::vector<OpenMM::Ve
     _smoothed_coords.clear();
 }
 
-void OpenMM_Thread_Handler::set_coords_in_angstroms(double *coords, size_t n)
+void OpenmmThreadHandler::set_coords_in_angstroms(double *coords, size_t n)
 {
     finalize_thread();
     if (n != natoms())
@@ -235,7 +235,7 @@ void OpenMM_Thread_Handler::set_coords_in_angstroms(double *coords, size_t n)
     _smoothed_coords.clear();
 }
 
-double OpenMM_Thread_Handler::max_force(const std::vector<OpenMM::Vec3>& forces) const
+double OpenmmThreadHandler::max_force(const std::vector<OpenMM::Vec3>& forces) const
 {
     double max_force = 0;
 
@@ -251,7 +251,7 @@ double OpenMM_Thread_Handler::max_force(const std::vector<OpenMM::Vec3>& forces)
 }
 
 // get maximum force, ignoring massless (fixed) particles
-double OpenMM_Thread_Handler::max_force(const OpenMM::System& system, const OpenMM::State& state) const
+double OpenmmThreadHandler::max_force(const OpenMM::System& system, const OpenMM::State& state) const
 {
     double max_force = 0;
     auto forces = state.getForces();
@@ -269,7 +269,7 @@ double OpenMM_Thread_Handler::max_force(const OpenMM::System& system, const Open
 }
 
 
-void OpenMM_Thread_Handler::set_smoothing_alpha(const double &alpha)
+void OpenmmThreadHandler::set_smoothing_alpha(const double &alpha)
 {
     if (alpha < SMOOTHING_ALPHA_MIN)
         _smoothing_alpha = SMOOTHING_ALPHA_MIN;
@@ -283,12 +283,12 @@ void OpenMM_Thread_Handler::set_smoothing_alpha(const double &alpha)
 
 
 namespace py=pybind11;
-using OTH = OpenMM_Thread_Handler;
+using OTH = OpenmmThreadHandler;
 
 PYBIND11_MODULE(_openmm_async, m) {
     m.doc() = "Manager for running and updating an OpenMM simulation in an asynchronous "
         "threaded manner.";
-    py::class_<OTH>(m, "OpenMM_Thread_Handler")
+    py::class_<OTH>(m, "OpenmmThreadHandler")
         .def(py::init([](uintptr_t context)
         {
             auto c = reinterpret_cast<OpenMM::Context*>(context);

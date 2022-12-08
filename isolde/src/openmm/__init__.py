@@ -9,5 +9,5 @@
 
 
 from .sim_param_mgr import SimParams
-from .openmm_interface import Sim_Manager, Sim_Handler, OpenMM_Thread_Handler, \
-                              Sim_Construct
+from .openmm_interface import SimManager, SimHandler, OpenmmThreadHandler, \
+                              SimConstruct
