@@ -56,3 +56,101 @@ def default_atom_visualisation(model):
     from chimerax.clipper.util import nonpolar_hydrogens
     atoms[nonpolar_hydrogens(atoms)].displays=False
     model.residues.ribbon_displays = True
+
+class VisualisationStateMgr:
+    '''
+    Use to modify the visualisation of a structure, storing the current visualisation state 
+    for later reversion.
+    '''
+    IGNORED_BASE_COLOR = (0.75,0.75,0.75)
+    def __init__(self, session, isolde):
+        self.session = session
+        self.isolde = isolde
+        isolde.triggers.add_handler(isolde.SIMULATION_STARTED, self._sim_start_cb)
+        isolde.triggers.add_handler(isolde.SIMULATION_TERMINATED, self._sim_end_cb)
+                
+    def _sim_start_cb(self, *_):
+        m = self._current_model = self.isolde.selected_model
+        self.store_original_visualisation()
+        self.prepare_sim_visualisation()
+    
+    def _sim_end_cb(self, *_):
+        m = self.isolde.selected_model
+        if m != self._current_model:
+            return
+        self.revert_visualisation()
+
+
+    def store_original_visualisation(self):
+        '''
+        Store the current visualisation state of the model, so it can be
+        reverted once the simulation is done.
+        '''
+        m = self._current_model
+        atoms = m.atoms
+        bonds = m.bonds
+        residues = m.residues
+        self.spotlight_mode = None
+        from chimerax.clipper.symmetry import get_symmetry_handler
+        sym = self.symmetry_handler = get_symmetry_handler(m)
+        if sym:
+            self.spotlight_mode = sym.spotlight_mode
+        self._original_atom_states = (
+            atoms.colors,
+            atoms.draw_modes,
+            atoms.displays,
+            atoms.radii
+            )
+        self._original_bond_states = (
+            bonds.displays,
+            bonds.radii,
+        )
+        self._original_residue_states = (
+            residues.ribbon_displays,
+            residues.ribbon_colors
+        )
+
+    def revert_visualisation(self):
+        '''
+        Return the model visualisation to the way it was before the simulation
+        began.
+        '''
+        if not hasattr(self, '_original_atom_states'):
+            from chimerax.core.errors import UserError
+            raise UserError('No stored state to revert!')
+        m = self._current_model
+        atoms = m.atoms
+        bonds = m.bonds
+        residues = m.residues
+        # If atoms are added or deleted while a simulation is running, the
+        # stored settings will become invalid. In that case, just revert to a
+        # default visualisation.
+        try:
+            atoms.colors, atoms.draw_modes, atoms.displays, atoms.radii = \
+                self._original_atom_states
+            bonds.displays, bonds.radii = \
+                self._original_bond_states
+            residues.ribbon_displays, residues.ribbon_colors = \
+                self._original_residue_states
+        except:
+            default_atom_visualisation(self.model)
+
+        sym = self.symmetry_handler
+        if sym:
+            sym.spotlight_mode = self.spotlight_mode
+
+    def prepare_sim_visualisation(self):
+        m = self._current_model
+        sc = self.isolde.sim_manager.sim_construct
+        m.residues.ribbon_displays = False
+        fixed_bonds = sc.fixed_atoms.intra_bonds
+        fixed_bonds.radii *= self.isolde.params.fixed_bond_radius_ratio
+        from .constants import control
+        sc.all_atoms.hides &= ~control.HIDE_ISOLDE
+        ea = sc.excluded_atoms
+        if ea is not None:
+            import numpy
+            colors = ea.colors.astype(float)/255
+            colors[:,:3] = (colors[:,:3]*0.3+numpy.array(self.IGNORED_BASE_COLOR)*0.7)
+            colors = (colors*255).astype(numpy.uint8)
+            ea.colors = colors

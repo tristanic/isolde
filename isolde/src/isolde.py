@@ -182,6 +182,8 @@ class Isolde():
         simulation.
         '''
 
+        from .visualisation import VisualisationStateMgr
+        self._vis_mgr = VisualisationStateMgr(self.session, self)
         sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr

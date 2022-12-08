@@ -163,11 +163,13 @@ class SimConstruct:
         self._fixed_atoms = model_atoms[numpy.sort(fixed_i)]
         self._excluded_atoms = excluded_atoms
 
-        self.store_original_visualisation()
         self.surroundings = model_atoms.subtract(all_atoms)
         if excluded_atoms is not None:
             self.surroundings = self.surroundings.subtract(excluded_atoms)
-            excluded_atoms[excluded_atoms.element_names=='C'].colors = [50,50,50,255]
+
+    @property
+    def excluded_atoms(self):
+        return self._excluded_atoms
 
     @property
     def mobile_atoms(self):
@@ -219,62 +221,9 @@ class SimConstruct:
         '''
         return self._all_atoms.unique_residues
 
-    def store_original_visualisation(self):
-        '''
-        Store the current visualisation state of the model, so it can be
-        reverted once the simulation is done.
-        '''
-        m = self.model
-        atoms = m.atoms
-        bonds = m.bonds
-        residues = m.residues
-        self.spotlight_mode = None
-        from chimerax.clipper.symmetry import get_symmetry_handler
-        sym = self.symmetry_handler = get_symmetry_handler(m)
-        if sym:
-            self.spotlight_mode = sym.spotlight_mode
-        self._original_atom_states = (
-            atoms.colors,
-            atoms.draw_modes,
-            atoms.displays,
-            atoms.radii
-            )
-        self._original_bond_states = (
-            bonds.displays,
-            bonds.radii,
-        )
-        self._original_residue_states = (
-            residues.ribbon_displays,
-            residues.ribbon_colors
-        )
 
 
-    def revert_visualisation(self):
-        '''
-        Return the model visualisation to the way it was before the simulation
-        began.
-        '''
-        m = self.model
-        atoms = m.atoms
-        bonds = m.bonds
-        residues = m.residues
-        # If atoms are added or deleted while a simulation is running, the
-        # stored settings will become invalid. In that case, just revert to a
-        # default visualisation.
-        try:
-            atoms.colors, atoms.draw_modes, atoms.displays, atoms.radii = \
-                self._original_atom_states
-            bonds.displays, bonds.radii = \
-                self._original_bond_states
-            residues.ribbon_displays, residues.ribbon_colors = \
-                self._original_residue_states
-        except:
-            from ..visualisation import default_atom_visualisation
-            default_atom_visualisation(self.model)
-
-        sym = self.symmetry_handler
-        if sym:
-            sym.spotlight_mode = self.spotlight_mode
+            
 
 
 class SimManager:
@@ -360,7 +309,6 @@ class SimManager:
             raise UserError('Selection leads to a simulation with no mobile atoms!')
 
         sc = self.sim_construct = SimConstruct(model, mobile_atoms, fixed_atoms, excluded_atoms)
-        self.prepare_sim_visualisation()
 
         logger.status('Preparing simulation handler')
         self._prepare_mdff_managers()
@@ -769,18 +717,6 @@ class SimManager:
         merged_sel = concatenate((sel, shell), remove_duplicates=True)
         return merged_sel
 
-    def prepare_sim_visualisation(self):
-        '''
-        Set up a simulation-friendly visualisation of the construct.
-        '''
-        m = self.model
-        sc = self.sim_construct
-        m.residues.ribbon_displays = False
-        fixed_bonds = sc.fixed_atoms.intra_bonds
-        fixed_bonds.radii *= self.isolde_params.fixed_bond_radius_ratio
-        from ..constants import control
-        sc.all_atoms.hides &= ~control.HIDE_ISOLDE
-
 
     #######################################
     # CALLBACKS
@@ -826,7 +762,6 @@ class SimManager:
         elif rt == 'start':
             print('reverting to start')
             self._starting_checkpoint.revert()
-        self.sim_construct.revert_visualisation()
         if reason == 'coord length mismatch':
             msg = ('Mismatch between number of simulated atoms and the model. '
                 'The most common cause of this is the addition or removal of '
