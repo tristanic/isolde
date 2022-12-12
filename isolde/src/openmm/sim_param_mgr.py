@@ -119,6 +119,9 @@ class SimParams(Param_Mgr):
         'gbsa_cutoff':                          (defaults.GBSA_CUTOFF, OPENMM_LENGTH_UNIT),
         'gbsa_kappa':                           (defaults.GBSA_KAPPA, 1/OPENMM_LENGTH_UNIT),
 
+        'use_softcore_nonbonded_potential':     (defaults.USE_SOFTCORE_NB_POTENTIAL, None),
+        'nonbonded_softcore_lambda':            (defaults.NONBONDED_SOFTCORE_LAMBDA, None),
+
         'rigid_bonds':                          (defaults.RIGID_BONDS, None),
         'rigid_water':                          (defaults.RIGID_WATER, None),
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),

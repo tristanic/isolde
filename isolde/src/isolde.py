@@ -463,6 +463,7 @@ class Isolde():
             'temperature': self._update_sim_temperature,
             'trajectory_smoothing': self._update_smoothing_state,
             'smoothing_alpha': self._update_smoothing_amount,
+            'nonbonded_softcore_lambda': self._update_softcore_lambda
         }
         param, value = data
         f = update_methods.get(param, None)
@@ -482,6 +483,10 @@ class Isolde():
         for mode in self.session.ui.mouse_modes.modes:
             if isinstance(mode, TugAtomsMode):
                 mode.spring_constant = k
+    
+    def _update_softcore_lambda(self, val):
+        if self.simulation_running:
+            self.sim_handler.softcore_lambda = val
 
 
     def _disable_chimerax_mouse_mode_panel(self, *_):

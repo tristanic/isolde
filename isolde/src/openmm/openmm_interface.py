@@ -1139,6 +1139,31 @@ class SimHandler:
     smoothing_alpha.__doc__ = OpenmmThreadHandler.smoothing_alpha.__doc__
 
     @property
+    def softcore_lambda(self):
+        if self._system is None:
+            return None
+        from .custom_forces import NonbondedSoftcoreForce
+        for f in self.all_forces:
+            if isinstance(f, NonbondedSoftcoreForce):
+                break
+        else:
+            return None
+        return f.getGlobalParameterDefaultValue(f.LAMBDA_INDEX)
+    
+    @softcore_lambda.setter
+    def softcore_lambda(self, val):
+        if self._system is None or self._context is None:
+            return
+        from .custom_forces import NonbondedSoftcoreForce
+        for f in self.all_forces:
+            if isinstance(f, NonbondedSoftcoreForce):
+                break
+        else:
+            return
+        f.set_lambda(val, self._context)
+
+
+    @property
     def minimize(self):
         ''' Force the simulation to continue minimizing indefinitely. '''
         return self._minimize
@@ -1182,27 +1207,31 @@ class SimHandler:
             'residueTemplates':     residue_templates,
         }
         sys = forcefield.createSystem(top, **system_params)
-        # self._convert_to_soft_core_potentials(sys)
         return sys
 
     def _convert_to_soft_core_potentials(self, system):
         from openmm.openmm import NonbondedForce
-        for f in system.getForces():
+        for i,f in enumerate(system.getForces()):
             if type(f) == NonbondedForce:
                 break
-        from .custom_forces import NonbondedSoftcoreForce
-        sf = NonbondedSoftcoreForce()
+        from .custom_forces import NonbondedSoftcoreForce, NonbondedSoftcoreExceptionForce
+        sf = NonbondedSoftcoreForce(nb_lambda=self._params.nonbonded_softcore_lambda)
+        sfb = NonbondedSoftcoreExceptionForce(nb_lambda=self._params.nonbonded_softcore_lambda)
         sf.setNonbondedMethod(f.getNonbondedMethod())
         sf.setCutoffDistance(f.getCutoffDistance())
         sf.setSwitchingDistance(f.getSwitchingDistance())
-        for i in range(system.getNumParticles()):
-            charge, sigma, epsilon = f.getParticleParameters(i)
-            sf.addParticle([sigma, epsilon])
-            f.setParticleParameters(i, charge, sigma, 0)
-        for i in range(f.getNumExceptions()):
-            p1, p2, cp, sig, eps = f.getExceptionParameters(i)
+        for j in range(system.getNumParticles()):
+            charge, sigma, epsilon = f.getParticleParameters(j)
+            sf.addParticle([charge, sigma, epsilon])
+            #f.setParticleParameters(j, charge, sigma, 0)
+        for j in range(f.getNumExceptions()):
+            p1, p2, cp, sig, eps = f.getExceptionParameters(j)
             sf.addExclusion(p1, p2)
+            sfb.addBond(p1, p2, (cp, sig, eps))
+        system.removeForce(i)
         system.addForce(sf)
+        system.addForce(sfb)
+        self.all_forces.extend((sf, sfb))
 
 
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
@@ -1273,6 +1302,9 @@ class SimHandler:
         params = self._params
         if params.use_gbsa and not hasattr(self, '_gbsa_force'):
             self.initialize_implicit_solvent(params)
+        if params.use_softcore_nonbonded_potential and not hasattr(self, '_soft_core_initialized'):
+            self._convert_to_soft_core_potentials(self._system)
+            self._soft_core_initialized=True
         integrator = self._prepare_integrator(params)
         platform = openmm.Platform.getPlatformByName(params.platform)
 
@@ -2298,8 +2330,7 @@ class SimHandler:
     def set_mdff_global_k(self, volume, k):
         '''
         Set the global coupling constant for the MDFF force associated with
-        the given volume. NOTE: this will trigger a reinitialisation of the
-        simulation context, so use sparingly!
+        the given volume. 
 
         Args:
             * volume:
@@ -2473,16 +2504,21 @@ class SimHandler:
             if isinstance(f, NonbondedForce):
                 break
         n = f.getNumParticles()
-        params = numpy.empty((n, 3))
+        pparams = numpy.empty((n, 3))
 
         for i in range(f.getNumParticles()):
-            params[i,0] = f.getParticleParameters(i)[0].value_in_unit(
+            pparams[i,0] = f.getParticleParameters(i)[0].value_in_unit(
                 defaults.OPENMM_CHARGE_UNIT
             )
-        from .custom_forces import GBSAForce
-        gbforce = self._gbsa_force = GBSAForce(**gbsa_params)
-        params[:,1:] = gbforce.getStandardParameters(top)
-        gbforce.addParticles(params)
+        from .custom_forces import GBSAForce, SoftCoreGBSAGBnForce
+        if params.use_softcore_nonbonded_potential:
+            force_class = SoftCoreGBSAGBnForce
+            gbsa_params['nb_lambda'] = params.nonbonded_softcore_lambda
+        else:
+            force_class = GBSAForce
+        gbforce = self._gbsa_force = force_class(**gbsa_params)
+        pparams[:,1:] = gbforce.getStandardParameters(top)
+        gbforce.addParticles(pparams)
         gbforce.finalize()
         system.addForce(gbforce)
         # set the base NonbondedForce dielectric to vacuum
