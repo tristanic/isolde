@@ -463,8 +463,6 @@ class Isolde():
             'temperature': self._update_sim_temperature,
             'trajectory_smoothing': self._update_smoothing_state,
             'smoothing_alpha': self._update_smoothing_amount,
-            'nonbonded_softcore_lambda_minimize': self._update_softcore_lambda_min,
-            'nonbonded_softcore_lambda_equil': self._update_softcore_lambda_equil,
         }
         param, value = data
         f = update_methods.get(param, None)
@@ -484,17 +482,6 @@ class Isolde():
         for mode in self.session.ui.mouse_modes.modes:
             if isinstance(mode, TugAtomsMode):
                 mode.spring_constant = k
-    
-    def _update_softcore_lambda_min(self, val):
-        if self.simulation_running:
-            if self.sim_handler.minimize:
-                self.sim_handler.softcore_lambda = val
-
-    def _update_softcore_lambda_equil(self, val):
-        if self.simulation_running:
-            if not self.sim_handler.minimize:
-                self.sim_handler.softcore_lambda = val
-
 
     def _disable_chimerax_mouse_mode_panel(self, *_):
         self._set_chimerax_mouse_mode_panel_enabled(False)

@@ -122,6 +122,10 @@ class SimParams(Param_Mgr):
         'use_softcore_nonbonded_potential':     (defaults.USE_SOFTCORE_NB_POTENTIAL, None),
         'nonbonded_softcore_lambda_minimize':   (defaults.NONBONDED_SOFTCORE_LAMBDA_MIN, None),
         'nonbonded_softcore_lambda_equil':      (defaults.NONBONDED_SOFTCORE_LAMBDA_EQUIL, None),
+        'nonbonded_softcore_a':                 (defaults.NONBONDED_SOFTCORE_A, None),
+        'nonbonded_softcore_b':                 (defaults.NONBONDED_SOFTCORE_B, None),
+        'nonbonded_softcore_c':                 (defaults.NONBONDED_SOFTCORE_C, None),
+        'nonbonded_softcore_alpha':                 (defaults.NONBONDED_SOFTCORE_ALPHA, None),
 
         'rigid_bonds':                          (defaults.RIGID_BONDS, None),
         'rigid_water':                          (defaults.RIGID_WATER, None),

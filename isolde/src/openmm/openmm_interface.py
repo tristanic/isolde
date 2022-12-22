@@ -1138,6 +1138,30 @@ class SimHandler:
 
     smoothing_alpha.__doc__ = OpenmmThreadHandler.smoothing_alpha.__doc__
 
+    def update_nonbonded_softcore_parameter(self, name, value):
+        param_name_map = {
+            'nonbonded_softcore_lambda_minimize': 'softcore_lambda',
+            'nonbonded_softcore_lambda_equil': 'softcore_lambda',
+            'nonbonded_softcore_a': 'softcore_a',
+            'nonbonded_softcore_b': 'softcore_b',
+            'nonbonded_softcore_c': 'softcore_c',
+            'nonbonded_softcore_alpha': 'softcore_alpha',
+        }
+        if name == 'nonbonded_softcore_lambda_minimize' and not self.minimize:
+            return
+        if name == 'nonbonded_softcore_lambda_equil' and self.minimize:
+            return
+        from .custom_forces import NonbondedSoftcoreForce
+        for f in self.all_forces:
+            if isinstance(f, NonbondedSoftcoreForce):
+                break
+        else:
+            return
+        c = self._context
+        if c is None:
+            return
+        c.setParameter(param_name_map[name], value)     
+
     @property
     def softcore_lambda(self):
         if self._context is None:
@@ -1212,8 +1236,16 @@ class SimHandler:
             if type(f) == NonbondedForce:
                 break
         from .custom_forces import NonbondedSoftcoreForce, NonbondedSoftcoreExceptionForce
-        sf = NonbondedSoftcoreForce(nb_lambda=self._params.nonbonded_softcore_lambda_minimize)
-        sfb = NonbondedSoftcoreExceptionForce(nb_lambda=self._params.nonbonded_softcore_lambda_minimize)
+        p = self._params
+        param_dict = {
+            'a': p.nonbonded_softcore_a,
+            'b': p.nonbonded_softcore_b,
+            'c': p.nonbonded_softcore_c,
+            'nb_lambda': p.nonbonded_softcore_lambda_minimize,
+            'alpha': p.nonbonded_softcore_alpha,
+        }
+        sf = NonbondedSoftcoreForce(**param_dict)
+        sfb = NonbondedSoftcoreExceptionForce(**param_dict)
         sf.setNonbondedMethod(f.getNonbondedMethod())
         sf.setCutoffDistance(f.getCutoffDistance())
         sf.setSwitchingDistance(f.getSwitchingDistance())
@@ -1229,6 +1261,7 @@ class SimHandler:
         system.addForce(sf)
         system.addForce(sfb)
         self.all_forces.extend((sf, sfb))
+        self._softcore_nb_param_mgr = _SoftCoreNonbondedParamMgr(self, self._params)
 
 
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
@@ -2524,6 +2557,32 @@ class SimHandler:
         system.addForce(gbforce)
         # set the base NonbondedForce dielectric to vacuum
         f.setReactionFieldDielectric(1.0)
+
+class _SoftCoreNonbondedParamMgr:
+    def __init__(self, sim_handler, param_mgr):
+        self.sim_handler = sim_handler
+        self.param_mgr = param_mgr
+        self._param_changed_handler = param_mgr.triggers.add_handler(
+            param_mgr.PARAMETER_CHANGED, self._param_changed_cb
+        )
+        sim_handler.triggers.add_handler('sim terminated', self._sim_end_cb)
+
+    def _param_changed_cb(self, _, data):
+        param, value = data
+        if param in (
+            'nonbonded_softcore_lambda_minimize',
+            'nonbonded_softcore_lambda_equil',
+            'nonbonded_softcore_a',
+            'nonbonded_softcore_b',
+            'nonbonded_softcore_c',
+            'nonbonded_softcore_alpha',
+        ):
+            self.sim_handler.update_nonbonded_softcore_parameter(param, value)
+    
+    def _sim_end_cb(self, *_):
+        self.param_mgr.triggers.remove_handler(self._param_changed_handler)
+
+
 
 
 class MapScaleOptimizer:
