@@ -1140,27 +1140,24 @@ class SimHandler:
 
     @property
     def softcore_lambda(self):
-        if self._system is None:
+        if self._context is None:
             return None
-        from .custom_forces import NonbondedSoftcoreForce
-        for f in self.all_forces:
-            if isinstance(f, NonbondedSoftcoreForce):
-                break
-        else:
-            return None
-        return f.getGlobalParameterDefaultValue(f.LAMBDA_INDEX)
+        return dict(self._context.getParameters()).get('softcore_lambda', None)
     
     @softcore_lambda.setter
     def softcore_lambda(self, val):
-        if self._system is None or self._context is None:
-            return
-        from .custom_forces import NonbondedSoftcoreForce
-        for f in self.all_forces:
-            if isinstance(f, NonbondedSoftcoreForce):
-                break
-        else:
-            return
-        f.set_lambda(val, self._context)
+        if self._context is not None:
+            c = self._context
+            if 'softcore_lambda' in c.getParameters().keys():
+                c.setParameter('softcore_lambda', val)
+        elif self._system is not None:
+            from .custom_forces import NonbondedSoftcoreForce
+            for f in self.all_forces:
+                if isinstance(f, NonbondedSoftcoreForce):
+                    break
+            else:
+                return
+            f.set_lambda(val, self._context)
 
 
     @property
@@ -1215,8 +1212,8 @@ class SimHandler:
             if type(f) == NonbondedForce:
                 break
         from .custom_forces import NonbondedSoftcoreForce, NonbondedSoftcoreExceptionForce
-        sf = NonbondedSoftcoreForce(nb_lambda=self._params.nonbonded_softcore_lambda)
-        sfb = NonbondedSoftcoreExceptionForce(nb_lambda=self._params.nonbonded_softcore_lambda)
+        sf = NonbondedSoftcoreForce(nb_lambda=self._params.nonbonded_softcore_lambda_minimize)
+        sfb = NonbondedSoftcoreExceptionForce(nb_lambda=self._params.nonbonded_softcore_lambda_minimize)
         sf.setNonbondedMethod(f.getNonbondedMethod())
         sf.setCutoffDistance(f.getCutoffDistance())
         sf.setSwitchingDistance(f.getSwitchingDistance())
@@ -1411,14 +1408,18 @@ class SimHandler:
             f_args = []
             final_args = []
         elif th.unstable() or self._unstable or not th.minimization_converged:
+            self.softcore_lambda = params.nonbonded_softcore_lambda_minimize
             f = th.minimize
             f_args = []
             final_args = [True]
         elif self.minimize:
+            self.softcore_lambda = params.nonbonded_softcore_lambda_minimize
             f = th.minimize
             f_args=[params.minimization_convergence_tol_end]
             final_args = [True]
         else:
+            if th._last_mode == 'min':
+                self.softcore_lambda = params.nonbonded_softcore_lambda_equil            
             f = th.step
             f_args = (params.sim_steps_per_gui_update,)
             final_args = []
@@ -2513,7 +2514,7 @@ class SimHandler:
         from .custom_forces import GBSAForce, SoftCoreGBSAGBnForce
         if params.use_softcore_nonbonded_potential:
             force_class = SoftCoreGBSAGBnForce
-            gbsa_params['nb_lambda'] = params.nonbonded_softcore_lambda
+            gbsa_params['nb_lambda'] = params.nonbonded_softcore_lambda_minimize
         else:
             force_class = GBSAForce
         gbforce = self._gbsa_force = force_class(**gbsa_params)

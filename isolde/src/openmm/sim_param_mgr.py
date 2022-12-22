@@ -120,7 +120,8 @@ class SimParams(Param_Mgr):
         'gbsa_kappa':                           (defaults.GBSA_KAPPA, 1/OPENMM_LENGTH_UNIT),
 
         'use_softcore_nonbonded_potential':     (defaults.USE_SOFTCORE_NB_POTENTIAL, None),
-        'nonbonded_softcore_lambda':            (defaults.NONBONDED_SOFTCORE_LAMBDA, None),
+        'nonbonded_softcore_lambda_minimize':   (defaults.NONBONDED_SOFTCORE_LAMBDA_MIN, None),
+        'nonbonded_softcore_lambda_equil':      (defaults.NONBONDED_SOFTCORE_LAMBDA_EQUIL, None),
 
         'rigid_bonds':                          (defaults.RIGID_BONDS, None),
         'rigid_water':                          (defaults.RIGID_WATER, None),

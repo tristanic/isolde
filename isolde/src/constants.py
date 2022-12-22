@@ -82,7 +82,8 @@ class _Defaults:
         'GBSA_CUTOFF':                2.0, # *unit.nanometer, TODO: Remove (must be same as OPENMM_NONBONDED_CUTOFF anyway)
         'GBSA_KAPPA':                 3.0, # /unit.nanometer,
         'USE_SOFTCORE_NB_POTENTIAL':  True,
-        'NONBONDED_SOFTCORE_LAMBDA':  0.95, 
+        'NONBONDED_SOFTCORE_LAMBDA_MIN':  0.8, 
+        'NONBONDED_SOFTCORE_LAMBDA_EQUIL': 0.95,
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
