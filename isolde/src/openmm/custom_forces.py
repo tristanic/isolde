@@ -1765,6 +1765,28 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         if context is not None:
             context.setParameter('softcore_lambda', value)
         self.setGlobalParameterDefaultValue(self.LAMBDA_INDEX, value)
+    
+    @staticmethod
+    def potential_values(radii, nb_lambda, a, b, c, alpha):
+        '''
+        Given a Numpy array of radii (in units of nm), returns the corresponding adjusted Lennard-Jones
+        and Coulombic potential values corresponding to the given :var:`nb_lambda`, :var:`a`, 
+        :var:`b`, :var:`c` and :var:`alpha` for a hypothetical pair of oxygen atoms each with a -1 net 
+        charge, in kJ/mol.
+        '''
+
+        sigma = 0.295992190115
+        epsilon = 0.87864
+        charge = -1
+        coulombic = ONE_ON_4_PI_EPS0 * nb_lambda**a * charge**2 (
+            1 / (alpha * (1-nb_lambda)**b + radii**c )
+        ) ** (1/c)
+        lj_base = 1 / ( alpha * (1-nb_lambda)**b + (radii/sigma)**c )
+        lennard_jones = 4 * epsilon * nb_lambda**a * ( lj_base**(12/c) - lj_base**(6/c))
+        return lennard_jones, coulombic
+
+
+
 
 class NonbondedSoftcoreExceptionForce(CustomBondForce):
     def __init__(self, a=0.5, b=2, c=6, nb_lambda=0.9, alpha=0.2):
