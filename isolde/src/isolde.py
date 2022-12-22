@@ -1178,7 +1178,7 @@ class Isolde():
             return
         from chimerax.atomic import Atom, Atoms
         if isinstance(atom_or_atoms, Atom):
-            atoms = Atoms([atom])
+            atoms = Atoms([atom_or_atoms])
         elif isinstance(atom_or_atoms, Atoms):
             atoms = atom_or_atoms
         else:
