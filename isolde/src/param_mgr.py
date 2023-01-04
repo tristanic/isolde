@@ -140,7 +140,7 @@ class Param_Mgr:
     
     def set_to_default(self, key):
         '''Set one parameter back to the default value.'''
-        self.set_param(key, self._defaults[key][0])
+        self.set_param(key, self._default_params[key][0])
 
     def reset_to_defaults(self):
         '''Reset all parameters to defaults.'''
