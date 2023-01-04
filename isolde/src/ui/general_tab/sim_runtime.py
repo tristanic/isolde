@@ -1,7 +1,6 @@
 import os
 
 from ..util import slot_disconnected
-from ...util import block_managed_trigger_handler
 
 from ..collapse_button import CollapsibleArea
 from ..ui_base import (
@@ -83,7 +82,7 @@ QSlider::handle:horizontal:hover {
         self.isolde = isolde
 
         self.valueChanged.connect(self._slider_changed_cb)
-        self._temperature_changed_handler = isolde.sim_params.triggers.add_handler(
+        h = self._temperature_changed_handler = isolde.sim_params.triggers.add_handler(
             isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb
         )
         # Initialize to ISOLDE's current value
@@ -106,7 +105,7 @@ QSlider::handle:horizontal:hover {
             return floor(log(t)/self.EXPONENT_COEFFICIENT)
 
     def _slider_changed_cb(self, value):
-        with block_managed_trigger_handler(self, '_temperature_changed_handler'):
+        with self._temperature_changed_handler.blocked():
             self.isolde.sim_params.temperature = self._slider_value_to_temperature(value)
 
     def _parameter_changed_cb(self, trigger_name, data):
@@ -130,7 +129,7 @@ class TemperatureSpinBox(QDoubleSpinBox):
         self.setKeyboardTracking(False)
         self.setDecimals(0)
         self.setMaximum(500)
-        self._param_changed_handler = isolde.sim_params.triggers.add_handler(
+        h = self._param_changed_handler = isolde.sim_params.triggers.add_handler(
             isolde.sim_params.PARAMETER_CHANGED, 
             self._parameter_changed_cb
         )
@@ -138,7 +137,7 @@ class TemperatureSpinBox(QDoubleSpinBox):
         self._parameter_changed_cb('', ('temperature', isolde.sim_params.temperature))
     
     def _value_changed_cb(self, value):
-        with block_managed_trigger_handler(self, '_param_changed_handler'):
+        with self._param_changed_handler.blocked():
             self.isolde.sim_params.temperature = value
     
     def _parameter_changed_cb(self, trigger_name, data):
@@ -192,7 +191,7 @@ QSlider::handle:horizontal:hover {{
         ssl.setValue(self._alpha_to_slider_value(isolde.sim_params.smoothing_alpha))
         ssl.valueChanged.connect(self._value_changed_cb)
         ml.addWidget(ssl)
-        self._param_changed_handler = isolde.sim_params.triggers.add_handler(
+        h = self._param_changed_handler = isolde.sim_params.triggers.add_handler(
             isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb
         )
         self.setLayout(ml)
@@ -208,7 +207,7 @@ QSlider::handle:horizontal:hover {{
 
     
     def _value_changed_cb(self, value):
-        with block_managed_trigger_handler(self, '_param_changed_handler'):
+        with self._param_changed_handler.blocked():
             self.isolde.sim_params.smoothing_alpha = self._slider_value_to_alpha(value)
     
     def _parameter_changed_cb(self, trigger_name, data):
@@ -223,7 +222,7 @@ QSlider::handle:horizontal:hover {{
                 self.slider.setValue(self._alpha_to_slider_value(val))
 
     def _smoothing_checkbox_cb(self, flag):
-        with block_managed_trigger_handler(self, '_param_changed_handler'):
+        with self._param_changed_handler.blocked():
             self.isolde.sim_params.trajectory_smoothing = flag
 
     def cleanup(self):
