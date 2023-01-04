@@ -86,10 +86,11 @@ def slot_disconnected(signal, slot):
     try:
         # disconnect() throws a TypeError if the method is not connected
         signal.disconnect(slot)
+        yield
     except TypeError:
         pass
-    yield
-    signal.connect(slot)
+    finally:
+        signal.connect(slot)
 
 def block_triggers(triggers, *trigger_names):
     def decorator(f):

@@ -1743,7 +1743,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
             'sigma = 0.5*(sigma1+sigma2);'
             'epsilon = sqrt(epsilon1*epsilon2);'
             f'coulombic = {ONE_ON_4_PI_EPS0} * charge1 * charge2 * softcore_lambda^softcore_a *'
-                '( 1 / ( softcore_alpha*(1-softcore_lambda)^softcore_b + r^softcore_c ) )^(1/softcore_c)' 
+                '( 1 / ( softcore_alpha*(1-softcore_lambda)^(softcore_b*4) + r^softcore_c ) )^(1/softcore_c)' 
             )
 
         super().__init__(energy_function)
@@ -1767,19 +1767,18 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         self.setGlobalParameterDefaultValue(self.LAMBDA_INDEX, value)
     
     @staticmethod
-    def potential_values(radii, nb_lambda, a, b, c, alpha):
+    def potential_values(radii, nb_lambda, a, b, c, alpha, charge=-0.1):
         '''
         Given a Numpy array of radii (in units of nm), returns the corresponding adjusted Lennard-Jones
         and Coulombic potential values corresponding to the given :var:`nb_lambda`, :var:`a`, 
-        :var:`b`, :var:`c` and :var:`alpha` for a hypothetical pair of oxygen atoms each with a -1 net 
+        :var:`b`, :var:`c` and :var:`alpha` for a hypothetical pair of oxygen atoms each with the specified 
         charge, in kJ/mol.
         '''
 
         sigma = 0.295992190115
         epsilon = 0.87864
-        charge = -1
-        coulombic = ONE_ON_4_PI_EPS0 * nb_lambda**a * charge**2 (
-            1 / (alpha * (1-nb_lambda)**b + radii**c )
+        coulombic = ONE_ON_4_PI_EPS0 * nb_lambda**a * charge**2 * (
+            1 / (alpha * (1-nb_lambda)**(b*4) + radii**c )
         ) ** (1/c)
         lj_base = 1 / ( alpha * (1-nb_lambda)**b + (radii/sigma)**c )
         lennard_jones = 4 * epsilon * nb_lambda**a * ( lj_base**(12/c) - lj_base**(6/c))
@@ -1798,7 +1797,7 @@ class NonbondedSoftcoreExceptionForce(CustomBondForce):
                 '1 / ( softcore_alpha * (1-softcore_lambda)^softcore_b +'
                 '(r/sigma)^softcore_c );'
             f'coulombic = {ONE_ON_4_PI_EPS0} * charge_prod * softcore_lambda^softcore_a *'
-                '( 1 / ( softcore_alpha*(1-softcore_lambda)^softcore_b + r^softcore_c ) )^(1/softcore_c)' 
+                '( 1 / ( softcore_alpha*(1-softcore_lambda)^(softcore_b*4) + r^softcore_c ) )^(1/softcore_c)' 
             )
         super().__init__(energy_function)
         self.addGlobalParameter('softcore_lambda', nb_lambda)
