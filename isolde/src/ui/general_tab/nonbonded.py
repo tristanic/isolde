@@ -28,7 +28,7 @@ class NonbondedDialog(UI_Panel_Base):
         sliders = self._sliders = []
         slider_layout = DefaultVLayout()
         for i, slider_class in enumerate((
-            NbLambdaMinSlider, NbLambdaEquilSlider, NbASlider, NbBSlider, NbCSlider, NbAlphaSlider
+            NbLambdaMinSlider, NbLambdaEquilSlider, NbAlphaSlider
         )):
             slider = slider_class(isolde.sim_params, gui.expert_mode_combo_box)
             sliders.append(slider)
@@ -40,7 +40,7 @@ class NonbondedDialog(UI_Panel_Base):
         
         pl = QGridLayout()
         pl.addWidget(QLabel('Minimization'), 1,0)
-        mpi = self._min_potential_indicator = PotentialIndicator(isolde.sim_params, sliders[0],*sliders[2:])
+        mpi = self._min_potential_indicator = PotentialIndicator(isolde.sim_params, sliders[0],sliders[2])
         pl.addWidget(mpi, 2, 0)
         pl.addWidget(QLabel('Equilibration'), 1, 1)
         epi = self._equil_potential_indicator = PotentialIndicator(isolde.sim_params, *sliders[1:])
@@ -196,7 +196,7 @@ class NbAlphaSlider(ParamSlider):
 
 class PotentialIndicator(QWidget):
     FONTSIZE=8
-    def __init__(self, param_mgr, lambda_slider, a_slider, b_slider, c_slider, alpha_slider, *args, **kwargs):
+    def __init__(self, param_mgr, lambda_slider, alpha_slider, *args, **kwargs):
         super().__init__(*args, **kwargs)
         import numpy
         from math import log
@@ -268,24 +268,30 @@ class PotentialIndicator(QWidget):
 
         self._sliders = {
             'lambda': lambda_slider,
-            'a':      a_slider,
-            'b':      b_slider,
-            'c':      c_slider,
             'alpha':  alpha_slider
         }
         self._update_plots()
     
     def _update_plots_if_necessary(self, _, data):
         name, val = data
-        for slider in self._sliders.values():
-            if name==slider.PARAM_NAME:
-                self._update_plots()
-                break
+        if name in (
+            self._sliders['lambda'].PARAM_NAME,
+            'nonbonded_softcore_a',
+            'nonbonded_softcore_b',
+            'nonbonded_softcore_c',
+            'nonbonded_softcore_alpha'
+        ):
+            self._update_plots()
         
     def _update_plots(self, *_):
         from chimerax.isolde.openmm.custom_forces import NonbondedSoftcoreForce
         pmgr = self._param_mgr
-        lj, coul = NonbondedSoftcoreForce.potential_values(self._radii/10, *(getattr(pmgr, slider.PARAM_NAME) for slider in self._sliders.values()))
+        l = getattr(pmgr, self._sliders['lambda'].PARAM_NAME)
+        a = pmgr.nonbonded_softcore_a
+        b = pmgr.nonbonded_softcore_b
+        c = pmgr.nonbonded_softcore_c
+        alpha = pmgr.nonbonded_softcore_alpha
+        lj, coul = NonbondedSoftcoreForce.potential_values(self._radii/10, l, a, b, c, alpha)
         if not hasattr(self, '_lj_plots'):
             self._lj_plots = [ax.plot(self._radii, lj, 'm-', linewidth=1)[0] for ax in self._axes]
             self._coul_plots = [ax.plot(self._radii, coul, 'g-', linewidth=1)[0] for ax in self._axes]

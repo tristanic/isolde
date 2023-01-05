@@ -1732,25 +1732,25 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
     doi: 10.1063/1.3607597
     '''
     LAMBDA_INDEX = 0
-    def __init__(self, a=0.5, b=2, c=6, nb_lambda=0.9, alpha=0.2):
+    def __init__(self, a=1, b=2, c=6, nb_lambda=0.9, alpha=0.2):
+        '''
+        Note: for best simulation performance a, b and c should be integers.
+        '''
         energy_function = ('lennard_jones + coulombic;'
             'lennard_jones = '
-                '4 * epsilon * softcore_lambda^softcore_a * '
-                '( lj_base^(12/softcore_c) - lj_base^(6/softcore_c) );'
+                f'4 * epsilon * softcore_lambda^{a} * '
+                f'( lj_base^(12/{c}) - lj_base^(6/{c}) );'
             'lj_base = '
-                '1 / ( softcore_alpha * (1-softcore_lambda)^softcore_b +'
-                '(r/sigma)^softcore_c );'
+                f'1 / ( softcore_alpha * (1-softcore_lambda)^{b} +'
+                f'(r/sigma)^{c} );'
             'sigma = 0.5*(sigma1+sigma2);'
             'epsilon = sqrt(epsilon1*epsilon2);'
-            f'coulombic = {ONE_ON_4_PI_EPS0} * charge1 * charge2 * softcore_lambda^softcore_a *'
-                '( 1 / ( softcore_alpha*(1-softcore_lambda)^(softcore_b*4) + r^softcore_c ) )^(1/softcore_c)' 
+            f'coulombic = {ONE_ON_4_PI_EPS0} * charge1 * charge2 * softcore_lambda^{a} *'
+                f'( 1 / ( softcore_alpha*(1-softcore_lambda)^({b*4}) + r^{c} ) )^(1/{c})' 
             )
 
         super().__init__(energy_function)
         self.addGlobalParameter('softcore_lambda', nb_lambda)
-        self.addGlobalParameter('softcore_a', a)
-        self.addGlobalParameter('softcore_b', b)
-        self.addGlobalParameter('softcore_c', c)
         self.addGlobalParameter('softcore_alpha', alpha)
 
         self.addPerParticleParameter('charge')
@@ -1788,22 +1788,19 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
 
 
 class NonbondedSoftcoreExceptionForce(CustomBondForce):
-    def __init__(self, a=0.5, b=2, c=6, nb_lambda=0.9, alpha=0.2):
+    def __init__(self, a=1, b=2, c=6, nb_lambda=0.9, alpha=0.2):
         energy_function = ('lennard_jones + coulombic;'
             'lennard_jones = '
-                '4 * epsilon * softcore_lambda^softcore_a * '
-                '( lj_base^(12/softcore_c) - lj_base^(6/softcore_c) );'
+                f'4 * epsilon * softcore_lambda^{a} * '
+                f'( lj_base^(12/{c}) - lj_base^(6/{c}) );'
             'lj_base = '
-                '1 / ( softcore_alpha * (1-softcore_lambda)^softcore_b +'
-                '(r/sigma)^softcore_c );'
-            f'coulombic = {ONE_ON_4_PI_EPS0} * charge_prod * softcore_lambda^softcore_a *'
-                '( 1 / ( softcore_alpha*(1-softcore_lambda)^(softcore_b*4) + r^softcore_c ) )^(1/softcore_c)' 
+                f'1 / ( softcore_alpha * (1-softcore_lambda)^{b} +'
+                f'(r/sigma)^{c} );'
+            f'coulombic = {ONE_ON_4_PI_EPS0} * charge_prod * softcore_lambda^{a} *'
+                f'( 1 / ( softcore_alpha*(1-softcore_lambda)^({4*b}) + r^{c} ) )^(1/{c})' 
             )
         super().__init__(energy_function)
         self.addGlobalParameter('softcore_lambda', nb_lambda)
-        self.addGlobalParameter('softcore_a', a)
-        self.addGlobalParameter('softcore_b', b)
-        self.addGlobalParameter('softcore_c', c)
         self.addGlobalParameter('softcore_alpha', alpha)
         self.addPerBondParameter('charge_prod')
         self.addPerBondParameter('sigma')
@@ -1875,7 +1872,7 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
     def __init__(self, solventDielectric=78.5, soluteDielectric=1, 
                 SA='ACE', cutoff=1.0, kappa=3.0,
                 nonbonded_method = openmm.CustomGBForce.CutoffNonPeriodic,
-                a=0.5, b=2, c=6, nb_lambda=0.9, alpha=0.2):
+                a=1, b=2, c=6, nb_lambda=0.9, alpha=0.2):
         if type(solventDielectric) == Quantity:
             solventDielectric = solventDielectric.value_in_unit(OPENMM_DIPOLE_UNIT)
         if type(soluteDielectric) == Quantity:
@@ -1896,8 +1893,7 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
         self.update_needed = False
     
     def _addEnergyTerms(self):
-        for name, val in self._softcore_params.items():
-            self.addGlobalParameter(name, val)
+        self.addGlobalParameter('softcore_lambda', self._softcore_params['softcore_lambda'])
         self.addPerParticleParameter('charge')
         self.addPerParticleParameter('or') # Offset radius
         self.addPerParticleParameter('sr') # Scaled offset radius
@@ -1908,8 +1904,9 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
         d0Table = self._createUniqueTable(customgbforces.d0)
         self.addTabulatedFunction("getd0", Discrete2DFunction(n, n, d0Table))
         self.addTabulatedFunction("getm0", Discrete2DFunction(n, n, m0Table))
+        a = self._softcore_params['softcore_a']
 
-        self.addComputedValue("I", "softcore_lambda^softcore_a * (Ivdw+neckScale*Ineck);"
+        self.addComputedValue("I", f"softcore_lambda^{a} * (Ivdw+neckScale*Ineck);"
                                    "Ineck=step(radius1+radius2+neckCut-r)*getm0(radindex1,radindex2)/(1+100*(r-getd0(radindex1,radindex2))^2+"
                                    "0.3*1000000*(r-getd0(radindex1,radindex2))^6);"
                                    "Ivdw=select(step(r+sr2-or1), 0.5*(1/L-1/U+0.25*(r-sr2^2/r)*(1/(U^2)-1/(L^2))+0.5*log(L/U)/r), 0);"
@@ -1929,10 +1926,11 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
         params = (f'; solventDielectric={solventDielectric:.16g}'
                   f'; soluteDielectric={soluteDielectric:.16g}'
                   f'; kappa={kappa:.16g}; offset={offset:.16g}')
+        a = self._softcore_params['softcore_a']
         if cutoff is not None:
             params += f'; cutoff={cutoff:.16g}'
         if kappa > 0:
-            self.addEnergyTerm(f'softcore_lambda^softcore_a * -0.5*{ONE_ON_4_PI_EPS0}* (1/soluteDielectric-exp(-kappa*B)/solventDielectric)*charge^2/B' + params,
+            self.addEnergyTerm(f'softcore_lambda^{a} * -0.5*{ONE_ON_4_PI_EPS0}* (1/soluteDielectric-exp(-kappa*B)/solventDielectric)*charge^2/B' + params,
                 CustomGBForce.SingleParticle)
         elif kappa < 0:
             raise ValueError('kappa/ionic strength must be >= 0')
@@ -1940,23 +1938,23 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
             self.addEnergyParameterDerivative(f'-0.5*{ONE_ON_4_PI_EPS0}* (1/soluteDielectric-1/solventDielectric)*charge^2/B' + params,
                 CustomGBForce.SingleParticle)
         if SA=='ACE':
-            self.addEnergyTerm("softcore_lambda^softcore_a * 28.3919551* (radius+0.14)^2*(radius/B)^6; radius=or+offset"+params, CustomGBForce.SingleParticle)
+            self.addEnergyTerm(f"softcore_lambda^{a} * 28.3919551* (radius+0.14)^2*(radius/B)^6; radius=or+offset"+params, CustomGBForce.SingleParticle)
         elif SA is not None:
             raise ValueError('Unknown surface area method: '+SA)
         if cutoff is None:
             if kappa > 0:
-                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0} * (1/soluteDielectric - exp(-kappa*f)/solventDielectric) * softcore_lambda^(2*softcore_a)*charge1*charge2/f;'
+                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0} * (1/soluteDielectric - exp(-kappa*f)/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2/f;'
                     "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions)
             else:
-                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^(2*softcore_a)*charge1*charge2/f;'
+                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2/f;'
                     "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions)
         else:
             if kappa > 0:
-                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0} *  (1/soluteDielectric - exp(-kappa*f)/solventDielectric) *softcore_lambda^(2*softcore_a) *charge1*charge2* (1/f - 1/cutoff);'
+                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0} *  (1/soluteDielectric - exp(-kappa*f)/solventDielectric) *softcore_lambda^({2*a}) *charge1*charge2* (1/f - 1/cutoff);'
                     "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
                 )
             else:
-                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^(2*softcore_a)*charge1*charge2 * (1/f-1/cutoff);'
+                self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2 * (1/f-1/cutoff);'
                     "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
                 )
 

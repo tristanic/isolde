@@ -1142,9 +1142,6 @@ class SimHandler:
         param_name_map = {
             'nonbonded_softcore_lambda_minimize': 'softcore_lambda',
             'nonbonded_softcore_lambda_equil': 'softcore_lambda',
-            'nonbonded_softcore_a': 'softcore_a',
-            'nonbonded_softcore_b': 'softcore_b',
-            'nonbonded_softcore_c': 'softcore_c',
             'nonbonded_softcore_alpha': 'softcore_alpha',
         }
         if name == 'nonbonded_softcore_lambda_minimize' and not self.minimize:

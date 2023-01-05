@@ -81,10 +81,10 @@ class _Defaults:
         'GBSA_SA_METHOD':             'ACE', # alternative is None
         'GBSA_CUTOFF':                2.0, # *unit.nanometer, TODO: Remove (must be same as OPENMM_NONBONDED_CUTOFF anyway)
         'GBSA_KAPPA':                 3.0, # /unit.nanometer,
-        'USE_SOFTCORE_NB_POTENTIAL':  False,
+        'USE_SOFTCORE_NB_POTENTIAL':  True,
         'NONBONDED_SOFTCORE_LAMBDA_MIN':  0.8, 
         'NONBONDED_SOFTCORE_LAMBDA_EQUIL': 0.95,
-        'NONBONDED_SOFTCORE_A':       0.5,
+        'NONBONDED_SOFTCORE_A':       1,
         'NONBONDED_SOFTCORE_B':       2,
         'NONBONDED_SOFTCORE_C':       6,
         'NONBONDED_SOFTCORE_ALPHA':   0.2,
