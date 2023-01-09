@@ -22,7 +22,7 @@ class NonbondedDialog(UI_Panel_Base):
         cb.setChecked(isolde.sim_params.use_softcore_nonbonded_potential)
         cb.stateChanged.connect(self._use_softcore_potentials_checked_cb)
         cb.setToolTip('<span>Choose whether to use soft-core nonbonded potentials (will take effect on next sim start).'
-            ' These can be very helpful in escaping from severe clashes, but invoke a ~2-fold penalty in simulation rate.</span>')
+            ' These can be very helpful in escaping from severe clashes, but invoke a 10-20% penalty in simulation rate.</span>')
         cbl.addWidget(cb)
         ml.addLayout(cbl)
         sliders = self._sliders = []
@@ -41,9 +41,13 @@ class NonbondedDialog(UI_Panel_Base):
         pl = QGridLayout()
         pl.addWidget(QLabel('Minimization'), 1,0)
         mpi = self._min_potential_indicator = PotentialIndicator(isolde.sim_params, sliders[0],sliders[2])
+        mpi.setToolTip('<span>Nonbonded potential used during energy minimisation (at simulation startup, after non-simulation-derived coordinate changes, '
+            'or on detection of overly-fast atom movements). A lower value of λ improves the ability of the minimiser to escape from severe clashes.</span>')
         pl.addWidget(mpi, 2, 0)
         pl.addWidget(QLabel('Equilibration'), 1, 1)
         epi = self._equil_potential_indicator = PotentialIndicator(isolde.sim_params, *sliders[1:])
+        epi.setToolTip('<span>Nonbonded potential used during standard dynamics. In the absence of severe pathologies this should be kept close to '
+            'the normal Lennard-Jones potential (recommended λ=0.95). λ=1 replicates the L-J potential exactly.</span>')
         pl.addWidget(epi, 2, 1)
         ml.addLayout(pl)
     
@@ -64,6 +68,7 @@ class ParamSlider(QWidget):
     MAX_VAL=100
     MULTIPLIER=1/100
     EXPERT_LEVEL=ExpertModeSelector.DEFAULT
+    TOOLTIP=''
     PARAM_NAME = None
     def __init__(self, param_mgr, expert_mode_combo_box, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -85,6 +90,7 @@ class ParamSlider(QWidget):
         rb = self._reset_button = QPushButton('Reset')
         rb.clicked.connect(self._reset_value_cb)
         ml.addWidget(rb)
+        self.setToolTip(self.TOOLTIP)
 
 
         sl.setMinimum(self.MIN_VAL)
@@ -152,6 +158,9 @@ class NbLambdaMinSlider(ParamSlider):
     MAX_VAL=100
     MULTIPLIER=1/100
     PARAM_NAME='nonbonded_softcore_lambda_minimize'
+    TOOLTIP=('<span>Controlling parameter setting the nonbonded potential used during energy minimisation '
+             ' (at simulation startup, after non-simulation-derived coordinate changes, or on detection of overly-fast'
+            ' atom movements). A lower value of λ improves the ability of the minimiser to escape from severe clashes.</span>')
 
 class NbLambdaEquilSlider(ParamSlider):
     NAME='λ (equil)'
@@ -159,38 +168,20 @@ class NbLambdaEquilSlider(ParamSlider):
     MAX_VAL=100
     MULTIPLIER=1/100
     PARAM_NAME='nonbonded_softcore_lambda_equil'
-
-class NbASlider(ParamSlider):
-    NAME='a'
-    MIN_VAL=1
-    MAX_VAL=20
-    MULTIPLIER=1/10
-    EXPERT_LEVEL=ExpertModeSelector.ADVANCED
-    PARAM_NAME='nonbonded_softcore_a'
-    
-class NbBSlider(ParamSlider):
-    NAME='b'
-    MIN_VAL=10
-    MAX_VAL=100
-    MULTIPLIER=1/25
-    EXPERT_LEVEL=ExpertModeSelector.ADVANCED
-    PARAM_NAME='nonbonded_softcore_b'
-
-class NbCSlider(ParamSlider):
-    NAME='c'
-    MIN_VAL=10
-    MAX_VAL=100
-    MULTIPLIER=1/10
-    EXPERT_LEVEL=ExpertModeSelector.ADVANCED
-    PARAM_NAME='nonbonded_softcore_c'
+    TOOLTIP=('<span>Controlling parameter setting the nonbonded potential used during standard dynamics. '
+             'In most cases this should be kept at a value close to 1 (recommended λ=0.95). If severe clashes are '
+             'causing large distortions in the model, temporarily reducing λ to around 0.5 or below can be helpful. '
+             'λ=1 replicates the Lennard-Jones potential exactly.</span>')
 
 class NbAlphaSlider(ParamSlider):
-    NAME='Alpha'
+    NAME='α'
     MIN_VAL=1
     MAX_VAL=100
     MULTIPLIER=1/100
     EXPERT_LEVEL=ExpertModeSelector.ADVANCED
     PARAM_NAME='nonbonded_softcore_alpha'
+    TOOLTIP=('<span>Provides more subtle control over the shape of the potential within the "clashing" region. '
+             'In general it should not be necessary to change this. </span>')
 
 
 
@@ -204,14 +195,11 @@ class PotentialIndicator(QWidget):
         layout = DefaultHLayout()
         from matplotlib.figure import Figure
         from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
-        from matplotlib import ticker
-
 
         self.setMaximumHeight(200)
         fig = self.figure = Figure()
         fig.set_tight_layout({'pad': 0.25})
         canvas = self.canvas = FigureCanvas(fig)
-        loc = self._top_tick_locator = ticker.MultipleLocator(base=1e3)
         ax1, ax2 = fig.subplots(2,1, sharex=True)
         self._axes = (ax1, ax2)
         for ax in (ax1, ax2):
@@ -221,7 +209,6 @@ class PotentialIndicator(QWidget):
         layout.addWidget(canvas)
         self.setLayout(layout)
 
-        #ax2.yaxis.set_major_locator(loc)
         ax1.set_ylim([10,1e7])
         ax1.set_yscale('log')
         yticks = [10, 1e3, 1e5, 1e7]
@@ -232,7 +219,6 @@ class PotentialIndicator(QWidget):
         
         fig.text(0.02, 0.5, 'Energy (kJ/mol)', va='center', rotation='vertical', fontsize=self.FONTSIZE)
         ax1.set_ylabel(' ')
-        #ax1.get_yaxis().set_major_formatter(ticker.LogFormatter())
         ax1.spines['bottom'].set_visible(False)
         ax2.set_ylim([-1,10])
         ax2.spines['top'].set_visible(False)
@@ -248,20 +234,6 @@ class PotentialIndicator(QWidget):
             line2 = ax.plot(radii, coul, 'g-', linewidth=2.5)[0]
             line2.set_label('Coul')
         ax1.legend(fontsize=self.FONTSIZE, loc='upper right')
-
-
-
-        # # Diagonal lines to "cut" y-axis
-
-        # d = .0015  # how big to make the diagonal lines in axes coordinates
-        # # arguments to pass to plot, just so we don't keep repeating them
-        # kwargs = dict(transform=ax.transAxes, color='k', clip_on=False)
-        # ax1.plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
-        # ax1.plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
-
-        # kwargs.update(transform=ax2.transAxes)  # switch to the bottom axes
-        # ax2.plot((-d, +d), (1 - d, 1 + d), **kwargs)  # bottom-left diagonal
-        # ax2.plot((1 - d, 1 + d), (1 - d, 1 + d), **kwargs)  # bottom-right diagonal
 
         self._param_mgr = param_mgr
         self._changes_handler = param_mgr.triggers.add_handler(param_mgr.PARAMETER_CHANGED, self._update_plots_if_necessary)
