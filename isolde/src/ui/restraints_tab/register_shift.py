@@ -12,7 +12,7 @@ class RegisterShiftPanel(CollapsibleArea):
         self.setContentLayout(cd.main_layout)
 
 class RegisterShiftDialog(UI_Panel_Base):
-    def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=False):
+    def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=True):
         import os
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
         self.container = collapse_area
@@ -97,6 +97,7 @@ class RegisterShiftDialog(UI_Panel_Base):
             return
         self._shifter.release_all()
         self._shifter = None
+        self.stop_button.setEnabled(False)
         self._selection_changed_cb()
 
     def _selection_changed_cb(self, *_):
@@ -108,6 +109,11 @@ class RegisterShiftDialog(UI_Panel_Base):
             self.go_button.setEnabled(True)
         else:
             self.go_button.setEnabled(False)
+
+    def sim_end_cb(self, *_):
+        self._shifter = None
+        self.go_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
 
 
 
