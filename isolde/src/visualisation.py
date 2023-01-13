@@ -74,9 +74,10 @@ class VisualisationStateMgr:
         self.store_original_visualisation()
         self.prepare_sim_visualisation()
     
-    def _sim_end_cb(self, *_):
+    def _sim_end_cb(self, trigger_name, reason):
         m = self.isolde.selected_model
-        if self._current_model.deleted or m != self._current_model:
+        from chimerax.isolde.openmm.openmm_interface import SimHandler
+        if reason == SimHandler.REASON_MODEL_DELETED or m != self._current_model:
             return
         self.revert_visualisation()
 
