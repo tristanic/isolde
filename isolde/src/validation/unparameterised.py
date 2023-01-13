@@ -33,7 +33,7 @@ class Unparameterised_Residues_Mgr:
             'simulation started', self._sim_start_cb
         )
         self._sim_end_handler = isolde.triggers.add_handler(
-            'simulation terminated', self._sim_end_cb
+            isolde.SIMULATION_TERMINATED, self._sim_end_cb
         )
         self._connect_functions()
 
