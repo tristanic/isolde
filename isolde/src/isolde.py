@@ -1005,7 +1005,7 @@ class Isolde():
             d.cleanup()
         from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
-        self.triggers.activate_trigger(self.SIMULATION_TERMINATED, None)
+        self.triggers.activate_trigger(self.SIMULATION_TERMINATED, reason)
         m = self.selected_model
         if m is None or reason==self.sim_handler.REASON_MODEL_DELETED:
             self._sim_manager = None
