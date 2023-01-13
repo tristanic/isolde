@@ -43,7 +43,7 @@ class RotamerDialog(UI_Panel_Base):
         if not table.isVisible():
             return
         m = self.isolde.selected_model
-        if m is None or m.was_deleted:
+        if m is None or m.deleted:
             return
 
         from chimerax.isolde.session_extensions import get_rotamer_mgr

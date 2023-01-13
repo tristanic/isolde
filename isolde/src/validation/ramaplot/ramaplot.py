@@ -158,7 +158,7 @@ class RamaPlot(QWidget):
         self._annot_cid = None
 
     def _hover(self, event):
-        if self.current_model is None or self.current_model.was_deleted:
+        if self.current_model is None or self.current_model.deleted:
             return
         if getattr(self, '_tooltip_blocked', False):
             return

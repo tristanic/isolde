@@ -113,7 +113,7 @@ class ReferenceModelDialog(UI_Panel_Base):
 
     def _on_expand(self):
         cm = self._current_reference
-        if cm is not None and cm.was_deleted:
+        if cm is not None and cm.deleted:
             self.set_reference_model(None)
     
     def _initialize_tree(self):
@@ -146,7 +146,7 @@ class ReferenceModelDialog(UI_Panel_Base):
             self.reference_model_menu_button.setEnabled(True)
     
     def _model_removed_cb(self, *_):
-        if self._current_reference is not None and self._current_reference.was_deleted:
+        if self._current_reference is not None and self._current_reference.deleted:
             self.set_reference_model(None)
 
     def set_reference_model(self, m):
@@ -187,7 +187,7 @@ class ReferenceModelDialog(UI_Panel_Base):
     @property
     def pae_assigned(self):
         cr = self._current_reference
-        if cr is None or cr.was_deleted:
+        if cr is None or cr.deleted:
             return False
         if hasattr(cr, 'alphafold_pae'):
             return True

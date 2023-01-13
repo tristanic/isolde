@@ -76,7 +76,7 @@ class VisualisationStateMgr:
     
     def _sim_end_cb(self, *_):
         m = self.isolde.selected_model
-        if m != self._current_model:
+        if self._current_model.deleted or m != self._current_model:
             return
         self.revert_visualisation()
 

@@ -233,7 +233,7 @@ class ToolbarButtonMgr:
         session = self.session
         if hasattr(session, 'isolde') and session.isolde.selected_model is not None:
             m = session.isolde.selected_model
-            if m is not None and not m.was_deleted:
+            if m is not None and not m.deleted:
                 from chimerax.isolde import session_extensions as sx
                 rmgr = sx.get_rotamer_mgr(session)
                 rrmgr = sx.get_rotamer_restraint_mgr(m)
@@ -274,7 +274,7 @@ class ToolbarButtonMgr:
         isolde = getattr(self.session, 'isolde', None)
         if isolde is not None:
             m = isolde.selected_model
-            if m is not None and not m.was_deleted:
+            if m is not None and not m.deleted:
                 sel_res = m.residues[m.residues.selected]
                 if len(sel_res)==1:
                     from chimerax.atomic import Residue
@@ -289,7 +289,7 @@ class ToolbarButtonMgr:
         isolde = getattr(self.session, 'isolde', None)
         if isolde is not None and not isolde.simulation_running:
             m = isolde.selected_model
-            if m is not None and not m.was_deleted:
+            if m is not None and not m.deleted:
                 import numpy
                 if numpy.any(m.atoms.selected):
                     enable = True

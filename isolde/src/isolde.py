@@ -422,8 +422,7 @@ class Isolde():
         Can be set.
         '''
         m = self._selected_model
-        if m is not None and not hasattr(m, 'session'):
-            # model was deleted
+        if m is not None and m.deleted:
             self.change_selected_model(None)
         return self._selected_model
 
@@ -628,7 +627,7 @@ class Isolde():
 
     def _model_remove_cb(self, *_):
         m = self._selected_model
-        if m is not None and m.was_deleted:
+        if m is not None and m.deleted:
             self.selected_model = None
 
     def _initialize_maps(self, model):
@@ -782,8 +781,9 @@ class Isolde():
 
     def _change_selected_model(self, *_, model=None, force=False):
         m = model
-        if self.simulation_running:
-            return
+        if model is not None and self.simulation_running:
+            from chimerax.core.errors import UserError
+            raise UserError('Stop the current simulation before attempting to change models!')
         if not hasattr(self, '_model_changes_handler'):
             self._model_changes_handler = None
         session = self.session
@@ -1000,16 +1000,21 @@ class Isolde():
         sh.triggers.add_handler('sim resumed', self._sim_resume_cb)
         self.session.logger.info('ISOLDE: started sim')
 
-    def _sim_end_cb(self, *_):
+    def _sim_end_cb(self, trigger_name, reason):
         for d in self._haptic_devices:
             d.cleanup()
         from chimerax.mouse_modes import TranslateMouseMode
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
-        self.triggers.activate_trigger('simulation terminated', None)
+        self.triggers.activate_trigger(self.SIMULATION_TERMINATED, None)
+        m = self.selected_model
+        if m is None or reason==self.sim_handler.REASON_MODEL_DELETED:
+            self._sim_manager = None
+            self.session.logger.info('ISOLDE: model deleted during running simulation.')
+            return
+
         from chimerax.core.commands import run
         run(self.session, f'clipper spot #{self.selected_model.id_string}', log=False)
         from chimerax.clipper import get_map_mgr
-        m = self.selected_model
         mmgr = get_map_mgr(m)
         if mmgr is not None:
             for xmapset in mmgr.xmapsets:

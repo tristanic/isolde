@@ -356,7 +356,7 @@ class MapSettingsDialog(UI_Panel_Base):
     def _compare_maps_to_current(self):
         m = self.isolde.selected_model
         rebuild_needed = False
-        if m is None or m.was_deleted:
+        if m is None or m.deleted:
             if len(self._current_maps):
                 rebuild_needed = True
                 self._current_maps = []

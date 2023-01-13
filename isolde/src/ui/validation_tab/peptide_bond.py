@@ -41,7 +41,7 @@ class PeptideBondDialog(UI_Panel_Base):
         table = self.table
         table.setRowCount(0)
         m = self.isolde.selected_model
-        if m is None or m.was_deleted:
+        if m is None or m.deleted:
             return
         from chimerax.isolde.session_extensions import get_proper_dihedral_mgr
         pdm = get_proper_dihedral_mgr(self.session)

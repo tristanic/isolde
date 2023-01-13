@@ -739,6 +739,9 @@ class SimManager:
 
 
     def _sim_end_cb(self, trigger_name, reason):
+        print(f'Sim termination reason: {reason}')
+        if reason == SimHandler.REASON_MODEL_DELETED:
+            return
         if self._pause_atom_changes_handler is not None:
             self.model.triggers.remove_handler(self._pause_atom_changes_handler)
         for mgr, handler in self._update_handlers:
@@ -753,7 +756,7 @@ class SimManager:
         self._rama_a_sim_end_cb()
         self._rota_a_sim_end_cb()
         self._mdff_sim_end_cb()
-        if reason == 'coord length mismatch':
+        if reason == SimHandler.REASON_COORD_LENGTH_MISMATCH:
             rt = None
         else:
             rt = self._revert_to
@@ -762,7 +765,7 @@ class SimManager:
         elif rt == 'start':
             print('reverting to start')
             self._starting_checkpoint.revert()
-        if reason == 'coord length mismatch':
+        if reason == SimHandler.REASON_COORD_LENGTH_MISMATCH:
             msg = ('Mismatch between number of simulated atoms and the model. '
                 'The most common cause of this is the addition or removal of '
                 'atoms while a simulation is running (this should be avoided). '
@@ -1000,6 +1003,8 @@ class SimHandler:
     :py:class:`OpenmmThreadHandler`, and generally handling all the OpenMM
     side of simulation management.
     '''
+    REASON_COORD_LENGTH_MISMATCH = 'coord length mismatch'
+    REASON_MODEL_DELETED = 'model deleted'
     def __init__(self, session, sim_params, sim_construct, forcefield_mgr):
         '''
         Prepares the simulation topology parameters and construct, and
@@ -1403,6 +1408,8 @@ class SimHandler:
         self._sim_running = True
         self._startup = True
         self._startup_counter = 0
+        from chimerax.core.models import REMOVE_MODELS
+        self._model_deleted_handler = self.session.triggers.add_handler(REMOVE_MODELS, self._model_deleted_cb)
         self._minimize_and_go()
 
     def find_clashing_atoms(self, max_force = defaults.CLASH_FORCE):
@@ -1467,15 +1474,28 @@ class SimHandler:
 
 
     def _update_coordinates_and_repeat(self, reinit_vels = False):
+        if self._sim_construct.model.deleted:
+            self.stop(reason=self.REASON_MODEL_DELETED)
+        if self._stop:
+            self._delayed_reaction_handler.cancel()
+            # self._thread_handler.delete()
+            self._thread_handler = None
+            self._simulation = None
+            self._sim_running = False
+            self._model_deleted_handler.remove()
+            self.triggers.activate_trigger('sim terminated', self._stop_reason)
+            return
         if self._startup:
             self._startup_counter += 1
             if self._startup_counter >= self._params.simulation_startup_rounds:
                 self._startup = False
         th = self.thread_handler
         try:
-            self.atoms.coords = th.coords
+            if not (self._stop and self._stop_reason==self.REASON_MODEL_DELETED):
+                self.atoms.coords = th.coords
         except ValueError:
-            self.stop(reason='coord length mismatch')
+            self.stop(reason=self.REASON_COORD_LENGTH_MISMATCH)
+            return
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
             self._unstable = True
@@ -1494,14 +1514,6 @@ class SimHandler:
             self._update_forces_in_context_if_needed()
         if reinit_vels:
             th.reinitialize_velocities()
-        if self._stop:
-            self._delayed_reaction_handler.cancel()
-            # self._thread_handler.delete()
-            self._thread_handler = None
-            self._simulation = None
-            self._sim_running = False
-            self.triggers.activate_trigger('sim terminated', self._stop_reason)
-            return
         if not self._pause:
             self._repeat_step()
         else:
@@ -1594,6 +1606,7 @@ class SimHandler:
             self._thread_handler = None
             self._simulation = None
             self._sim_running = False
+            self._model_deleted_handler.remove()
             self.triggers.activate_trigger('sim terminated', reason)
 
     @property
@@ -1649,6 +1662,9 @@ class SimHandler:
         th.reinitialize_context_and_keep_state()
         self._context_reinit_pending = False
 
+    def _model_deleted_cb(self, _, models):
+        if self._sim_construct.model in models:
+            self.stop(reason=self.REASON_MODEL_DELETED)
     ####
     # AMBER-specific CMAP backbone torsion corrections
     ####
