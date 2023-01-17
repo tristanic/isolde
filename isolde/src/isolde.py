@@ -674,7 +674,7 @@ class Isolde():
                 # manager but leave it disabled by default so the user has to
                 # explicitly enable it.
                 mgr.enabled = False
-            if v.is_difference_map:
+            if v.is_difference_map and new_mgr:
                 # Similar reasoning for difference maps: there may be occasion to 
                 # use them, but this decision should be left up to the user.
                 mgr.enabled = False
