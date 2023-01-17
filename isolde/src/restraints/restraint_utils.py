@@ -344,7 +344,7 @@ def sequence_align_all_residues(session, residues_a, residues_b):
     aligned residues into a single "super-alignment" (a pair of Residues
     objects with 1:1 correspondence between residues at each index). Each
     :class:`Residues` object in the arguments should contain residues from a
-    single chain, and the chains in :param:`residues_a` and `residues_b` should
+    single chain, and the chains in :var:`residues_a` and :var:`residues_b` should
     be matched.
 
     Arguments:
