@@ -775,13 +775,17 @@ class SimManager:
             generic_warning(msg)
 
     def _rama_a_sim_end_cb(self, *_):
-        self.rama_annotator.track_whole_model = True
         from chimerax.core.triggerset import DEREGISTER
+        if self.rama_annotator.deleted:
+            return DEREGISTER
+        self.rama_annotator.track_whole_model = True
         return DEREGISTER
 
     def _rota_a_sim_end_cb(self, *_):
-        self.rota_annotator.track_whole_model = True
         from chimerax.core.triggerset import DEREGISTER
+        if self.rota_annotator.deleted:
+            return DEREGISTER
+        self.rota_annotator.track_whole_model = True
         return DEREGISTER
 
     _pr_update_reasons = frozenset((
@@ -832,9 +836,11 @@ class SimManager:
             self.sim_handler.update_distance_restraints(all_changeds)
 
     def _dr_sim_end_cb(self, *_):
+        from chimerax.core.triggerset import DEREGISTER
+        if self.distance_restraint_mgr.deleted:
+            return DEREGISTER
         restraints = self.distance_restraint_mgr.intra_restraints(self.sim_construct.all_atoms)
         restraints.clear_sim_indices()
-        from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
     _adr_update_reasons = frozenset((
@@ -864,7 +870,10 @@ class SimManager:
             self.sim_handler.update_adaptive_distance_restraints(all_changeds)
 
     def _adr_sim_end_cb(self, *_):
+        from chimerax.core.triggerset import DEREGISTER
         for adrm in self.adaptive_distance_restraint_mgrs:
+            if adrm.deleted:
+                return DEREGISTER
             restraints = adrm.intra_restraints(self.sim_construct.all_atoms)
             restraints.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
@@ -899,12 +908,14 @@ class SimManager:
 
     def _dihe_r_sim_end_cb(self, *_):
         ''' Used for proper dihedral and chiral restraints.'''
-        sc = self.sim_construct
-        pdrs = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
-        pdrs.clear_sim_indices()
-        crs = self.chiral_restraint_mgr.get_restraints_by_atoms(sc.mobile_atoms)
-        crs.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
+        sc = self.sim_construct
+        if not self.proper_dihedral_restraint_mgr.deleted:
+            pdrs = self.proper_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
+            pdrs.clear_sim_indices()
+        if not self.chiral_restraint_mgr.deleted:
+            crs = self.chiral_restraint_mgr.get_restraints_by_atoms(sc.mobile_atoms)
+            crs.clear_sim_indices()
         return DEREGISTER
 
     def _adaptive_dihe_r_changed_cb(self, trigger_name, changes):
@@ -939,8 +950,9 @@ class SimManager:
     def _adaptive_dihe_r_sim_end_cb(self, *_):
         ''' Used for all forms of dihedral restraints.'''
         sc = self.sim_construct
-        apdrs = self.adaptive_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
-        apdrs.clear_sim_indices()
+        if not self.adaptive_dihedral_restraint_mgr.deleted:
+            apdrs = self.adaptive_dihedral_restraint_mgr.get_all_restraints_for_residues(sc.mobile_residues)
+            apdrs.clear_sim_indices()
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
 
@@ -988,8 +1000,9 @@ class SimManager:
 
     def _mdff_sim_end_cb(self, *_):
         for v, mgr in self.mdff_mgrs.items():
-            mdff_atoms = mgr.get_mdff_atoms(self.sim_construct.all_atoms)
-            mdff_atoms.clear_sim_indices()
+            if not v.deleted and not mgr.deleted:
+                mdff_atoms = mgr.get_mdff_atoms(self.sim_construct.all_atoms)
+                mdff_atoms.clear_sim_indices()
             from chimerax.core.triggerset import DEREGISTER
             return DEREGISTER
 
@@ -2331,6 +2344,31 @@ class SimHandler:
         self.all_forces.append(f)
         self._system.addForce(f)
         self.mdff_forces[v] = f
+        from chimerax.clipper.maps import XmapHandler_Live
+        if isinstance(v, XmapHandler_Live):
+            class RfactorChecker:
+                def __init__(self, v):
+                    mgr = self.mgr = v.xmap_mgr
+                    self.best_r = mgr.rwork
+                
+                def r_improved(self):
+                    r = self.mgr.rwork
+                    if r < self.best_r:
+                        self.best_r = r
+                        return True
+                    return False
+            def data_changed_cb(reason, v=volume, r=region, checker=RfactorChecker(volume)):
+                if reason=='values changed' and checker.r_improved():
+                    f.update_map_data(v.region_matrix(region=r))
+            v.data.add_change_callback(data_changed_cb)
+            self.triggers.add_handler('sim terminated', lambda *_:v.data.remove_change_callback(data_changed_cb))
+        else:                
+            def data_changed_cb(reason, v = volume, r = region):
+                if reason == 'values changed':
+                    f.update_map_data(v.region_matrix(region=r))
+            v.data.add_change_callback(data_changed_cb)
+            self.triggers.add_handler('sim terminated', lambda *_:v.data.remove_change_callback(data_changed_cb))
+        
 
     def add_mdff_atoms(self, mdff_atoms, volume):
         '''
