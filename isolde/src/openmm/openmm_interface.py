@@ -2360,14 +2360,16 @@ class SimHandler:
             def data_changed_cb(reason, v=volume, r=region, checker=RfactorChecker(volume)):
                 if reason=='values changed' and checker.r_improved():
                     f.update_map_data(v.region_matrix(region=r))
-            v.data.add_change_callback(data_changed_cb)
-            self.triggers.add_handler('sim terminated', lambda *_:v.data.remove_change_callback(data_changed_cb))
         else:                
             def data_changed_cb(reason, v = volume, r = region):
                 if reason == 'values changed':
                     f.update_map_data(v.region_matrix(region=r))
-            v.data.add_change_callback(data_changed_cb)
-            self.triggers.add_handler('sim terminated', lambda *_:v.data.remove_change_callback(data_changed_cb))
+        v.data.add_change_callback(data_changed_cb)
+        def remove_change_cb(*_):
+            if v.deleted:
+                return
+            v.data.remove_change_callback(data_changed_cb)
+        self.triggers.add_handler('sim terminated', remove_change_cb)
         
 
     def add_mdff_atoms(self, mdff_atoms, volume):
