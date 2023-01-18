@@ -1007,7 +1007,8 @@ class Isolde():
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger(self.SIMULATION_TERMINATED, reason)
         m = self.selected_model
-        if m is None or reason==self.sim_handler.REASON_MODEL_DELETED:
+        from .openmm.openmm_interface import SimHandler
+        if m is None or reason==SimHandler.REASON_MODEL_DELETED:
             self._sim_manager = None
             self.session.logger.info('ISOLDE: model deleted during running simulation.')
             return

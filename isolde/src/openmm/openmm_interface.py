@@ -1508,7 +1508,6 @@ class SimHandler:
                 self.atoms.coords = th.coords
         except ValueError:
             self.stop(reason=self.REASON_COORD_LENGTH_MISMATCH)
-            return
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
             self._unstable = True
@@ -1523,9 +1522,9 @@ class SimHandler:
             self._unstable_counter += 1
         else:
             self._unstable_counter = 0
-        if self._force_update_pending:
+        if self._force_update_pending and not self._stop:
             self._update_forces_in_context_if_needed()
-        if reinit_vels:
+        if reinit_vels and not self._stop:
             th.reinitialize_velocities()
         if not self._pause:
             self._repeat_step()
