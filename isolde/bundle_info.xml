@@ -75,15 +75,10 @@ with the surroundings.
     <Library>arrays</Library>
     <Library>pyinstance</Library>
   </CLibrary>
-  <CLibrary name="lbfgs">
-      <IncludeDir>src/deps/lbfgs/include</IncludeDir>
-      <SourceFile>src/deps/lbfgs/src/lbfgs.c</SourceFile>
-  </CLibrary>
   <CModule name="_openmm_async">
       <Library platform="mac">OpenMM</Library>
       <Library platform="linux">OpenMM</Library>
       <Library platform="windows">OpenMM.lib</Library>
-      <Library>lbfgs</Library>
       <IncludeDir>extern/openmm/openmmapi/include</IncludeDir>
       <IncludeDir>extern/openmm/serialization/include</IncludeDir>
       <IncludeDir>extern/openmm/olla/include</IncludeDir>
@@ -91,6 +86,7 @@ with the surroundings.
       <IncludeDir>src/deps/lbfgs/include</IncludeDir>
       <LibraryDir platform="linux">/usr/libexec/UCSF-ChimeraX-daily/lib</LibraryDir>
       <LibraryDir>src</LibraryDir>
+      <SourceFile>src/deps/lbfgs/src/lbfgs.cpp</SourceFile>
       <SourceFile>src/openmm/openmm_interface.cpp</SourceFile>
       <SourceFile>src/openmm/minimize.cpp</SourceFile>
   </CModule>
