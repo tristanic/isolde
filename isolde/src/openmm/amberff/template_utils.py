@@ -1,6 +1,6 @@
 # @Author: Tristan Croll <tic20>
 # @Date:   24-Jul-2020
-# @Email:  tic20@cam.ac.uk
+# @Email:  tcroll@altoslabs.com
 # @Last modified by:   tic20
 # @Last modified time: 10-Aug-2020
 # @License: Free for non-commercial use (see license.pdf)

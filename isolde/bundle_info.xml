@@ -1,7 +1,7 @@
 <!--
 @Author: Tristan Croll
 @Date:   18-Apr-2018
-@Email:  tic20@cam.ac.uk
+@Email:  tcroll@altoslabs.com
 @Last modified by:   tic20
 @Last modified time: 19-Nov-2020
 @License: Free for non-commercial use (see license.pdf)
@@ -15,7 +15,7 @@
 
   <!-- Additional information about bundle source -->
   <Author>Tristan Croll</Author>
-  <Email>tic20@cam.ac.uk</Email>
+  <Email>tcroll@altoslabs.com</Email>
   <URL>https://cxtoolshed.rbvi.ucsf.edu/apps/chimeraxisolde</URL>
 
   <!-- Synopsis is a one-line description
