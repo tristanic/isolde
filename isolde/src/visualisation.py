@@ -75,6 +75,9 @@ class VisualisationStateMgr:
         self.prepare_sim_visualisation()
     
     def _sim_end_cb(self, trigger_name, reason):
+        if not hasattr(self, '_current_model'):
+            # Simulation failed to start properly
+            return
         m = self.isolde.selected_model
         from chimerax.isolde.openmm.openmm_interface import SimHandler
         if reason == SimHandler.REASON_MODEL_DELETED or m != self._current_model:
@@ -134,7 +137,8 @@ class VisualisationStateMgr:
             residues.ribbon_displays, residues.ribbon_colors = \
                 self._original_residue_states
         except:
-            default_atom_visualisation(self.model)
+            # Usually because the user deleted atoms with a simulation running, invalidating the stored states
+            default_atom_visualisation(m)
 
         sym = self.symmetry_handler
         if sym:

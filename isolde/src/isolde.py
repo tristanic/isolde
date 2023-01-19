@@ -674,7 +674,7 @@ class Isolde():
                 # manager but leave it disabled by default so the user has to
                 # explicitly enable it.
                 mgr.enabled = False
-            if v.is_difference_map:
+            if v.is_difference_map and new_mgr:
                 # Similar reasoning for difference maps: there may be occasion to 
                 # use them, but this decision should be left up to the user.
                 mgr.enabled = False
@@ -878,18 +878,18 @@ class Isolde():
             if err_text.startswith("No template found") or \
                err_text.startswith("User-supplied template"):
                 # These errors are already handled
-                self._sim_end_cb()
+                self._sim_end_cb(None, 'Template failure')
                 return
             raise
         except RuntimeError as e:
-            self._sim_end_cb()
+            self._sim_end_cb(None, 'Runtime error')
             err_text = str(e)
             if err_text.startswith("Unparameterised"):
                 self.triggers.activate_trigger(self.UNPARAMETERISED_RESIDUE, None)
                 return
             raise
         except:
-            self._sim_end_cb()
+            self._sim_end_cb(None, 'Unspecified error')
             raise
         sm.start_sim()
         self._sim_start_cb()
@@ -970,7 +970,7 @@ class Isolde():
             from chimerax.atomic import AtomicStructures
             from chimerax.addh import cmd
             cmd.cmd_addh(self.session, AtomicStructures([self.selected_model]), hbond=True)
-            self._sim_end_cb()
+            self._sim_end_cb(None, 'Adding hydrogens')
             self.selected_model.atoms.selected = False
             self._last_main_sel.selected = True
             self.start_sim()
@@ -978,13 +978,13 @@ class Isolde():
             print('Excluding residue')
             from chimerax.atomic import Residues
             self.ignored_residues = self.ignored_residues.merge(Residues([residue]))
-            self._sim_end_cb()
+            self._sim_end_cb(None, 'Excluding residue')
             self.selected_model.atoms.selected = False
             self._last_main_sel.selected=True
             self.start_sim()
         else:
             print('Doing nothing')
-            self._sim_end_cb()
+            self._sim_end_cb(None, 'Bailing out')
 
     def _sim_start_cb(self, *_):
         '''
@@ -1007,7 +1007,8 @@ class Isolde():
         self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger(self.SIMULATION_TERMINATED, reason)
         m = self.selected_model
-        if m is None or reason==self.sim_handler.REASON_MODEL_DELETED:
+        from .openmm.openmm_interface import SimHandler
+        if m is None or reason==SimHandler.REASON_MODEL_DELETED:
             self._sim_manager = None
             self.session.logger.info('ISOLDE: model deleted during running simulation.')
             return

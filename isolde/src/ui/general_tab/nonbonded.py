@@ -55,7 +55,7 @@ class NonbondedDialog(UI_Panel_Base):
         self.isolde.sim_params.use_softcore_nonbonded_potential = checked
     
     def cleanup(self):
-        for slider in self._sliders.values():
+        for slider in self._sliders:
             slider.cleanup()
         self._min_potential_indicator.cleanup()
         self._equil_potential_indicator.cleanup()

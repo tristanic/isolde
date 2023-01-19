@@ -133,7 +133,7 @@ class _Map_Force_Base(CustomCompoundBondForce):
         super().__init__(1, '')
         self._process_transform(xyz_to_ijk_transform, units)
         self._initialize_transform_arguments(suffix)
-        map_func = self._openmm_3D_function_from_volume(data)
+        map_func = self._map_func = self._openmm_3D_function_from_volume(data)
 
         global_k_name = self._global_k_name = 'mdff_global_k_{}'.format(suffix)
         scale_factor_name = self._map_scale_factor_name = 'mdff_scale_factor_{}'.format(suffix)
@@ -195,6 +195,16 @@ class _Map_Force_Base(CustomCompoundBondForce):
 
     def _openmm_3D_function_from_volume(self, data):
         raise RuntimeError('Cannot instantiate the base class!')
+    
+    def update_map_data(self, data):
+        '''
+        Update the map data values in the simulation. The dimensions of :var:`data` must be 
+        *exactly* the same as those of the data used to start the simulation.
+        '''
+        dim = data.shape[::-1]
+        data_1d = numpy.ravel(data, order = 'C')
+        self._map_func.setFunctionParameters(*dim, data_1d)
+        self.update_needed = True
 
     def _set_energy_function(self, suffix):
         raise RuntimeError('Cannot instantiate the base class!')
