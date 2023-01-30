@@ -194,7 +194,7 @@ def _prep_tut_dir(session, tut_name, source_dir):
 
 _tut_info = {
     'alphafold_cryoem_multimer': ('AlphaFold-multimer 7drt', '7drt'),
-    'alphafold_mr': ('Molecular replacement with AlphaFold models', '3now')
+    'alphafold_mr': ('Molecular replacement with AlphaFold models', '3now'),
 }
 def isolde_tutorial(session, prep=None):
     if prep is None:
@@ -222,6 +222,10 @@ _available_demos = {
     'cryo_em_intro': (
         'load_cryo_em_demo',
         'cryo-EM demo: PDB ID 6out, EMDB ID 20205',
+        ('model_only',)),
+    'clashes_intro': (
+        'load_clashes_demo',
+        'clashes demo: AlphaFold models for PDB ID 7wv3, EMDB ID 32294',
         ('model_only',)),
 }
 def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):

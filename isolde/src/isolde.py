@@ -1489,6 +1489,23 @@ def load_cryo_em_demo(session, model_only=True):
     if hasattr(session, 'isolde'):
         session.isolde.selected_model = m
 
+def load_clashes_demo(session, model_only=False):
+    '''
+    Load a cryo-EM map and a starting model containing severe clashes.
+    '''
+    from chimerax.open_command.cmd import provider_open
+    data_dir = os.path.join(_root_dir, 'demo_data', '7wv3')
+    m = provider_open(session, [os.path.join(data_dir, 'starting_model.pdb')])[0]
+    if not model_only:
+        mmap = provider_open(session, ['32294'], from_database='emdb')[0]
+        from chimerax.core.commands import run
+        run(session, f'clipper assoc #{mmap.id_string} to #{m.id_string}', log=False)
+    from chimerax.core.commands import run
+    run(session, 'alphafold fetch Q30BZ2')
+    run(session, 'alphafold fetch A0A2I8B6R1')
+    if hasattr(session, 'isolde'):
+        session.isolde.selected_model = m
+
 
 class Logger:
     def __init__(self, filename = None):

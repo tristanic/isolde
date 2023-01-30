@@ -17,6 +17,7 @@ Introductory
 
     intro/crystal_intro/crystal_intro
     intro/cryo_intro/cryo_intro
+    intro/clashes/clashes
 
 Intermediate to Advanced
 ------------------------

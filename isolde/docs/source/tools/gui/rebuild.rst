@@ -162,6 +162,8 @@ this way avoids having to deal with the tangle of sidechain-sidechain clashes
 that can be the result of other methods. Once the shift is done, clicking the 
 Release button will remove the position restraints.
 
+.. _reference_model_restraints:
+
 Reference Models
 ~~~~~~~~~~~~~~~~
 
