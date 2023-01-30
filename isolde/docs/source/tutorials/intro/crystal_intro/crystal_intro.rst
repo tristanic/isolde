@@ -6,8 +6,7 @@ Introduction to crystallographic model rebuilding in ISOLDE
 
 **(NOTE: Most links on this page will only work correctly when the page is
 loaded in ChimeraX's help viewer. You will also need to be connected to the
-Internet. Please close ISOLDE and any open models before starting this
-tutorial.)**
+Internet. Please close any open models before starting this tutorial.)**
 
 **(The instructions in the tutorial below assume you are using a wired mouse
 with a scroll wheel doubling as the middle mouse button. While everything
@@ -42,7 +41,7 @@ message similar to that below:
 
 In crystallographic model building it is standard practice to leave a random
 selection of measured reflections (typically 5% or 2000 reflections, whichever
-is higher) as a guard against overfitting (see `Brunger, 1992`__). While it is
+is lower) as a guard against overfitting (see `Brunger, 1992`__). While it is
 now standard practice for structure factors deposited to the wwPDB to include
 the free reflections used by the original modellers, this was not always the
 case. When no free flags are found a fresh set will be created for you - in
@@ -57,7 +56,8 @@ __ cxcmd:save\ ~/Desktop/1a0m.mtz\ #1
 
 *(OPTIONAL: personally I prefer to work with a white background. If you're
 the same, you can change it using ChimeraX's icons in the "Home" tab at top,
-or with the following command)*
+or with the following command. You can also change it permanently using 
+Favorites/Settings on the ChimeraX menu.)*
 
 `set bgColor white`__
 
@@ -110,7 +110,7 @@ You'll hopefully notice a few things:
 __ cxcmd:clipper\ spotlight\ radius\ 15
 
 2. Zoom out until you have a clear border all around the displayed atoms, then
-   pan tthe mouse to the left. As you go, you'll see a single cartoon start to stand out
+   pan the mouse to the left. As you go, you'll see a single cartoon start to stand out
    from the rest:
 
    .. figure:: images/separate_asu.jpg
@@ -374,9 +374,10 @@ here:
 * Tugging on the sulphur has had a knock-on effect on the adjacent Asn sidechain
   (top) - to re-iterate, in ISOLDE, all atoms feel each other.
 
-  **(IMPORTANT NOTE: during simulations, the model will only feel the map as it
-  was at the moment the simulation started. Subsequent changes will not take
-  effect until you stop the simulation and start a new one.)**
+You might wonder how the changes you see in the map affect the forces felt by the 
+model. In short: every time the instantaneous R-work drops below the previous best 
+value seen in the current simulation, the corresponding map is automatically 
+used to update the fitting potential. 
 
 Unless you've done something particularly drastic, upon releasing the tugging
 force the model should snap back into place. In my case, here's the model ~5
@@ -415,7 +416,6 @@ free reflections. That is very important, and is the reason why setting the othe
 maps as MDFF potentials is not permitted - including the free reflections in the 
 fitting potential would invalidate Rfree as a safeguard against overfitting.
 
-
 On the far right of the MDFF potential line, you'll see a number under the
 heading "Weight". As the name suggests, this defines how strongly the potential
 pulls on atoms. When loading a new map, ISOLDE automatically chooses a suitable
@@ -429,14 +429,15 @@ difference map, and the R-factors should increase to 0.24-0.26.
 
 Injection of random positional error like this is one valid way to reduce the
 incidence of model bias that may arise due to the fact that we are not using the
-original free set. Clicking the green "STOP" button at bottom right will stop
-the simulation and save the instantaneous coordinates. Now, set the weight back
-to 0.8, `select the model`__ and start a fresh simulation. You should see the
-R-factors quickly drop back to the vicinity of 0.19-0.21. Now, drop the
-temperature to zero using the slider near the bottom of the General tab. Wait
-for the R-factors to settle to constant values, and hit the green STOP button.
-Now start a new simulation - you should see the R-factors drop a little as the
-updated potential takes effect.
+original free set. Note that since the fitting potential in a running simulation
+is only updated when the R-work drops to a new low, in this case you'll have to
+stop the current simulation for the changes to take effect. Clicking the green
+"STOP" button at bottom right will stop the simulation and save the
+instantaneous coordinates. Now, set the weight back to 0.8, `select the model`__
+and start a fresh simulation. You should see the R-factors quickly drop back to
+the vicinity of 0.19-0.21. Now, drop the temperature to zero using the slider
+near the bottom of the General tab. Wait for the R-factors to settle to constant
+values, and hit the green STOP button. 
 
 __ cxcmd:select\ #1
 
