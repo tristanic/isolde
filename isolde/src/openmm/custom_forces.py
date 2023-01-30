@@ -1755,7 +1755,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
                 f'(r/sigma)^{c} );'
             'sigma = 0.5*(sigma1+sigma2);'
             'epsilon = sqrt(epsilon1*epsilon2);'
-            f'coulombic = {ONE_ON_4_PI_EPS0} * charge1 * charge2 * softcore_lambda^{a} *'
+            f'coulombic = {ONE_ON_4_PI_EPS0} * charge1 * charge2 * '
                 f'( 1 / ( softcore_alpha*(1-softcore_lambda)^({b*4}) + r^{c} ) )^(1/{c})' 
             )
 
@@ -1787,7 +1787,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
 
         sigma = 0.295992190115
         epsilon = 0.87864
-        coulombic = ONE_ON_4_PI_EPS0 * nb_lambda**a * charge**2 * (
+        coulombic = ONE_ON_4_PI_EPS0 * charge**2 * (
             1 / (alpha * (1-nb_lambda)**(b*4) + radii**c )
         ) ** (1/c)
         lj_base = 1 / ( alpha * (1-nb_lambda)**b + (radii/sigma)**c )
@@ -1806,7 +1806,7 @@ class NonbondedSoftcoreExceptionForce(CustomBondForce):
             'lj_base = '
                 f'1 / ( softcore_alpha * (1-softcore_lambda)^{b} +'
                 f'(r/sigma)^{c} );'
-            f'coulombic = {ONE_ON_4_PI_EPS0} * charge_prod * softcore_lambda^{a} *'
+            f'coulombic = {ONE_ON_4_PI_EPS0} * charge_prod * '
                 f'( 1 / ( softcore_alpha*(1-softcore_lambda)^({4*b}) + r^{c} ) )^(1/{c})' 
             )
         super().__init__(energy_function)
