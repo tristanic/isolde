@@ -620,7 +620,7 @@ class LinearInterpMapForce(_Map_Force_Base):
 class AdaptiveDistanceRestraintForce(CustomBondForce):
     r'''
     A :py:class:`openmm.CustomBondForce` subclass using the generalised adaptive
-    loss function described by Jonathan Barron
+    loss function described by `Jonathan Barron
     (https://arxiv.org/pdf/1701.03077.pdf).
 
     There are many situations in which collections of distance restraints may
