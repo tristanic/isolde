@@ -82,9 +82,9 @@ __ cxcmd:open\ 7drt;open\ 30827\ from\ emdb;color\ bychain
 
 \... and make it a little more pretty:
 
-`volume #2 rmsLevel 8 step 1;lighting soft`__
+`volume #2 rmsLevel 8 step 1;color zone #2 near #1; lighting soft`__
 
-__ cxcmd:volume\ #2\ rmsLevel\ 8\ step\ 1;lighting\ soft
+__ cxcmd:volume\ #2\ rmsLevel\ 8\ step\ 1;color\ zone\ #2\ near\ #1;lighting\ soft
 
 .. figure:: images/7drt_original_overview.jpg
 
@@ -280,10 +280,10 @@ and (b) have no mutual information controlling their relative positions, in key
 stages of the algorithm they don't "know" about each other and can end up
 overlapping like this.
 
-While a situation like this *is* recoverable with judicious use of the "isolde
-ignore" command (excluding one of the offending stretches from simulation while
-clearing the other), let's see if we can avoid the issue by using the second
-model instead. Go ahead and open that
+While a situation like this *is* reasonably straightforwardly recoverable by
+temporarily reducing the strength of ISOLDE's nonbonded potentials (see
+:ref:`isolde_clashes_tutorial`), let's see if we can avoid the issue by using
+the second model instead. Go ahead and open that
 ("7drt_20b0f_unrelaxed_rank_2_model_5.pdb") with the File/Open dialog, and align
 it to the working model:
 
