@@ -69,7 +69,7 @@ class RotamerAnnotator(Model):
         self._MAX_SCALE = 2 # maximum scale factor for annotation drawings
         self._hide_favored = True
         d = self._drawing = self._rota_indicator()
-        self.add_drawing(d)
+        self.add([d])
         structure.add([self])
         self.track_whole_model = True
         t = structure.triggers
@@ -214,7 +214,7 @@ class RotamerAnnotator(Model):
         r.transform_points(v, in_place=True)
         r.transform_vectors(n, in_place=True)
         translation((0,0.5,0.25)).transform_points(v, in_place=True)
-        d = Drawing('rotamer indicator')
+        d = Model('rotamer indicator', self.session)
         d.skip_bounds = True
         d.pickable = False
         d.set_geometry(v, n, t)

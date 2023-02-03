@@ -146,17 +146,17 @@ class RamaAnnotator(Model):
 
     def _prepare_drawings(self):
         if not hasattr(self, '_omega_drawing'):
-            od = self._omega_drawing = Drawing('cis/twisted omegas')
+            od = self._omega_drawing = Model('cis/twisted omegas', self.session)
             od.skip_bounds = True
             od.pickable = False
-            self.add_drawing(od)
+            self.add([od])
         if not hasattr(self, '_rama_drawing'):
-            rd = self._rama_drawing = Drawing('Ramachandran score indicators')
+            rd = self._rama_drawing = Model('Ramachandran score indicators', self.session)
             rd.skip_bounds = True
             rd.pickable = False
             from chimerax.surface.shapes import sphere_geometry2
             rd.set_geometry(*sphere_geometry2(80))
-            self.add_drawing(rd)
+            self.add([rd])
 
     def restrict_to_selected_residues(self, residues):
         '''
