@@ -80,7 +80,7 @@ __ https://aip.scitation.org/doi/10.1063/1.3607597
 with the somewhat more complex but significantly more flexible:
 
 .. math::
-    E_{\text{VDW}} = 4 \epsilon_{ij} \lambda^{a}  \left [ \left ( \tfrac{1}{\alpha(1-\lambda)^b + (r_{ij}/\sigma_{ij})^c} \right )^{12/c} - \left ( \tfrac{1}{\alpha(1-\lambda)^b + (r_{ij}/\sigma_{ij})^c} \right )^{6/c} \right ] 
+    E_{\text{VDW}} = 4 \epsilon_{ij} \lambda^{\frac{1}{a}}  \left [ \left ( \tfrac{1}{\alpha(1-\lambda)^b + (r_{ij}/\sigma_{ij})^c} \right )^{12/c} - \left ( \tfrac{1}{\alpha(1-\lambda)^b + (r_{ij}/\sigma_{ij})^c} \right )^{6/c} \right ] 
 
 \... where :math:`\epsilon_{ij}` and :math:`\sigma_{ij}` are parameters defined
 by the force field for each atom pair *i,j*. Of the newly added terms (*a*, *b*,
@@ -88,7 +88,7 @@ by the force field for each atom pair *i,j*. Of the newly added terms (*a*, *b*,
 controlling the overall "softness" - *λ* = 1 recapitulates the standard
 Lennard-Jones potential, while *λ* = 0 turns off nonbonded interactions entirely
 (not generally recommended). For the record, the standard values for the other
-parameters used in ISOLDE are *a* = 1, *b* = 2, *c* = 6, and *α* = 0.2.
+parameters used in ISOLDE are *a* = 1, *b* = 2, *c* = 6, and *α* = 0.2. 
 
 While generally much less of a problem except in the most extreme clashes,
 charge interaction energies also approach ±infinity proportional to 1/distance.
@@ -351,7 +351,7 @@ have gone correctly, the problem region should now look something like this:
 .. figure:: images/settled.jpg
 
 When it does, hit the "Reset" button beside the *λ* (equil) to return to the 
-default potential, then go ahead and stop your simulation.
+default potential setting, then go ahead and stop your simulation.
 
 If you have a browse around through the model, you'll see that the overall fit is 
 now much improved - but there remain numerous local imperfections. Some (perhaps 

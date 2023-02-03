@@ -1748,7 +1748,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         '''
         energy_function = ('lennard_jones + coulombic;'
             'lennard_jones = '
-                f'4 * epsilon * softcore_lambda^{a} * '
+                f'4 * epsilon * softcore_lambda^(1/{a}) * '
                 f'( lj_base^(12/{c}) - lj_base^(6/{c}) );'
             'lj_base = '
                 f'1 / ( softcore_alpha * (1-softcore_lambda)^{b} +'
@@ -1791,7 +1791,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
             1 / (alpha * (1-nb_lambda)**(b*4) + radii**c )
         ) ** (1/c)
         lj_base = 1 / ( alpha * (1-nb_lambda)**b + (radii/sigma)**c )
-        lennard_jones = 4 * epsilon * nb_lambda**a * ( lj_base**(12/c) - lj_base**(6/c))
+        lennard_jones = 4 * epsilon * nb_lambda**(1/a) * ( lj_base**(12/c) - lj_base**(6/c))
         return lennard_jones, coulombic
 
 
@@ -1801,7 +1801,7 @@ class NonbondedSoftcoreExceptionForce(CustomBondForce):
     def __init__(self, a=1, b=2, c=6, nb_lambda=0.9, alpha=0.2):
         energy_function = ('lennard_jones + coulombic;'
             'lennard_jones = '
-                f'4 * epsilon * softcore_lambda^{a} * '
+                f'4 * epsilon * softcore_lambda^(1/{a}) * '
                 f'( lj_base^(12/{c}) - lj_base^(6/{c}) );'
             'lj_base = '
                 f'1 / ( softcore_alpha * (1-softcore_lambda)^{b} +'
@@ -1967,15 +1967,4 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
                 self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2 * (1/f-1/cutoff);'
                     "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
                 )
-
-
-
-            
-
-            
-
-
-    
-
-
 
