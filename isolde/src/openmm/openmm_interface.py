@@ -2624,9 +2624,6 @@ class _SoftCoreNonbondedParamMgr:
         if param in (
             'nonbonded_softcore_lambda_minimize',
             'nonbonded_softcore_lambda_equil',
-            'nonbonded_softcore_a',
-            'nonbonded_softcore_b',
-            'nonbonded_softcore_c',
             'nonbonded_softcore_alpha',
         ):
             self.sim_handler.update_nonbonded_softcore_parameter(param, value)
