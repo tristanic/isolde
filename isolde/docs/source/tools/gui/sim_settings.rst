@@ -67,40 +67,44 @@ clashes - particularly those with residues passing through each other like this:
 
 .. figure:: images/catastrophic_clash.jpg
     
-\... will generally *not* resolve automatically - (a) because the energies involved
-will exceed single-precision values; and/or (b) because the nonbonded forces will 
-push bonded atoms in opposing directions, leading to extremely distorted geometry.
+\... will generally require some more careful treatment. Because there is no 
+straightforward path out of the tangle, naive energy minimisation will generally 
+lead to a ridiculous tangle akin to this:
+
+.. figure:: images/mess_caused_by_severe_clashes.jpg
 
 Clashes can be found using the Clashes widget on ISOLDE's Validation tab:
 
 .. figure:: images/clashes_widget.png
 
-If you do not correct severe clashes prior to starting a simulation, it's usually 
-not the end of the world - ISOLDE will try to minimise for a while before bringing 
-up this warning:
+If your inspection does identify particularly severe clashes like the above 
+(a particularly common hazard when starting from a model composed of multiple
+independently rigid-body docked fragments), then the best approach is typically 
+to:
 
-.. figure:: images/clash_warning.png
-    :alt: Unresolvable clash warning dialog
+- restrain with local distance and torsion restraints (see :ref:`reference_model_restraints`); 
 
-\... but for very large models this can take a long time, so it's best to head the 
-problems off early.
+- start a simulation encompassing a region large enough to allow the clashing 
+  components to separate (i.e. if two domains are clashing, select at least the 
+  entirety of one of the clashing domains);
 
-To deal with severe clashes like this to allow ISOLDE to start, you have four options:
+- use the Nonbonded Potentials widget found on the General tab to gradually 
+  reduce the strength of the van der Waals and electrostatic interactions until 
+  the clashing atoms are able to slide past each other;
 
-(1) adjust sidechains into less badly-clashing rotamers using the tools on ISOLDE's 
-    ribbon menu;
+- if necessary, use the "tug selection" mouse mode to help the clashing regions
+  separate;
 
-(2) temporarily truncate a sidechain back to alanine: select the whole residue, then 
-    ``del sel&sideonly&~@CB``;
+- return the nonbonded potentials to their default strength and move on.
 
-(3) temporarily exclude one of the clashing residues from simulations by selecting it and 
-    entering the command ``isolde ignore sel``;
+For a worked example of the above, see the interactive :ref:`isolde_clashes_tutorial` 
+tutorial.
 
-(4) delete one of the clashing residues entirely by selecting it and doing 
-    ``del sel``
-
-Remember, it'll be much easier to build deleted components back in once the
-surroundings are correctly settled.
+When faced with extremely large overlaps between domains, you might find it useful 
+to start by using the ``isolde ignore {selection}`` command to temporarily exclude 
+some residues from simulations, allowing you to move the others without resistance.
+If you take that route, remember you can reinstate residues for future simulations
+with ``isolde ~ignore``. For more information, see :ref:`ignore`.
 
 .. _unrecognised_residues:
 
