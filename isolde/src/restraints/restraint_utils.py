@@ -936,7 +936,22 @@ def restrain_secondary_structure(session, residues, target):
                 
             
 
-                
+def release_base_pair_restraints(residues):
+    bp_atoms = {
+        ('A','DA'): ('N6','N1'),
+        ('G', 'DG'): ('N1','N2','O6')
+    }
+    from chimerax.isolde import session_extensions as sx
+    import numpy
+    for s, residues in residues.by_structure:
+        drm = sx.get_distance_restraint_mgr(s)
+        for rnames, anames in bp_atoms.items():
+            sres = residues[numpy.in1d(residues.names, rnames)]
+            atoms = sres.atoms[numpy.in1d(sres.atoms.names, anames)]
+            drs = drm.atoms_restraints(atoms)
+            drs.enableds=False
+
+
 
 
 def restrain_base_pairs(session, residues, dist_slop=0.0, angle_slop=0.0):

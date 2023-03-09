@@ -14,6 +14,8 @@ class RestraintsTab(IsoldeTab):
         self.addWidget(DistanceRestraintsPanel(session, isolde, parent, gui))
         from .secondary_structure import SecondaryStructurePanel
         self.addWidget(SecondaryStructurePanel(session, isolde, parent, gui))
+        from .base_pairing import BasePairingPanel
+        self.addWidget(BasePairingPanel(session, isolde, parent, gui))
         from .register_shift import RegisterShiftPanel
         self.addWidget(RegisterShiftPanel(session, isolde, parent, gui))  
         from .reference_model import ReferenceModelPanel
