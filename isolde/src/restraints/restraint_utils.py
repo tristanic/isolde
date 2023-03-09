@@ -844,8 +844,8 @@ def restrain_secondary_structure(session, residues, target):
     from chimerax.isolde.isolde import OPENMM_RADIAL_SPRING_UNIT, OPENMM_SPRING_UNIT
     if isolde is None:
         from chimerax.isolde.constants import defaults
-        dihed_k = defaults.PHI_PSI_SPRING_CONSTANT.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
-        dist_k = defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT.value_in_unit(OPENMM_SPRING_UNIT)
+        dihed_k = defaults.PHI_PSI_SPRING_CONSTANT
+        dist_k = defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT
     else:
         dihed_k = isolde.sim_params.phi_psi_spring_constant.value_in_unit(OPENMM_RADIAL_SPRING_UNIT)
         dist_k = isolde.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
@@ -939,9 +939,82 @@ def restrain_secondary_structure(session, residues, target):
                 
 
 
+def restrain_base_pairs(session, residues, dist_slop=0.0, angle_slop=0.0):
+    pairs = {
+        'A': ('U','DT'),
+        'DA': ('DT','U'),
+        'G': ('C', 'DC'),
+        'DG': ('C', 'DC')
+    }
 
+    donors = {
+        'A': ('N6',),
+        'DA': ('N6',),
+        'U': ('N3',),
+        'DT': ('N3',),
+        'G': ('N1','N2'),
+        'DG': ('N1','N2'),
+        'C': ('N4',),
+        'DC': ('N4',),
+    }
 
+    acceptors = {
+        'A': ('N1',),
+        'DA': ('N1',),
+        'U': ('O4',),
+        'DT': ('O4',),
+        'G': ('O6',),
+        'DG': ('O6',),
+        'C': ('O2','N3'),
+        'DC': ('O2','N3'),
+    }
 
+    target_lengths = {
+        frozenset(('O','N')): 2.95,
+        frozenset('N'): 2.87
+    }
+
+    target_tolerances = {
+        frozenset(('O','N')): 0.1,
+        frozenset('N'): 0.06
+    }
+
+    isolde = getattr(session, 'isolde', None)
+    from chimerax.isolde.isolde import OPENMM_SPRING_UNIT
+    if isolde is None:
+        from chimerax.isolde.constants import defaults
+        dist_k = defaults.DISTANCE_RESTRAINT_SPRING_CONSTANT
+    else:
+        dist_k = isolde.sim_params.distance_restraint_spring_constant.value_in_unit(OPENMM_SPRING_UNIT)
+
+    from chimerax.atomic import Residue
+    from chimerax.hbonds import find_hbonds
+    from chimerax.isolde import session_extensions as sx
+    import numpy
+    nucleic = residues[residues.polymer_types == Residue.PT_NUCLEIC]
+    for s, residues in nucleic.by_structure:
+        drm = sx.get_distance_restraint_mgr(s, create=True)
+        for ref_name, target_names in pairs.items():
+            ref_residues = residues[residues.names==ref_name]
+            ref_atoms = ref_residues.atoms
+            ref_donors = ref_atoms[numpy.in1d(ref_atoms.names, donors[ref_name])]
+            ref_acceptors = ref_atoms[numpy.in1d(ref_atoms.names, acceptors[ref_name])]
+            for tname in target_names:
+                target_residues = residues[residues.names==tname]
+                target_atoms = target_residues.atoms
+                target_donors = target_atoms[numpy.in1d(target_atoms.names, donors[tname])]
+                target_acceptors = target_atoms[numpy.in1d(target_atoms.names, acceptors[tname])]
+                hbonds = []
+                if len(ref_donors) and len(target_acceptors):
+                    hbonds.extend(find_hbonds(session, [s], donors=ref_donors, acceptors=target_acceptors, dist_slop=dist_slop, angle_slop=angle_slop))
+                if len(target_donors) and len(ref_acceptors):
+                    hbonds.extend(find_hbonds(session, [s], donors=target_donors, acceptors=ref_acceptors, dist_slop=dist_slop, angle_slop=angle_slop))
+                for hbond in hbonds:
+                    dr = drm.add_restraint(*hbond)
+                    names = frozenset([a.element.name for a in hbond])
+                    dr.target = target_lengths[names]
+                    dr.spring_constant = dist_k
+                    dr.enabled=True
 
 
 def paired_beta_strands(strands, h_bond_cutoff=3.3):

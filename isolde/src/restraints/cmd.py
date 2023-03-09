@@ -46,6 +46,11 @@ def restrain_distances(session, atoms, template_atoms=None, **kwargs):
     restraint_utils.restrain_atom_distances_to_template(session, template_residues,
         model_residues, **args)
 
+def restrain_basepairs(session, residues, dist_slop=0.4, angle_slop=20):
+    from chimerax.isolde.restraints.restraint_utils import restrain_base_pairs
+    restrain_base_pairs(session, residues, dist_slop=dist_slop, angle_slop=angle_slop)
+
+
 def release_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False, to=None,
         longer_than=None, strained_only=False,
@@ -227,7 +232,6 @@ def release_torsions(session, residues, backbone=True, sidechains=True):
             apdrm.get_restraints_by_residues_and_name(residues, name).enableds=False
 
 
-
 def register_isolde_restrain(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
@@ -278,6 +282,19 @@ def register_isolde_restrain(logger):
             ]
         )
         register('isolde restrain single distance', desc, restrain_single_distance, logger=logger)
+    
+    def register_isolde_restrain_basepairs():
+        desc = CmdDesc(
+            synopsis = 'Add harmonic restraints to restrain standard nucleic acid base pairs',
+        required = [
+            ('residues', ResiduesArg),
+        ],
+        keyword = [
+            ('dist_slop', FloatArg),
+            ('angle_slop', FloatArg),
+        ]
+        )
+        register('isolde restrain basepairs', desc, restrain_basepairs, logger=logger)
     def register_isolde_release_distances():
         desc = CmdDesc(
             synopsis = 'Release selected adaptive distance restraints',
@@ -385,6 +402,7 @@ def register_isolde_restrain(logger):
     register_isolde_restrain_distances()
     register_isolde_restrain_single_distance()
     register_isolde_release_distances()
+    register_isolde_restrain_basepairs()
     register_isolde_adjust_distances()
     register_isolde_restrain_ligands()
     register_isolde_restrain_torsions()
