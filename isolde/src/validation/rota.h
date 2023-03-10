@@ -184,6 +184,8 @@ public:
     void color_by_score(double *score, size_t n, uint8_t *out);
     virtual void destructors_done(const std::set<void*>& destroyed);
 
+    void delete_rotamers(Rotamer ** to_delete, size_t n);
+
 private:
     ProperDihedralMgr* _dmgr;
     std::unordered_map<Residue*, Rotamer*> _residue_to_rotamer;

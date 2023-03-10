@@ -311,6 +311,17 @@ void RotaMgr::destructors_done(const std::set<void*>& destroyed)
         delete r;
 }
 
+void RotaMgr::delete_rotamers(Rotamer ** to_delete, size_t n)
+{
+    auto db = DestructionBatcher(this);
+    std::set<Rotamer*> unique;
+    for (size_t i=0; i<n; ++i) unique.insert(to_delete[i]);
+    for (auto r: unique)
+    {
+        _residue_to_rotamer.erase(r->residue());
+        delete r;
+    }
+}
 
 
 } //namespace isolde

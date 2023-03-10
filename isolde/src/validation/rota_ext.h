@@ -182,6 +182,18 @@ rota_mgr_get_rotamer(void *mgr, void *residue, size_t n)
 } //rota_mgr_get_rotamer
 
 extern "C" EXPORT void
+rota_mgr_delete_rotamer(void *mgr, void *rotamer, size_t n)
+{
+    RotaMgr *m = static_cast<RotaMgr *>(mgr);
+    Rotamer** r = static_cast<Rotamer **>(rotamer);
+    try {
+        m->delete_rotamers(r, n);
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
 rota_mgr_validate_rotamer(void *mgr, void *rotamer, size_t n, double *scores)
 {
     RotaMgr *m = static_cast<RotaMgr *>(mgr);

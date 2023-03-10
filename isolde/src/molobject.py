@@ -1352,9 +1352,24 @@ class RotaMgr:
         '''Has the C++ side been deleted?'''
         return not hasattr(self, '_c_pointer')
 
+    @property
+    def cpp_pointer(self):
+        '''Value that can be passed to C++ layer to be used as pointer (Python int)'''
+        return self._c_pointer.value
+
     def delete(self):
         c_function('rota_mgr_delete', args=(ctypes.c_void_p,))(self.cpp_pointer)
-        delattr(self.session, 'proper_dihedral_mgr')
+        delattr(self.session, 'rota_mgr')
+        self._changes_handler.remove()
+
+    def delete_rotamers(self, rotamers):
+        f = c_function('rota_mgr_delete_rotamer', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t))
+        n = len(rotamers)
+        f(self.cpp_pointer, rotamers._c_pointers, n)
+    
+    def delete_rotamer(self, rotamer):
+        self.delete_rotamers(_rotamers([rotamer]))
+
 
 
     def __init__(self, session, c_pointer=None):
@@ -1375,6 +1390,13 @@ class RotaMgr:
         self.set_default_cutoffs()
         self.set_default_colors()
         session.rota_mgr = self
+        from chimerax.atomic import get_triggers
+        self._changes_handler = get_triggers(session).add_handler('changes', self._changes_cb)
+
+    def _changes_cb(self, trigger_name, changes):
+        if 'name changed' in changes.residue_reasons():
+            changeds = changes.modified_residues()
+            self.delete_rotamers(self.get_rotamers(changeds))
 
     def _load_target_defs(self, degrees=True):
         '''
