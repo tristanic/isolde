@@ -21,6 +21,7 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
     matrix, xform = volume.matrix_and_transform(None, 'all', (1,1,1))
     from chimerax.map_data import interpolate_volume_data
     min_d, max_d = min_max_d(volume)
+    sphere8_vertices = unit_sphere_vertices(8)
     ref_sphere_vertices = unit_sphere_vertices(num_test_points)
 
     a = max_d - min_d
@@ -44,6 +45,9 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
     r_vals = numpy.empty((len(all_atoms), num_shells+1))
     r_vals[:,0] = r0_vals
 
+    short_count = 0
+    long_count = 0
+
     for i,a in enumerate(all_atoms):
         a_coord = a.scene_coord
         _, nearby_i = find_close_points([a_coord], all_coords, max_rad*2+.1)
@@ -54,8 +58,22 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
         shell_rad = step
         j = 1
         while shell_rad < max_rad+step/2:
+            if shell_rad < 0.7: # about half a C-C bond length
+                # Try the quick way first (should succeed for almost all cases unless geometry is seriously wonky)
+                local_8 = (sphere8_vertices*shell_rad) + a_coord
+                i1, i2, near1 = find_closest_points(local_8, nearby_coords, shell_rad*1.5)
+                closest = near1
+                candidates = closest[closest==ai]
+                if len(candidates)==8:
+                    short_count += 1
+                    r_vals[i,j] = interpolate_volume_data(local_8, xform, matrix, 'linear')[0].mean()
+                    shell_rad += step
+                    j+=1
+                    continue
+            
+            long_count += 1
             local_sphere = (ref_sphere_vertices*shell_rad) + a_coord
-            i1, i2, near1 = find_closest_points(local_sphere, nearby_coords, shell_rad)
+            i1, i2, near1 = find_closest_points(local_sphere, nearby_coords, shell_rad*1.5)
             closest = near1
             candidates = closest[closest==ai]
             if len(candidates) == 0:
@@ -72,7 +90,8 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                 r_vals[i,j] = interpolate_volume_data(points, xform, matrix, 'linear')[0].mean()
             shell_rad += step
             j+=1
-    
+
+    print(f'Used quick approach for {short_count} and longer approach for {long_count}')
 
     from chimerax.map_fit import overlap_and_correlation
     q_scores = numpy.array([overlap_and_correlation(reference_gaussian, r_vals[i,:])[2] for i in range(r_vals.shape[0])])
