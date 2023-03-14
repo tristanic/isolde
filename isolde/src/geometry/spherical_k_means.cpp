@@ -12,28 +12,6 @@ typedef std::array<double, 3> vec3;
 
 using namespace isolde::geometry;
 
-vec3 cartesian_to_polar(const vec3& coords)
-{
-    vec3 polar;
-    double x, y, z;
-    std::tie(x, y, z) = std::make_tuple(coords[0],coords[1],coords[2]);
-    polar[0] = sqrt(x*x + y*y + z*z);
-    polar[1] = acos(z/polar[0]);
-    polar[2] = atan2(y, x);
-    return polar;
-}
-
-vec3 polar_to_cartesian(const vec3& polar)
-{
-    vec3 coords;
-    double r, theta, phi;
-    std::tie(r, theta, phi) = std::make_tuple(coords[0],coords[1],coords[2]);
-    coords[0] = r * sin(theta) * cos(phi);
-    coords[1] = r * sin(theta) * sin(phi);
-    coords[2] = r * cos(theta);
-    return coords;
-}
-
 double spherical_distance(vec3& p1, vec3& p2) {
     return std::acos(dot_product_3D(p1.data(), p2.data()));
 }
