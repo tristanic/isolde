@@ -12,9 +12,8 @@ def min_max_d(v):
     min_d = max (mean-sd, m.min())
     return min_d, max_d
 
-def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0, step=0.1, num_test_points=128, include_h = False):
+def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0, step=0.1, num_test_points=128, clustering_iterations=5, include_h = False):
     from chimerax.geometry import find_close_points, find_closest_points
-    from chimerax.atomic import concatenate
     import numpy
     from math import floor
     from .._kmeans import spherical_k_means
@@ -45,8 +44,6 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
     r_vals = numpy.empty((len(all_atoms), num_shells+1))
     r_vals[:,0] = r0_vals
 
-    short_count = 0
-    long_count = 0
 
     for i,a in enumerate(all_atoms):
         a_coord = a.scene_coord
@@ -65,13 +62,11 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                 closest = near1
                 candidates = closest[closest==ai]
                 if len(candidates)==8:
-                    short_count += 1
                     r_vals[i,j] = interpolate_volume_data(local_8, xform, matrix, 'linear')[0].mean()
                     shell_rad += step
                     j+=1
                     continue
             
-            long_count += 1
             local_sphere = (ref_sphere_vertices*shell_rad) + a_coord
             i1, i2, near1 = find_closest_points(local_sphere, nearby_coords, shell_rad*1.5)
             closest = near1
@@ -85,13 +80,12 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                 r_vals[i,j] = interpolate_volume_data(points, xform, matrix, 'linear')[0].mean()
             else:
                 points = local_sphere[candidates]
-                labels, closest = spherical_k_means(points, points_per_shell, 5, True)
+                labels, closest = spherical_k_means(points, points_per_shell, clustering_iterations, True)
                 points = points[closest]
                 r_vals[i,j] = interpolate_volume_data(points, xform, matrix, 'linear')[0].mean()
             shell_rad += step
             j+=1
 
-    print(f'Used quick approach for {short_count} and longer approach for {long_count}')
 
     from chimerax.map_fit import overlap_and_correlation
     q_scores = numpy.array([overlap_and_correlation(reference_gaussian, r_vals[i,:])[2] for i in range(r_vals.shape[0])])
@@ -108,18 +102,6 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
 
     return residue_scores
 
-
-def find_best_eight_points(points, sphere8, shell_radius):
-    '''
-    Given a set of points distributed on a sphere, try to find the eight most widely 
-    spaced.
-    '''
-    from chimerax.geometry import find_closest_points
-    import numpy
-
-    i1, i2, near1 = find_closest_points(sphere8, points, shell_radius)
-    if len(numpy.unique(near1)):
-        return points[i2][near1]
 
 
 
