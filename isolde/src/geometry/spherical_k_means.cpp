@@ -16,25 +16,20 @@ double spherical_distance(vec3& p1, vec3& p2) {
     return std::acos(dot_product_3D(p1.data(), p2.data()));
 }
 
-std::pair< std::vector<size_t>, std::vector<size_t> > spherical_k_means(const std::vector<vec3>& points, size_t k, size_t max_iterations, bool assume_normalized)
+std::pair< std::vector<size_t>, std::vector<size_t> > spherical_k_means(const std::vector<vec3>& points, size_t k, size_t max_iterations)
 {
     if (points.size() < k)
         throw std::runtime_error("Number of points must be larger than number of clusters!");
 
     std::vector<vec3> normalized_points;
-    if (!assume_normalized)
+    for (size_t i=0; i < points.size(); ++i)
     {
-        for (size_t i=0; i < points.size(); ++i)
-        {
-            double norm;
-            vec3 norm_point;
-            auto pt = points[i];
-            norm = l2_norm_3d(pt.data());
-            for (size_t j=0; j<3; ++j) norm_point[j] = pt[j]/norm;
-            normalized_points.push_back(norm_point);
-        }
-    } else {
-        normalized_points = points;
+        double norm;
+        vec3 norm_point;
+        auto pt = points[i];
+        norm = l2_norm_3d(pt.data());
+        for (size_t j=0; j<3; ++j) norm_point[j] = pt[j]/norm;
+        normalized_points.push_back(norm_point);
     }
 
     std::vector<size_t> labels(points.size());
@@ -133,9 +128,10 @@ std::pair< std::vector<size_t>, std::vector<size_t> > spherical_k_means(const st
 namespace py=pybind11;
 
 PYBIND11_MODULE(_kmeans, m) {
-    m.doc() = "k-means clustering of points on a spherical surface.";
+    m.doc() = "k-means clustering of points on a spherical surface. Considers only angular differences "
+        "(i.e. all vectors will be normalised to the unit sphere for comparison).";
 
-    m.def("spherical_k_means", [](py::array_t<double> points, size_t k, size_t max_iterations, bool assume_normalized) {
+    m.def("spherical_k_means", [](py::array_t<double> points, size_t k, size_t max_iterations) {
         if (points.ndim() != 2 || points.shape(1) != 3)
             throw std::runtime_error ("Points should be a n x 3 array of Cartesian coordinates!");
         std::vector<vec3> pointsvec;
@@ -143,7 +139,7 @@ PYBIND11_MODULE(_kmeans, m) {
         {
             pointsvec.push_back(vec3{ {points.at(i,0), points.at(i,1), points.at(i,2)} });
         }
-        auto result = spherical_k_means(pointsvec, k, max_iterations, assume_normalized);
+        auto result = spherical_k_means(pointsvec, k, max_iterations);
         py::array rlabels(result.first.size(), result.first.data());
         py::array rclosest(result.second.size(), result.second.data());
         return std::make_tuple(rlabels, rclosest);
