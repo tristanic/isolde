@@ -66,8 +66,6 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
     r0_vals = volume.interpolated_values(query_coords)
     
     num_shells = int(floor(max_rad/step))
-    r_vals = numpy.empty((len(query_atoms), num_shells+1))
-    r_vals[:,0] = r0_vals
 
 
     q_scores = []
@@ -95,7 +93,6 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                         positions.append(local_8)
                         colors.append(numpy.array([color]*8))
                     local_d_vals[j] = d_vals
-                    r_vals[i,j] = d_vals.mean()
                     shell_rad += step
                     j+=1
                     continue
@@ -108,12 +105,10 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                 if debug:
                     id_string = f'#{a.residue.structure.id_string}/{a.residue.chain_id}:{a.residue.number}@{a.name}'
                     print(f'WARNING: no shell points found for atom {id_string} at radius {shell_rad:.1f}!')
-                r_vals[i,j] = 0
             elif len(candidates) < points_per_shell:
                 points = local_sphere[candidates]
                 d_vals = interpolate_volume_data(points, xform, matrix, 'linear')[0]
                 local_d_vals[j] = d_vals
-                r_vals[i,j] = d_vals.mean()
             else:
                 points = local_sphere[candidates]
                 labels, closest = spherical_k_means(points, points_per_shell, clustering_iterations)
@@ -125,7 +120,6 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                 points = points[closest]
                 d_vals = interpolate_volume_data(points, xform, matrix, 'linear')[0]
                 local_d_vals[j] = d_vals
-                r_vals[i,j] = d_vals.mean()
             if draw_points:
                 if len(candidates) != 0:
                     positions.append(points)
