@@ -160,6 +160,29 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
     return residue_scores, q_scores
 
 
+def test_q_score(session):
+    from chimerax.core.commands import run
+    m = run(session, 'open 6out')[0]
+    v = run(session, 'open 20205 from emdb')[0]
+    residue_map, atom_scores = q_score(m.residues, v)
+    from matplotlib import pyplot as plt
+    fig = plt.figure()
+    plots = fig.subplots(len(m.chains))
+    for i,c in enumerate(m.chains):
+        plot = plots[i]
+        residues = c.residues
+        x = []
+        y = []
+        x = [r.number for r in residues if r is not None]
+        y = [residue_map[r][0] for r in residues if r is not None]
+        plot.plot(x, y)
+        plot.set_xlabel('Residue number')
+        plot.set_ylabel('Q Score')
+        plot.set_title(f'Chain {c.chain_id}')
+    fig.tight_layout()
+    fig.show()
+
+
 
 
 
