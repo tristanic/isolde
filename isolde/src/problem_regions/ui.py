@@ -100,8 +100,8 @@ class ProblemAggregatorGUI(UI_Panel_Base):
             self.session.selection.clear()
             atoms.selected=True
             atoms.intra_bonds.selected=True
-            from chimerax.core.commands import run
-            run(self.session, 'view sel', log=False)
+            from chimerax.isolde.view import focus_on_selection
+            focus_on_selection(self.session, atoms)
 
     
     def update(self, *_):
