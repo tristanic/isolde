@@ -111,7 +111,7 @@ def q_score(residues, volume, ref_sigma=0.6, points_per_shell = 8, max_rad = 2.0
                 local_d_vals[j] = d_vals
             else:
                 points = local_sphere[candidates]
-                labels, closest = spherical_k_means(points, points_per_shell, clustering_iterations)
+                labels, closest = spherical_k_means(points, a_coord, points_per_shell, clustering_iterations)
                 if debug:
                     with numpy.printoptions(**_numpy_print_options):
                         print(f'Points: {points}')
