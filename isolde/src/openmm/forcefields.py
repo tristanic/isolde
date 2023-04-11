@@ -313,7 +313,7 @@ class ForceField(_ForceField):
         matches_by_name = []
         matches_by_composition = []
         rname = res.name
-        if num_atoms >= 3 and len(list(res.internal_bonds())):
+        if num_atoms >= 3 and len(list(res.internal_bonds())) > 1:
             rgraph = self.residue_graph(res)
         else:
             rgraph = None
