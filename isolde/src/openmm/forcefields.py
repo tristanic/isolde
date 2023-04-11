@@ -297,7 +297,7 @@ class ForceField(_ForceField):
 
     def find_possible_templates(self, res, max_missing_heavy_atoms=3,
             max_missing_heavy_atom_fraction = 0.2,
-            minimum_graph_match = 0.9):
+            minimum_graph_match = 0.9, logger=None):
         from openmm.app import element
         from collections import Counter
         from ..atomic.template_utils import find_maximal_isomorphous_fragment
@@ -313,7 +313,7 @@ class ForceField(_ForceField):
         matches_by_name = []
         matches_by_composition = []
         rname = res.name
-        if num_atoms >= 3:
+        if num_atoms >= 3 and len(list(res.internal_bonds())):
             rgraph = self.residue_graph(res)
         else:
             rgraph = None

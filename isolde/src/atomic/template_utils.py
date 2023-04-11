@@ -162,6 +162,7 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
     bonds = residue.atoms.intra_bonds
     if len(bonds) == 0:
         add_bonds_from_template_by_matched_names(residue, template)
+    bonds = residue.atoms.intra_bonds
     if len(bonds) == 0:
         from chimerax.core.errors import UserError
         raise UserError(f'Residue {residue.name} {residue.chain_id}{residue.number}{residue.insertion_code} has no bonds, and no atom names '

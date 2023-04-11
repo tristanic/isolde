@@ -93,12 +93,7 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         count = 0
         for r in unmatched:
             cx_res = residues[r.index]
-            try:
-                by_name, by_comp = ff.find_possible_templates(r)
-            except RuntimeError:
-                self.session.logger.warning(f'Failed to process residue /{cx_res.chain_id}:{cx_res.number}!')
-                by_name = []
-                by_comp = []
+            by_name, by_comp = ff.find_possible_templates(r)
             data = (
                 cx_res.chain_id,
                 cx_res.name + ' ' + str(cx_res.number),
