@@ -1103,6 +1103,57 @@
       <ExternalBond atomName="N"/>
       <ExternalBond atomName="C"/>
     </Residue>
+    <Residue name="PTM_KCX">
+    <!-- N-carbamyl lysine -->
+      <Atom name="N" type="N" charge="-0.4157"/>
+      <Atom name="H" type="H" charge="0.2719"/>
+      <Atom name="CA" type="CX" charge="-0.07206"/>
+      <Atom name="HA" type="H1" charge="0.0994"/>
+      <Atom name="CB" type="CT" charge="-0.04845"/>
+      <Atom name="HB2" type="HC" charge="0.034"/>
+      <Atom name="HB3" type="HC" charge="0.034"/>
+      <Atom name="CG" type="CT" charge="0.06612"/>
+      <Atom name="HG2" type="HC" charge="0.01041"/>
+      <Atom name="HG3" type="HC" charge="0.01041"/>
+      <Atom name="CD" type="CT" charge="-0.0874"/>
+      <Atom name="HD2" type="HC" charge="0.01155"/>
+      <Atom name="HD3" type="HC" charge="0.01155"/>
+      <Atom name="CE" type="CT" charge="0.082"/>
+      <Atom name="HE2" type="H1" charge="0.016"/>
+      <Atom name="HE3" type="H1" charge="0.016"/>
+      <Atom name="NZ" type="N" charge="-0.517"/>
+      <Atom name="HZ" type="H" charge="0.2345" />
+      <Atom name="CX" type="C" charge="0.91537" />
+      <Atom name="OQ1" type="O" charge="-0.8515" />
+      <Atom name="OQ2" type="O" charge="-0.8515" />
+      <Atom name="C" type="C" charge="0.5973"/>
+      <Atom name="O" type="O" charge="-0.5679"/>
+      <Bond atomName1="N" atomName2="H"/>
+      <Bond atomName1="N" atomName2="CA"/>
+      <Bond atomName1="CA" atomName2="HA"/>
+      <Bond atomName1="CA" atomName2="CB"/>
+      <Bond atomName1="CA" atomName2="C"/>
+      <Bond atomName1="CB" atomName2="HB2"/>
+      <Bond atomName1="CB" atomName2="HB3"/>
+      <Bond atomName1="CB" atomName2="CG"/>
+      <Bond atomName1="CG" atomName2="HG2"/>
+      <Bond atomName1="CG" atomName2="HG3"/>
+      <Bond atomName1="CG" atomName2="CD"/>
+      <Bond atomName1="CD" atomName2="HD2"/>
+      <Bond atomName1="CD" atomName2="HD3"/>
+      <Bond atomName1="CD" atomName2="CE"/>
+      <Bond atomName1="CE" atomName2="HE2"/>
+      <Bond atomName1="CE" atomName2="HE3"/>
+      <Bond atomName1="CE" atomName2="NZ"/>
+      <Bond atomName1="NZ" atomName2="HZ"/>
+      <Bond atomName1="NZ" atomName2="CX"/>
+      <Bond atomName1="CX" atomName2="OQ1"/>
+      <Bond atomName1="CX" atomName2="OQ2"/>
+      <Bond atomName1="C" atomName2="O"/>
+      <ExternalBond atomName="N"/>
+      <ExternalBond atomName="C"/>
+    </Residue>
+
     <Residue name="PTM_M3L">
       <Atom charge="-0.519066" name="N" type="N"/>
       <Atom charge="0.321251" name="H" type="H"/>
