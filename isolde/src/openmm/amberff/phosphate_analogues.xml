@@ -32,7 +32,6 @@
             <Bond atomName1="Al" atomName2="F3"/>
             <Bond atomName1="Al" atomName2="F4"/>
         </Residue>
-    <Residues>
         <Residue name="BEF">
             <Atom name="BE" type="BE" charge="0.998"/>
             <Atom name="F1" type="f" charge="-0.666"/>
