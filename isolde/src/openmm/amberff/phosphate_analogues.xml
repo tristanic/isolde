@@ -1,0 +1,105 @@
+<ForceField>
+    <!-- Hand-written by analogy to ADP-AF3 using high-resolution coordinates in 5c2k. *NOT* good enough for free equilibrium simulations! -->
+    <AtomTypes>
+        <!-- AF3 -->
+        <Type name="AF3_Al" class="AF3_Al" element="Al" mass="26.98" />
+        <Type class="AF3_f" element="F" mass="19.0" name="AF3_f"/>
+        <!-- ALF -->
+        <Type name="ALF_Al" class="ALF_Al" element="Al" mass="26.98" />
+        <Type class="ALF_f" element="F" mass="19.0" name="ALF_f"/>
+        <!-- BEF -->
+        <Type name="BE" class="BE" element="Be" mass="9.01"/>
+
+    </AtomTypes>
+    <Residues>
+        <Residue name="AF3">
+            <Atom name="AL" type="AF3_Al" charge="0.998"/>
+            <Atom name="F1" type="AF3_f" charge="-0.666"/>
+            <Atom name="F2" type="AF3_f" charge="-0.666"/>
+            <Atom name="F3" type="AF3_f" charge="-0.666"/>
+            <Bond atomName1="AL" atomName2="F1"/>
+            <Bond atomName1="AL" atomName2="F2"/>
+            <Bond atomName1="AL" atomName2="F3"/>
+        </Residue>
+        <Residue name="ALF">
+            <Atom charge="0.956" name="Al" type="ALF_Al"/>
+            <Atom charge="-0.489" name="ALF_f" type="f"/>
+            <Atom charge="-0.489" name="F2" type="f"/>
+            <Atom charge="-0.489" name="F3" type="ALF_f"/>
+            <Atom charge="-0.489" name="F4" type="ALF_f"/>
+            <Bond atomName1="Al" atomName2="ALF_f"/>
+            <Bond atomName1="Al" atomName2="F2"/>
+            <Bond atomName1="Al" atomName2="F3"/>
+            <Bond atomName1="Al" atomName2="F4"/>
+        </Residue>
+    <Residues>
+        <Residue name="BEF">
+            <Atom name="BE" type="BE" charge="0.998"/>
+            <Atom name="F1" type="f" charge="-0.666"/>
+            <Atom name="F2" type="f" charge="-0.666"/>
+            <Atom name="F3" type="f" charge="-0.666"/>
+            <Bond atomName1="BE" atomName2="F1"/>
+            <Bond atomName1="BE" atomName2="F2"/>
+            <Bond atomName1="BE" atomName2="F3"/>
+        </Residue>
+    </Residues>
+    <NonbondedForce coulomb14scale="0.833333333333" lj14scale="0.5">
+        <UseAttributeFromResidue name="charge"/>
+        <!-- AF3 -->
+        <Atom type="AF3_Al" sigma="0.231099127486" epsilon="0.01971831336"/>
+        <Atom epsilon="0.3481088" sigma="0.30342228542423677" type="AF3_f"/>
+        <!-- ALF -->
+        <Atom type="ALF_Al" sigma="0.231099127486" epsilon="0.01971831336"/>
+        <Atom epsilon="0.3481088" sigma="0.30342228542423677" type="ALF_f"/>
+        <!-- BEF -->
+        <Atom type="BE" sigma="0.1616" epsilon="1e-5"/>
+
+    </NonbondedForce>
+    <HarmonicBondForce>
+        <!-- AF3 -->
+        <Bond type1="AF3_Al" type2="AF3_f" length="0.1750" k="250000.0"/>
+        <Bond type1="AF3_Al" type2="o" length="0.2087" k = "150000.0"/>
+        <!-- ALF -->
+        <Bond k="250000" length="0.1776" type1="ALF_Al" type2="f" />
+        <Bond k="250000" length="0.1776" type1="ALF_Al" type2="ALF_f" />
+        <Bond type1="ALF_Al" type2="o" length="0.1980" k = "150000.0"/>
+        <!-- BEF -->
+        <Bond type1="BE" type2="f" length="0.1455" k="250000.0"/>
+        <Bond type1="BE" type2="o" length="0.187" k = "150000.0"/>
+
+
+    </HarmonicBondForce>
+    <HarmonicAngleForce>
+        <!-- AF3 -->
+        <Angle type1="AF3_f" type2="AF3_Al" type3="AF3_f" angle="2.094" k="800.0"/>
+        <Angle type1="AF3_f" type2="AF3_Al" type3="o" angle="1.810" k="800.0"/>
+        <Angle type1="AF3_Al" type2="o" type3="p5" angle="2.274" k="800.0"/>
+        <!-- ALF -->
+        <Angle angle="1.5707963267" k="750" type1="f" type2="ALF_Al" type3="ALF_f" />
+        <Angle angle="3.141592653589793" k="750" type1="f" type2="ALF_Al" type3="f" />
+        <Angle angle="3.141592653589793" k="750" type1="ALF_f" type2="ALF_Al" type3="ALF_f" />
+        <Angle angle="1.5707963267" k="750" type1="o" type2="ALF_Al" type3="ALF_f" />
+        <Angle angle="1.5707963267" k="750" type1="o" type2="ALF_Al" type3="f" />
+        <Angle angle="2.273" k="750" type1="ALF_Al" type2="o" type="p5" />
+        <!-- BEF -->
+        <Angle type1="f" type2="BE" type3="f" angle="2.02" k="800.0"/>
+        <Angle type1="f" type2="BE" type3="o" angle="1.810" k="800.0"/>
+        <Angle type1="BE" type2="o" type3="p5" angle="2.274" k="800.0"/>
+
+    </HarmonicAngleForce>
+    <PeriodicTorsionForce>
+        <!-- AF3 -->
+        <Proper k1="-0.35564000000000007" periodicity1="3" phase1="0.0" type1="AF3_f" type2="AF3_Al" type3="o" type4="p5"/>
+        <Proper k1="-0.35564000000000007" periodicity1="3" phase1="0.0" type1="o" type2="p5" type3="o" type4="AF3_Al"/>
+        <Proper k1="-0.35564000000000007" periodicity1="3" phase1="0.0" type1="os" type2="p5" type3="o" type4="AF3_Al"/>
+        <!-- ALF -->
+        <Improper type1="ALF_Al" type2="f" type3="ALF_f" type4="f" periodicity1="1" phase1="0" k1="50" />
+        <Improper type1="ALF_Al" type2="ALF_f" type3="f" type4="ALF_f" periodicity1="1" phase1="0" k1="50" />
+        <!-- BEF -->
+        <Proper k1="-0.35564000000000007" periodicity1="3" phase1="0.0" type1="f" type2="BE" type3="o" type4="p5"/>
+        <Proper k1="-0.35564000000000007" periodicity1="3" phase1="0.0" type1="o" type2="p5" type3="o" type4="BE"/>
+        <Proper k1="-0.35564000000000007" periodicity1="3" phase1="0.0" type1="os" type2="p5" type3="o" type4="BE"/>
+
+
+    </PeriodicTorsionForce>
+</ForceField>
