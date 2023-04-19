@@ -2359,10 +2359,12 @@ class SimHandler:
             def data_changed_cb(reason, v=volume, r=region, checker=RfactorChecker(volume)):
                 if reason=='values changed' and checker.r_improved():
                     f.update_map_data(v.region_matrix(region=r))
+                    self.force_update_needed()
         else:                
             def data_changed_cb(reason, v = volume, r = region):
                 if reason == 'values changed':
                     f.update_map_data(v.region_matrix(region=r))
+                    self.force_update_needed()
         v.data.add_change_callback(data_changed_cb)
         def remove_change_cb(*_):
             if v.deleted:
