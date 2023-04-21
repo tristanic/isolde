@@ -28,7 +28,7 @@ class OpenmmThreadHandler(_OpenmmThreadHandlerBase):
         super().__init__(int(context.this))
         self.params = params
         self.context = context
-        self._smoothing = False
+        self._smoothing = params.trajectory_smoothing
         self._last_smooth = False
         self._last_mode = None
 
@@ -52,7 +52,7 @@ class OpenmmThreadHandler(_OpenmmThreadHandlerBase):
             * steps:
                 - an integer value
         '''
-        super().step(steps, self._smoothing)
+        super().step(steps)
         self._last_mode = 'equil'
         self._last_smooth = self._smoothing
     
@@ -85,7 +85,7 @@ class OpenmmThreadHandler(_OpenmmThreadHandlerBase):
         self.finalize_thread()
         c = self.context
         i = c.getIntegrator()
-        c.setVelocitiesToTemperature(i.getTemperature())
+        c.setVelocitiesToTemperature(i.getIntegrator(0).getTemperature())
     
     @property
     def coords(self):
@@ -1133,28 +1133,35 @@ class SimHandler:
 
     @property
     def smoothing(self):
-        if self.thread_handler is not None:
-            return self.thread_handler.smoothing
+        '''
+        If True, the displayed coordinates will be a smoothed average of the
+        last set of equilibration steps. Note that for large values of
+        sim_steps_per_gui_update this can lead to distorted geometry.
+        '''
+        if self.sim_running:
+            return self._smoother.enabled
         return self._params.trajectory_smoothing
 
     @smoothing.setter
     def smoothing(self, flag):
-        if self.thread_handler is not None:
-            self.thread_handler.smoothing = flag
-
-    smoothing.__doc__ = OpenmmThreadHandler.smoothing.__doc__
-
+        if self.sim_running:
+            self._smoother.enabled = flag
+            self._thread_handler.smoothing = flag
+        
     @property
     def smoothing_alpha(self):
-        if self.thread_handler is not None:
-            return self.thread_handler.smoothing_alpha
+        '''
+        A value between 0 and 1 setting the strength of trajectory smoothing. 
+        Smoothed coordinates are updated as (existing*alpha + new(1-alpha)).
+        '''
+        if self.sim_running:
+            return self._smoother.smoothing_alpha
+        return self._params.smoothing_alpha
 
     @smoothing_alpha.setter
     def smoothing_alpha(self, alpha):
-        if self.thread_handler is not None:
-            self.thread_handler.smoothing_alpha = alpha
-
-    smoothing_alpha.__doc__ = OpenmmThreadHandler.smoothing_alpha.__doc__
+        if self.sim_running:
+            self._smoother.smoothing_alpha = alpha
 
     def update_nonbonded_softcore_parameter(self, name, value):
         param_name_map = {
@@ -1375,6 +1382,8 @@ class SimHandler:
         logger.status('')
 
     def _prepare_integrator(self, params):
+        from openmm.openmm import CompoundIntegrator
+        from .custom_integrators import VelocityChecker, Smoother
         integrator = params.integrator
         temperature = self.temperature
         if integrator == openmm.VariableLangevinIntegrator:
@@ -1393,9 +1402,16 @@ class SimHandler:
             raise RuntimeError('Multiple timestepping not yet implemented!')
         else:
             raise RuntimeError('Unrecognised or unsupported integrator: {}!'.format(integrator))
-        _integrator = integrator(*integrator_params)
+        _integrator = self._main_integrator = integrator(*integrator_params)
         _integrator.setConstraintTolerance(params.constraint_tolerance)
-        return _integrator
+        vcheck = VelocityChecker()
+        smoother = self._smoother = Smoother(params.smoothing_alpha)
+        main_integrator = CompoundIntegrator()
+        main_integrator.addIntegrator(_integrator)
+        main_integrator.addIntegrator(vcheck)
+        main_integrator.addIntegrator(smoother)
+
+        return main_integrator
 
     def start_sim(self):
         '''
