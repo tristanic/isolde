@@ -1373,6 +1373,10 @@ class SimHandler:
         logger.status('Initialising primary simulation object')
         s = self._simulation = app.Simulation(self.topology, self._system,
             integrator, platform, properties)
+        # Workaround for https://github.com/openmm/openmm/issues/4038 (affecting OpenMM 8.0.0)
+        # Can be safely removed once OpenMM is next updated.
+        self._smoother.setGlobalVariableByName('reset_smooth', 1.0)
+        # End workaround
         c = self._context = s.context
         c.setPositions(0.1*self._atoms.coords)
         c.setVelocitiesToTemperature(self.temperature)
