@@ -39,7 +39,8 @@ _forcefield_files = {
         'bryce_set.xml',             # A small collection of ligands and PTMs (most notably ATP/GDP/NAD(P)(H)/FAD(H)) from http://research.bmh.manchester.ac.uk/bryce/amber
         'ptms.xml',                  # Post-translational modifications from ares.tamu.ed/FFPTM DOI: 10.1021/ct400556v
         'truncated_aa.xml',          # Artifical amino acid "stubs" to support common truncations used in model building
-        'free_amino_acids.xml',      # Free amino acids, DOI: 10.1007/s00894-014-2478-z
+        'free_amino_acids.xml',      # Free amino acids, DOI: 10.1007/s00894-014-2478-z,
+        'phosphate_analogues.xml',
         ]],
 
     'charmm36': ['charmm36.xml', 'charmm36/water.xml',]

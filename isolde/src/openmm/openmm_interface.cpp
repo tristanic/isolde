@@ -27,9 +27,16 @@ OpenmmThreadHandler::OpenmmThreadHandler(OpenMM::Context* context)
 {
     _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
     _natoms = _starting_state.getPositions().size();
+    _smoothed_coords.resize(_natoms);
+    _atom_fixed.resize(_natoms);
+    const auto& system = _context->getSystem();
+    for (size_t i=0; i<system.getNumParticles(); ++i)
+    {
+        _atom_fixed[i] = (system.getParticleMass(i)==0.0);
+    }
 }
 
-void OpenmmThreadHandler::_step_threaded(size_t steps, bool smooth)
+void OpenmmThreadHandler::_step_threaded(size_t steps)
 {
     try
     {
@@ -39,32 +46,34 @@ void OpenmmThreadHandler::_step_threaded(size_t steps, bool smooth)
         // _thread_finished = false;
         size_t steps_done = 0;
         _starting_state = _final_state;
-        _smoothing = smooth;
-        if (!smooth)
-            _smoothed_coords.clear();
 
-        for (; steps_done < steps; )
+        while (steps_done < steps)
         {
             size_t these_steps, remaining_steps = steps-steps_done;
+            auto& integr = integrator();
+            integr.setCurrentIntegrator(MAIN);
             if (remaining_steps > STEPS_PER_VELOCITY_CHECK) {
                 these_steps = STEPS_PER_VELOCITY_CHECK;
+                integr.step(STEPS_PER_VELOCITY_CHECK);
+                integr.setCurrentIntegrator(VELOCITY_CHECK);
+                integr.step(1);
+                auto& vcheck = static_cast<OpenMM::CustomIntegrator&>(integr.getIntegrator(VELOCITY_CHECK));
+                if (vcheck.getGlobalVariable(0) > 0.0) {
+                    std::cerr << int(vcheck.getGlobalVariableByName("fast_count")) << " atoms are moving too fast!" << std::endl;
+                    _unstable = true;
+                    break;
+                }
+                integr.setCurrentIntegrator(SMOOTH);
+                integr.step(1);
             } else {
                 these_steps = remaining_steps;
+                integr.step(these_steps);
             }
-            integrator().step(these_steps);
+
             steps_done += these_steps;
-            auto state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
-            auto fast = overly_fast_atoms(state.getVelocities());
-            if (fast.size() >0)
-            {
-                std::cerr << fast.size() << " atoms are moving too fast!" << std::endl;
-                _unstable = true;
-                break;
-            }
-            if (smooth)
-                _apply_smoothing(state);
         }
         _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
+        _apply_smoothing(static_cast<OpenMM::CustomIntegrator&>(integrator().getIntegrator(SMOOTH)), _final_state);
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
         if (loop_time < _min_time_per_loop)
@@ -77,19 +86,19 @@ void OpenmmThreadHandler::_step_threaded(size_t steps, bool smooth)
     }
 }
 
-void OpenmmThreadHandler::_apply_smoothing(const OpenMM::State& state)
+void OpenmmThreadHandler::_apply_smoothing(OpenMM::CustomIntegrator& igr, const OpenMM::State& state)
 {
-    const auto& coords = state.getPositions();
-    if (_smoothed_coords.size() == 0) {
-        _smoothed_coords = coords;
-        return;
-    }
+    igr.getPerDofVariableByName("smoothed", _smoothed_coords);
+    // Integrators ignore fixed atoms, so we need to copy those coords from the State
+    const auto& unsmoothed = state.getPositions();
     for (size_t i=0; i<_natoms; ++i)
     {
-        auto& smoothed = _smoothed_coords[i];
-        const auto& current = coords[i];
-        smoothed = current * _smoothing_alpha + smoothed * (1-_smoothing_alpha);
+        if (_atom_fixed[i])
+        {
+            _smoothed_coords[i] = unsmoothed[i];
+        }
     }
+
 }
 
 
@@ -101,7 +110,7 @@ void OpenmmThreadHandler::_minimize_threaded(const double &tolerance, int max_it
         // _thread_except = nullptr;
         auto start = std::chrono::steady_clock::now();
         _clash = false;
-        _smoothed_coords.clear();
+        reset_smoothing();
         // _thread_running = true;
         // _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Energy);
@@ -192,9 +201,6 @@ std::vector<OpenMM::Vec3> OpenmmThreadHandler::get_coords_in_angstroms(const Ope
 std::vector<OpenMM::Vec3> OpenmmThreadHandler::get_smoothed_coords_in_angstroms()
 {
     finalize_thread();
-    if (!_smoothing) {
-        throw std::logic_error("Last round of equilibration was not run with smoothing enabled!");
-    }
     std::vector<OpenMM::Vec3> coords_ang(_natoms);
     auto from = _smoothed_coords.begin();
     auto to = coords_ang.begin();
@@ -218,7 +224,7 @@ void OpenmmThreadHandler::set_coords_in_angstroms(const std::vector<OpenMM::Vec3
         }
     }
     _context->setPositions(coords_nm);
-    _smoothed_coords.clear();
+    reset_smoothing();
 }
 
 void OpenmmThreadHandler::set_coords_in_angstroms(double *coords, size_t n)
@@ -232,7 +238,7 @@ void OpenmmThreadHandler::set_coords_in_angstroms(double *coords, size_t n)
             v[i] = (*coords++)/10.0;
     }
     _context->setPositions(coords_nm);
-    _smoothed_coords.clear();
+    reset_smoothing();
 }
 
 double OpenmmThreadHandler::max_force(const std::vector<OpenMM::Vec3>& forces) const
@@ -257,12 +263,13 @@ double OpenmmThreadHandler::max_force(const OpenMM::System& system, const OpenMM
     auto forces = state.getForces();
     for (size_t i=0; i<system.getNumParticles(); ++i)
     {
+        if (_atom_fixed[i]) continue;
         const auto& f = forces[i];
         double f_mag = 0;
-        for (size_t i=0; i<3; ++i)
-            f_mag += f[i]*f[i];
+        for (size_t j=0; j<3; ++j)
+            f_mag += f[j]*f[j];
         f_mag = sqrt(f_mag);
-        if (f_mag > max_force && system.getParticleMass(i) > 0.0)
+        if (f_mag > max_force)
             max_force = f_mag;
     }
     return max_force;
@@ -277,6 +284,12 @@ void OpenmmThreadHandler::set_smoothing_alpha(const double &alpha)
         _smoothing_alpha = SMOOTHING_ALPHA_MAX;
     else
         _smoothing_alpha = alpha;
+}
+
+void OpenmmThreadHandler::reset_smoothing()
+{
+    auto& integr = static_cast<OpenMM::CustomIntegrator&>(integrator().getIntegrator(SMOOTH));
+    integr.setGlobalVariableByName("reset_smooth", 1.0);
 }
 
 // PYTHON INTERFACE BELOW

@@ -31,7 +31,7 @@ public:
     ~OpenmmThreadHandler() { if (_thread_running) _thread.join(); }
     OpenmmThreadHandler(OpenMM::Context* context);
 
-    OpenMM::Integrator& integrator() { return _context->getIntegrator();}
+    OpenMM::CompoundIntegrator& integrator() { return static_cast<OpenMM::CompoundIntegrator&> (_context->getIntegrator());}
 
     /*! Runs the desired number of steps in a separate CPU thread, checking every
      *  ten steps to make sure that velocities remain under control. If excessive
@@ -42,7 +42,7 @@ public:
      *  indices of any excessively fast-moving atoms can be retrieved using
      *  overly_fast_atoms().
      */
-    void step_threaded(size_t steps, bool average)
+    void step_threaded(size_t steps)
     {
         //_thread_safety_check();
         finalize_thread();
@@ -53,7 +53,7 @@ public:
           _thread_finished=false;
           _thread_running=true;
           _thread_except = nullptr;
-        _thread = std::thread(&OpenmmThreadHandler::_step_threaded, this, steps, average);
+        _thread = std::thread(&OpenmmThreadHandler::_step_threaded, this, steps);
     }
 
     void set_minimum_thread_time_in_ms(double time)
@@ -124,12 +124,14 @@ public:
 
     double smoothing_alpha() const { return _smoothing_alpha; }
     void set_smoothing_alpha(const double &alpha);
+    void reset_smoothing();
 
 private:
     OpenMM::Context* _context;
     OpenMM::State _starting_state;
     OpenMM::State _final_state;
     std::vector<OpenMM::Vec3> _smoothed_coords;
+    std::vector<bool> _atom_fixed;
 
     std::thread _thread;
     std::exception_ptr _thread_except;
@@ -140,6 +142,13 @@ private:
     bool _thread_finished = false;
     bool _unstable = false;
 
+    enum integrators
+    {
+        MAIN=0,
+        VELOCITY_CHECK=1,
+        SMOOTH=2
+    };
+
     // Exponential smoothing
     bool _smoothing = false;
     double _smoothing_alpha = 0.5;
@@ -147,9 +156,8 @@ private:
     const double SMOOTHING_ALPHA_MIN = 0.01; // extremely strong smoothing
 
     milliseconds _min_time_per_loop = milliseconds(1.0); // ms: limit on the speed of the simulation
-    const double MAX_VELOCITY = 50; //nm ps-1 (50,000 m/s)
     const double MAX_FORCE = 1e6; // kJ mol-1 nm-1
-    const double MIN_TOLERANCE = 50.0; //kJ mol-1
+    const double MAX_VELOCITY = 50;
     const size_t MAX_MIN_ITERATIONS = 500;
     const size_t STEPS_PER_VELOCITY_CHECK = 10;
 
@@ -171,10 +179,10 @@ private:
         }
     }
 
-    void _step_threaded(size_t steps, bool average);
+    void _step_threaded(size_t steps);
     void _minimize_threaded(const double &tolerance, int max_iterations);
     void _reinitialize_context_threaded();
-    void _apply_smoothing(const OpenMM::State& state);
+    void _apply_smoothing(OpenMM::CustomIntegrator& igr, const OpenMM::State& state);
 };
 
 } //namespace isolde

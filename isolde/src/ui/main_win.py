@@ -227,7 +227,6 @@ class SimStatusIndicator(UI_Panel_Base):
     def __init__(self, session, isolde, gui, main_frame):
         super().__init__(session, isolde, gui, main_frame, sim_sensitive=True)
         font = QFont()
-        font.setFamily('Carlito')
         font.setPointSize(14)
         font.setBold(True)
         layout = DefaultVLayout()

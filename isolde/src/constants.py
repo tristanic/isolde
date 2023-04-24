@@ -18,7 +18,7 @@ import sys
 if sys.platform=='linux':
     _default_gpu_platform = "CUDA"
 else:
-    _default_gpu_platform = "OpenCL"
+    _default_gpu_platform = "HIP"
 
 '''
 Constants are a slightly difficult problem here, in that ChimeraX works
@@ -60,7 +60,7 @@ class _Defaults:
         # Simulation parameters
         ###
         'OPENMM_DEFAULT_PLATFORM':    _default_gpu_platform,
-        'OPENMM_PLATFORMS':           ('CUDA', 'OpenCL', 'CPU', 'Reference'), 
+        'OPENMM_PLATFORMS':           ('CUDA', 'HIP', 'Metal', 'OpenCL', 'CPU', 'Reference'), 
         'DEVICE_INDEX':               None,
         'OPENMM_FORCEFIELD':          'amber14',
         'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,
