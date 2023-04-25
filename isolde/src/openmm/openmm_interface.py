@@ -1129,7 +1129,7 @@ class SimHandler:
 
     @temperature.setter
     def temperature(self, temperature):
-        self._simulation.integrator.setTemperature(temperature)
+        self._main_integrator.setTemperature(temperature)
 
     @property
     def smoothing(self):
