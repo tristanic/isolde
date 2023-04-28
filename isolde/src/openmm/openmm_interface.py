@@ -49,6 +49,7 @@ class OpenmmThreadHandler(_OpenmmThreadHandlerBase):
         '''
         Advance the simulation integrator by the desired number of steps.
         Args:
+
             * steps:
                 - an integer value
         '''
@@ -62,7 +63,9 @@ class OpenmmThreadHandler(_OpenmmThreadHandlerBase):
         converges to within tolerance, unstable will be set to False.
         Don't forget to run :func:`reinitialize_velocities` before continuing
         equilibration!
+
         Args:
+        
             * tolerance:
                 - Convergence tolerance, in kJ/mol/atom.
             * max_iterations:
