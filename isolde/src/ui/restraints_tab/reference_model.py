@@ -244,6 +244,7 @@ class ReferenceModelDialog(UI_Panel_Base):
                 )
                 num_identical=0
                 num_different=0
+                print(f's1: {s1.characters}\ns2: {s2.characters}')
                 for c1, c2 in zip(s1.characters, s2.characters):
                     if c1==c2:
                         num_identical += 1
@@ -255,10 +256,15 @@ class ReferenceModelDialog(UI_Panel_Base):
                 if identity > self.IDENTITY_CUTOFF:
                     res1 = []
                     res2 = []
-                    for r1, r2 in zip(s1.residues, s2.residues):
-                        if r1 is not None and r2 is not None:
-                            res1.append(r1)
-                            res2.append(r2)
+                    for gapped in range(len(s1.characters)):
+                        i1 = s1.gapped_to_ungapped(gapped)
+                        i2 = s2.gapped_to_ungapped(gapped)
+                        if i1 is not None and i2 is not None:
+                            r1 = s1.residues[i1]
+                            r2 = s2.residues[i2]
+                            if r1 is not None and r2 is not None:
+                                res1.append(r1)
+                                res2.append(r2)
                     rmsd = _ca_rmsd(res1, res2)
                     alignments[mc].append((rc, score, identity, coverage, s1, s2, rmsd))
         # Sort in descending order of score
@@ -600,7 +606,7 @@ def _ca_rmsd(model_residues, ref_residues):
     mcas = Atoms(cas1)
     rcas = Atoms(cas2)
     import numpy
-    return numpy.sqrt(numpy.mean(numpy.sum((mcas.coords-rcas.scene_coords)**2, axis=1)))
+    return numpy.sqrt(numpy.mean(numpy.sum((mcas.scene_coords-rcas.scene_coords)**2, axis=1)))
 
 class FuzzinessIndicatorBase(QWidget):
     def __init__(self, *args, tick_step=5, **kwargs):
