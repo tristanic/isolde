@@ -23,7 +23,7 @@ def _find_help():
 class ISOLDE_ToolUI(ToolInstance):
     SESSION_ENDURING = True
 
-    def __init__(self, session, tool_name):
+    def __init__(self, session, tool_name, show_splash=True):
         super().__init__(session, tool_name)
         from .isolde import Isolde
         isolde = Isolde(session)
@@ -34,7 +34,8 @@ class ISOLDE_ToolUI(ToolInstance):
             tb.ttb.show_tab('ISOLDE')
 
         self.display_name='ISOLDE'
-        self._show_splash()
+        if show_splash:
+            self._show_splash()
         self.session.triggers.add_handler('new frame', self._launch_main_gui)
     
     def _launch_main_gui(self, *_):

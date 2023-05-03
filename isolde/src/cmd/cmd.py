@@ -12,21 +12,21 @@ def block_if_sim_running(session):
     if hasattr(session, 'isolde') and session.isolde.simulation_running:
         raise UserError('This command is not available when a simulation is running!')
 
-def get_singleton(session, create=True):
+def get_singleton(session, create=True, show_splash=True):
     if not session.ui.is_gui:
         return None
     from chimerax.core import tools
     from ..tool import ISOLDE_ToolUI
-    return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=create)
+    return tools.get_singleton(session, ISOLDE_ToolUI, 'ISOLDE', create=create, show_splash=show_splash)
 
 
-def isolde_start(session):
+def isolde_start(session, show_splash=True):
     ''' Start the ISOLDE GUI '''
     if not session.ui.is_gui:
         session.logger.warning("Sorry, ISOLDE currently requires ChimeraX to be in GUI mode")
         return False
 
-    get_singleton(session)
+    get_singleton(session, show_splash=show_splash)
     return session.isolde
 
 def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
@@ -321,7 +321,10 @@ def register_isolde(logger):
 
     def register_isolde_start():
         desc = CmdDesc(
-            synopsis = 'Start the ISOLDE GUI'
+            synopsis = 'Start the ISOLDE GUI',
+            keyword=[
+                ('show_splash', BoolArg),
+            ]
         )
         register('isolde start', desc, isolde_start, logger=logger)
 
@@ -471,3 +474,5 @@ def register_isolde(logger):
     register_ccp4_commands(logger)
     from chimerax.isolde.openmm.amberff.parameterise import register_isolde_param
     register_isolde_param(logger)
+    from chimerax.isolde.benchmark import register_isolde_benchmark
+    register_isolde_benchmark(logger)
