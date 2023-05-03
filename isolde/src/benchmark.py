@@ -232,15 +232,18 @@ class GraphicsPerformanceTracker:
             self._last_time = current_time
 
 def run_benchmarks(session, max_size='large', output_file=None, warning_dialog=True, max_coord_updates=150, min_coord_updates=10, max_sim_time=300):
-    from .cmd import isolde_start
-    isolde_start(session, show_splash=False)
     if output_file is None:
         output_file = 'isolde_benchmark.log'
-    def next_frame_cb(*_):
+    def _run(*_):
         IsoldeBenchMarker(session, max_size, max_coord_updates, min_coord_updates, max_sim_time, output_file, warning_dialog)
         from chimerax.core.triggerset import DEREGISTER
         return DEREGISTER
-    session.isolde.triggers.add_handler('gui started', next_frame_cb)
+    if not hasattr(session, 'isolde'):
+        from .cmd import isolde_start
+        isolde_start(session, show_splash=False)
+        session.isolde.triggers.add_handler('gui started', _run)
+    else:
+        _run()
 
 
 def register_isolde_benchmark(logger):
