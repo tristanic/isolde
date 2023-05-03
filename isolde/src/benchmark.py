@@ -35,7 +35,10 @@ class IsoldeBenchMarker:
             if size==max_size:
                 break
         if output_file is not None:
-            self.output_file = open(output_file, 'wt')
+            out = self.output_file = open(output_file, 'wt')
+            print(_opengl_info(self.session), file=out)
+            print(_system_summary(), file=out)
+
         else:
             self.output_file = None
         if warning_dialog:
@@ -230,6 +233,30 @@ class GraphicsPerformanceTracker:
             current_time = time()
             self.times.append(current_time-self._last_time)
             self._last_time = current_time
+
+def _system_summary():
+    import sys
+    from chimerax.bug_reporter.bug_reporter_gui import _darwin_info, _win32_info, _linux_info
+    if sys.platform == 'win32':
+        return _win32_info()
+    if sys.platform == 'linux':
+        return _linux_info()
+    if sys.platform == 'darwin':
+        return _darwin_info()
+
+def _opengl_info(session):
+    r = session.main_view.render
+    try:
+        r.make_current()
+        lines = ['OpenGL version: ' + r.opengl_version(),
+                    'OpenGL renderer: ' + r.opengl_renderer(),
+                    'OpenGL vendor: ' + r.opengl_vendor()]
+        r.done_current()
+    except Exception:
+        lines = ['OpenGL version: unknown',
+                    'Could not make opengl context current']
+    return '\n'.join(lines)
+
 
 def run_benchmarks(session, max_size='large', output_file=None, warning_dialog=True, max_coord_updates=150, min_coord_updates=10, max_sim_time=300):
     if output_file is None:
