@@ -1792,6 +1792,8 @@ class RestraintChangeTracker:
             class_funcs = self._mgr_name_to_class_functions[mgr_name]
             for mgr_ptr, changeds in type_dict.items():
                 mgr = class_funcs[0](mgr_ptr)
+                if mgr is None:
+                    continue
                 processed_changeds = processed_type_dict[mgr] = {}
                 for change_type, changed_ptrs in changeds.items():
                     changed_obj = class_funcs[1](changed_ptrs)
