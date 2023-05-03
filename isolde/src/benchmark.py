@@ -19,8 +19,11 @@ class IsoldeBenchMarker:
         'cryo-EM': CRYO_BENCHMARKS
     }
 
-    def __init__(self, session, max_size='large'):
+    def __init__(self, session, max_size='large', max_coord_updates=150, min_coord_updates=10, max_sim_time=300, output_file=None, warning_dialog=True):
         self.session = session
+        self.max_coord_updates=max_coord_updates
+        self.min_coord_updates=min_coord_updates
+        self.max_sim_time=max_sim_time
         from chimerax.core.commands import run
         run(session, 'isolde start')
         from collections import defaultdict
@@ -31,21 +34,30 @@ class IsoldeBenchMarker:
                 self.pending_benchmarks.append((type_name, size, benchmarks[size]))
             if size==max_size:
                 break
+        if output_file is not None:
+            self.output_file = open(output_file, 'wt')
+        else:
+            self.output_file = None
+        if warning_dialog:
+            from .dialog import generic_warning
+            generic_warning('ISOLDE will now run a series of representative simulations for benchmarking purposes. To ensure accurate results, please do not interact with ChimeraX until these are complete.')
         self.run_next_benchmark()
 
-    def run_next_benchmark(self):
+    def run_next_benchmark(self, *_):
         from chimerax.core.commands import run
-        run(self.session, 'close')
+        from chimerax.core.triggerset import DEREGISTER
         if not len(self.pending_benchmarks):
             self.session.logger.info('ISOLDE: All benchmarks completed')
-            return
+            if self.output_file is not None:
+                self.output_file.close()
+            return DEREGISTER
         benchmark_type, size, details = self.pending_benchmarks.pop(0)
         self.current_benchmark_type = benchmark_type
         self.current_benchmark_size = size
         if benchmark_type == 'crystal':
             pdb_id, sel_string = details
             self.current_benchmark_name = pdb_id
-            sh = run(self.session, f'open {pdb_id} structurefactors true')[0]
+            sh = run(self.session, f'open {pdb_id} structurefactors true logInfo f')[0]
             xmapset = sh.map_mgr.xmapsets[0]
             static = xmapset.static_xmaps
             if len(static):
@@ -55,30 +67,46 @@ class IsoldeBenchMarker:
             pdb_id, emdb_id = details[0]
             self.current_benchmark_name = pdb_id
             sel_string = details[1]
-            model = run(self.session, f'open {pdb_id}')[0]
+            model = run(self.session, f'open {pdb_id} logInfo f')[0]
             v = run(self.session, f'open {emdb_id} from emdb')[0]
+            run(self.session, 'ui tool hide "Volume Viewer"')
             run(self.session, f'clipper assoc #{v.id_string} to #{model.id_string}')
+        self.session.logger.info(f'Current benchmark model: {pdb_id} ({size} {benchmark_type})')
+        self.session.logger.info('='*25)
         run(self.session, f'addh #{model.id_string} metaldist 1')
         run(self.session, f'isolde select #{model.id_string}')
-        br = self._current_runner = BenchMarkRunner(self.session, model, benchmark_type, sel_string)
+        br = self._current_runner = BenchMarkRunner(self.session, model, benchmark_type, sel_string, self.max_coord_updates, self.min_coord_updates, self.max_sim_time)
         br.triggers.add_handler('finished', self.benchmark_finished_cb)
+        return DEREGISTER
 
 
 
     def benchmark_finished_cb(self, trigger_name, result):
         self.results[self.current_benchmark_type][self.current_benchmark_size] = (self.current_benchmark_name, result)
-        self.run_next_benchmark()
-
+        if self.output_file is not None:
+            out = self.output_file
+            print(f'PDB ID:\t{self.current_benchmark_name}', file=out)
+            print('='*20, file=out)
+            for sel_string, rdata in result.items():
+                print(f'Selection string:\t{sel_string}', file=out)
+                for val_label, val in result[sel_string].items():
+                    print(f'{val_label}:\t{val}', file=out)
+                print('-'*10,file=out)
+        from chimerax.core.commands import run
+        run(self.session, 'close')
+        self.session.triggers.add_handler('new frame', self.run_next_benchmark)
+    
     
 
 
 class BenchMarkRunner:
-    def __init__(self, session, model, benchmark_type, local_sel_string, max_coord_updates=100, max_time=30):
+    def __init__(self, session, model, benchmark_type, local_sel_string, max_coord_updates=150, min_coord_updates=10, max_time=300):
         self.session = session
         self.model = model
         self.benchmark_type = benchmark_type
         self.sel_strings = [f'#{model.id_string}', f'#{model.id_string}'+local_sel_string]
         self.max_coord_updates = max_coord_updates
+        self.min_coord_updates = min_coord_updates
         self.update_count = 0
         self.max_time = max_time
         from chimerax.core.triggerset import TriggerSet
@@ -91,6 +119,8 @@ class BenchMarkRunner:
     
     def start_benchmark(self):
         sel_string = self.sel_strings.pop(0)
+        self.session.logger.info(f'Simulation selection string: {sel_string}')
+        self.session.logger.info('-'*25)
         self.current_results = self.results[sel_string]
         from time import time
         self.start_time = self.last_time = time()
@@ -100,24 +130,44 @@ class BenchMarkRunner:
         self.update_count = 0
         self.coord_update_times = []
         run(self.session, 'show ~HC')
-        run(self.session, f'view {sel_string}&protein')
+        run(self.session, f'view {sel_string}')
         run(self.session, f'isolde sim start {sel_string}; sel clear')
         sh = self.session.isolde.sim_handler
         sh.triggers.add_handler('coord update', self._coord_update_cb)
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
+        sim_atom_count = len(self.session.isolde.sim_manager.sim_construct.all_atoms)
+        self.current_results['Simulated atom count'] = sim_atom_count
+        self.session.logger.info(f'Simulated atom count: {sim_atom_count}')
+        platform = sh._context.getPlatform().getName()
+        self.current_results['Platform'] = platform
+        self.session.logger.info(f'Simulation platform: {platform}')
         if self.benchmark_type=='crystal':
             self.map_tracker = MapUpdateTracker(self.model.parent.map_mgr.xmapsets[0])
+        self.graphics_tracker = GraphicsPerformanceTracker(self.session)
     
     def _sim_end_cb(self, *_):
         import numpy
         cut = numpy.array(self.coord_update_times)
         self.current_results['Time per coord update (mean)'] = cut.mean()
         self.current_results['Time per coord update (std)'] = cut.std()
+        self.session.logger.info(f'Time per coord update (mean): {cut.mean():.4f} seconds')
+        self.session.logger.info(f'Time per coord update (std): {cut.std():.4f} seconds')
         if self.benchmark_type == 'crystal':
             map_times = numpy.array(self.map_tracker.times)
             self.current_results['Time per x-ray map recalculation (mean)'] = map_times.mean()
             self.current_results['Time per x-ray map recalculation (std)'] = map_times.std()
+            self.session.logger.info(f'Time per x-ray map recalculation (mean): {map_times.mean():.4f} seconds')
+            self.session.logger.info(f'Time per x-ray map recalculation (std): {map_times.std():.4f} seconds')
             self.map_tracker.handler.remove()
+        frame_times = numpy.array(self.graphics_tracker.times)
+        self.current_results['Time per graphics update (mean)'] = frame_times.mean()
+        self.current_results['Time per graphics update (std)'] = frame_times.std()
+        self.current_results['Time per graphics update (slowest)'] = frame_times.max()
+        self.session.logger.info(f'Time per graphics update (mean): {frame_times.mean()*1000:.1f} ms')
+        self.session.logger.info(f'Time per graphics update (std): {frame_times.std()*1000:.1f} ms')
+        self.session.logger.info(f'Time per graphics update (slowest): {frame_times.max()*1000:.1f} ms')
+        self.session.logger.info('-'*25)
+        self.graphics_tracker.handler.remove()
         if not len(self.sel_strings):
             self.triggers.activate_trigger('finished', dict(self.results))
         else:
@@ -131,6 +181,7 @@ class BenchMarkRunner:
         current_time = time()
         if self.first_start:
             self.current_results['Time to first coord update'] = current_time - self.start_time
+            self.session.logger.info(f'Time to first coord update: {current_time-self.start_time:.4f} seconds')
             self.first_start = False
             self.last_time = current_time
         elif sh.minimize: 
@@ -138,11 +189,12 @@ class BenchMarkRunner:
         else:
             if self.minimizing:
                 self.current_results['Minimization time'] = current_time - self.last_time
+                self.session.logger.info(f'Minimization time: {current_time - self.last_time:.4f} seconds')
                 self.minimizing = False
             else:
                 self.coord_update_times.append(current_time - self.last_time)
             self.last_time = current_time
-        if current_time - self.start_time > self.max_time or self.update_count > self.max_coord_updates:
+        if (current_time - self.start_time > self.max_time and self.update_count >= self.min_coord_updates) or self.update_count > self.max_coord_updates:
             from chimerax.core.commands import run
             run(self.session, 'isolde sim stop discard start')
 
@@ -159,8 +211,55 @@ class MapUpdateTracker:
             self.times.append(current_time-self.last_time)
         self.last_time = current_time
 
+class GraphicsPerformanceTracker:
+    def __init__(self, session, discard_first=3):
+        self._startup_counter = 0
+        self._discard_first_n = discard_first
+        self.times = []
+        self.handler = session.triggers.add_handler('new frame', self._new_frame_cb)
+        self._last_time = None
+    
+    def _new_frame_cb(self, *_):
+        self._startup_counter += 1
+        if self._startup_counter < self._discard_first_n:
+            return
+        from time import time
+        if self._last_time is None:
+            self._last_time = time()
+        else:
+            current_time = time()
+            self.times.append(current_time-self._last_time)
+            self._last_time = current_time
 
-        
+def run_benchmarks(session, max_size='large', output_file=None, warning_dialog=True, max_coord_updates=150, min_coord_updates=10, max_sim_time=300):
+    from .cmd import isolde_start
+    isolde_start(session, show_splash=False)
+    if output_file is None:
+        output_file = 'isolde_benchmark.log'
+    def next_frame_cb(*_):
+        IsoldeBenchMarker(session, max_size, max_coord_updates, min_coord_updates, max_sim_time, output_file, warning_dialog)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
+    session.isolde.triggers.add_handler('gui started', next_frame_cb)
+
+
+def register_isolde_benchmark(logger):
+    from chimerax.core.commands import (
+        register, CmdDesc,
+        EnumOf, PositiveIntArg, PositiveFloatArg, FileNameArg, BoolArg
+    )
+    desc = CmdDesc(
+        synopsis=('Run a series of representative crystallographic and cryo-EM models in ISOLDE to benchmark system performance'),
+        keyword=[
+            ('max_size', EnumOf(IsoldeBenchMarker.SIZES)),
+            ('output_file', FileNameArg),
+            ('warning_dialog', BoolArg),
+            ('max_coord_updates', PositiveIntArg),
+            ('min_coord_updates', PositiveIntArg),
+            ('max_sim_time', PositiveFloatArg)
+        ]
+    )
+    register('isolde benchmark', desc, run_benchmarks, logger=logger)
 
 
 
