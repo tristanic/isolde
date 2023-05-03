@@ -39,6 +39,15 @@ class IsoldeBenchMarker:
             print(_opengl_info(self.session), file=out)
             print(_system_summary(), file=out)
 
+            sp = session.isolde.sim_params
+            print(f'Simulation timesteps per coordinate update: {sp.sim_steps_per_gui_update}', file=out)
+            print(f'Nonbonded cutoff distance: {sp.nonbonded_cutoff_distance}', file=out)
+            print(f'Using implicit solvent: {sp.use_gbsa}', file=out)
+            if sp.use_gbsa:
+                print(f'Implicit solvent cutoff distance: {sp.gbsa_cutoff}', file=out)
+
+
+
         else:
             self.output_file = None
         if warning_dialog:
@@ -276,13 +285,13 @@ def run_benchmarks(session, max_size='large', output_file=None, warning_dialog=T
 def register_isolde_benchmark(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
-        EnumOf, PositiveIntArg, PositiveFloatArg, FileNameArg, BoolArg
+        EnumOf, PositiveIntArg, PositiveFloatArg, SaveFileNameArg, BoolArg
     )
     desc = CmdDesc(
         synopsis=('Run a series of representative crystallographic and cryo-EM models in ISOLDE to benchmark system performance'),
         keyword=[
             ('max_size', EnumOf(IsoldeBenchMarker.SIZES)),
-            ('output_file', FileNameArg),
+            ('output_file', SaveFileNameArg),
             ('warning_dialog', BoolArg),
             ('max_coord_updates', PositiveIntArg),
             ('min_coord_updates', PositiveIntArg),
