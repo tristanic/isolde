@@ -104,6 +104,7 @@ class IsoldeBenchMarker:
                 for val_label, val in result[sel_string].items():
                     print(f'{val_label}:\t{val}', file=out)
                 print('-'*10,file=out)
+            out.flush()
         from chimerax.core.commands import run
         run(self.session, 'close')
         self.session.triggers.add_handler('new frame', self.run_next_benchmark)
