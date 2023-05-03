@@ -126,7 +126,8 @@ class BenchMarkRunner:
         t.add_trigger('finished')
         from collections import defaultdict
         self.results = defaultdict(dict)
-        self.start_benchmark()
+        from chimerax.isolde.delayed_reaction import call_after_n_events
+        call_after_n_events(session.triggers, 'new frame', 2, self.start_benchmark, [])
 
     
     def start_benchmark(self):
