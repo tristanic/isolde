@@ -10,24 +10,10 @@ class SimFidelityPanel(CollapsibleArea):
         self.setContentLayout(sfd.main_layout)
 
 class SimFidelityDialog(UI_Panel_Base):
+    from chimerax.isolde.openmm.sim_param_mgr import fidelity_modes
 
-    _fidelity_settings = {
-        'Lowest/Fastest': {
-            'nonbonded_cutoff_distance': 0.9,
-            'use_gbsa': False,
-        },
-        'Medium/Medium': {
-            'nonbonded_cutoff_distance': 0.9,
-            'use_gbsa': True,
-            'gbsa_cutoff': 1.1,
-        },
-        'Highest/Slowest': {
-            'nonbonded_cutoff_distance': 1.7,
-            'use_gbsa': True,
-            'gbsa_cutoff': 2.0,
-        }
 
-    }
+    _fidelity_settings = fidelity_modes.keys()
 
     _tooltips = {
         'Lowest/Fastest': '<span>Lowest fidelity, highest speed - useful for low-end GPUs when working in good density. Nonbonded interactions cutoff at 9 Å; vacuum electrostatics.</span>',
@@ -43,7 +29,7 @@ class SimFidelityDialog(UI_Panel_Base):
         gb = QGroupBox(mf)
         il = DefaultHLayout()
         buttons = []
-        for button_name in self._fidelity_settings.keys():
+        for button_name in self._fidelity_settings:
             button = QRadioButton(button_name, parent=gb)
             button.setToolTip(self._tooltips[button_name])
             buttons.append(button)
@@ -65,12 +51,10 @@ class SimFidelityDialog(UI_Panel_Base):
         self.main_frame.setEnabled(True)
     
     def _button_click_cb(self, *_):
+        from chimerax.core.commands import run
         for b in self._buttons:
             if b.isChecked():
-                params = self._fidelity_settings[b.text()]
-                break
-        sp = self.isolde.sim_params
-        for key, value in params.items():
-            sp.set_param(key, value)
+                run(self.session, f'isolde set simFidelityMode "{b.text()}"')
+                return
 
 

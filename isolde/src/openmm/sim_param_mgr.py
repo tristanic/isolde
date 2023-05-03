@@ -157,3 +157,20 @@ class SimParams(Param_Mgr):
         'trajectory_smoothing':                 (defaults.TRAJECTORY_SMOOTHING, None),
         'smoothing_alpha':                      (defaults.SMOOTHING_ALPHA, None),
     }
+
+fidelity_modes = {
+        'Lowest/Fastest': {
+            'nonbonded_cutoff_distance': 0.9,
+            'use_gbsa': False,
+        },
+        'Medium/Medium': {
+            'nonbonded_cutoff_distance': 0.9,
+            'use_gbsa': True,
+            'gbsa_cutoff': 1.1,
+        },
+        'Highest/Slowest': {
+            'nonbonded_cutoff_distance': 1.7,
+            'use_gbsa': True,
+            'gbsa_cutoff': 2.0,
+        }
+}

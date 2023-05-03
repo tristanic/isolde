@@ -30,7 +30,7 @@ def isolde_start(session, show_splash=True):
     return session.isolde
 
 def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
-        gpu_device_index=None):
+        gpu_device_index=None, sim_fidelity_mode=None):
     isolde=isolde_start(session)
     sp = isolde.sim_params
     if time_steps_per_gui_update is not None:
@@ -39,6 +39,17 @@ def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
         sp.temperature=temperature
     if gpu_device_index is not None:
         sp.device_index=gpu_device_index
+    if sim_fidelity_mode is not None:
+        from chimerax.isolde.openmm.sim_param_mgr import fidelity_modes
+        mode_info = fidelity_modes[sim_fidelity_mode]
+        session.logger.info(f'ISOLDE: setting sim fidelity mode to {sim_fidelity_mode}')
+        for param_name, param_value in mode_info.items():
+            setattr(sp, param_name, param_value)
+            if isinstance(param_value, float):
+                session.logger.info(f'{param_name} = {param_value:2f}')
+            else:
+                session.logger.info(f'{param_name} = {param_value}')
+
 
 def isolde_select(session, model):
     isolde = getattr(session, 'isolde', None)
@@ -329,11 +340,13 @@ def register_isolde(logger):
         register('isolde start', desc, isolde_start, logger=logger)
 
     def register_isolde_set():
+        from chimerax.isolde.openmm.sim_param_mgr import fidelity_modes
         desc = CmdDesc(
             keyword = [
                 ('time_steps_per_gui_update', IntArg),
                 ('temperature', FloatArg),
                 ('gpu_device_index', IntArg),
+                ('sim_fidelity_mode', EnumOf(fidelity_modes.keys()))
             ],
             synopsis = 'Adjust ISOLDE simulation settings',
         )
@@ -411,7 +424,7 @@ def register_isolde(logger):
                 ('view_distance', FloatArg),
                 ('interpolate_frames', PositiveIntArg),
                 ('polymeric_only', BoolArg),
-                ('select', BoolArg)
+                ('select', BoolArg),
             ]
         )
         register('isolde stepto', desc, isolde_step, logger=logger)
