@@ -602,6 +602,126 @@ definitions loaded in this session will need to be re-loaded if you wish to cont
 This command exists mostly for developer/debugging use and is primarily used when testing 
 modifications/additions to the core force field.
 
+.. _`benchmark`:
+
+isolde benchmark
+================
+
+Syntax: isolde benchmark [**maxSize** *(small|medium|large|huge)*] 
+[**outputFile** *(filename|browse)*] [**warningDialog** *(TRUE|false)*]
+[**maxCoordUpdates** *number (120)*] [**minCoordUpdates** *number (10)*]
+[**maxSimTime** *number (300)*]
+
+Runs a series of predefined simulations on selected models from the wwPDB and generates a performance 
+report. This is designed to run non-interactively and can take a while to run (particularly for the 
+first time, since the models and their maps/structure factors are downloaded from the wwPDB). For each 
+model, ISOLDE will first run a simulation of the entire structure, followed by a simulation seeded from 
+a single selected atom near the model centre (more representative of day-to-day use).
+
+Running 
+statistics are printed to the ChimeraX log, and written as text to the file defined by *outputFile* (if 
+*outputFile* is not specified, the file will be written to *isolde_benchmark.log* in the current working 
+directory). As for most other ChimeraX commands involving filenames, the argument *outputFile browse* 
+will open a system file browser allowing you to choose a directory and filename.
+
+*maxSize* defines the largest set of models to benchmark against. Particularly on slower machines/connections it 
+is advisable to avoid the *huge* benchmarks, since the time needed for these models is almost as much as the 
+others put together. The benchmarks that will actually be run are:
+
+======== ======== ================================== ======== ========= ==================================
+Size     Crystal benchmark                           Cryo-EM benchmark                                    
+-------- ------------------------------------------- -----------------------------------------------------
+   .     PDB ID   Details                            PDB ID   EMDB ID   Details
+======== ======== ================================== ======== ========= ==================================
+small    3io0     229 residues, 3.0 Å                7rzq     24774     322 residues, 2.09 Å 
+medium   6nak     1383 residues, 3.14 Å              8ehg     28147     1372 residues, 2.24 Å
+large    8cjh     2892 residues, 2.98 Å              7nhs     12339     4176 residues, 2.30 Å
+huge     5zju     11290 residues, 2.80 Å             7oyb     13112     15830 residues, 2.40 Å
+======== ======== ================================== ======== ========= ==================================
+
+By default, executing this command brings up a warning dialog asking you not to interact with ChimeraX while
+the benchmarks are running. To skip this, use the argument *warningDialog false*.
+
+For each benchmark simulation, a timer will start at the moment of initialisation (the equivalent of a user 
+pressing the "play" button). Once energy minimisation is complete, the simulation will continue until at 
+least *minCoordUpdates* equilibration steps have occurred. If the elapsed time is still less than *maxSimTime*
+the simulation will continue until either *maxCoordUpdates* or *maxSimTime* is reached. 
+
+An example of the output file format is below:
+
+::
+
+  OpenGL version: 3.3.0 NVIDIA 528.24
+  OpenGL renderer: NVIDIA GeForce RTX 3070 Laptop GPU/PCIe/SSE2
+  OpenGL vendor: NVIDIA Corporation
+
+  Manufacturer: HP
+  Model: HP ZBook Studio 15.6 inch G8 Mobile Workstation PC
+  OS: Microsoft Windows 11 Pro (Build 22621)
+  Memory: 34,007,068,672
+  MaxProcessMemory: 137,438,953,344
+  CPU: 16 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz
+  OSLanguage: en-GB
+
+  Simulation timesteps per coordinate update: 50
+  Nonbonded cutoff distance: 1.7 nm
+  Using implicit solvent: True
+  Implicit solvent cutoff distance: 2.0 nm
+  PDB ID:	3io0
+  ====================
+  Selection string:	#1.2
+  Simulated atom count:	3351
+  Platform:	CUDA
+  Time to first coord update:	2.1929705142974854
+  Minimization time:	0.8542594909667969
+  Time per coord update (mean):	0.04789997107230577
+  Time per coord update (std):	0.021273512718791954
+  Time per x-ray map recalculation (mean):	0.5596075739179339
+  Time per x-ray map recalculation (std):	0.2632701705724466
+  Time per graphics update (mean):	0.04160166902151721
+  Time per graphics update (std):	0.022757995120602312
+  Time per graphics update (slowest):	0.27135753631591797
+  ----------
+  Selection string:	#1.2/A:126
+  Simulated atom count:	2707
+  Platform:	CUDA
+  Time to first coord update:	1.8390088081359863
+  Minimization time:	0.09216737747192383
+  Time per coord update (mean):	0.04065220307983808
+  Time per coord update (std):	0.011054394755417534
+  Time per x-ray map recalculation (mean):	0.6834243403540717
+  Time per x-ray map recalculation (std):	0.4560358955934349
+  Time per graphics update (mean):	0.03488120729523587
+  Time per graphics update (std):	0.013481108798147958
+  Time per graphics update (slowest):	0.09042668342590332
+  ----------
+  PDB ID:	7rzq
+  ====================
+  Selection string:	#1.2
+  Simulated atom count:	4913
+  Platform:	CUDA
+  Time to first coord update:	2.601433038711548
+  Minimization time:	1.1442956924438477
+  Time per coord update (mean):	0.048584105984476586
+  Time per coord update (std):	0.004660827155869477
+  Time per graphics update (mean):	0.018363032763517355
+  Time per graphics update (std):	0.006425427330208577
+  Time per graphics update (slowest):	0.04839634895324707
+  ----------
+  Selection string:	#1.2/C:959
+  Simulated atom count:	1946
+  Platform:	CUDA
+  Time to first coord update:	1.6841599941253662
+  Minimization time:	0.11556077003479004
+  Time per coord update (mean):	0.03128157526054638
+  Time per coord update (std):	0.0032794936655442634
+  Time per graphics update (mean):	0.017639152119668683
+  Time per graphics update (std):	0.004657657000208569
+  Time per graphics update (slowest):	0.04112887382507324
+  ----------
+
+
+
 .. _`restrain distances`:
 
 isolde restrain distances
