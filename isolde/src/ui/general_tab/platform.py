@@ -33,7 +33,18 @@ class ComputationalPlatformDialog(UI_Panel_Base):
         from chimerax.isolde.openmm.openmm_interface import get_available_platforms
         sim_params = self.session.isolde.sim_params
         platform_names = get_available_platforms()
+        # It is theoretically possible for an advanced user to install their own custom OpenMM Platform implementation(s).
+        # Probably not advisable to make those the default, but we should definitely make them *available*
+        unknown_platforms = [p for p in platform_names if p not in sim_params.platforms]
+        if len(unknown_platforms):
+            self.session.logger.info('ISOLDE detected that you have one or more non-standard OpenMM Platform(s) installed:\n'
+                f'{",".join(unknown_platforms)}\n'
+                'If you wish to use these for simulation purposes, you can do so by first choosing "Advanced" from the '
+                'Experience Level drop-down menu at top right of the ISOLDE panel, then using the Computational Platform '
+                'widget on the General tab.')
+        platform_names = [p for p in platform_names if p not in unknown_platforms]
         platform_names = list(sorted(platform_names, key=lambda p:sim_params.platforms.index(p)))
+        platform_names.extend(unknown_platforms)
         pcb = self.platform_combo_box
         pcb.addItems(platform_names)
 
