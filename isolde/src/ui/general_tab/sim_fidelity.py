@@ -42,7 +42,13 @@ class SimFidelityDialog(UI_Panel_Base):
         self._buttons = buttons
         for b in buttons:
             b.toggled.connect(self._button_click_cb)
-        buttons[-1].setChecked(True)
+        
+        # For Nvidia GPUs, set fidelity level to highest. Otherwise set it to medium.
+        from chimerax.isolde.benchmark import _opengl_info
+        if 'nvidia' in _opengl_info(self.session).lower():
+            buttons[-1].setChecked(True)
+        else:
+            buttons[1].setChecked(True)
 
     def sim_start_cb(self, trigger_name, data):
         self.main_frame.setEnabled(False)
