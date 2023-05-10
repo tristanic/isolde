@@ -203,6 +203,16 @@ with the surroundings.
       name="mask" display_name="Mask to selection" icon="mask_to_sel.png"
       description="Mask map(s) to surround the selected atom(s)"/>
 
+    <Provider tab="ISOLDE" section="Navigate"
+      name="step n" display_name="Step back" icon="step_n.png"
+      description="Step one residue towards the start of the model"/>
+    <Provider tab="ISOLDE" section="Navigate"
+      name="step sel" display_name="Step from here" icon="step_sel.png"
+      description="Reset stepper to start from the selected residue"/>
+    <Provider tab="ISOLDE" section="Navigate"
+      name="step c" display_name="Step forward" icon="step_c.png"
+      description="Step one residue towards the end of the model"/>
+
     <Provider tab="ISOLDE" section="Tugging mode" mouse_mode="isolde tug atom"
       name="tug atom" display_name="Tug atom" icon="tug_atom.png"
       description="Right mouse tugs a single atom during simulations" />

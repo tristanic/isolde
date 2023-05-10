@@ -45,6 +45,13 @@ def toolbar_command(session, name):
             radius = 4.0
             focus = True
         run(session, f'clipper isolate sel mask {radius} focus {focus}')
+    elif name == 'step n':
+        run(session, 'isolde stepto prev')
+    elif name == 'step sel':
+        from chimerax.atomic import selected_residues, concise_residue_spec
+        run(session, f'isolde stepto {concise_residue_spec(session, selected_residues(session))}')
+    elif name == 'step c':
+        run(session, 'isolde stepto next')
     elif name == 'tug atom':
         run(session, 'ui mousemode right "isolde tug atom"')
     elif name == 'tug residue':
@@ -101,6 +108,10 @@ class ToolbarButtonMgr:
         'spotlight': ('ISOLDE', 'Map', 'spotlight', 'Spotlight mode'),
         'mask': ('ISOLDE', 'Map', 'mask', 'Mask to selection'),
 
+        'step n': ('ISOLDE', 'Navigate', 'step n', 'Step back'),
+        'step sel': ('ISOLDE', 'Navigate', 'step sel', 'Step from here'),
+        'step c': ('ISOLDE', 'Navigate', 'step c', 'Step forward'),
+
         'tug atom': ('ISOLDE', 'Tugging mode', 'tug atom', 'Tug atom'),
         'tug residue': ('ISOLDE', 'Tugging mode', 'tug residue', 'Tug residue'),
         'tug selection': ('ISOLDE', 'Tugging mode', 'tug selecction', 'Tug selection'),
@@ -150,6 +161,7 @@ class ToolbarButtonMgr:
         isolde.triggers.add_handler(isolde.SIMULATION_RESUMED, self._sim_resume_cb)
         isolde.triggers.add_handler(isolde.SIMULATION_TERMINATED, self._sim_end_cb)
         isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self._update_map_buttons)
+        isolde.triggers.add_handler(isolde.SELECTED_MODEL_CHANGED, self._update_stepper_buttons)
 
     def _sim_start_cb(self, *_):
         self.set_enabled('Start simulation', False)
@@ -222,6 +234,22 @@ class ToolbarButtonMgr:
                     enable_mask = True
         self.set_enabled('spotlight', enable_spotlight)
         self.set_enabled('mask', enable_mask)
+
+    def _update_stepper_buttons(self, *_):
+        enable=False
+        if hasattr(self.session, 'isolde') and self.session.isolde.selected_model is not None:
+            enable=True
+        for button in ('step n', 'step c'):
+            self.set_enabled(button, enable)
+        if enable:
+            sel = self.session.isolde.selected_atoms
+            if sel is not None and len(sel.unique_residues)==1:
+                self.set_enabled('step sel', True)
+            else:
+                self.set_enabled('step sel', False)
+        else:
+            self.set_enabled('step sel', False)
+
 
     def _update_rotamer_buttons(self, *_):
         enableds = {
@@ -300,6 +328,7 @@ class ToolbarButtonMgr:
         self._enable_sim_start_button_if_necessary()
         self._update_rotamer_buttons()
         self._update_map_buttons()
+        self._update_stepper_buttons()
     
     def _isolde_close_cb(self, *_):
         for triggerset, handlers in zip(self._handlers.items()):
