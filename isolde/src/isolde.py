@@ -318,7 +318,9 @@ class Isolde():
         session = self.session
         from chimerax.std_commands import cofr, camera
         cofr.cofr(session, 'centerOfView', show_pivot=True)
-        camera.camera(session, 'ortho')
+        from chimerax.clipper import symmetry
+        if symmetry.auto_reset_camera:
+            camera.camera(session, 'ortho')
         self._mouse_modes.register_all_isolde_modes()
 
         # Increase the visibility of the selection outline
