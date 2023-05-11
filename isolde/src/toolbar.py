@@ -9,12 +9,16 @@ def start_pause_resume(session):
     else:
         session.isolde.pause_sim_toggle()
 
+def _current_residue_sel_string(session):
+    from chimerax.atomic import selected_residues, concise_residue_spec
+    return concise_residue_spec(session, selected_residues(session))
+
 def toolbar_command(session, name):
     from chimerax.core.commands import run
     if name == 'isolde start':
         run(session, 'isolde start')
     elif name == 'start sim':
-        run(session, 'isolde sim start sel')
+        run(session, f'isolde sim start {_current_residue_sel_string(session)}')
     elif name == 'pause sim':
         run(session, 'isolde sim pause')
     elif name == 'resume sim':
@@ -30,9 +34,9 @@ def toolbar_command(session, name):
     elif name == 'stop-discard':
         run(session, 'isolde sim stop discardTo start')
     elif name == 'flip peptide':
-        run(session, 'isolde pepflip sel')
+        run(session, f'isolde pepflip {_current_residue_sel_string(session)}')
     elif name == 'flip cis-trans':
-        run(session, 'isolde cisflip sel')
+        run(session, f'isolde cisflip {_current_residue_sel_string(session)}')
     elif 'rotamer' in name:
         _rota_command(session, name)
     elif name == 'spotlight':
@@ -44,12 +48,11 @@ def toolbar_command(session, name):
         else:
             radius = 4.0
             focus = True
-        run(session, f'clipper isolate sel mask {radius} focus {focus}')
+        run(session, f'clipper isolate {_current_residue_sel_string(session)} mask {radius} focus {focus}')
     elif name == 'step n':
         run(session, 'isolde stepto prev')
     elif name == 'step sel':
-        from chimerax.atomic import selected_residues, concise_residue_spec
-        run(session, f'isolde stepto {concise_residue_spec(session, selected_residues(session))}')
+        run(session, f'isolde stepto {_current_residue_sel_string(session)}')
     elif name == 'step c':
         run(session, 'isolde stepto next')
     elif name == 'tug atom':

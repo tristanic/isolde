@@ -149,7 +149,8 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
             # drawn, to make sure their styling "sticks"
             def do_run(*_, session=session):
                 from chimerax.core.commands import run
-                run(session, 'isolde sim start sel')
+                from chimerax.atomic import selected_residues, concise_residue_spec
+                run(session, f'isolde sim start {concise_residue_spec(session, selected_residues(session))}')
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER
             session.triggers.add_handler('frame drawn', do_run)
