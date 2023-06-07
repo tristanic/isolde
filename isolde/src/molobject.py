@@ -4252,8 +4252,13 @@ class AdaptiveDihedralRestraintMgr(ProperDihedralRestraintMgr):
     @staticmethod
     def restore_snapshot(session, data):
         adrm = AdaptiveDihedralRestraintMgr(data['structure'], auto_add_to_session=False)
-        adrm.set_state_from_snapshot(session, data)
-        return adrm
+        # TODO: If a restraint was set for a supported residue that was subsequently modified to an unsupported one,
+        # restoration of the restraints will fail. Need to find a better workaround than this try/except.
+        try:
+            adrm.set_state_from_snapshot(session, data)
+            return adrm
+        except ValueError:
+            return None
 
     def set_state_from_snapshot(self, session, data):
         from chimerax.core.models import Model
