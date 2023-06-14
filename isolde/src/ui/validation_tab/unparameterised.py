@@ -38,7 +38,7 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         tt.setSizeAdjustPolicy(tt.SizeAdjustPolicy.AdjustToContents)
         tt.setMinimumHeight(150)
         tt.setMaximumHeight(200)
-        tt.itemClicked.connect(self._tree_item_clicked_cb)
+        tt.currentItemChanged.connect(self._tree_current_item_changed_cb)
         ml.addWidget(tt)
 
 
@@ -161,13 +161,15 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         for r in residue.neighbors:
             r.atoms.displays = True
         focus_on_selection(self.session, residue.atoms)
-                        
-
-    def _tree_item_clicked_cb(self, item):
-        data = item.data(0, USER_ROLE)
+                            
+    def _tree_current_item_changed_cb(self, current, previous):
+        if current is None:
+            self.fix_button.setEnabled(False)
+            return
+        data = current.data(0, USER_ROLE)
         enable = (data is not None)
         self.fix_button.setEnabled(enable)
-    
+
     def _fix_button_clicked_cb(self, *_):
         ttree = self.template_tree
         table = self.residue_table
