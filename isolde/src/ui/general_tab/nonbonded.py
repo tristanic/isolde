@@ -82,6 +82,8 @@ class ParamSlider(QWidget):
         ml.addWidget(sl)
         v = self._value_spinbox = QDoubleSpinBox()
         v.setMinimum(self.MIN_VAL*self.MULTIPLIER)
+        v.setMaximum(self.MAX_VAL*self.MULTIPLIER)
+        v.setSingleStep(self.MULTIPLIER)
         v.setDecimals(2)
         ml.addWidget(v)
         v.setMaximumWidth(60)
