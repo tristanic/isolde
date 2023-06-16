@@ -134,7 +134,7 @@ class ParamSlider(QWidget):
         key, val = data
         if key == self.PARAM_NAME:
             with slot_disconnected(self._slider.valueChanged, self._value_changed_cb):
-                v = val/self.MULTIPLIER
+                v = round(val/self.MULTIPLIER)
                 self._slider.setValue(max(self.MIN_VAL,v, min(self.MAX_VAL,v)))
             with slot_disconnected(self._value_spinbox.valueChanged, self._spin_box_changed_cb):
                 self._value_spinbox.setValue(val)
