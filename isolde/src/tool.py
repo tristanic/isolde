@@ -100,7 +100,7 @@ class ISOLDE_ToolUI(ToolInstance):
 
 
     def delete(self):
-        #self.isolde.on_close()
+        self.session.isolde._on_close()
         self.tool_window.cleanup()
         super().delete()
 

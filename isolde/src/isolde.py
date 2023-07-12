@@ -1342,13 +1342,8 @@ class Isolde():
     def _on_close(self, *_):
         self.session.logger.status('Closing ISOLDE and cleaning up')
 
-        for p in self._ui_panels:
-            p.remove_trigger_handlers()
-
         if self.simulation_running:
             self.sim_manager.stop_sim()
-
-        self._disable_rebuild_residue_frame()
 
         # Remove all registered event handlers
         self._event_handler.remove_all_handlers()
