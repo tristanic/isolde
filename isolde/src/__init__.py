@@ -44,11 +44,7 @@ def register_model_isolde_init_attr(session):
         'isolde', attr_type=bool)
 
 
-def _version():
-    import pkg_resources
-    return pkg_resources.require('ChimeraX-ISOLDE')[0].version
-
-__version__ = _version()
+__version__ = "1.7.dev1"
 
 ISOLDE_STATE_VERSION = 3
 
