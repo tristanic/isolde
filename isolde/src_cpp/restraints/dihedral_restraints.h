@@ -17,8 +17,8 @@
 
 #include "../constants.h"
 #include "../util.h"
-#include "../atomic_cpp/dihedral.h"
-#include "../atomic_cpp/chiral.h"
+#include "../atomic/dihedral.h"
+#include "../atomic/chiral.h"
 #include "../colors.h"
 #include "changetracker.h"
 #include "sim_restraint_base.h"

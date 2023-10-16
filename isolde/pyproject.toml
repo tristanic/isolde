@@ -1,0 +1,319 @@
+[build-system]
+requires = ["setuptools", "ChimeraX-BundleBuilder"]
+build-backend = "chimerax.bundle_builder.cx_pep517"
+
+[project]
+name = "ChimeraX-ISOLDE"
+
+license = { text = "Proprietary" }
+authors = [{name = "Tristan Croll", email="tcroll@altoslabs.com"}]
+description = "ISOLDE: Interactive Structure Optimisation by Local Direct Exploration"
+
+dynamic = ["classifiers", "requires-python", "version"]
+custom-init = true
+
+dependencies = [
+    "ChimeraX-Core >=1.7.dev202306142048, <1.8",
+    "ChimeraX-Atomic ~=1.36",
+    "ChimeraX-AtomicLibrary ~=10.0",
+    "ChimeraX-Clipper ~=0.22.0",
+    "ChimeraX-Arrays ~=1.0" 
+]
+
+[tool.setuptools.dynamic]
+# Set the version in ISOLDE's top-level __init__.py
+version = { attr = "src.__version__"}
+
+
+[project.readme]
+content-type = "text"
+text = """ISOLDE is a next-generation environment for interactive building and
+real-space refinement of atomic models into electron density maps.
+It applies interactive molecular dynamics to allow real-time, intuitive
+performance of structural rearrangements from the small to the quite
+drastic, while constantly maintaining physically reasonable interactions
+with the surroundings."""
+
+[project.urls]
+Home = "https://tristanic.github.io/isolde"
+Source = "https://github.com/tristanic/isolde/isolde"
+
+[chimerax]
+module-name-override = "ISOLDE"
+min-session-version = 1
+max-session-version = 1
+categories = ["General"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: Free for non-commercial use",
+]
+
+[chimerax.package-data]
+"src/openmm/" = ["openmm/amberff/**"]
+"src/validation/" = ["validation/molprobity_data/**"]
+"src/" = ["resources/**", "icons/**", "demo_data/**","dictionaries/**", "tests/**", "docs/**"]
+
+[chimerax.tool.ISOLDE]
+category = "General"
+description = "Interactive Molecular Dynamics Flexible Fitting (iMDFF)"
+
+[chimerax.tool."Ramachandran Plot"]
+category = "Validation"
+description = "Interactive Ramachandran plot"
+
+[chimerax.command.isolde]
+category = "General"
+description = "Command-line control of ISOLDE simulations"
+
+[chimerax.command.rama]
+category = "General"
+description = "Live Ramachandran model markup"
+
+[chimerax.command.rota]
+category = "General"
+description = "Live rotamer model markup"
+
+[chimerax.command."~rama"]
+category = "General"
+description = "Remove live Ramachandran model markup"
+
+[chimerax.command."~rota"]
+category = "General"
+description = "Remove live rotamer model markup"
+
+[chimerax.library.molc]
+sources = [
+    "src_cpp/atomic/*.cpp",
+    "src_cpp/interpolation/nd_interp.cpp",
+    "src_cpp/validation/*.cpp",
+    "src_cpp/restraints/*.cpp",
+    "src_cpp/molc.cpp",
+    ]
+libraries = ["atomstruct", "element", "arrays", "pyinstance", "numpy"]
+include-modules = ["numpy", "atomic", "atomic-lib", "arrays"]
+library-modules = ["numpy", "atomic", "atomic-lib", "arrays"]
+
+[chimerax.library._nd_interp]
+sources = [
+    "src_cpp/interpolation/nd_interp.cpp",
+]
+
+[chimerax.library._geometry]
+sources = [
+    "src_cpp/geometry/geometry_ext.cpp"
+]
+
+[chimerax.extension._openmm_async]
+sources = [
+    "src_cpp/deps/lbfgs/src/lbfgs.cpp",
+    "src_cpp/openmm/openmm_interface.cpp",
+    "src_cpp/openmm/minimize.cpp"
+]
+libraries = ["OpenMM", "atomstruct", "pyinstance"]
+include-modules = ["openmm", "atomic", "atomic-lib"]
+library-modules = ["openmm", "atomic", "atomic-lib"]
+include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/exclude"]
+
+[chimerax.extension._openmm_force_ext]
+sources = [
+    "src_cpp/openmm/custom_forces.cpp"
+]
+libraries = ["numpy", "OpenMM", "atomstruct", "pyinstance"]
+include-modules = ["openmm", "atomic", "atomic-lib"]
+library-modules = ["openmm", "atomic", "atomic-lib"]
+
+[chimerax.extension.mcsplit]
+sources = ["src_cpp/graph/*.cpp"]
+include-dirs = ["extern/pybind11/include"]
+
+### TOOLBAR ###
+
+# Main section
+[chimerax.provider."isolde start"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Main"
+display-name = "Start ISOLDE"
+icon = "logo_small.png"
+description = "Start the ISOLDE GUI"
+
+# Control section
+[chimerax.provider."start sim"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+group = "playpause"
+display-name = "Start simulation"
+icon = "play_icon.png"
+description = "Start a simulation based on the current selection"
+
+[chimerax.provider."pause sim"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+group = "playpause"
+display-name = "Pause simulation"
+icon = "pause_icon.png"
+description = "Pause the currently running simulation"
+
+[chimerax.provider."resume sim"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+group = "playpause"
+display-name = "Resume simulation"
+icon = "play_icon_red.png"
+description = "Resume the currently paused simulation"
+
+[chimerax.provider."checkpoint save"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+display-name = "Store checkpoint"
+icon = "checkpoint_green.png"
+description = "Store the current state of the simulation as a checkpoint"
+
+[chimerax.provider."checkpoint revert"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+display-name = "Revert to checkpoint"
+icon = "checkpoint_red.png"
+description = "Revert the simulation to the last saved checkpoint"
+
+[chimerax.provider."stop-keep"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+display-name = "Stop (keep)"
+icon = "stop_sign_green.png"
+description = "Stop the simulation and keep the current coordinates"
+
+[chimerax.provider."stop-discard"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Control"
+display-name = "Stop (discard)"
+icon = "stop_sign_red.png"
+description = "Stop the simulation and discard all changes since it was started"
+
+# Peptide bond section
+[chimerax.provider."flip peptide"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Peptide bond"
+display-name = "Flip peptide"
+icon = "pep-flip-icon.png"
+description = "Flip the peptide bond N-terminal to the selection by 180 degrees (select a single amino acid residue to activate)"
+
+[chimerax.provider."flip cis-trans"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Peptide bond"
+display-name = "Flip cis<->trans"
+icon = "cis-trans-icon.png"
+description = "Flip the peptide bond N-terminal to the selection from cis to trans or vice versa (select a single amino acid residue to activate)"
+
+# Rotamer section
+[chimerax.provider."next rotamer"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Rotamer"
+display-name = "Preview next"
+icon = "rotamer_preview.png"
+description = "Cycle through rotamers from most to least common"
+
+[chimerax.provider."commit rotamer"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Rotamer"
+display-name = "Set coords"
+icon = "rotamer_commit.png"
+description = "Set sidechain atom positions to match the current preview"
+
+[chimerax.provider."restrain rotamer"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Rotamer"
+display-name = "Restrain"
+icon = "rotamer_restrain.png"
+description = "Restrain sidechain torsions to match the current preview"
+
+[chimerax.provider."release rotamer"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Rotamer"
+display-name = "Release"
+icon = "rotamer_release.png"
+description = "Release torsion restraints on the current sidechain"
+
+# Map section
+[chimerax.provider."spotlight"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Map"
+display-name = "Spotlight mode"
+icon = "spotlight.png"
+description = "Display map(s) and atoms in a sphere around the centre of rotation"
+
+[chimerax.provider."mask"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Map"
+display-name = "Mask to selection"
+icon = "mask_to_sel.png"
+description = "Mask map(s) to surround the selected atom(s)"
+
+# Navigate section
+[chimerax.provider."step n"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Navigate"
+display-name = "Step back"
+icon = "step_n.png"
+description = "Step one residue towards the start of the model"
+
+[chimerax.provider."step sel"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Navigate"
+display-name = "Step from here"
+icon = "step_sel.png"
+description = "Reset stepper to start from the selected residue"
+
+[chimerax.provider."step c"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Navigate"
+display-name = "Step forward"
+icon = "step_c.png"
+description = "Step one residue towards the end of the model"
+
+#Tugging mode section
+[chimerax.provider."tug atom"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Navigate"
+mouse-mode = "isolde tug atom"
+display-name = "Tug atom"
+icon = "tug_atom.png"
+description = "Right mouse tugs a single atom during simulations"
+
+[chimerax.provider."tug residue"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Navigate"
+mouse-mode = "isolde tug residue"
+display-name = "Tug residue"
+icon = "tug_residue.png"
+description = "Right mouse tugs all atoms in a residue during simulations"
+
+[chimerax.provider."tug selection"]
+manager = "toolbar"
+tab = "ISOLDE"
+section = "Navigate"
+mouse-mode = "isolde tug selection"
+display-name = "Tug selection"
+icon = "tug_selection.png"
+description = "Right mouse tugs all selected atoms during simulations"
+
