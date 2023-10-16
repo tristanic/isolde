@@ -16,8 +16,8 @@
 #include <cmath>
 #include <array>
 
-#include "../atomic_cpp/dihedral.h"
-#include "../atomic_cpp/dihedral_mgr.h"
+#include "../atomic/dihedral.h"
+#include "../atomic/dihedral_mgr.h"
 #include "../interpolation/nd_interp.h"
 #include "../colors.h"
 

@@ -44,10 +44,6 @@ with the surroundings.
       <SourceFile>src/graph/mcsp.cpp</SourceFile>
       <SourceFile>src/graph/mcsplit_ext.cpp</SourceFile>
   </CModule>
-  <CModule name="_kmeans" usesNumpy="True">
-      <IncludeDir>extern/pybind11/include</IncludeDir>
-      <SourceFile>src/geometry/spherical_k_means.cpp</SourceFile>
-  </CModule>
 
 
   <CLibrary name="_geometry">
