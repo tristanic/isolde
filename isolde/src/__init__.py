@@ -13,21 +13,6 @@ arrays.load_libarrays()
 from chimerax.atomic import Atom
 
 
-_openmm_initialized = False
-def initialize_openmm():
-    # On linux need to set environment variable to find plugins.
-    # Without this it gives an error saying there is no "CPU" platform.
-    global _openmm_initialized
-    if not _openmm_initialized:
-        _openmm_initialized = True
-        from sys import platform
-        if platform in ['linux', 'darwin']:
-            from os import environ, path
-            from chimerax import app_lib_dir
-            environ['OPENMM_PLUGIN_DIR'] = path.join(app_lib_dir, 'plugins')
-initialize_openmm()
-
-
 def register_ignored_residues_attr(session):
     from chimerax.atomic import Residue
     Residue.register_attr(session, 'isolde_ignore',
