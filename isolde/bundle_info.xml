@@ -112,9 +112,9 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="&gt;=1.7.dev202306142048, &lt;1.8"/>
+    <Dependency name="ChimeraX-Core" version="&gt;=1.7.dev202310140743, &lt;1.8.dev0"/>
     <Dependency name="ChimeraX-Atomic" version="~=1.36"/>
-    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=10.0"/>
+    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=11.0"/>
     <Dependency name="ChimeraX-Clipper" version="~=0.22.0"/>
     <Dependency name="ChimeraX-Arrays" build="true" version="~=1.0"/>
   </Dependencies>
