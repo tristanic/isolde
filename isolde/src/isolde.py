@@ -308,7 +308,7 @@ class Isolde():
         if session.ui.is_gui:
             self._register_tug_modes()
             session._isolde_tb.isolde_started()
-        ffmgr.background_load_ff(sp.forcefield)
+        ffmgr.load_ff(sp.forcefield)
 
         self._event_handler.add_event_handler('ramaplot', 'add tool instance', self._register_ramaplot_callbacks)
         # In case RamaPlot is already open
