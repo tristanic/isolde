@@ -10,7 +10,7 @@ def reset_forcefield(session):
     from chimerax.isolde.openmm.forcefields import ForcefieldMgr
     ForcefieldMgr.clear_cache()
     if hasattr(session, 'isolde'):
-        session.isolde.forcefield_mgr.reset()
+        session.isolde.forcefield_mgr.reset(clear_cache=True)
 
 
 
