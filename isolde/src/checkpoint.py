@@ -58,7 +58,11 @@ class CheckPoint:
                 +'longer valid!')
 
         for rm, data in self._restraint_data:
+            if rm.deleted:
+                self.session.logger.warning(f'{rm.name} manager has been deleted. Unable to restore its restraints.')
+                continue
             rm.restore_checkpoint(data)
+
 
         self.sim_construct.all_atoms.coords = self.saved_coords
         if sm is not None and sm.sim_running:
