@@ -33247,7 +33247,6 @@
       <Atom charge="0.445" name="HO1" type="Ho"/>
       <Atom charge="-0.639" name="O1" type="Oh"/>
       <Bond atomName1="HO1" atomName2="O1"/>
-      <ExternalBond atomName="HO1"/>
       <ExternalBond atomName="O1"/>
     </Residue>
     <Residue name="GLYCAM_RTA">
@@ -47817,7 +47816,7 @@
       <Bond atomName1="C1" atomName2="H1"/>
       <Bond atomName1="C1" atomName2="C2"/>
       <Bond atomName1="C1" atomName2="O5"/>
-      <Bond atomName1="C2" atomName2="H2"/>
+      <Bond atomName1="C2" atomName2="H2"/>_
       <Bond atomName1="C2" atomName2="N2"/>
       <Bond atomName1="C2" atomName2="C3"/>
       <Bond atomName1="N2" atomName2="H2N"/>
