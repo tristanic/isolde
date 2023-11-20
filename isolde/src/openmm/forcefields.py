@@ -32,6 +32,7 @@ _forcefield_files = {
         'mse.xml',                   # Approximation (same charges as MET)
         'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
+        'glycam_heparin.xml',        # Heparin building blocks SGN and IDS hacked together from GLYCAM sugar, ROH and SO3 templates 
         'iron_sulfur.xml',
         #'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
         #'moriarty_and_case.xml',     # General ligands (Nigel Moriarty / Dave Case)
