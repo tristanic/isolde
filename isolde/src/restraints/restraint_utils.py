@@ -773,7 +773,7 @@ def restrain_atom_pair_adaptive_distance(atom1, atom2, target, tolerance, kappa,
     if not atom1.structure == atom2.structure:
         raise UserError('Both atoms must belong to the same model!')
     from chimerax.isolde import session_extensions as sx
-    adrm = sx.get_adaptive_distance_restraint_mgr(atom1.structure)
+    adrm = sx.get_adaptive_distance_restraint_mgr(atom1.structure, name=group_name)
     adr = adrm.add_restraint(atom1, atom2)
     adr.target = target
     adr.tolerance = tolerance

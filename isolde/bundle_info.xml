@@ -10,7 +10,7 @@
 
 
 
-<BundleInfo name="ChimeraX-ISOLDE" version="1.6.0" package="chimerax.isolde"
+<BundleInfo name="ChimeraX-ISOLDE" version="1.7.rc1" package="chimerax.isolde"
   	    customInit="true" minSessionVersion="1" maxSessionVersion="1">
 
   <!-- Additional information about bundle source -->
@@ -112,10 +112,10 @@ with the surroundings.
 
   <!-- Dependencies on other ChimeraX/Python packages -->
   <Dependencies>
-    <Dependency name="ChimeraX-Core" version="&gt;=1.6rc202304252053, &lt;1.7"/>
+    <Dependency name="ChimeraX-Core" version="~=1.7rc202311140000"/>
     <Dependency name="ChimeraX-Atomic" version="~=1.36"/>
-    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=10.0"/>
-    <Dependency name="ChimeraX-Clipper" version="~=0.21.0"/>
+    <Dependency name="ChimeraX-AtomicLibrary" build="true" version="~=12.0"/>
+    <Dependency name="ChimeraX-Clipper" version="~=0.22.0"/>
     <Dependency name="ChimeraX-Arrays" build="true" version="~=1.0"/>
   </Dependencies>
 

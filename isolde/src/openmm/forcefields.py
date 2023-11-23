@@ -32,6 +32,7 @@ _forcefield_files = {
         'mse.xml',                   # Approximation (same charges as MET)
         'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
+        'glycam_heparin.xml',        # Heparin building blocks SGN and IDS hacked together from GLYCAM sugar, ROH and SO3 templates 
         'iron_sulfur.xml',
         #'combined_ccd.xml',          # General ligands (Nigel Moriarty / Dave Case)
         #'moriarty_and_case.xml',     # General ligands (Nigel Moriarty / Dave Case)
@@ -58,24 +59,6 @@ def _define_forcefield(ff_files):
     ff = ForceField(*[f for f in ff_files if f is not None])
     return ff
 
-def _background_load_ff(name, ff_files, openmm_version, isolde_version):
-    cache_dir = get_forcefield_cache_dir()
-    pickle_file = os.path.join(cache_dir,'ff_{}.pickle'.format(name))
-    try:
-        import pickle
-        with open(pickle_file, 'rb') as infile:
-            forcefield, cached_openmm_version, cached_isolde_version = pickle.load(infile)
-        if cached_openmm_version != openmm_version or cached_isolde_version != isolde_version:
-            raise RuntimeError('Cached forcefield is out of date.')
-        return {name: forcefield}
-    except:
-        print('Forcefield cache not found or out of date. Regenerating from ffXML files. This is normal if running ISOLDE for the first time, or after upgrading OpenMM.')
-        ff = _define_forcefield(ff_files)
-        with open(pickle_file, 'wb') as outfile:
-            pickle.dump((ff, openmm_version, isolde_version), outfile)
-        print('Done loading forcefield')
-        return {name: ff}
-
 class ForcefieldMgr:
     def __init__(self, session):
         self.session=session
@@ -99,20 +82,7 @@ class ForcefieldMgr:
         for f in glob.glob(os.path.join(ff_dir, '*.pickle')):
             os.remove(f)
 
-
-
-    def _complete_task(self):
-        from time import sleep
-        if self._task:
-            while not self._task.done():
-                sleep(0.01)
-            result = self._task.result()
-            if isinstance(result, dict):
-                self._ff_dict.update(result)
-        self._task = None
-
     def __getitem__(self, key):
-        self._complete_task()
         ffd = self._ff_dict
         if key in ffd.keys():
             return ffd[key]
@@ -124,8 +94,7 @@ class ForcefieldMgr:
                     'Known forcefields are: {}'.format(
                         ', '.join(set(ffd.keys()).union(_forcefield_files.keys()))
                     ))
-            ffd[key] = ff = _define_forcefield(ff_files)
-            return ff
+            return self.load_ff(key)
 
     def ligand_db(self, key):
         db = self._ligand_dict.get(key, None)
@@ -152,33 +121,45 @@ class ForcefieldMgr:
 
     @property
     def available_forcefields(self):
-        self._complete_task()
         return list(set(self._ff_dict.keys()).union(_forcefield_files.keys()))
 
     @property
     def loaded_forcefields(self):
-        self._complete_task()
         return list(self._ff_dict.keys())
 
     def define_custom_forcefield(self, name, ff_files):
         '''
         Define a custom forcefield from a set of OpenMM ffXML files.
         '''
-        self._complete_task()
         self._ff_dict[name] = _define_forcefield(ff_files)
 
-    def background_load_ff(self, name, ff_files = None):
+
+
+    def load_ff(self, name, ff_files = None):
         '''
         Prepare a forcefield in a separate thread to reduce disruption to the
         gui.
         '''
-        self._complete_task()
         if ff_files is None:
             ff_files = _forcefield_files[name]
-        from concurrent.futures import ThreadPoolExecutor
-        executor = ThreadPoolExecutor(max_workers=1)
-        self._task = executor.submit(_background_load_ff, name, ff_files, self._openmm_version, self._isolde_version)
-        executor.shutdown(wait=False)
+        
+        cache_dir = get_forcefield_cache_dir()
+        pickle_file = os.path.join(cache_dir,'ff_{}.pickle'.format(name))
+        try:
+            import pickle
+            with open(pickle_file, 'rb') as infile:
+                ff, cached_openmm_version, cached_isolde_version = pickle.load(infile)
+            if cached_openmm_version != self._openmm_version or cached_isolde_version != self._isolde_version:
+                raise RuntimeError('Cached forcefield is out of date.')
+        except:
+            self.session.logger.warning('Forcefield cache not found or out of date. Regenerating from ffXML files. This is normal if running ISOLDE for the first time, or after upgrading OpenMM.')
+            ff = _define_forcefield(ff_files)
+            with open(pickle_file, 'wb') as outfile:
+                pickle.dump((ff, self._openmm_version, self._isolde_version), outfile)
+        self.session.logger.info('Done loading forcefield')
+        self._ff_dict[name] = ff
+        return ff
+            
 
 from openmm.app import ForceField as _ForceField
 class ForceField(_ForceField):

@@ -52,6 +52,13 @@ public:
         DID_NOT_CONVERGE=1
     };
 
+    static std::string outcome_description(int result) {
+        return std::string(LocalEnergyMinimizer::outcome_descriptions_.at(result));
+    }
+
+private:
+    const static std::map<int, const char*> outcome_descriptions_;
+
 };
 
 } // namespace isolde

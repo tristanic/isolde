@@ -83,14 +83,21 @@ def slot_disconnected(signal, slot):
     
     The signal is guaranteed to be reconnected even if do_something() throws an error.
     '''
+
+    # disconnect() throws a TypeError if the method is not connected
     try:
-        # disconnect() throws a TypeError if the method is not connected
-        signal.disconnect(slot)
+        try:
+            signal.disconnect(slot)
+            was_connected = True
+        except TypeError:
+            was_connected = False
         yield
-    except TypeError:
-        pass
+    except:
+        raise
+
     finally:
-        signal.connect(slot)
+        if was_connected:
+            signal.connect(slot)
 
 def block_triggers(triggers, *trigger_names):
     def decorator(f):

@@ -1,0 +1,332 @@
+<ForceField>
+  <Residues>
+    <Residue name="IDS">
+    <!-- Mid-chain 2-sulfo alpha-D-iduronic acid, based on GLYCAM_YuA -->
+      <Atom charge="0.363" name="C1" type="Cg"/>
+      <Atom charge="0.0" name="H1" type="H2"/>
+      <Atom charge="-0.515" name="O5" type="Os"/>
+      <Atom charge="0.232" name="C5" type="Cg"/>
+      <Atom charge="0.0" name="H5" type="H1"/>
+      <Atom charge="0.697" name="C6" type="C"/>
+      <Atom charge="-0.757" name="O6B" type="O2"/>
+      <Atom charge="-0.757" name="O6A" type="O2"/>
+      <Atom charge="0.223" name="C4" type="Cg"/>
+      <Atom charge="0.0" name="H4" type="H1"/>
+      <Atom charge="-0.508" name="O4" type="Os"/>
+      <Atom charge="0.417" name="C3" type="Cg"/>
+      <Atom charge="0.0" name="H3" type="H1"/>
+      <Atom charge="-0.771" name="O3" type="Oh"/>
+      <Atom charge="0.417" name="H3O" type="Ho"/>
+      <Atom charge="0.259" name="C2" type="Cg"/>
+      <Atom charge="0.0" name="H2" type="H1"/>
+      <Atom charge="-0.494" name="O2" type="Os"/>
+
+      <Atom charge="1.245" name="S2" type="S"/>
+      <Atom charge="-0.694" name="OS21" type="O2"/>
+      <Atom charge="-0.694" name="OS22" type="O2"/>
+      <Atom charge="-0.694" name="OS23" type="O2"/>
+      
+      <Bond atomName1="C1" atomName2="H1"/>
+      <Bond atomName1="C1" atomName2="O5"/>
+      <Bond atomName1="C1" atomName2="C2"/>
+      <Bond atomName1="O5" atomName2="C5"/>
+      <Bond atomName1="C5" atomName2="H5"/>
+      <Bond atomName1="C5" atomName2="C6"/>
+      <Bond atomName1="C5" atomName2="C4"/>
+      <Bond atomName1="C6" atomName2="O6B"/>
+      <Bond atomName1="C6" atomName2="O6A"/>
+      <Bond atomName1="C4" atomName2="H4"/>
+      <Bond atomName1="C4" atomName2="O4"/>
+      <Bond atomName1="C4" atomName2="C3"/>
+      <Bond atomName1="C3" atomName2="H3"/>
+      <Bond atomName1="C3" atomName2="O3"/>
+      <Bond atomName1="C3" atomName2="C2"/>
+      <Bond atomName1="O3" atomName2="H3O"/>
+      <Bond atomName1="C2" atomName2="H2"/>
+      <Bond atomName1="C2" atomName2="O2"/>
+
+      <Bond atomName1="S2" atomName2="OS21"/>
+      <Bond atomName1="S2" atomName2="OS22"/>
+      <Bond atomName1="S2" atomName2="OS23"/>
+      <Bond atomName1="O2" atomName2="S2"/>
+      <ExternalBond atomName="C1"/>
+    </Residue>
+    <Residue name="IDSROH">
+    <!-- Reducing terminal 2-sulfo alpha-D-iduronic acid, based on GLYCAM_YuA -->
+      <Atom charge="0.363" name="C1" type="Cg"/>
+      <Atom charge="0.0" name="H1" type="H2"/>
+      <Atom charge="-0.515" name="O5" type="Os"/>
+      <Atom charge="0.232" name="C5" type="Cg"/>
+      <Atom charge="0.0" name="H5" type="H1"/>
+      <Atom charge="0.697" name="C6" type="C"/>
+      <Atom charge="-0.757" name="O6B" type="O2"/>
+      <Atom charge="-0.757" name="O6A" type="O2"/>
+      <Atom charge="0.223" name="C4" type="Cg"/>
+      <Atom charge="0.0" name="H4" type="H1"/>
+      <Atom charge="-0.508" name="O4" type="Os"/>
+      <Atom charge="0.417" name="C3" type="Cg"/>
+      <Atom charge="0.0" name="H3" type="H1"/>
+      <Atom charge="-0.771" name="O3" type="Oh"/>
+      <Atom charge="0.417" name="H3O" type="Ho"/>
+      <Atom charge="0.259" name="C2" type="Cg"/>
+      <Atom charge="0.0" name="H2" type="H1"/>
+      <Atom charge="-0.494" name="O2" type="Os"/>
+
+      <Atom charge="1.245" name="S2" type="S"/>
+      <Atom charge="-0.694" name="OS21" type="O2"/>
+      <Atom charge="-0.694" name="OS22" type="O2"/>
+      <Atom charge="-0.694" name="OS23" type="O2"/>
+
+      <Atom charge="0.445" name="HO1" type="Ho"/>
+      <Atom charge="-0.639" name="O1" type="Oh"/>
+
+      <Bond atomName1="C1" atomName2="H1"/>
+      <Bond atomName1="C1" atomName2="O5"/>
+      <Bond atomName1="C1" atomName2="C2"/>
+      <Bond atomName1="O5" atomName2="C5"/>
+      <Bond atomName1="C5" atomName2="H5"/>
+      <Bond atomName1="C5" atomName2="C6"/>
+      <Bond atomName1="C5" atomName2="C4"/>
+      <Bond atomName1="C6" atomName2="O6B"/>
+      <Bond atomName1="C6" atomName2="O6A"/>
+      <Bond atomName1="C4" atomName2="H4"/>
+      <Bond atomName1="C4" atomName2="O4"/>
+      <Bond atomName1="C4" atomName2="C3"/>
+      <Bond atomName1="C3" atomName2="H3"/>
+      <Bond atomName1="C3" atomName2="O3"/>
+      <Bond atomName1="C3" atomName2="C2"/>
+      <Bond atomName1="O3" atomName2="H3O"/>
+      <Bond atomName1="C2" atomName2="H2"/>
+      <Bond atomName1="C2" atomName2="O2"/>
+
+      <Bond atomName1="S2" atomName2="OS21"/>
+      <Bond atomName1="S2" atomName2="OS22"/>
+      <Bond atomName1="S2" atomName2="OS23"/>
+      <Bond atomName1="O2" atomName2="S2"/>
+
+      <Bond atomName1="C1"  atomName2="O1"/>
+      <Bond atomName1="HO1" atomName2="O1"/>
+    </Residue>
+
+    <Residue name="IDSNOH">
+    <!-- Non-reducing terminal 2-sulfo alpha-D-iduronic acid, based on GLYCAM_2uA -->
+      <Atom charge="0.363" name="C1" type="Cg"/>
+      <Atom charge="0.0" name="H1" type="H2"/>
+      <Atom charge="-0.515" name="O5" type="Os"/>
+      <Atom charge="0.232" name="C5" type="Cg"/>
+      <Atom charge="0.0" name="H5" type="H1"/>
+      <Atom charge="0.697" name="C6" type="C"/>
+      <Atom charge="-0.757" name="O6B" type="O2"/>
+      <Atom charge="-0.757" name="O6A" type="O2"/>
+      <Atom charge="0.223" name="C4" type="Cg"/>
+      <Atom charge="0.0" name="H4" type="H1"/>
+      <Atom charge="-0.711" name="O4" type="Oh"/>
+      <Atom charge="0.397" name="H4O" type="Ho"/>
+      <Atom charge="0.417" name="C3" type="Cg"/>
+      <Atom charge="0.0" name="H3" type="H1"/>
+      <Atom charge="-0.771" name="O3" type="Oh"/>
+      <Atom charge="0.417" name="H3O" type="Ho"/>
+      <Atom charge="0.259" name="C2" type="Cg"/>
+      <Atom charge="0.0" name="H2" type="H1"/>
+      <Atom charge="-0.494" name="O2" type="Os"/>
+
+      <Atom charge="1.245" name="S2" type="S"/>
+      <Atom charge="-0.694" name="OS21" type="O2"/>
+      <Atom charge="-0.694" name="OS22" type="O2"/>
+      <Atom charge="-0.694" name="OS23" type="O2"/>
+
+      <Bond atomName1="C1" atomName2="H1"/>
+      <Bond atomName1="C1" atomName2="O5"/>
+      <Bond atomName1="C1" atomName2="C2"/>
+      <Bond atomName1="O5" atomName2="C5"/>
+      <Bond atomName1="C5" atomName2="H5"/>
+      <Bond atomName1="C5" atomName2="C6"/>
+      <Bond atomName1="C5" atomName2="C4"/>
+      <Bond atomName1="C6" atomName2="O6B"/>
+      <Bond atomName1="C6" atomName2="O6A"/>
+      <Bond atomName1="C4" atomName2="H4"/>
+      <Bond atomName1="C4" atomName2="O4"/>
+      <Bond atomName1="C4" atomName2="C3"/>
+      <Bond atomName1="O4" atomName2="H4O"/>
+      <Bond atomName1="C3" atomName2="H3"/>
+      <Bond atomName1="C3" atomName2="O3"/>
+      <Bond atomName1="C3" atomName2="C2"/>
+      <Bond atomName1="O3" atomName2="H3O"/>
+      <Bond atomName1="C2" atomName2="H2"/>
+      <Bond atomName1="C2" atomName2="O2"/>
+
+      <Bond atomName1="S2" atomName2="OS21"/>
+      <Bond atomName1="S2" atomName2="OS22"/>
+      <Bond atomName1="S2" atomName2="OS23"/>
+      <Bond atomName1="O2" atomName2="S2"/>
+
+      <ExternalBond atomName="C1"/>
+    </Residue>
+
+
+    <Residue name="SGN">
+    <!-- Mid-chain 2-deoxy-6-O-sulfo-2-(sulfoamino)-alpha-D-glucopyranose, based on CUSTOM_UYA -->
+      <Atom charge="0.468" name="C1" type="Cg"/>
+      <Atom charge="0.0" name="H1" type="H2"/>
+      <Atom charge="0.245" name="C2" type="Cg"/>
+      <Atom charge="0.0" name="H2" type="H1"/>
+      <Atom charge="-0.672" name="N2" type="Ng"/>
+      <Atom charge="0.296" name="H2N" type="H"/>
+      <!-- <Atom charge="0.588" name="C2N" type="C"/>
+      <Atom charge="0.063" name="CME" type="Cg"/>
+      <Atom charge="0.0" name="H3M" type="Hc"/>
+      <Atom charge="0.0" name="H2M" type="Hc"/>
+      <Atom charge="0.0" name="H1M" type="Hc"/>
+      <Atom charge="-0.579" name="O2N" type="O"/> -->
+      <Atom charge="0.165" name="C3" type="Cg"/>
+      <Atom charge="0.0" name="H3" type="H1"/>
+      <Atom charge="-0.63" name="O3" type="Oh"/>
+      <Atom charge="0.413" name="H3O" type="Ho"/>
+      <Atom charge="0.322" name="C4" type="Cg"/>
+      <Atom charge="0.0" name="H4" type="H1"/>
+      <Atom charge="0.246" name="C5" type="Cg"/>
+      <Atom charge="0.0" name="H5" type="H1"/>
+      <Atom charge="0.328" name="C6" type="Cg"/>
+      <Atom charge="0.0" name="H62" type="H1"/>
+      <Atom charge="0.0" name="H61" type="H1"/>
+      <Atom charge="-0.461" name="O6" type="Os"/>
+      <Atom charge="-0.568" name="O5" type="Os"/>
+      <Atom charge="-0.478" name="O4" type="Os"/>
+
+      <Atom charge="1.245" name="S2" type="S"/>
+      <Atom charge="-0.694" name="OS21" type="O2"/>
+      <Atom charge="-0.694" name="OS22" type="O2"/>
+      <Atom charge="-0.694" name="OS23" type="O2"/>
+
+      <Atom charge="1.245" name="S6" type="S"/>
+      <Atom charge="-0.694" name="OS61" type="O2"/>
+      <Atom charge="-0.694" name="OS62" type="O2"/>
+      <Atom charge="-0.694" name="OS63" type="O2"/>
+
+      <Bond atomName1="C1" atomName2="H1"/>
+      <Bond atomName1="C1" atomName2="C2"/>
+      <Bond atomName1="C1" atomName2="O5"/>
+      <Bond atomName1="C2" atomName2="H2"/>
+      <Bond atomName1="C2" atomName2="N2"/>
+      <Bond atomName1="C2" atomName2="C3"/>
+      <Bond atomName1="N2" atomName2="H2N"/>
+      <!-- <Bond atomName1="N2" atomName2="C2N"/>
+      <Bond atomName1="C2N" atomName2="CME"/>
+      <Bond atomName1="C2N" atomName2="O2N"/>
+      <Bond atomName1="CME" atomName2="H3M"/>
+      <Bond atomName1="CME" atomName2="H2M"/>
+      <Bond atomName1="CME" atomName2="H1M"/> -->
+      <Bond atomName1="C3" atomName2="H3"/>
+      <Bond atomName1="C3" atomName2="O3"/>
+      <Bond atomName1="C3" atomName2="C4"/>
+      <Bond atomName1="O3" atomName2="H3O"/>
+      <Bond atomName1="C4" atomName2="H4"/>
+      <Bond atomName1="C4" atomName2="C5"/>
+      <Bond atomName1="C4" atomName2="O4"/>
+      <Bond atomName1="C5" atomName2="H5"/>
+      <Bond atomName1="C5" atomName2="C6"/>
+      <Bond atomName1="C5" atomName2="O5"/>
+      <Bond atomName1="C6" atomName2="H62"/>
+      <Bond atomName1="C6" atomName2="H61"/>
+      <Bond atomName1="C6" atomName2="O6"/>
+
+      <Bond atomName1="S2" atomName2="OS21"/>
+      <Bond atomName1="S2" atomName2="OS22"/>
+      <Bond atomName1="S2" atomName2="OS23"/>
+      <Bond atomName1="N2" atomName2="S2"/>
+
+      <Bond atomName1="S6" atomName2="OS61"/>
+      <Bond atomName1="S6" atomName2="OS62"/>
+      <Bond atomName1="S6" atomName2="OS63"/>
+      <Bond atomName1="O6" atomName2="S6"/>
+
+      <ExternalBond atomName="C1"/>
+      <ExternalBond atomName="O4"/>
+    </Residue>
+
+    <Residue name="SGNROH">
+    <!-- Reducing terminal 2-deoxy-6-O-sulfo-2-(sulfoamino)-alpha-D-glucopyranose, based on GLYCAM_UYA -->
+      <Atom charge="0.468" name="C1" type="Cg"/>
+      <Atom charge="0.0" name="H1" type="H2"/>
+      <Atom charge="0.245" name="C2" type="Cg"/>
+      <Atom charge="0.0" name="H2" type="H1"/>
+      <Atom charge="-0.672" name="N2" type="Ng"/>
+      <Atom charge="0.296" name="H2N" type="H"/>
+      <!-- <Atom charge="0.588" name="C2N" type="C"/>
+      <Atom charge="0.063" name="CME" type="Cg"/>
+      <Atom charge="0.0" name="H3M" type="Hc"/>
+      <Atom charge="0.0" name="H2M" type="Hc"/>
+      <Atom charge="0.0" name="H1M" type="Hc"/>
+      <Atom charge="-0.579" name="O2N" type="O"/> -->
+      <Atom charge="0.165" name="C3" type="Cg"/>
+      <Atom charge="0.0" name="H3" type="H1"/>
+      <Atom charge="-0.63" name="O3" type="Oh"/>
+      <Atom charge="0.413" name="H3O" type="Ho"/>
+      <Atom charge="0.322" name="C4" type="Cg"/>
+      <Atom charge="0.0" name="H4" type="H1"/>
+      <Atom charge="0.246" name="C5" type="Cg"/>
+      <Atom charge="0.0" name="H5" type="H1"/>
+      <Atom charge="0.328" name="C6" type="Cg"/>
+      <Atom charge="0.0" name="H62" type="H1"/>
+      <Atom charge="0.0" name="H61" type="H1"/>
+      <Atom charge="-0.461" name="O6" type="Os"/>
+      <Atom charge="-0.568" name="O5" type="Os"/>
+      <Atom charge="-0.478" name="O4" type="Os"/>
+
+      <Atom charge="1.245" name="S2" type="S"/>
+      <Atom charge="-0.694" name="OS21" type="O2"/>
+      <Atom charge="-0.694" name="OS22" type="O2"/>
+      <Atom charge="-0.694" name="OS23" type="O2"/>
+
+      <Atom charge="1.245" name="S6" type="S"/>
+      <Atom charge="-0.694" name="OS61" type="O2"/>
+      <Atom charge="-0.694" name="OS62" type="O2"/>
+      <Atom charge="-0.694" name="OS63" type="O2"/>
+
+      <Atom charge="0.445" name="HO1" type="Ho"/>
+      <Atom charge="-0.639" name="O1" type="Oh"/>
+
+      <Bond atomName1="C1" atomName2="H1"/>
+      <Bond atomName1="C1" atomName2="C2"/>
+      <Bond atomName1="C1" atomName2="O5"/>
+      <Bond atomName1="C2" atomName2="H2"/>
+      <Bond atomName1="C2" atomName2="N2"/>
+      <Bond atomName1="C2" atomName2="C3"/>
+      <Bond atomName1="N2" atomName2="H2N"/>
+      <!-- <Bond atomName1="N2" atomName2="C2N"/>
+      <Bond atomName1="C2N" atomName2="CME"/>
+      <Bond atomName1="C2N" atomName2="O2N"/>
+      <Bond atomName1="CME" atomName2="H3M"/>
+      <Bond atomName1="CME" atomName2="H2M"/>
+      <Bond atomName1="CME" atomName2="H1M"/> -->
+      <Bond atomName1="C3" atomName2="H3"/>
+      <Bond atomName1="C3" atomName2="O3"/>
+      <Bond atomName1="C3" atomName2="C4"/>
+      <Bond atomName1="O3" atomName2="H3O"/>
+      <Bond atomName1="C4" atomName2="H4"/>
+      <Bond atomName1="C4" atomName2="C5"/>
+      <Bond atomName1="C4" atomName2="O4"/>
+      <Bond atomName1="C5" atomName2="H5"/>
+      <Bond atomName1="C5" atomName2="C6"/>
+      <Bond atomName1="C5" atomName2="O5"/>
+      <Bond atomName1="C6" atomName2="H62"/>
+      <Bond atomName1="C6" atomName2="H61"/>
+      <Bond atomName1="C6" atomName2="O6"/>
+
+      <Bond atomName1="S2" atomName2="OS21"/>
+      <Bond atomName1="S2" atomName2="OS22"/>
+      <Bond atomName1="S2" atomName2="OS23"/>
+      <Bond atomName1="N2" atomName2="S2"/>
+
+      <Bond atomName1="S6" atomName2="OS61"/>
+      <Bond atomName1="S6" atomName2="OS62"/>
+      <Bond atomName1="S6" atomName2="OS63"/>
+      <Bond atomName1="O6" atomName2="S6"/>
+
+      <Bond atomName1="C1"  atomName2="O1"/>
+      <Bond atomName1="HO1" atomName2="O1"/>
+
+      <ExternalBond atomName="O4"/>
+    </Residue>
+  </Residues>
+</ForceField>

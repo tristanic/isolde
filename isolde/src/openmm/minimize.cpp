@@ -14,8 +14,10 @@
 #include "lbfgs.h"
 #include <cmath>
 #include <sstream>
+#include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <algorithm>
 
 using namespace OpenMM;
@@ -135,7 +137,7 @@ int isolde::LocalEnergyMinimizer::minimize(Context& context, double tolerance,
     const System& system = context.getSystem();
     int numParticles = system.getNumParticles();
     double constraintTol = context.getIntegrator().getConstraintTolerance();
-    double workingConstraintTol = std::max(1e-4, constraintTol);
+    double workingConstraintTol = std::max(1e-2, constraintTol);
     double k = 1000/workingConstraintTol;
     lbfgsfloatval_t *x = lbfgs_malloc(numParticles*3);
     if (x == NULL)
@@ -237,9 +239,9 @@ int isolde::LocalEnergyMinimizer::minimize(Context& context, double tolerance,
                     ret = DID_NOT_CONVERGE;
                 break; // All constraints are satisfied.
             }
-            context.setPositions(initialPos);
             if (maxError >= prevMaxError)
             {
+                context.setPositions(initialPos);
                 if (data.largeForceEncountered)
                 {
                     ret = CONSTRAINT_VIOLATION_LARGE_FORCE;
@@ -259,6 +261,8 @@ int isolde::LocalEnergyMinimizer::minimize(Context& context, double tolerance,
                     x[3*i+1] = initialPos[i][1];
                     x[3*i+2] = initialPos[i][2];
                 }
+            } else {
+                    initialPos = positions;
             }
         }
     }
@@ -276,3 +280,12 @@ int isolde::LocalEnergyMinimizer::minimize(Context& context, double tolerance,
         context.applyConstraints(workingConstraintTol);
     return ret;
 }
+
+const std::map<int, const char*> isolde::LocalEnergyMinimizer::outcome_descriptions_ = {
+    {UNSPECIFIED_ERROR, "Unknown error"},
+    {INFINITE_OR_NAN_FORCE, "Infinite force encountered"},
+    {CONSTRAINT_VIOLATION_NO_LARGE_FORCE, "Contraints failed to converge"},
+    {CONSTRAINT_VIOLATION_LARGE_FORCE, "Constraints failed to converge (excessive force encountered)"},
+    {SUCCESS, "Minimisation converged"},
+    {DID_NOT_CONVERGE, "Minimisation did not converge"}
+};

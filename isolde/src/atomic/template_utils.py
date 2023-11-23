@@ -221,7 +221,7 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
             final_string = (f'Try deleting this residue and replacing it with "isolde add ligand {residue.name} - or have you just forgotten '
             f'to add hydrogens?')
         elif residue.polymer_type == Residue.PT_AMINO:
-            final_string = (f'Try deleting this residue and replacing it with "isolde add aa {residue.name}')
+            final_string = (f'Try deleting this residue and replacing it with "isolde add aa {residue.name}"')
         else:
             final_string = ('Adding of nucleic acid residues is not currently possible in ISOLDE. To move forward, just delete this residue.')
             
@@ -420,8 +420,13 @@ def add_missing_md_template_atoms(session, residue, md_template, residue_indices
 
 
 def trim_residue_to_md_template(residue, md_template):
+    err_string = ('Auto-correction to a MD template is currently only '
+            'possible when both residue and template have at least 3 connected atoms in common. '
+            'For smaller residues it is best to just delete and replace the '
+            'existing one. If your residue is larger than this, double-check to '
+            'see if you have chosen the correct MD template.')
     residue.session.logger.status('Trimming residue to MD template...')
-    if len(md_template.atoms) > 2 and len(residue.atoms) > 2:
+    if len(md_template.atoms) > 2 and len(md_template.bonds) > 1 and len(residue.atoms) > 2 and len(residue.atoms.intra_bonds) > 1:
         from chimerax.isolde.graph import make_graph_from_residue
         rgraph = make_graph_from_residue(residue)
         ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, big_first=True, timeout=5)
@@ -432,16 +437,16 @@ def trim_residue_to_md_template(residue, md_template):
         #     'coordinates.'.format(md_template.name, residue.name, residue.chain_id, residue.number))
         #     raise UserError(err_string)
         ratoms = residue.atoms[ri]
-        residue.atoms.subtract(residue.atoms[ri]).delete()
+        if len(ratoms) < 3 or len(ratoms.intra_bonds) < 2:
+            raise UserError(err_string)
+
+        residue.atoms.subtract(ratoms).delete()
         # Need to redo the graph matching, because indices may have changed
         rgraph = make_graph_from_residue(residue)
         ri, ti, _ = rgraph.maximum_common_subgraph(md_template.graph, big_first=True, timeout=5)
         add_missing_md_template_atoms(residue.session, residue, md_template, ri, ti)
     else:
-        raise UserError('Auto-correction to a MD template is currently only '
-            'possible when both residue and template have at least 3 atoms. '
-            'For smaller residues it is best to just delete and replace the '
-            'existing one.')
+        raise UserError(err_string)
 
 
 

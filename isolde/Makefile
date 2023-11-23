@@ -22,8 +22,6 @@
 # to avoid clashes with package names in pypi.python.org.
 # When uploaded to the ChimeraX toolshed, the bundle
 # will be displayed without the ChimeraX- prefix.
-# BUNDLE_NAME = ChimeraX-ISOLDE
-# BUNDLE_VERSION = 1.0b3
 # ChimeraX bundles should only include packages
 # that install as chimerax.package_name.
 # General Python packages should be uploaded to

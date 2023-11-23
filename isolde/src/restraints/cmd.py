@@ -408,3 +408,6 @@ def register_isolde_restrain(logger):
     register_isolde_restrain_torsions()
     register_isolde_adjust_torsions()
     register_isolde_release_torsions()
+
+    from .nmr import register_restrain_talos_nmr
+    register_restrain_talos_nmr(logger)

@@ -18,6 +18,7 @@
 
 #include "openmm_interface.h"
 #include "minimize.h"
+#include "lbfgs.h"
 
 
 using namespace isolde;
@@ -131,14 +132,12 @@ void OpenmmThreadHandler::_minimize_threaded(const double &tolerance, int max_it
             _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Forces | OpenMM::State::Energy);
         } else // if (result < 0)
         {
-            // Minimisation failed. Revert the model to its initial state
-            // and let ISOLDE point out problem areas to the user.
-            _clash = true;
+            std::cerr << "ISOLDE WARNING: energy minimiser returned an error: " << isolde::LocalEnergyMinimizer::outcome_description(result) << std::endl;
+            // Minimisation failed with an unspecified error. Report the error, but still see if we can continue on.
             _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Forces | OpenMM::State::Energy);
-            // _final_state = _starting_state;
         }
         //if (_min_converged && max_force(_final_state.getForces()) > MAX_FORCE)
-        if (_min_converged && max_force(_context->getSystem(), _final_state) > MAX_FORCE)
+        if (max_force(_context->getSystem(), _final_state) > MAX_FORCE)
             _clash = true;
         auto end = std::chrono::steady_clock::now();
         auto loop_time = end-start;
