@@ -3080,6 +3080,11 @@ def cys_type(residue):
                 if 'H1' in names:
                     return 'NCYX'
                 return 'CYX'
+            elif a.name == "CH3":
+                if 'OXT' in names:
+                    return 'CCYScyc'
+                else:
+                    return 'CYScyc'
             # Assume metal binding - will eventually need to do something better here
             return 'CYM'
         if a.name == 'HG':
