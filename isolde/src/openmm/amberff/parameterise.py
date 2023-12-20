@@ -16,7 +16,7 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         unsupported = residue.atoms[numpy.logical_not(element_check)]
         raise UserError('Automatic ligand parameterisation currently only supports the following elements:\n'
             f'{", ".join(supported_elements)}\n'
-            f'Residue type {residue.name} contains the unsupported elements {", ".join(unsupported.element_names.unique())}.'
+            f'Residue type {residue.name} contains the unsupported elements {", ".join(numpy.unique(unsupported.element_names))}.'
             'If you wish to work with this residue you will need to parameterise it using an external package.')
     import os
     base_path = os.path.dirname(os.path.abspath(__file__))

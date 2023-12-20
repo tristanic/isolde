@@ -713,16 +713,86 @@ PRODUCTION EQUILIBRIUM SIMULATIONS. -->
      <Bond atomName1="C" atomName2="O"/>
      <ExternalBond atomName="C"/>
     </Residue>
+  <Residue name="ACEcyc">
+   <!-- Variant N-terminal acetyl for forming a cyclic peptide via a thioether to cysteine -->
+   <Atom name="HH31" type="H1" charge="0.1497"/>
+   <Atom name="CH3" type="CX" charge="-0.3288"/>
+   <Atom name="HH32" type="H1" charge="0.1497"/>
+   <Atom name="C" type="C" charge="0.5972"/>
+   <Atom name="O" type="O" charge="-0.5679"/>
+   <Bond atomName1="HH31" atomName2="CH3"/>
+   <Bond atomName1="CH3" atomName2="HH32"/>
+   <Bond atomName1="CH3" atomName2="C"/>
+   <Bond atomName1="C" atomName2="O"/>
+   <ExternalBond atomName="C"/>
+   <ExternalBond atomName="CH3"/>
+  </Residue>
+  <Residue name="CCYScyc">
+   <!-- Variant C-terminal cys for forming a cyclic peptide via a thioether to ACEcyc -->
+   <Atom name="N" type="N" charge="-0.3821"/>
+   <Atom name="H" type="H" charge="0.2681"/>
+   <Atom name="CA" type="CX" charge="-0.1635"/>
+   <Atom name="HA" type="H1" charge="0.1396"/>
+   <Atom name="CB" type="2C" charge="-0.1996"/>
+   <Atom name="HB2" type="H1" charge="0.2266"/>
+   <Atom name="HB3" type="H1" charge="0.2266"/>
+   <Atom name="SG" type="S" charge= "-0.2692"/>
+   <!-- <Atom name="HG" type="HS" charge="0.2068"/> -->
+   <Atom name="C" type="C" charge="0.7497"/>
+   <Atom name="O" type="O2" charge="-0.7981"/>
+   <Atom name="OXT" type="O2" charge="-0.7981"/>
+   <Bond atomName1="N" atomName2="H"/>
+   <Bond atomName1="N" atomName2="CA"/>
+   <Bond atomName1="CA" atomName2="HA"/>
+   <Bond atomName1="CA" atomName2="CB"/>
+   <Bond atomName1="CA" atomName2="C"/>
+   <Bond atomName1="CB" atomName2="HB2"/>
+   <Bond atomName1="CB" atomName2="HB3"/>
+   <Bond atomName1="CB" atomName2="SG"/>
+   <Bond atomName1="C" atomName2="O"/>
+   <Bond atomName1="C" atomName2="OXT"/>
+   <ExternalBond atomName="N"/>
+   <ExternalBond atomName="SG"/>
+  </Residue>
+  <Residue name="CYScyc">
+   <!-- Variant C-terminal cys for forming a cyclic peptide via a thioether to ACEcyc -->
+   <Atom name="N" type="N" charge="-0.4157"/>
+   <Atom name="H" type="H" charge="0.2719"/>
+   <Atom name="CA" type="CX" charge="0.0213"/>
+   <Atom name="HA" type="H1" charge="0.1124"/>
+   <Atom name="CB" type="2C" charge="-0.1231"/>
+   <Atom name="HB2" type="H1" charge="0.1865"/>
+   <Atom name="HB3" type="H1" charge="0.1865"/>
+   <Atom name="SG" type="S" charge="-0.2692"/>
+   <Atom name="C" type="C" charge="0.5973"/>
+   <Atom name="O" type="O" charge="-0.5679"/>
+   <Bond atomName1="N" atomName2="H"/>
+   <Bond atomName1="N" atomName2="CA"/>
+   <Bond atomName1="CA" atomName2="HA"/>
+   <Bond atomName1="CA" atomName2="CB"/>
+   <Bond atomName1="CA" atomName2="C"/>
+   <Bond atomName1="CB" atomName2="HB2"/>
+   <Bond atomName1="CB" atomName2="HB3"/>
+   <Bond atomName1="CB" atomName2="SG"/>
+   <Bond atomName1="C" atomName2="O"/>
+   <ExternalBond atomName="N"/>
+   <ExternalBond atomName="C"/>
+   <ExternalBond atomName="SG"/>
+  </Residue>
 
   </Residues>
   <HarmonicBondForce>
     <Bond k="298068.1599999999" length="0.1379" type1="c" type2="N"/>
+    <Bond type1="CX" type2="S" length="0.181" k="189953.6"/>
   </HarmonicBondForce>
   <HarmonicAngleForce>
     <Angle angle="2.1476276445790226" k="952.2784" type1="N" type2="c" type3="o"/>
     <Angle angle="1.95756128903684" k="531.368" type1="h5" type2="c" type3="N"/>
     <Angle angle="2.1064378742319563" k="546.4304" type1="c" type2="N" type3="CX"/>
     <Angle angle="2.051634535719334" k="407.52160000000003" type1="c" type2="N" type3="H"/>
+    <Angle type1="2C" type2="S" type3="CX" angle="1.72613063022" k="518.816"/>
+    <Angle type1="C" type2="CX" type3="S" angle="2.00189265204" k="418.4"/>
+    <Angle type1="H1" type2="CX" type3="S" angle="1.91113553093" k="418.4"/>
   </HarmonicAngleForce>
   <PeriodicTorsionForce>
     <Proper k1="0.41840000000000005" k2="0.7112800000000001" k3="4.26768" periodicity1="4" periodicity2="3" periodicity3="1" phase1="3.141592653589793" phase2="0.0" phase3="3.141592653589793" type1="2C" type2="CX" type3="N" type4="c"/>
@@ -732,6 +802,9 @@ PRODUCTION EQUILIBRIUM SIMULATIONS. -->
     <Proper k1="10.46" k2="8.368" periodicity1="2" periodicity2="1" phase1="3.141592653589793" phase2="0.0" type1="o" type2="c" type3="N" type4="H"/>
     <Proper k1="10.46" periodicity1="2" phase1="3.141592653589793" type1="h5" type2="c" type3="N" type4="CX"/>
     <Proper k1="10.46" periodicity1="2" phase1="3.141592653589793" type1="h5" type2="c" type3="N" type4="H"/>
+
+    <Proper type1="H1" type2="CX" type3="S" type4="2C" periodicity1="3" phase1="0.0" k1="1.39466666667"/>
+
     <Improper k1="4.6024" periodicity1="2" phase1="3.141592653589793" type1="N" type2="c" type3="CX" type4="H"/>
     <Improper k1="43.932" periodicity1="2" phase1="3.141592653589793" type1="c" type2="h5" type3="N" type4="o"/>
   </PeriodicTorsionForce>
