@@ -94,3 +94,17 @@ def convert_plddt_to_b_factors(m):
     err = 1.5*numpy.exp(4*(0.7-bvals))
     m.atoms.bfactors = 8*pi**2*err*2/3
     
+def pae_from_pkl_to_json(pae_file, precision=3):
+    '''
+    The standalone version of AlphaFold only writes a pickle file with results, rather than the .json file provided by the AlphaFold DB. I am reluctant
+    to support opening pickle files from the GUI since malicious pickle files can run arbitrary code on opening - but this method can be used to extract 
+    the PAE to .json where needed.
+    '''
+    import pickle, json, os
+    with open(pae_file, 'rb') as infile:
+        pkl_dict = pickle.load(infile)
+    out_name = os.path.splitext(pae_file)[0]+"_pae.json"
+    pae = pkl_dict['predicted_aligned_error']
+    rounded_pae = [[round(r, 3) for r in row] for row in pae]
+    with open(out_name, 'wt') as outfile:
+        json.dump([{'predicted_aligned_error': rounded_pae}], outfile)
