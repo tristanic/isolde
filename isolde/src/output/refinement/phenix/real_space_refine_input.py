@@ -4,7 +4,8 @@ def write_real_space_refine_defaults(session, model, volume, resolution,
         restrain_coordination_sites=False,
         restrain_positions=False,
         include_hydrogens=False,
-        ncs_constraints=False
+        ncs_constraints=False,
+        run_dssp=True
         ):
     from chimerax.clipper.maps.map_handler_base import XmapHandlerBase
     if isinstance(volume, XmapHandlerBase):
@@ -16,8 +17,14 @@ def write_real_space_refine_defaults(session, model, volume, resolution,
         raise NotImplementedError('Coordination site restraints not yet implemented')
     map_file = volume.path
     from chimerax.core.commands import run
+    if(run_dssp):
+        run(session, f'dssp #{model.id_string}')
     if model_file_name is None:
         model_file_name = '{}_for_phenix.cif'.format(model.name)
+    if model_file_name.lower().endswith('.cif'):
+        extra_args = "bestGuess true computedSheets true"
+    else:
+        extra_args = ""
     if not include_hydrogens:
         sel_mask = model.atoms.selecteds
         model.atoms.selecteds=False
@@ -25,7 +32,12 @@ def write_real_space_refine_defaults(session, model, volume, resolution,
         sel_text = 'sel true'
     else:
         sel_text = ''
-    run(session, 'save {} #{} {}'.format(model_file_name, model.id_string, sel_text))
+    try:
+        run(session, f'save {model_file_name} #{model.id_string} {sel_text} {extra_args}')
+    except ModuleNotFoundError as e: #TODO: Remove once fixed in ChimeraX
+        if 'pprintpp' in e.msg:
+            from chimerax.core.errors import UserError
+            raise UserError('The `computedSheets true` option requires the `pprintpp` module to be installed, but this is missing in the ChimeraX 1.7 release. Use the command:\npip install pprintpp\non the ChimeraX command line to install it, then try again.')
     if not include_hydrogens:
         model.atoms.selecteds=sel_mask
     out_str = f'''
