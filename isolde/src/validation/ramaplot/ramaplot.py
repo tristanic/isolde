@@ -15,6 +15,8 @@ from Qt.QtCore import Qt
 class RamaPlot(QWidget):
     def __init__(self, session, manager, rama_case):
         super().__init__(parent=manager.ui_area)
+        self.setMinimumHeight(40)
+        self.setMinimumWidth(40)
         self._debug=False
         self.session = session
         self.manager = manager
