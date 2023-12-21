@@ -6,6 +6,7 @@ def write_phenix_refine_defaults(session, model, xmapset,
         num_macrocycles=6,
         nqh_flips=True,
         scattering_type='xray',
+        run_dssp=True
         ):
     if restrain_coordination_sites:
         raise NotImplementedError('Coordination site restraints not yet implemented')
@@ -13,6 +14,10 @@ def write_phenix_refine_defaults(session, model, xmapset,
         param_file_name = 'refine.eff'
     if model_file_name is None:
         model_file_name = '{}_for_phenix.cif'.format(model.name)
+    if model_file_name.lower().endswith('.cif'):
+        extra_args = "bestGuess true computedSheets true"
+    else:
+        extra_args = ""
     reflections_file_name = '{}_for_phenix.mtz'.format(model.name)
 
     if not include_hydrogens:
@@ -23,7 +28,14 @@ def write_phenix_refine_defaults(session, model, xmapset,
     else:
         sel_text = ''
     from chimerax.core.commands import run
-    run(session, 'save {} #{} {}'.format(model_file_name, model.id_string, sel_text))
+    if run_dssp:
+        run(session, f'dssp #{model.id_string}')
+    try:
+        run(session, f'save {model_file_name} #{model.id_string} {sel_text} {extra_args}')
+    except ModuleNotFoundError as e: #TODO: Remove once fixed in ChimeraX
+        if 'pprintpp' in e.msg:
+            from chimerax.core.errors import UserError
+            raise UserError('The `computedSheets true` option requires the `pprintpp` module to be installed, but this is missing in the ChimeraX 1.7 release. Use the command:\npip install pprintpp\non the ChimeraX command line to install it, then try again.')
     if not include_hydrogens:
         model.atoms.selecteds=sel_mask
 
