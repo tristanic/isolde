@@ -216,6 +216,8 @@ class MapSettingsDialog(UI_Panel_Base):
         from chimerax.core.models import MODEL_DISPLAY_CHANGED
         from ..util import slot_disconnected
         def display_changed_cb(*_):
+            if map.deleted:
+                return
             with slot_disconnected(cb.toggled, set_display):
                 cb.setChecked(map.display)
         th.append(self.session.triggers.add_handler(MODEL_DISPLAY_CHANGED, display_changed_cb))
