@@ -271,7 +271,7 @@ def isolde_step(session, residue=None, view_distance=None, interpolate_frames=No
     else:
         if hasattr(session, 'isolde'):
             m = session.isolde.selected_model
-        else:
+        if m is None:
             from chimerax.atomic import AtomicStructure
             atomic_structures = session.models.list(type=AtomicStructure)
             if len(atomic_structures):
