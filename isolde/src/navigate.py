@@ -6,18 +6,65 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
-def get_stepper(structure):
+def get_stepper_mgr(session):
+    if hasattr(session, '_isolde_steppers'):
+        return session._isolde_steppers
+    return ResidueStepperMgr(session)
+
+def get_stepper(structure, session_restore=False):
     '''
     Get the :class:`ResidueStepper` controlling ISOLDE's navigation around the
     given structure, creating it if it doesn't yet exist.
     '''
-    if not hasattr(structure, '_isolde_residue_stepper'):
-        structure._isolde_residue_stepper = ResidueStepper(structure)
-    return structure._isolde_residue_stepper
+    
+    return get_stepper_mgr(structure.session).get_stepper(structure)
 
-from chimerax.core.state import StateManager
+from chimerax.core.state import StateManager, State
 
-class ResidueStepper(StateManager):
+class ResidueStepperMgr(StateManager):
+    def __init__(self, session):
+        self._steppers = {}
+        session._isolde_steppers = self
+        if not len(session.state_managers(ResidueStepperMgr)):
+            self.init_state_manager(session, base_tag='Isolde Residue Stepper Manager')
+    
+    def register_stepper(self, stepper):
+        m = stepper.structure
+        if stepper.structure in self._steppers.keys():
+            raise KeyError(f'Model #{m.id_string} already has a stepper registered!')
+        self._steppers[m] = stepper
+    
+    def remove_stepper(self, stepper):
+        self._steppers.pop(stepper.structure, None)
+    
+    def get_stepper(self, structure):
+        if structure in self._steppers.keys():
+            return self._steppers[structure]
+        return ResidueStepper(structure)
+    
+    def take_snapshot(self, session, flags):
+        from . import ISOLDE_STATE_VERSION
+        data = {
+            'version': ISOLDE_STATE_VERSION,
+            'steppers': self._steppers
+        }
+        return data
+    
+    def reset_state(self, session):
+        self._steppers = {}
+
+    @staticmethod
+    def restore_snapshot(session, data):
+        mgr = ResidueStepperMgr(session)
+        mgr._steppers = data['steppers']
+        return mgr
+
+
+
+    
+
+
+class ResidueStepper(State):
 
     _num_created = 0
 
@@ -29,9 +76,7 @@ class ResidueStepper(StateManager):
     Provide methods to step forward/backward through the polymeric residues in
     a structure.
     '''
-    def __init__(self, structure, view_distance=12):
-        self.init_state_manager(structure.session, "isolde residue stepper {}".format(self._num_created))
-        ResidueStepper._num_created += 1
+    def __init__(self, structure, view_distance=12, session_restore=False):
         self.session = structure.session
         self.structure = structure
         self._current_residue = None
@@ -40,6 +85,9 @@ class ResidueStepper(StateManager):
         self._view_distance=self.DEFAULT_VIEW_DISTANCE
         self._current_direction = self.DEFAULT_DIRECTION
         self.structure.triggers.add_handler('deleted', self._model_deleted_cb)
+        if not session_restore:
+            get_stepper_mgr(structure.session).register_stepper(self)
+
 
     def _block_clipper_spotlights(self):
         from chimerax.clipper import get_all_symmetry_handlers
@@ -88,7 +136,7 @@ class ResidueStepper(StateManager):
         return next_res
 
     def _model_deleted_cb(self, *_):
-        self.destroy()
+        get_stepper_mgr(self.session).remove_stepper(self)
 
     def reset_state(self, session):
         self._current_residue=None
@@ -336,7 +384,7 @@ class ResidueStepper(StateManager):
 
     @staticmethod
     def restore_snapshot(session, data):
-        stepper = get_stepper(data['structure'])
+        stepper = get_stepper(data['structure'], session_restore=True)
         stepper.set_state_from_snapshot(session, data)
         print('Restoring stepper: {}'.format(stepper.structure.name))
         return stepper

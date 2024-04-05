@@ -100,7 +100,7 @@ class _MyAPI(BundleAPI):
             ProperDihedralRestraints, AdaptiveDihedralRestraints, RotamerRestraints,
         )
         from .remote_control.rest_server import IsoldeRESTServer
-        from .navigate import ResidueStepper
+        from .navigate import ResidueStepper, ResidueStepperMgr
         ct = {
             'RamaAnnotator':                RamaAnnotator,
             'RotamerAnnotator':             RotamerAnnotator,
@@ -146,6 +146,7 @@ class _MyAPI(BundleAPI):
             'RotamerRestraints':            RotamerRestraints,
             'IsoldeRESTServer':             IsoldeRESTServer,
             'ResidueStepper':               ResidueStepper,
+            'ResidueStepperMgr':            ResidueStepperMgr
         }
         return ct.get(class_name)
 
