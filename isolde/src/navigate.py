@@ -12,6 +12,12 @@ def get_stepper_mgr(session):
     return ResidueStepperMgr(session)
 
 def get_stepper(structure, session_restore=False):
+def get_stepper_mgr(session):
+    if hasattr(session, '_isolde_steppers'):
+        return session._isolde_steppers
+    return ResidueStepperMgr(session)
+
+def get_stepper(structure, session_restore=False):
     '''
     Get the :class:`ResidueStepper` controlling ISOLDE's navigation around the
     given structure, creating it if it doesn't yet exist.
@@ -58,7 +64,6 @@ class ResidueStepperMgr(StateManager):
         mgr = ResidueStepperMgr(session)
         mgr._steppers = data['steppers']
         return mgr
-
 
 
 
