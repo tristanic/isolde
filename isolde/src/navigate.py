@@ -61,6 +61,7 @@ class ResidueStepperMgr(StateManager):
 
 
 
+
     
 
 
@@ -386,8 +387,24 @@ class ResidueStepper(State):
     def restore_snapshot(session, data):
         stepper = get_stepper(data['structure'], session_restore=True)
         stepper.set_state_from_snapshot(session, data)
-        print('Restoring stepper: {}'.format(stepper.structure.name))
+        session.triggers.add_handler('end restore session', stepper._end_restore_session_cb)
         return stepper
+    
+    def _end_restore_session_cb(self, *_):
+        '''
+        In ISOLDE versions 1.7 and older `ResidueStepper` was a `StateManager` subclass,
+        and logic errors were leading to the proliferation of detached `ResidueStepper` 
+        instances and eventual tracebacks when sessions were repeatedly saved and restored
+        after opening, stepping into and closing models. In 1.8 this was rearranged to have 
+        a session-level `ResidueStepperMgr(StateManager)` singleton managing the 
+        individual `ResidueStepper(State)` instances. This corrects the original issue, but
+        session files restored from 1.7 and earlier come back with spurious entries in 
+        `session._state_managers` that must be removed.
+        '''
+        for tag,inst in self.session.state_managers_by_tag(ResidueStepper).items():
+            self.session.remove_state_manager(tag)
+        from chimerax.core.triggerset import DEREGISTER
+        return DEREGISTER
 
     def set_state_from_snapshot(self, session, data):
         self._current_residue = data['residue']
