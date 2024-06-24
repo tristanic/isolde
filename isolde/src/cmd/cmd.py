@@ -261,6 +261,7 @@ def isolde_demo(session, demo_name = None, model_only=False, start_isolde=True):
 def isolde_step(session, residue=None, view_distance=None, interpolate_frames=None,
         polymeric_only=True, select=True):
     from chimerax.atomic import Residues, Residue
+    m = None
     if isinstance(residue, Residues):
         if len(residue) == 0:
             raise UserError('Selection contains no residues!')
