@@ -33,7 +33,7 @@ def write_real_space_refine_defaults(session, model, volume, resolution,
     else:
         sel_text = ''
     try:
-        run(session, f'save {model_file_name} #{model.id_string} {sel_text} {extra_args}')
+        run(session, f'save "{model_file_name}" #{model.id_string} {sel_text} {extra_args}')
     except ModuleNotFoundError as e: #TODO: Remove once fixed in ChimeraX
         if 'pprintpp' in e.msg:
             from chimerax.core.errors import UserError
