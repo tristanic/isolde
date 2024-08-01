@@ -31,7 +31,7 @@ def write_phenix_refine_defaults(session, model, xmapset,
     if run_dssp:
         run(session, f'dssp #{model.id_string}')
     try:
-        run(session, f'save {model_file_name} #{model.id_string} {sel_text} {extra_args}')
+        run(session, f'save "{model_file_name}" #{model.id_string} {sel_text} {extra_args}')
     except ModuleNotFoundError as e: #TODO: Remove once fixed in ChimeraX
         if 'pprintpp' in e.msg:
             from chimerax.core.errors import UserError
