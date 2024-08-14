@@ -30,5 +30,7 @@ def load_default_mmcif_templates():
         import os
         from chimerax import mmcif
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        mmcif.load_mmCIF_templates(os.path.join(base_dir, '..', 'dictionaries', 'core_components.cif'))
+        mmcif.load_mmCIF_templates(os.path.join(base_dir, '..', 'dictionaries', 'aa-variants-v1.cif'))
         _templates_loaded=True
+
+load_default_mmcif_templates()
