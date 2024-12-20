@@ -1,0 +1,33 @@
+<ForceField>
+  <Info>
+    <DateGenerated>2019-02-20</DateGenerated>
+  </Info>
+  <AtomTypes>
+    <!-- <Type class="SE" element="Se" mass="78.96" name="SE"/> -->
+  </AtomTypes>
+  <Residues>
+    <Residue name="SEC">
+        <Atom name="N" type="N" charge="-0.4157"/>
+        <Atom name="H" type="H" charge="0.2719"/>
+        <Atom name="CA" type="CX" charge="-0.0351"/>
+        <Atom name="HA" type="H1" charge="0.0508"/>
+        <Atom name="CB" type="CT" charge="-0.2413"/>
+        <Atom name="HB3" type="H1" charge="0.1122"/>
+        <Atom name="HB2" type="H1" charge="0.1122"/>
+        <Atom name="SE" type="SE" charge="-0.8844"/>
+        <Atom name="C" type="C" charge="0.5973"/>
+        <Atom name="O" type="O" charge="-0.5679"/>
+        <Bond atomName1="N" atomName2="H"/>
+        <Bond atomName1="N" atomName2="CA"/>
+        <Bond atomName1="CA" atomName2="HA"/>
+        <Bond atomName1="CA" atomName2="CB"/>
+        <Bond atomName1="CA" atomName2="C"/>
+        <Bond atomName1="CB" atomName2="HB3"/>
+        <Bond atomName1="CB" atomName2="HB2"/>
+        <Bond atomName1="CB" atomName2="SE"/>
+        <Bond atomName1="C" atomName2="O"/>
+        <ExternalBond atomName="N"/>
+        <ExternalBond atomName="C"/>
+    </Residue>
+  </Residues>
+</ForceField>
