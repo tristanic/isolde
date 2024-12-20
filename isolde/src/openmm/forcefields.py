@@ -30,6 +30,7 @@ _forcefield_files = {
         'CDL.xml',                   # Cardiolipin
         'all_modrna08.xml',          # <BUGGY/BROKEN> Naturally occurring modified RNA bases. DOI: 10.1021/ct600329w
         'mse.xml',                   # Approximation (same charges as MET)
+        'selenocys.xml',             # Approximation (same charges as deprotonated CYS). Deprotonated version only (overwhelmingly dominates in real-world)
         'termods.xml',                   # Various chain-terminal residue modifications
         'glycam_all.xml',            # GLYCAM06 force field
         'glycam_heparin.xml',        # Heparin building blocks SGN and IDS hacked together from GLYCAM sugar, ROH and SO3 templates 
