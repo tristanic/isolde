@@ -77,8 +77,11 @@ class ProblemAggregator:
         for c in clusters:
             f = itemgetter(*c)
             clustered_issues.append(f(sites))
-        f = itemgetter(*noise)
-        remainder = f(sites)
+        if len(noise):
+            f = itemgetter(*noise)
+            remainder = f(sites)
+        else:
+            remainder = []
         return clustered_issues, remainder
     
     def cluster_atoms(self, items):
