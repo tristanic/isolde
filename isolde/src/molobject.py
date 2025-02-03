@@ -3359,7 +3359,7 @@ class AdaptiveDistanceRestraintMgr(_DistanceRestraintMgrBase):
             return
         bd.display = self._show_bd
         td.display = self._show_td
-        end_pos, mid_pos = visibles._bond_transforms;
+        end_pos, mid_pos = visibles._bond_transforms
         colors = visibles.colors
         bond_colors = numpy.empty((n*2, 4), uint8)
         bond_colors[0::2] = colors
