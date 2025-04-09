@@ -517,6 +517,7 @@ rotamer_nearest_target(void *rotamer)
             for (size_t j=0; j<nchi; ++j)
             {
                 double offset = std::abs(util::wrapped_angle(t->angles[j]-r_angles[j]));
+                if (j==nchi-1 && r->is_symmetric() && offset > M_PI/2.0) offset = M_PI - offset; 
                 current_offsets[j] = offset;
                 sum += offset;
             }
