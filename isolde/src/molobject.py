@@ -3184,7 +3184,11 @@ class DistanceRestraintMgr(_DistanceRestraintMgrBase):
         Model.set_state_from_snapshot(self, session, data['model state'])
         data = data['restraint info']
         atoms = data['atoms']
-        drs = self._get_restraints(*atoms, True)
+        try:
+            drs = self._get_restraints(*atoms, True)
+        except ValueError as e:
+            session.logger.warning(f'Distance restraint manager failed to correctly restore:\n{str(e)}')
+            return
         drs.targets = data['targets']
         drs.spring_constants = data['spring_constants']
         drs.enableds = data['enableds']
