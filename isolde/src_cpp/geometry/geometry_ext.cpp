@@ -13,8 +13,8 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "geometry/geometry.h"
-#include "molc.h"
+#include "geometry.h"
+#include "../molc.h"
 
 typedef uint8_t npy_bool;
 typedef float float32_t;

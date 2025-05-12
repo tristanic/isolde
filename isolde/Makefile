@@ -51,7 +51,7 @@ endif
 
 ifeq ($(OS),Linux)
 ifndef RELEASE
-CHIMERAX_APP = chimerax-daily
+CHIMERAX_APP = chimerax
 else
 CHIMERAX_APP = chimerax
 endif
@@ -75,7 +75,8 @@ endif
 
 BUNDLE_BASE_NAME = $(subst ChimeraX-,,$(BUNDLE_NAME))
 SOURCE = src
-SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
+CPP_SOURCE = src_cpp
+SRCS = $(SOURCE)/*.py $(CPP_SOURCE)/*.cpp
 
 :DEFAULT_GOAL := wheel
 
@@ -84,11 +85,12 @@ SRCS = $(SOURCE)/*.py $(SOURCE)/*.cpp
 #
 
 
-
-wheel $(WHEEL): bundle_info.xml $(SRCS)
+wheel $(WHEEL): pyproject.toml.in $(SRCS)
+	$(CHIMERAX_EXE) --nogui --exit --script prep_toml.py; \
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel build . ; exit"
 
 install app-install: $(WHEEL)
+	$(CHIMERAX_EXE) --nogui --exit --script prep_toml.py; \
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel install . ; exit"
 
 uninstall app-uninstall:	$(WHEEL)
@@ -105,5 +107,6 @@ debug:
 
 clean:
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel clean . ; exit"
+
 
 .PHONY: docs
