@@ -10,13 +10,12 @@ authors = [{name = "Tristan Croll", email="tcroll@altoslabs.com"}]
 description = "ISOLDE: Interactive Structure Optimisation by Local Direct Exploration"
 
 dynamic = ["classifiers", "requires-python", "version"]
-custom-init = true
 
 dependencies = [
-    "ChimeraX-Core >=1.7.dev202306142048, <1.8",
-    "ChimeraX-Atomic ~=1.36",
-    "ChimeraX-AtomicLibrary ~=10.0",
-    "ChimeraX-Clipper ~=0.22.0",
+    "ChimeraX-Core >=1.10.dev0, ==1.10.*",
+    "ChimeraX-Atomic ~=1.60.0",
+    "ChimeraX-AtomicLibrary ~=14.1.0",
+    "ChimeraX-Clipper ~=0.25.0",
     "ChimeraX-Arrays ~=1.0" 
 ]
 
@@ -39,7 +38,7 @@ Home = "https://tristanic.github.io/isolde"
 Source = "https://github.com/tristanic/isolde/isolde"
 
 [chimerax]
-module-name-override = "ISOLDE"
+module-name-override = "isolde"
 min-session-version = 1
 max-session-version = 1
 categories = ["General"]
@@ -47,11 +46,13 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: Free for non-commercial use",
 ]
+custom-init = true
+
 
 [chimerax.package-data]
-"src/openmm/" = ["openmm/amberff/**"]
-"src/validation/" = ["validation/molprobity_data/**"]
-"src/" = ["resources/**", "icons/**", "demo_data/**","dictionaries/**", "tests/**", "docs/**"]
+"src/" = ["resources/**", "icons/**", "demo_data/**","dictionaries/**", "tests/**", "docs/**", "ui/**",
+    "openmm/amberff/*.xml", "openmm/amberff/*.zip", "openmm/amberff/amap/**",
+    "validation/molprobity_data/*.data"]
 
 [chimerax.tool.ISOLDE]
 category = "General"
@@ -89,9 +90,9 @@ sources = [
     "src_cpp/restraints/*.cpp",
     "src_cpp/molc.cpp",
     ]
-libraries = ["atomstruct", "element", "arrays", "pyinstance", "numpy"]
-include-modules = ["numpy", "atomic", "atomic-lib", "arrays"]
-library-modules = ["numpy", "atomic", "atomic-lib", "arrays"]
+libraries = ["atomstruct", "element", "arrays", "chutil", "pyinstance"]
+include-modules = ["chimerax.core", "chimerax.atomic_lib", "chimerax.arrays", "numpy"]
+library-modules = ["chimerax.core", "chimerax.atomic_lib", "chimerax.arrays"]
 
 [chimerax.library._nd_interp]
 sources = [
@@ -109,18 +110,20 @@ sources = [
     "src_cpp/openmm/openmm_interface.cpp",
     "src_cpp/openmm/minimize.cpp"
 ]
-libraries = ["OpenMM", "atomstruct", "pyinstance"]
-include-modules = ["openmm", "atomic", "atomic-lib"]
-library-modules = ["openmm", "atomic", "atomic-lib"]
-include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/exclude"]
+libraries = ["OpenMM"]
+library-dirs = ["OPENMM_LIB_DIR"]
+include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_LIB_DIR/../include"]
+define-macros = ["_GLIBCXX_USE_CXX11_ABI=0"]
 
 [chimerax.extension._openmm_force_ext]
 sources = [
     "src_cpp/openmm/custom_forces.cpp"
 ]
-libraries = ["numpy", "OpenMM", "atomstruct", "pyinstance"]
-include-modules = ["openmm", "atomic", "atomic-lib"]
-library-modules = ["openmm", "atomic", "atomic-lib"]
+libraries = ["OpenMM"]
+library-dirs = ["OPENMM_LIB_DIR"]
+include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_LIB_DIR/../include"]
+include-modules = ["numpy"]
+define-macros = ["_GLIBCXX_USE_CXX11_ABI=0"]
 
 [chimerax.extension.mcsplit]
 sources = ["src_cpp/graph/*.cpp"]
@@ -128,190 +131,165 @@ include-dirs = ["extern/pybind11/include"]
 
 ### TOOLBAR ###
 
+[chimerax.toolbar."ISOLDE"]
+after = "Right Mouse"
+
 # Main section
-[chimerax.provider."isolde start"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Main"
+[chimerax.toolbar."ISOLDE".sections."Main"]
+
+[[chimerax.toolbar."ISOLDE".sections."Main".button]]
+name = "isolde start"
 display-name = "Start ISOLDE"
 icon = "logo_small.png"
 description = "Start the ISOLDE GUI"
 
 # Control section
-[chimerax.provider."start sim"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[chimerax.toolbar."ISOLDE".sections."Control"]
+
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "start sim"
 group = "playpause"
 display-name = "Start simulation"
 icon = "play_icon.png"
 description = "Start a simulation based on the current selection"
 
-[chimerax.provider."pause sim"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "pause sim"
 group = "playpause"
 display-name = "Pause simulation"
 icon = "pause_icon.png"
 description = "Pause the currently running simulation"
 
-[chimerax.provider."resume sim"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "resume sim"
 group = "playpause"
 display-name = "Resume simulation"
 icon = "play_icon_red.png"
 description = "Resume the currently paused simulation"
 
-[chimerax.provider."checkpoint save"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "checkpoint save"
 display-name = "Store checkpoint"
 icon = "checkpoint_green.png"
 description = "Store the current state of the simulation as a checkpoint"
 
-[chimerax.provider."checkpoint revert"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "checkpoint revert"
 display-name = "Revert to checkpoint"
 icon = "checkpoint_red.png"
 description = "Revert the simulation to the last saved checkpoint"
 
-[chimerax.provider."stop-keep"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "stop-keep"
 display-name = "Stop (keep)"
 icon = "stop_sign_green.png"
 description = "Stop the simulation and keep the current coordinates"
 
-[chimerax.provider."stop-discard"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Control"
+[[chimerax.toolbar."ISOLDE".sections."Control".button]]
+name = "stop-discard"
 display-name = "Stop (discard)"
 icon = "stop_sign_red.png"
 description = "Stop the simulation and discard all changes since it was started"
 
 # Peptide bond section
-[chimerax.provider."flip peptide"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Peptide bond"
+[chimerax.toolbar."ISOLDE".sections."Peptide bond"]
+
+
+[[chimerax.toolbar."ISOLDE".sections."Peptide bond".button]]
+name = "flip peptide"
 display-name = "Flip peptide"
 icon = "pep-flip-icon.png"
 description = "Flip the peptide bond N-terminal to the selection by 180 degrees (select a single amino acid residue to activate)"
 
-[chimerax.provider."flip cis-trans"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Peptide bond"
+[[chimerax.toolbar."ISOLDE".sections."Peptide bond".button]]
+name = "flip cis-trans"
 display-name = "Flip cis<->trans"
 icon = "cis-trans-icon.png"
 description = "Flip the peptide bond N-terminal to the selection from cis to trans or vice versa (select a single amino acid residue to activate)"
 
 # Rotamer section
-[chimerax.provider."next rotamer"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Rotamer"
+[chimerax.toolbar."ISOLDE".sections."Rotamer"]
+
+[[chimerax.toolbar."ISOLDE".sections."Rotamer".button]]
+name = "next rotamer"
 display-name = "Preview next"
 icon = "rotamer_preview.png"
 description = "Cycle through rotamers from most to least common"
 
-[chimerax.provider."commit rotamer"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Rotamer"
+[[chimerax.toolbar."ISOLDE".sections."Rotamer".button]]
+name = "commit rotamer"
 display-name = "Set coords"
 icon = "rotamer_commit.png"
 description = "Set sidechain atom positions to match the current preview"
 
-[chimerax.provider."restrain rotamer"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Rotamer"
+[[chimerax.toolbar."ISOLDE".sections."Rotamer".button]]
+name = "restrain rotamer"
 display-name = "Restrain"
 icon = "rotamer_restrain.png"
 description = "Restrain sidechain torsions to match the current preview"
 
-[chimerax.provider."release rotamer"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Rotamer"
+[[chimerax.toolbar."ISOLDE".sections."Rotamer".button]]
+name = "release rotamer"
 display-name = "Release"
 icon = "rotamer_release.png"
 description = "Release torsion restraints on the current sidechain"
 
 # Map section
-[chimerax.provider."spotlight"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Map"
+[chimerax.toolbar."ISOLDE".sections."Map"]
+
+
+[[chimerax.toolbar."ISOLDE".sections."Map".button]]
+name = "spotlight"
 display-name = "Spotlight mode"
 icon = "spotlight.png"
 description = "Display map(s) and atoms in a sphere around the centre of rotation"
 
-[chimerax.provider."mask"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Map"
+[[chimerax.toolbar."ISOLDE".sections."Map".button]]
+name = "mask"
 display-name = "Mask to selection"
 icon = "mask_to_sel.png"
 description = "Mask map(s) to surround the selected atom(s)"
 
 # Navigate section
-[chimerax.provider."step n"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Navigate"
+[chimerax.toolbar."ISOLDE".sections."Navigate"]
+
+[[chimerax.toolbar."ISOLDE".sections."Navigate".button]]
+name = "step n"
 display-name = "Step back"
 icon = "step_n.png"
 description = "Step one residue towards the start of the model"
 
-[chimerax.provider."step sel"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Navigate"
+[[chimerax.toolbar."ISOLDE".sections."Navigate".button]]
+name = "step sel"
 display-name = "Step from here"
 icon = "step_sel.png"
 description = "Reset stepper to start from the selected residue"
 
-[chimerax.provider."step c"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Navigate"
+[[chimerax.toolbar."ISOLDE".sections."Navigate".button]]
+name = "step c"
 display-name = "Step forward"
 icon = "step_c.png"
 description = "Step one residue towards the end of the model"
 
 #Tugging mode section
-[chimerax.provider."tug atom"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Navigate"
+[chimerax.toolbar."ISOLDE".sections."Tugging mode"]
+
+[[chimerax.toolbar."ISOLDE".sections."Tugging mode".button]]
+name = "tug atom"
 mouse-mode = "isolde tug atom"
 display-name = "Tug atom"
 icon = "tug_atom.png"
 description = "Right mouse tugs a single atom during simulations"
 
-[chimerax.provider."tug residue"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Navigate"
+[[chimerax.toolbar."ISOLDE".sections."Tugging mode".button]]
+name = "tug residue"
 mouse-mode = "isolde tug residue"
 display-name = "Tug residue"
 icon = "tug_residue.png"
 description = "Right mouse tugs all atoms in a residue during simulations"
 
-[chimerax.provider."tug selection"]
-manager = "toolbar"
-tab = "ISOLDE"
-section = "Navigate"
+[[chimerax.toolbar."ISOLDE".sections."Tugging mode".button]]
+name = "tug selection"
 mouse-mode = "isolde tug selection"
 display-name = "Tug selection"
 icon = "tug_selection.png"

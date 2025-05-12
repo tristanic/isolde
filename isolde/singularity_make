@@ -1,0 +1,10 @@
+#!/bin/bash
+#RELEASE=1 singularity exec --bind $(pwd) --pwd $(pwd) ~/isolde_build_env/rhel-8.img  make $@
+if [[ -v RELEASE ]];
+then
+  IMG=rhel-8-chimerax-release.img
+else
+  IMG=rhel-8-chimerax-daily.img
+fi
+
+singularity exec --bind $(pwd) --pwd $(pwd) ~/isolde_build_env/$IMG  make $@

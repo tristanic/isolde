@@ -13,53 +13,55 @@ def _current_residue_sel_string(session):
     from chimerax.atomic import selected_residues, concise_residue_spec
     return concise_residue_spec(session, selected_residues(session))
 
-def toolbar_command(session, name):
+def toolbar_command(session, name, debug=True):
     from chimerax.core.commands import run
-    if name == 'isolde start':
+    if debug:
+        session.logger.info(f"ISOLDE toobar command name: {name}")
+    if name == 'button-isolde-start':
         run(session, 'isolde start')
-    elif name == 'start sim':
+    elif name == 'button-start-sim':
         run(session, f'isolde sim start {_current_residue_sel_string(session)}')
-    elif name == 'pause sim':
+    elif name == 'button-pause-sim':
         run(session, 'isolde sim pause')
-    elif name == 'resume sim':
+    elif name == 'button-resume-sim':
         run(session, 'isolde sim resume')
     
     
-    elif name == 'checkpoint save':
+    elif name == 'button-checkpoint-save':
         session.isolde.checkpoint()
-    elif name == 'checkpoint revert':
+    elif name == 'button-checkpoint-revert':
         session.isolde.revert_to_checkpoint()
-    elif name == 'stop-keep':
+    elif name == 'button-stop-keep':
         run(session, 'isolde sim stop')
-    elif name == 'stop-discard':
+    elif name == 'button-stop-discard':
         run(session, 'isolde sim stop discardTo start')
-    elif name == 'flip peptide':
+    elif name == 'button-flip-peptide':
         run(session, f'isolde pepflip {_current_residue_sel_string(session)}')
-    elif name == 'flip cis-trans':
+    elif name == 'button-flip-cis-trans':
         run(session, f'isolde cisflip {_current_residue_sel_string(session)}')
     elif 'rotamer' in name:
-        _rota_command(session, name)
-    elif name == 'spotlight':
-        run(session, 'clipper spotlight')
-    elif name == 'mask':
+        _rota_command(session, name.replace('-',' ').replace('button ',''))
+    elif name == 'button-spotlight':
+        run(session, f'clipper spotlight #{session.isolde.selected_model.id_string}')
+    elif name == 'button-mask':
         if hasattr(session, 'isolde'):
             radius = session.isolde.params.map_mask_radius
             focus = session.isolde.params.center_on_sel_when_masking
         else:
             radius = 4.0
             focus = True
-        run(session, f'clipper isolate {_current_residue_sel_string(session)} mask {radius} focus {focus}')
-    elif name == 'step n':
+        run(session, f'clipper isolate #{session.isolde.selected_model.id_string}&{_current_residue_sel_string(session)} mask {radius} focus {focus}')
+    elif name == 'button-step-n':
         run(session, 'isolde stepto prev')
-    elif name == 'step sel':
+    elif name == 'button-step-sel':
         run(session, f'isolde stepto {_current_residue_sel_string(session)}')
-    elif name == 'step c':
+    elif name == 'button-step-c':
         run(session, 'isolde stepto next')
-    elif name == 'tug atom':
+    elif name == 'button-tug-atom':
         run(session, 'ui mousemode right "isolde tug atom"')
-    elif name == 'tug residue':
+    elif name == 'button-tug-residue':
         run(session, 'ui mousemode right "isolde tug residue"')
-    elif name == 'tug selection':
+    elif name == 'button-tug-selection':
         run(session, 'ui mousemode right "isolde tug selection"')
 
 def _rota_command(session, cmd):
@@ -143,6 +145,7 @@ class ToolbarButtonMgr:
                 else:
                     self.set_enabled(key, False)
         except ValueError:
+            raise
             # Temporary hack because in ChimeraX 1.4 the Toolbar manager doesn't update on bundle install,
             # leading to a traceback when ISOLDE is first installed via the GUI.
             from .dialog import choice_warning

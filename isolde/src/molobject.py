@@ -35,7 +35,7 @@ import json
 
 from .util import compiled_lib_extension
 libdir = os.path.dirname(os.path.abspath(__file__))
-libfile = os.path.join(libdir, 'libmolc.'+compiled_lib_extension())
+libfile = os.path.join(libdir, 'lib', 'libmolc.'+compiled_lib_extension())
 DICT_DIR = os.path.join(libdir, 'dictionaries')
 
 _c_functions = CFunctions(os.path.splitext(libfile)[0])

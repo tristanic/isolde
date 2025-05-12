@@ -29,7 +29,7 @@ def register_model_isolde_init_attr(session):
         'isolde', attr_type=bool)
 
 
-__version__ = "1.7.dev1"
+__version__ = "1.10.rc0"
 
 ISOLDE_STATE_VERSION = 3
 
@@ -41,6 +41,7 @@ class _MyAPI(BundleAPI):
 
     @staticmethod
     def initialize(session, bundle_info):
+        import openmm
         register_ignored_residues_attr(session)
         register_domain_cluster_attr(session)
         register_model_isolde_init_attr(session)

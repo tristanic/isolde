@@ -43,7 +43,7 @@ def get_dihedral(p0, p1, p2, p3):
 dpath = os.path.dirname(os.path.abspath(__file__))
 
 from .util import compiled_lib_extension
-libfile = os.path.join(dpath, 'lib_geometry.'+compiled_lib_extension())
+libfile = os.path.join(dpath, 'lib', 'lib_geometry.'+compiled_lib_extension())
 _geometry = ctypes.CDLL(os.path.join(os.path.dirname(os.path.abspath(__file__)), libfile))
 COORTYPE = ctypes.POINTER(ctypes.c_double * 3)
 
