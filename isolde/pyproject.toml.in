@@ -112,7 +112,7 @@ sources = [
 ]
 libraries = ["OpenMM"]
 library-dirs = ["OPENMM_LIB_DIR"]
-include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_LIB_DIR/../include"]
+include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_INCLUDE_DIR"]
 define-macros = ["_GLIBCXX_USE_CXX11_ABI=0"]
 
 [chimerax.extension._openmm_force_ext]
@@ -121,7 +121,7 @@ sources = [
 ]
 libraries = ["OpenMM"]
 library-dirs = ["OPENMM_LIB_DIR"]
-include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_LIB_DIR/../include"]
+include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_INCLUDE_DIR"]
 include-modules = ["numpy"]
 define-macros = ["_GLIBCXX_USE_CXX11_ABI=0"]
 
