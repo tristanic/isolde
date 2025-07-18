@@ -12,17 +12,10 @@ def get_stepper_mgr(session):
     return ResidueStepperMgr(session)
 
 def get_stepper(structure, session_restore=False):
-def get_stepper_mgr(session):
-    if hasattr(session, '_isolde_steppers'):
-        return session._isolde_steppers
-    return ResidueStepperMgr(session)
-
-def get_stepper(structure, session_restore=False):
     '''
     Get the :class:`ResidueStepper` controlling ISOLDE's navigation around the
     given structure, creating it if it doesn't yet exist.
-    '''
-    
+    '''    
     return get_stepper_mgr(structure.session).get_stepper(structure)
 
 from chimerax.core.state import StateManager, State
