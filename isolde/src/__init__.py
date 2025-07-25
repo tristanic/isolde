@@ -29,7 +29,7 @@ def register_model_isolde_init_attr(session):
         'isolde', attr_type=bool)
 
 
-__version__ = "1.10.rc0"
+__version__ = "1.10.0"
 
 ISOLDE_STATE_VERSION = 3
 

@@ -5,7 +5,8 @@ build-backend = "chimerax.bundle_builder.cx_pep517"
 [project]
 name = "ChimeraX-ISOLDE"
 
-license = { text = "Proprietary" }
+license = "LicenseRef-Custom"
+license-files = ["LICENSE.md"]
 authors = [{name = "Tristan Croll", email="tcroll@altoslabs.com"}]
 description = "ISOLDE: Interactive Structure Optimisation by Local Direct Exploration"
 
@@ -44,7 +45,6 @@ max-session-version = 1
 categories = ["General"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "License :: Free for non-commercial use",
 ]
 custom-init = true
 

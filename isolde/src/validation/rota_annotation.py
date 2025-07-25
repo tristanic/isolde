@@ -178,6 +178,8 @@ class RotamerAnnotator(Model):
             update_needed = True
         if 'display changed' in reasons or 'hide changed' in reasons:
             update_needed = True
+        if 'active_coordset changed' in changes.structure_reasons():
+            update_needed = True
         if (update_needed):
             from chimerax.atomic import get_triggers
             get_triggers().add_handler('changes done', self.update_graphics)

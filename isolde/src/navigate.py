@@ -110,7 +110,7 @@ class ResidueStepper(State):
                 from chimerax.core.errors import UserError
                 raise UserError('Invalid direction argument! Must be either "next" '
                     'or "prev".')
-                self._current_direction = direction
+            self._current_direction = direction
         else:
             direction = self._current_direction
         if direction=='next':

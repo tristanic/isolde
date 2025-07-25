@@ -241,6 +241,8 @@ class RamaPlot(QWidget):
         reasons = changes.atom_reasons()
         if 'coord changed' in reasons:
             update_needed = True
+        if 'active_coordset changed' in changes.structure_reasons():
+            update_needed = True
         added = len(changes.created_atoms())
         deleted = changes.num_deleted_atoms()
         if added or deleted:
