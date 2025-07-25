@@ -204,7 +204,6 @@ void RamaMgr::set_colors(uint8_t *max, uint8_t *mid, uint8_t *min, uint8_t *na)
 uint8_t RamaMgr::rama_case(Residue *res)
 {
     try {
-        Rama *rama = get_rama(res);
         return get_rama(res)->rama_case();
 
     } catch (std::out_of_range&) {
