@@ -12,7 +12,7 @@ description = "ISOLDE: Interactive Structure Optimisation by Local Direct Explor
 dynamic = ["classifiers", "requires-python", "version"]
 
 dependencies = [
-    "ChimeraX-Core >=1.10.dev0, ==1.10.*",
+    "ChimeraX-Core >=1.10.0, ==1.10.*",
     "ChimeraX-Atomic ~=1.60.0",
     "ChimeraX-AtomicLibrary ~=14.1.0",
     "ChimeraX-Clipper ~=0.25.0",
