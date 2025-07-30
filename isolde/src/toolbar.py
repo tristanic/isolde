@@ -145,8 +145,7 @@ class ToolbarButtonMgr:
                 else:
                     self.set_enabled(key, False)
         except ValueError:
-            raise
-            # Temporary hack because in ChimeraX 1.4 the Toolbar manager doesn't update on bundle install,
+            # The Toolbar manager doesn't update on bundle install,
             # leading to a traceback when ISOLDE is first installed via the GUI.
             from .dialog import choice_warning
             result = choice_warning('You will need to restart ChimeraX before using ISOLDE '
