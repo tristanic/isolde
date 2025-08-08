@@ -1,5 +1,11 @@
 [build-system]
-requires = ["setuptools", "ChimeraX-BundleBuilder"]
+requires = [
+  "ChimeraX-BundleBuilder>=1.4.0",
+  "ChimeraX-Core >=1.10.0, ==1.10.*",
+  "ChimeraX-Atomic ~=1.60",
+  "ChimeraX-AtomicLibrary ~=14.1",
+  "ChimeraX-Arrays ~=1.1.0",
+]
 build-backend = "chimerax.bundle_builder.cx_pep517"
 
 [project]
@@ -13,7 +19,7 @@ description = "ISOLDE: Interactive Structure Optimisation by Local Direct Explor
 dynamic = ["classifiers", "requires-python", "version"]
 
 dependencies = [
-    "ChimeraX-Core >=1.10.1, ==1.10.*",
+    "ChimeraX-Core ~=1.10.0",
     "ChimeraX-Atomic ~=1.60.0",
     "ChimeraX-AtomicLibrary ~=14.1.0",
     "ChimeraX-Clipper ~=0.25.0",
