@@ -13,7 +13,7 @@ def _current_residue_sel_string(session):
     from chimerax.atomic import selected_residues, concise_residue_spec
     return concise_residue_spec(session, selected_residues(session))
 
-def toolbar_command(session, name, debug=True):
+def toolbar_command(session, name, debug=False):
     from chimerax.core.commands import run
     if debug:
         session.logger.info(f"ISOLDE toobar command name: {name}")
