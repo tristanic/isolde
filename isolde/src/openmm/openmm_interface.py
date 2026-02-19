@@ -15,9 +15,17 @@ from openmm import unit, openmm
 
 from ..constants import defaults
 
-CORE_FORCE_GROUP=0
-MAP_FORCE_GROUP=1
-RESTRAINT_FORCE_GROUP=2
+DEFAULT_FORCE_GROUP=0
+BOND_FORCE_GROUP=1
+ANGLE_FORCE_GROUP=2
+DIHEDRAL_FORCE_GROUP=3
+NONBONDED_FORCE_GROUP=4
+
+CORE_FORCE_GROUPS=set((DEFAULT_FORCE_GROUP, BOND_FORCE_GROUP, ANGLE_FORCE_GROUP, DIHEDRAL_FORCE_GROUP, NONBONDED_FORCE_GROUP))
+MAP_FORCE_GROUP=5
+RESTRAINT_FORCE_GROUP=6
+
+
 
 from chimerax.isolde.delayed_reaction import delayed_reaction
 
@@ -1253,7 +1261,18 @@ class SimHandler:
             'residueTemplates':     residue_templates,
         }
         sys = forcefield.createSystem(top, **system_params)
+        self._set_core_force_groups(sys)
         return sys
+
+    def _set_core_force_groups(self, system):
+        from openmm.openmm import HarmonicBondForce, HarmonicAngleForce, PeriodicTorsionForce
+        for i, f in enumerate(system.getForces()):
+            if isinstance(f, HarmonicBondForce):
+                f.setForceGroup(BOND_FORCE_GROUP)
+            elif isinstance(f, HarmonicAngleForce):
+                f.setForceGroup(ANGLE_FORCE_GROUP)
+            elif isinstance(f, PeriodicTorsionForce):
+                f.setForceGroup(DIHEDRAL_FORCE_GROUP)
 
     def _convert_to_soft_core_potentials(self, system):
         from openmm.openmm import NonbondedForce
@@ -1271,6 +1290,8 @@ class SimHandler:
         }
         sf = NonbondedSoftcoreForce(**param_dict)
         sfb = NonbondedSoftcoreExceptionForce(**param_dict)
+        sf.setForceGroup(NONBONDED_FORCE_GROUP)
+        sfb.setForceGroup(NONBONDED_FORCE_GROUP)
         sf.setNonbondedMethod(f.getNonbondedMethod())
         sf.setCutoffDistance(f.getCutoffDistance())
         sf.setSwitchingDistance(f.getSwitchingDistance())
@@ -1467,6 +1488,20 @@ class SimHandler:
         clashes = sort_i[mask]
         return clashes, sorted_forces[mask]
 
+    def get_excessive_forces(self, force_groups=(BOND_FORCE_GROUP, ANGLE_FORCE_GROUP, DIHEDRAL_FORCE_GROUP, NONBONDED_FORCE_GROUP), threshold=defaults.STRESS_FORCE_THRESHOLD):
+        if not self._sim_running:
+            raise RuntimeError('Simulation must be running first!')
+        force_map = {}
+        c = self._context
+        for fg in force_groups:
+            if not (0 <= fg <= 31):
+                raise ValueError('Force groups must be between 0 and 31 inclusive!')
+            state = c.getState(getForces=True, groups=set([fg]))
+            forces = state.getForces(asNumpy=True)
+            magnitudes = numpy.linalg.norm(forces, axis=1)
+            excessive = numpy.argwhere(magnitudes > threshold)
+            force_map[fg] = (excessive, magnitudes[excessive])
+        return force_map
 
     def _minimize_and_go(self):
         th = self.thread_handler
@@ -2757,7 +2792,7 @@ class MapScaleOptimizer:
 
     def get_current_energy(self):
         from openmm import unit
-        state = self.context.getState(getEnergy=True, groups=set([CORE_FORCE_GROUP]))
+        state = self.context.getState(getEnergy=True, groups=CORE_FORCE_GROUPS)
         return state.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
 
     def _energy_converged(self):
