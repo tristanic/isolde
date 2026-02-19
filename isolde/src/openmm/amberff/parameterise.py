@@ -38,6 +38,8 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         subprocess.check_output([parmchk2, '-s','2','-i',ante_out,'-f','mol2','-p',gaff2_parms,'-o',frcmod_file])
         from .amber_convert import amber_to_ffxml
         amber_to_ffxml(frcmod_file, ante_out, output_name=residue.name+'.xml')
+        import shutil
+        shutil.copyfile(ante_out, f'{residue.name}.mol2')
 
 def parameterise_cmd(session, residues, override=False, net_charge=None, always_raise_errors=True):
     from chimerax.core.errors import UserError
