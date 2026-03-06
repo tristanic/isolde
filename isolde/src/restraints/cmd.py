@@ -50,6 +50,22 @@ def restrain_basepairs(session, residues, dist_slop=0.4, angle_slop=20):
     from chimerax.isolde.restraints.restraint_utils import restrain_base_pairs
     restrain_base_pairs(session, residues, dist_slop=dist_slop, angle_slop=angle_slop)
 
+def restrain_ss(session, residues, ss_type):
+    from chimerax.atomic import Residue
+    structures = residues.unique_structures
+    for s in structures:
+        sresidues = s.residues.intersect(residues)
+        strands = sresidues[sresidues.ss_types==Residue.SS_STRAND]
+        helices = sresidues[sresidues.ss_types==Residue.SS_HELIX]
+        from chimerax.isolde.restraints.restraint_utils import restrain_secondary_structure
+        if ss_type == 'current':
+            restrain_secondary_structure(session, strands, 'strand')
+            restrain_secondary_structure(session, helices, 'helix')
+        if ss_type == 'strand':
+            restrain_secondary_structure(session, sresidues, 'strand')
+        if ss_type == 'helix':
+            restrain_secondary_structure(session, sresidues, 'helix')
+
 
 def release_adaptive_distance_restraints(session, atoms,
         internal_only=False, external_only=False, to=None,
@@ -286,15 +302,26 @@ def register_isolde_restrain(logger):
     def register_isolde_restrain_basepairs():
         desc = CmdDesc(
             synopsis = 'Add harmonic restraints to restrain standard nucleic acid base pairs',
-        required = [
-            ('residues', ResiduesArg),
-        ],
-        keyword = [
-            ('dist_slop', FloatArg),
-            ('angle_slop', FloatArg),
-        ]
+            required = [
+                ('residues', ResiduesArg),
+            ],
+            keyword = [
+                ('dist_slop', FloatArg),
+                ('angle_slop', FloatArg),
+            ]
         )
         register('isolde restrain basepairs', desc, restrain_basepairs, logger=logger)
+    
+    def register_isolde_restrain_ss():
+        desc = CmdDesc(
+            synopsis='Add backbone distance and torsion restraints to restrain residues to idealised secondary structure geometry',
+            required=[
+                ('residues', ResiduesArg),
+                ('ss_type', EnumOf(('strand', 'helix', 'current')))
+            ],
+        )
+        register('isolde restrain ss', desc, restrain_ss, logger=logger)
+
     def register_isolde_release_distances():
         desc = CmdDesc(
             synopsis = 'Release selected adaptive distance restraints',
@@ -403,6 +430,7 @@ def register_isolde_restrain(logger):
     register_isolde_restrain_single_distance()
     register_isolde_release_distances()
     register_isolde_restrain_basepairs()
+    register_isolde_restrain_ss()
     register_isolde_adjust_distances()
     register_isolde_restrain_ligands()
     register_isolde_restrain_torsions()
