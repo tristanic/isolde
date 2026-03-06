@@ -107,7 +107,7 @@ def _find_mol2_frcmod_pairs(input_dir, blacklist=set(), search_subdirs=True):
 
     return file_dict
 
-def amber_to_ffxml(frcmod_file, mol2_file, output_name=None):
+def amber_to_ffxml(frcmod_file, mol2_file, output_name=None, atom_names_from=None):
     import os
     import parmed as pmd
     mol2 = pmd.load_file(mol2_file)
@@ -115,6 +115,21 @@ def amber_to_ffxml(frcmod_file, mol2_file, output_name=None):
         pmd.amber.AmberParameterSet(frcmod_file)
     )
     ff.residues[mol2.name] = mol2
+    if atom_names_from is not None:
+        from chimerax.core.errors import UserError
+        from chimerax.atomic import Residue
+        if not isinstance(atom_names_from, Residue):
+            raise UserError('atom_names_from must be a single residue')
+        from chimerax.isolde.graph import make_graph_from_residue, make_graph_from_parmed_residue
+        rg = make_graph_from_residue(atom_names_from)
+        pr = ff.residues[mol2.name]
+        pg = make_graph_from_parmed_residue(pr)
+        ri, pi, _ = rg.maximum_common_subgraph(pg)
+        if len(ri) != len(atom_names_from.atoms):
+            raise UserError('Failed to map all atoms in the residue to the mol2 file. This may be because the mol2 file contains multiple residues, or because of a mismatch between the residue and mol2 file. If your mol2 file contains multiple residues, try splitting it into individual files for each residue and converting them separately.')
+        for a, p in zip(ri, pi):
+            pr.atoms[p].name = atom_names_from.atoms[a].name
+
     if output_name is None:
         output_name = os.path.splitext(os.path.basename(mol2_file))[0]+'.xml'
     ff.write(output_name)

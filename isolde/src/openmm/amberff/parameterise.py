@@ -37,7 +37,12 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         import subprocess
         subprocess.check_output([parmchk2, '-s','2','-i',ante_out,'-f','mol2','-p',gaff2_parms,'-o',frcmod_file])
         from .amber_convert import amber_to_ffxml
-        amber_to_ffxml(frcmod_file, ante_out, output_name=residue.name+'.xml')
+        try:
+            amber_to_ffxml(frcmod_file, ante_out, output_name=residue.name+'.xml', atom_names_from=residue)
+        except UserError:
+            session.logger.warning("Failed to assign atom names in the template based on the residue. This shouldn't "
+                                   "affect most use cases, but will make hand-editing of the template more difficult.")
+            amber_to_ffxml(frcmod_file, ante_out, output_name=residue.name+'.xml', atom_names_from=None)
         import shutil
         shutil.copyfile(ante_out, f'{residue.name}.mol2')
 

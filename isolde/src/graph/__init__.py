@@ -45,6 +45,17 @@ def make_graph_from_residue_template(tmpl, label='element'):
     edges = numpy.array([list(b) for b in bonds])
     return Graph(labels, edges)
 
+def make_graph_from_parmed_residue(residue):
+    import numpy
+    atoms = residue.atoms
+    labels = numpy.array([a.element for a in atoms])
+    bonds = []
+    for b in residue.bonds:
+        a1, a2 = b.atom1, b.atom2
+        bonds.append([atoms.index(a1), atoms.index(a2)])
+    edges = numpy.array(bonds)
+    return Graph(labels, edges)
+
 def save_residue_graphs_to_text(residues, filename):
     import numpy
     from chimerax.atomic import Atoms
