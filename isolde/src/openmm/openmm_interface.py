@@ -3022,6 +3022,23 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
         if rtype is not None:
             templates[c_i] = rtype
 
+    # Check USER_ templates for ALL residues first, regardless of polymer type.
+    # This ensures that custom templates loaded via "Load residue parameters"
+    # (which are registered with the USER_ prefix by loadFile's resname_prefix
+    # argument) are found even for residues that ChimeraX classifies as polymer
+    # (PT_AMINO_ACID / PT_NUCLEIC) rather than PT_NONE.  Without this pre-pass,
+    # terminal caps and other non-standard polymer residues fall through to
+    # signature-based matching and can collide with built-in templates such as
+    # ACEcyc or NHE, producing an "ambiguous template" error.
+    for name in numpy.unique(residues.names):
+        if name == 'HOH':
+            continue
+        user_name = 'USER_{}'.format(name)
+        if user_name in template_names:
+            indices = numpy.where(residues.names == name)[0]
+            for i in indices:
+                templates[i] = user_name
+
     from chimerax.atomic import Residue
     ligands = residues[residues.polymer_types == Residue.PT_NONE]
     ligands = ligands[ligands.names != 'HOH']
@@ -3034,9 +3051,7 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
     for name in names:
         user_name = 'USER_{}'.format(name)
         if user_name in template_names:
-            indices = numpy.where(residues.names == name)[0]
-            for i in indices:
-                templates[i] = user_name
+            # Already handled by the pre-pass above; skip.
             continue
 
         if name in known_sugars:
