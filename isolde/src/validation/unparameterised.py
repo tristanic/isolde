@@ -11,6 +11,32 @@ from chimerax.isolde import atomic
 from Qt.QtCore import Qt
 USER_ROLE = Qt.ItemDataRole.UserRole
 
+H_TO_HEAVY_ATOM_THRESHOLD_RATIO = 0.5
+
+def suspiciously_low_h(residues):
+    '''
+    Heuristic: returns True if the H/heavy-atom ratio of the given residues is
+    below ``H_TO_HEAVY_ATOM_THRESHOLD_RATIO``. Always False if there are no
+    heavy atoms.
+    '''
+    enames = residues.atoms.element_names
+    n_h = (enames == 'H').sum()
+    n_heavy = (enames != 'H').sum()
+    if n_heavy == 0:
+        return False
+    return (n_h / n_heavy) < H_TO_HEAVY_ATOM_THRESHOLD_RATIO
+
+def waters_without_h(residues):
+    '''
+    Returns True if any residue named 'HOH' in the given set has other than
+    three atoms (i.e. is missing one or both hydrogens).
+    '''
+    waters = residues[residues.names == 'HOH']
+    for w in waters:
+        if len(w.atoms) != 3:
+            return True
+    return False
+
 class Unparameterised_Residues_Mgr:
 
     def __init__(self, isolde):
@@ -53,18 +79,13 @@ class Unparameterised_Residues_Mgr:
         self._stub_frame.show()
         self._main_frame.hide()
 
-    H_TO_HEAVY_ATOM_THRESHOLD_RATIO = 0.5
+    H_TO_HEAVY_ATOM_THRESHOLD_RATIO = H_TO_HEAVY_ATOM_THRESHOLD_RATIO
+
     def suspiciously_low_h(self, residues):
-        hydrogens = residues.atoms[residues.atoms.element_names=='H']
-        heavy_atoms = residues.atoms[residues.atoms.element_names!='H']
-        if len(hydrogens)/len(heavy_atoms) < self.H_TO_HEAVY_ATOM_THRESHOLD_RATIO:
-            return True
-    
+        return suspiciously_low_h(residues)
+
     def waters_without_h(self, residues):
-        waters = residues[residues.names=='HOH']
-        for w in waters:
-            if len(w.atoms) != 3:
-                return True
+        return waters_without_h(residues)
 
     def _update_unparameterised_residues_list(self, *_, ff=None, ambiguous=None, unmatched=None, residues=None):
         table = self._residue_table

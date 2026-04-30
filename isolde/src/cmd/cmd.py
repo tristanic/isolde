@@ -490,3 +490,5 @@ def register_isolde(logger):
     register_isolde_param(logger)
     from chimerax.isolde.benchmark import register_isolde_benchmark
     register_isolde_benchmark(logger)
+    from chimerax.isolde.validation.cmd import register_validate_commands
+    register_validate_commands(logger)
