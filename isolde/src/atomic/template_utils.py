@@ -82,6 +82,16 @@ class AtomProxy:
     def __lt__(self, other):
         return self.atom.name < other.atom.name
 
+def atom_names_unique(residue):
+    return len(residue.atoms) == len(set(residue.atoms.names))
+
+def make_atom_names_unique(residue):
+    from collections import defaultdict
+    name_map = defaultdict(int)
+    for a in residue.atoms:
+        name_map[a.element.name] += 1
+        a.name = f'{a.element.name}{name_map[a.element.name]:02d}'
+
 def _nx_residue_graph(residue):
     '''
     Make a :class:`networkx.Graph` representing the connectivity of a residue's
@@ -141,7 +151,7 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
         * residue
             - a :class:`chimerax.atomic.Residue` object
         * template
-            - a :class:`chimerax.atomic.cytmpl.TmplResidue` object
+            - a :class:`chimerax.atomic.cytmpl.TmplResidue` or a :class:`chimerax.atomic.Residue` object
 
     Returns:
         * matched_atoms (dict)
@@ -168,7 +178,14 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
         raise UserError(f'Residue {residue.name} {residue.chain_id}{residue.number}{residue.insertion_code} has no bonds, and no atom names '
             f'in common with template {template.name}. This will need to be corrected manually.')
     rg = residue_graph(residue, label=match_by)
-    tg = template_graph(template, label=match_by)
+    from chimerax.atomic import Residue
+    from chimerax.atomic.cytmpl import TmplResidue
+    if isinstance(template, Residue):
+        tg = residue_graph(template, label=match_by)
+    elif isinstance(template, TmplResidue):
+        tg = template_graph(template, label=match_by)
+    else:
+        raise TypeError('Template should be either a Residue or a TmplResidue')
     residue_indices, template_indices, timed_out = rg.maximum_common_subgraph(tg, big_first=True)
     if timed_out:
         ri2, ti2, to2 = rg.maximum_common_subgraph(tg, timeout=5)

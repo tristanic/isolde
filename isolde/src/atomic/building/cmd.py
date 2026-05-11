@@ -8,7 +8,8 @@
 
 from chimerax.isolde.cmd import block_if_sim_running
 
-def replace_residue(session, residue, new_residue_name):
+def replace_residue(session, residue, with_residue=None, apply_md_template=False):
+    new_residue = with_residue
     block_if_sim_running(session)
     from chimerax.core.errors import UserError
     from chimerax.isolde.cmd import isolde_start
@@ -21,30 +22,48 @@ def replace_residue(session, residue, new_residue_name):
     if len(residue.neighbors):
         raise UserError('Replacement by graph matching is currently only '
             'supported for ligands with no covalent bonds to other residues!')
+    if isinstance(new_residue, Residues):
+        if len(new_residue) != 1:
+            raise UserError('Must specify a single residue as the new template!')
+        template = new_residue[0]
+        if len(template.neighbors):
+            raise UserError('Replacement by graph matching is currently only '
+                'supported for ligands with no covalent bonds to other residues!')
+        from chimerax.isolde.atomic.template_utils import atom_names_unique, make_atom_names_unique
+        if not atom_names_unique(template):
+            session.logger.warning(f'Atom names in template {template.name} are not unique. Reassigning unique names')
+            make_atom_names_unique(template)
+    elif isinstance(new_residue, str):
+        from chimerax import mmcif
+        try:
+            template = mmcif.find_template_residue(session, new_residue)
+        except:
+            err_str = ('Could not find a mmCIF template for residue name {}. '
+                'For novel residues not in the Chemical Components Dictionary, '
+                'you will need to provide this first.').format(new_residue)
+            raise UserError(err_str)
+
     from ..template_utils import (
         fix_residue_from_template,
         fix_residue_to_match_md_template
     )
-    from chimerax import mmcif
-    try:
-        cif_template = mmcif.find_template_residue(session, new_residue_name)
-    except:
-        err_str = ('Could not find a mmCIF template for residue name {}. '
-            'For novel residues not in the Chemical Components Dictionary, '
-            'you will need to provide this first.').format(new_residue_name)
-        raise UserError(err_str)
-    fix_residue_from_template(residue, cif_template, rename_residue=True,
+    fix_residue_from_template(residue, template, rename_residue=True,
         match_by='element')
-    ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
-    ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
-    from chimerax.isolde.openmm.openmm_interface import find_residue_templates
-    from chimerax.atomic import Residues
-    tdict = find_residue_templates(Residues([residue]), ff, ligand_db=ligand_db, logger=session.logger)
-    md_template_name = tdict.get(0)
-    if md_template_name is not None:
-        fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=cif_template)
+    if apply_md_template:
+        ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
+        ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
+        from chimerax.isolde.openmm.openmm_interface import find_residue_templates
+        from chimerax.atomic import Residues
+        tdict = find_residue_templates(Residues([residue]), ff, ligand_db=ligand_db, logger=session.logger)
+        md_template_name = tdict.get(0)
+        if md_template_name is not None:
+            fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=template)
     from chimerax.atomic import Atoms, Atom
-    chiral_centers = Atoms([a for a in residue.atoms if residue.ideal_chirality(a.name) != 'N'])
+    try:
+        chiral_centers = Atoms([a for a in residue.atoms if residue.ideal_chirality(a.name) != 'N'])
+    except KeyError:
+        session.logger.warning('Cannot auto-detect chiral centers for non-CCD templates. Check results with care!')
+        chiral_centers = []
     if len(chiral_centers):
         warn_str = ('Rebuilt ligand {} has chiral centres at atoms {} '
             '(highlighted). Since the current algorithm used to match topologies '
@@ -151,13 +170,17 @@ def register_building_commands(logger):
 
 def register_isolde_replace(logger):
     from chimerax.core.commands import (
-        register, CmdDesc, StringArg
+        register, CmdDesc, StringArg, Or, BoolArg
     )
     from chimerax.atomic import ResiduesArg
     desc = CmdDesc(
         required=[
             ('residue', ResiduesArg),
-            ('new_residue_name', StringArg)
+            
+        ],
+        keyword=[
+            ('with_residue', Or(ResiduesArg, StringArg)),
+            ('apply_md_template', BoolArg)
         ],
         synopsis='(EXPERIMENTAL) Replace an existing ligand with a related one, keeping as much of the original as possible'
     )
