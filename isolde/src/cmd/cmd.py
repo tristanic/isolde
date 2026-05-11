@@ -94,7 +94,7 @@ def isolde_status(session):
     if m is None:
         log.warning(
             'ISOLDE status: started, but no model is selected. '
-            'Run "isolde select <model>" before validation or simulation.'
+            'Run "isolde select <model>" before preflight checks or simulation.'
         )
     else:
         log.info(
@@ -548,5 +548,5 @@ def register_isolde(logger):
     register_isolde_param(logger)
     from chimerax.isolde.benchmark import register_isolde_benchmark
     register_isolde_benchmark(logger)
-    from chimerax.isolde.validation.cmd import register_validate_commands
-    register_validate_commands(logger)
+    from chimerax.isolde.validation.cmd import register_preflight_commands
+    register_preflight_commands(logger)

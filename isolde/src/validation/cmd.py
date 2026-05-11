@@ -144,7 +144,7 @@ def register_rama(logger):
 
 
 # ---------------------------------------------------------------------------
-# Read-only ``isolde validate`` commands.
+# Read-only ``isolde preflight`` commands.
 #
 # These commands let an agent (or scripted user) ask whether a model is ready
 # for an ISOLDE simulation without actually trying to start one. They are safe
@@ -188,11 +188,12 @@ def _residue_label(r):
     return '/{} {} {}{}'.format(r.chain_id, r.name, r.number, icode)
 
 
-def isolde_validate_hydrogens(session, model=None):
+def isolde_preflight_hydrogens(session, model=None):
     '''
-    Check whether ``model`` (or ISOLDE's currently selected model) appears to
-    have a complete set of hydrogens, using the same heuristics ISOLDE's
-    "Unparametrised residues" panel applies before launching a simulation.
+    Preflight check: does ``model`` (or ISOLDE's currently selected model)
+    appear to have a complete set of hydrogens for an MD simulation? Uses the
+    same heuristics ISOLDE's "Unparametrised residues" panel applies before
+    launching a simulation.
 
     Does not modify the model and does not start a simulation. Returns a dict
     suitable for programmatic consumption; also logs a one-line summary.
@@ -274,12 +275,12 @@ def _get_forcefield(session, ff_name):
     return ff, ligand_db, ff_name
 
 
-def isolde_validate_parameters(session, model=None, forcefield=None,
+def isolde_preflight_parameters(session, model=None, forcefield=None,
         ignore_external_bonds=True):
     '''
-    Run ISOLDE's MD-template assignment over the given model (or ISOLDE's
-    currently selected model) without starting a simulation, and report any
-    residues that are unparametrised or ambiguous.
+    Preflight check: run ISOLDE's MD-template assignment over the given model
+    (or ISOLDE's currently selected model) without starting a simulation, and
+    report any residues that are unparametrised or ambiguous.
 
     This is the same dry-run that the "Unparametrised residues" panel
     performs - it does not call the OpenMM ``Context`` constructor and so
@@ -387,7 +388,7 @@ def isolde_validate_parameters(session, model=None, forcefield=None,
     }
 
 
-def register_validate_commands(logger):
+def register_preflight_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, StringArg,
     )
@@ -395,10 +396,10 @@ def register_validate_commands(logger):
 
     desc_h = CmdDesc(
         optional=[('model', IsoldeStructureArg)],
-        synopsis='Check whether the model has plausible hydrogens',
+        synopsis='Preflight check: does the model have plausible hydrogens for MD?',
     )
-    register('isolde validate hydrogens', desc_h,
-        isolde_validate_hydrogens, logger=logger)
+    register('isolde preflight hydrogens', desc_h,
+        isolde_preflight_hydrogens, logger=logger)
 
     desc_p = CmdDesc(
         optional=[('model', IsoldeStructureArg)],
@@ -406,7 +407,7 @@ def register_validate_commands(logger):
             ('forcefield', StringArg),
             ('ignore_external_bonds', BoolArg),
         ],
-        synopsis='Check whether all residues match an MD forcefield template',
+        synopsis='Preflight check: do all residues match an MD forcefield template?',
     )
-    register('isolde validate parameters', desc_p,
-        isolde_validate_parameters, logger=logger)
+    register('isolde preflight parameters', desc_p,
+        isolde_preflight_parameters, logger=logger)
