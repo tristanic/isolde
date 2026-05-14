@@ -188,10 +188,9 @@ class RamaPlot(QWidget):
                     print('Annot text: {}'.format('\n'.join(text)))
                 annot.set_text('\n'.join(text))
                 annot.xy = x, y
-                if y > 0:
-                    annot.xyann=(20,-20)
-                else:
-                    annot.xyann=(20,20)
+                xoff = -80 if x > 0 else 20
+                yoff = -20 if y > 0 else 20
+                annot.xyann = (xoff, yoff)
                 annot.set_visible(True)
             else:
                 annot.set_visible(False)
