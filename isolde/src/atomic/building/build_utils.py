@@ -353,6 +353,35 @@ def create_disulfide(cys1, cys2):
     from chimerax.atomic.struct_edit import add_bond
     add_bond(s1, s2)
 
+
+def create_all_sensible_disulfides(model, logger=None):
+    '''
+    Create disulfide bonds for every pair of cysteines in ``model`` whose
+    SG atoms are close enough to be disulfide-bonded but currently lack an
+    SG-SG bond. Cysteines that cluster in groups of three or more are not
+    bonded automatically and are returned as the "ambiguous" set so the
+    caller can warn or display them as appropriate.
+
+    Returns ``(possible_pairs_created, ambiguous_clusters)`` where
+    ``possible_pairs_created`` is the set of cysteine-residue pairs that
+    were actually bonded by this call, and ``ambiguous_clusters`` is the
+    set of cysteine-residue groups that were left untouched.
+    '''
+    _current, possible, ambiguous = current_and_possible_disulfides(model)
+    for cys_pair in possible:
+        create_disulfide(*cys_pair)
+    if logger is not None and possible:
+        logger.info(
+            'Created disulfide bonds between the following residues:\n{}'.format(
+                '; '.join([
+                    '-'.join(['{}{}{}'.format(c.chain_id, c.number, c.insertion_code)
+                              for c in p])
+                    for p in possible
+                ])
+            )
+        )
+    return possible, ambiguous
+
 _CYS_ALIGN_ATOMS=('CA', 'CB', 'SG')
 def break_disulfide(cys1, cys2):
     from chimerax.core.errors import UserError
