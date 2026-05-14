@@ -416,9 +416,9 @@ def _get_clip_points(session, dist):
     from chimerax.clipper.mousemodes import ZoomMouseMode
     mm = [b.mode for b in session.ui.mouse_modes.bindings if isinstance(b.mode, ZoomMouseMode)]
     c = session.view.camera
+    o = c.position.origin()
+    vd = c.view_direction()
     if len(mm):
         zmm = mm[0]
-        o = c.position.origin()
-        vd = c.view_direction()
         return (zmm.near_clip_point(o, vd*dist, dist), zmm.far_clip_point(o, vd*dist, dist))
     return (o+vd*dist*0.5, o+vd*dist*1.5)
