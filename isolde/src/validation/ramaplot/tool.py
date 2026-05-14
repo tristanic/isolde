@@ -104,6 +104,12 @@ class RamaMainWin(MainToolWindow):
 
         menu_layout.addStretch()
 
+        cb = self.clipper_button = QPushButton(parent)
+        cb.setText('Deactivate Clipper' if self._clipper_zoom_active() else 'Initialise Clipper')
+        cb.setToolTip('<span>Toggle the Clipper mouse modes (auto-clip on zoom, cofr at screen centre, pivot indicator visible)</span>')
+        cb.clicked.connect(self._toggle_clipper)
+        menu_layout.addWidget(cb)
+
         plot_layout = self.plot_layout = QGridLayout()
         plot_layout.setContentsMargins(1,0,1,0)
         plot_layout.setSpacing(0)
@@ -125,6 +131,23 @@ class RamaMainWin(MainToolWindow):
         self._show_one_plot(cenum.GENERAL)
 
         self._selection_changed_cb()
+
+    def _clipper_zoom_active(self):
+        try:
+            from chimerax.clipper.mousemodes import ZoomMouseMode
+        except ImportError:
+            return False
+        return any(isinstance(b.mode, ZoomMouseMode)
+                   for b in self.session.ui.mouse_modes.bindings)
+
+    def _toggle_clipper(self):
+        from chimerax.core.commands import run
+        if self._clipper_zoom_active():
+            run(self.session, 'clipper off')
+            self.clipper_button.setText('Initialise Clipper')
+        else:
+            run(self.session, 'clipper init')
+            self.clipper_button.setText('Deactivate Clipper')
 
     def add_callback(self, triggerset, trigger_name, callback):
         '''
