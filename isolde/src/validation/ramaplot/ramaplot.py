@@ -55,6 +55,7 @@ class RamaPlot(QWidget):
         axes.autoscale(enable=False)
 
         canvas = self.canvas = FigureCanvas(fig)
+        canvas.setMinimumSize(150, 150)
 
         self.resize_cid = canvas.mpl_connect('resize_event', self.on_resize)
         self.on_pick_cid = canvas.mpl_connect('pick_event', self.on_pick)
