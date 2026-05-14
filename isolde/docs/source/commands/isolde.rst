@@ -91,6 +91,71 @@ Set the specified model as ISOLDE's current selected model. If the target model
 has not already been initialised for control by Clipper to provide ISOLDE's 
 standard view, this command will cause that to happen.
 
+.. _status:
+
+isolde status
+=============
+
+Syntax: isolde status
+
+Report ISOLDE's current state without modifying anything. Logs a one-line
+summary identifying the currently selected model (if any) along with the
+active forcefield and whether a simulation is running, and returns a
+dictionary with the same information for programmatic use. Safe to call at
+any time, including before ``isolde start``. Useful for confirming that an
+``isolde select`` command actually took effect before running preflight
+checks or starting a simulation.
+
+.. _preflight:
+
+isolde preflight
+================
+
+Read-only checks that ask "is this model ready for an ISOLDE simulation?"
+without starting one. These are MD-readiness preflight checks, conceptually
+distinct from ISOLDE's classical model validation (Ramachandran, rotamer,
+geometry, fit-to-data) under the ISOLDE GUI's **Validate** tab. They never
+construct an OpenMM ``Context``, never raise on missing parameters, and
+never modify the model — safe to call at any time once a model is selected.
+
+isolde preflight hydrogens
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde preflight hydrogens [*model*]
+
+Check whether *model* (or ISOLDE's currently selected model) appears to have
+a complete set of hydrogens, using the same heuristics ISOLDE's
+"Unparametrised residues" panel applies before launching a simulation. Logs
+a one-line summary and returns a dictionary with the hydrogen / heavy-atom
+counts, the H/heavy ratio, water statistics, an overall ``status``
+(``ok``, ``missing``, ``low`` or ``waters_missing``), and a
+``recommend_addh`` flag indicating whether the agent or user should run the
+ChimeraX ``addh`` command before proceeding.
+
+isolde preflight parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde preflight parameters [*model*] [**forcefield** *name*]
+[**ignoreExternalBonds** *true|FALSE*]
+
+Run ISOLDE's MD-template assignment over *model* (or ISOLDE's currently
+selected model) without starting a simulation, and report any residues that
+are unparametrised or ambiguous. This is the same dry-run that the
+"Unparametrised residues" panel performs — it does not call the OpenMM
+``Context`` constructor and so cannot raise the cryptic errors that arise
+from a real simulation start.
+
+Returns a dictionary including total / matched / ambiguous / unmatched
+residue counts, a ``ready_for_simulation`` boolean, and per-residue details
+for any unmatched residues (with suggested candidate templates by name and
+by topology) and any ambiguous residues (with the list of candidate
+templates).
+
+The *forcefield* keyword defaults to ISOLDE's currently configured
+forcefield (e.g. ``amber14``); pass it explicitly to preflight against a
+different one. *ignoreExternalBonds* defaults to ``true`` to match the
+behaviour of the GUI panel.
+
 .. _sim:
 
 isolde sim
