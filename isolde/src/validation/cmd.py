@@ -388,6 +388,137 @@ def isolde_preflight_parameters(session, model=None, forcefield=None,
     }
 
 
+def isolde_preflight_disulfides(session, model=None):
+    '''
+    Preflight check: does ``model`` (or ISOLDE's currently selected model)
+    contain pairs of cysteines whose SG atoms are close enough to be
+    disulfide-bonded but for which no SG-SG bond is currently present in the
+    model?
+
+    This is the same geometric check that fires the "create disulfides?" GUI
+    popup the first time a model is selected in ISOLDE. Calling this command
+    does *not* create any bonds, but it stamps a per-model flag so that the
+    auto-popup will not subsequently fire for the same model — i.e. running
+    this preflight is treated as the user/agent's acknowledgement of the
+    situation. Pair this with ``isolde add disulfides auto`` if you want the
+    bonds created.
+
+    Returns a dict with three lists (``current``, ``possible``, ``ambiguous``).
+    Each list entry is itself a list of residue summaries.
+    '''
+    m = _resolve_model(session, model)
+    log = session.logger
+
+    from ..atomic.building.build_utils import current_and_possible_disulfides
+    current, possible, ambiguous = current_and_possible_disulfides(
+        m, cutoff_distance=2.3
+    )
+
+    def _pair(rset):
+        return [_residue_summary(r) for r in sorted(
+            rset, key=lambda r: (r.chain_id, r.number, r.insertion_code)
+        )]
+
+    current_info = [_pair(p) for p in current]
+    possible_info = [_pair(p) for p in possible]
+    ambiguous_info = [_pair(p) for p in ambiguous]
+
+    def _label_set(rset):
+        return '-'.join(_residue_label(r) for r in sorted(
+            rset, key=lambda r: (r.chain_id, r.number, r.insertion_code)
+        ))
+
+    summary = (
+        'ISOLDE disulfide check ({}): {} existing, {} possible new, '
+        '{} ambiguous cluster(s).'.format(
+            m.atomspec, len(current), len(possible), len(ambiguous)
+        )
+    )
+    if not possible and not ambiguous:
+        log.info(summary)
+    else:
+        log.warning(summary)
+        if possible:
+            log.info('  Possible: ' + ', '.join(
+                _label_set(p) for p in possible
+            ))
+            log.info(
+                '  To create them, run "isolde add disulfides auto {}".'
+                .format(m.atomspec)
+            )
+        if ambiguous:
+            log.info('  Ambiguous (3+ cysteines clustered, manual fix required): '
+                + '; '.join(_label_set(p) for p in ambiguous))
+
+    # Calling the preflight counts as acknowledging the situation; this
+    # suppresses the GUI popup that would otherwise fire on the next frame
+    # after `isolde select`.
+    m._isolde_disulfide_check_done = True
+
+    return {
+        'model': m.atomspec,
+        'current': current_info,
+        'possible': possible_info,
+        'ambiguous': ambiguous_info,
+        'n_current': len(current),
+        'n_possible': len(possible),
+        'n_ambiguous': len(ambiguous),
+        'recommend_create': len(possible) > 0,
+    }
+
+
+def isolde_preflight_altlocs(session, model=None):
+    '''
+    Preflight check: does ``model`` (or ISOLDE's currently selected model)
+    contain atoms with alternate conformations? ISOLDE cannot see alt locs
+    during a simulation, but they are carried through to the output, so in
+    most refinement workflows they should be removed before starting.
+
+    This is the situation that triggers the "remove alt locs?" GUI popup
+    inside ``Isolde.selected_model`` the first time a model is selected.
+    Calling this preflight stamps a per-model flag so that the auto-popup
+    will not fire for the model. Pair with ``isolde clear altlocs`` to
+    actually drop them.
+
+    Returns a dict with the per-residue list and counts.
+    '''
+    m = _resolve_model(session, model)
+    log = session.logger
+
+    atoms_with_altlocs = m.atoms[m.atoms.num_alt_locs > 0]
+    n_atoms = int(len(atoms_with_altlocs))
+    affected_residues = atoms_with_altlocs.unique_residues
+    residues_info = [_residue_summary(r) for r in affected_residues]
+
+    summary = (
+        'ISOLDE altloc check ({}): {} atom(s) with alternate conformers '
+        'across {} residue(s).'.format(m.atomspec, n_atoms, len(residues_info))
+    )
+    if n_atoms == 0:
+        log.info(summary)
+    else:
+        log.warning(summary)
+        log.info('  Affected residues: ' + ', '.join(
+            _residue_label(r) for r in affected_residues
+        ))
+        log.info(
+            '  To drop alt locs and reset occupancies, run '
+            '"isolde clear altlocs {}".'.format(m.atomspec)
+        )
+
+    # See note in isolde_preflight_disulfides: the call itself acknowledges
+    # the situation and suppresses the auto-popup.
+    m._isolde_altloc_check_done = True
+
+    return {
+        'model': m.atomspec,
+        'atoms_with_altlocs': n_atoms,
+        'residues': residues_info,
+        'n_residues': len(residues_info),
+        'recommend_clear': n_atoms > 0,
+    }
+
+
 def register_preflight_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, StringArg,
@@ -411,3 +542,19 @@ def register_preflight_commands(logger):
     )
     register('isolde preflight parameters', desc_p,
         isolde_preflight_parameters, logger=logger)
+
+    desc_d = CmdDesc(
+        optional=[('model', IsoldeStructureArg)],
+        synopsis=('Preflight check: are there cysteine pairs likely to need '
+            'disulfide bonds? Suppresses the corresponding GUI popup.'),
+    )
+    register('isolde preflight disulfides', desc_d,
+        isolde_preflight_disulfides, logger=logger)
+
+    desc_a = CmdDesc(
+        optional=[('model', IsoldeStructureArg)],
+        synopsis=('Preflight check: does the model contain alternate '
+            'conformers? Suppresses the corresponding GUI popup.'),
+    )
+    register('isolde preflight altlocs', desc_a,
+        isolde_preflight_altlocs, logger=logger)
