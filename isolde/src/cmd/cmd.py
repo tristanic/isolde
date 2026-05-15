@@ -374,6 +374,69 @@ def isolde_jump(session, direction="next"):
     rs = get_stepper(m)
     rs.incr_chain(direction)
 
+
+def isolde_add_disulfides_auto(session, model=None):
+    '''
+    Create disulfide bonds for every pair of cysteines whose SG atoms are
+    close enough to be disulfide-bonded but currently lack an SG-SG bond
+    (the "possible" set from ``isolde preflight disulfides``).
+
+    Cysteines that cluster in groups of three or more are *not* bonded
+    automatically — those need manual triage and are reported as a warning.
+
+    Setting the per-model "checked" flag here also suppresses the auto-popup
+    that would otherwise fire on the next ``isolde select`` for the model.
+    '''
+    block_if_sim_running(session)
+    from ..validation.cmd import _resolve_model
+    m = _resolve_model(session, model)
+    log = session.logger
+    from ..atomic.building.build_utils import create_all_sensible_disulfides
+    possible, ambiguous = create_all_sensible_disulfides(m, logger=log)
+    if not possible:
+        log.info('ISOLDE: no new disulfide bonds to create.')
+    if ambiguous:
+        warn_str = (
+            'The following groups of cysteines are clustered too close to '
+            'automatically assign disulfide bonding and should be checked '
+            'manually:\n{}'
+        ).format('; '.join([
+            ', '.join(['{}{}{}'.format(c.chain_id, c.number, c.insertion_code)
+                       for c in residues])
+            for residues in ambiguous
+        ]))
+        log.warning(warn_str)
+    m._isolde_disulfide_check_done = True
+    return {
+        'model': m.atomspec,
+        'created': int(len(possible)),
+        'ambiguous': int(len(ambiguous)),
+    }
+
+
+def isolde_clear_altlocs(session, model=None):
+    '''
+    Drop all alternate conformations from ``model`` (or ISOLDE's currently
+    selected model) and reset the affected atoms' occupancies to 1.0. This
+    mirrors the action ISOLDE offers via the auto-popup the first time a
+    model with alt locs is selected.
+    '''
+    block_if_sim_running(session)
+    from ..validation.cmd import _resolve_model
+    m = _resolve_model(session, model)
+    log = session.logger
+    from ..atomic.util import clear_altlocs
+    n = clear_altlocs(m, logger=log)
+    if n == 0:
+        log.info('ISOLDE: model {} has no alternate conformations to clear.'
+            .format(m.atomspec))
+    m._isolde_altloc_check_done = True
+    return {
+        'model': m.atomspec,
+        'atoms_cleared': n,
+    }
+
+
 def register_isolde(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
@@ -516,6 +579,26 @@ def register_isolde(logger):
         from .shorthand import register_isolde_shorthand_commands
         register('isolde shorthand', desc, register_isolde_shorthand_commands, logger=logger)
 
+    def register_isolde_add_disulfides_auto():
+        from .argspec import IsoldeStructureArg
+        desc = CmdDesc(
+            optional=[('model', IsoldeStructureArg)],
+            synopsis=('Create disulfide bonds for every cysteine pair within '
+                'disulfide-bonding distance that is not already bonded'),
+        )
+        register('isolde add disulfides auto', desc,
+            isolde_add_disulfides_auto, logger=logger)
+
+    def register_isolde_clear_altlocs():
+        from .argspec import IsoldeStructureArg
+        desc = CmdDesc(
+            optional=[('model', IsoldeStructureArg)],
+            synopsis=('Drop all alternate conformations from the model and '
+                'reset the affected atoms\' occupancies to 1.0'),
+        )
+        register('isolde clear altlocs', desc,
+            isolde_clear_altlocs, logger=logger)
+
     register_isolde_start()
     register_isolde_set()
     register_isolde_select()
@@ -530,6 +613,8 @@ def register_isolde(logger):
     register_isolde_jump()
     register_isolde_change_b()
     register_isolde_shorthand()
+    register_isolde_add_disulfides_auto()
+    register_isolde_clear_altlocs()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
@@ -550,3 +635,5 @@ def register_isolde(logger):
     register_isolde_benchmark(logger)
     from chimerax.isolde.validation.cmd import register_preflight_commands
     register_preflight_commands(logger)
+    from chimerax.isolde.validation.cmd import register_validate_commands
+    register_validate_commands(logger)

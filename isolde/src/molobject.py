@@ -1065,27 +1065,32 @@ class RamaMgr:
         of input residues whose peptide bonds are in the cis conformation.
         '''
         from chimerax.atomic import Residue
+        from ..constants import defaults
         residues = residues[residues.polymer_types==Residue.PT_AMINO]
         omegas = self._dihedral_mgr.get_dihedrals(residues, 'omega')
-        from math import radians
         import numpy
-        cis = omegas[numpy.abs(omegas.angles) < radians(30)]
+        cis = omegas[numpy.abs(omegas.angles) < defaults.CIS_PEPTIDE_BOND_CUTOFF]
         return cis.residues
 
     def twisted(self, residues):
         '''
-        Returns a list of (:class:`chimerax.Residue`, angle) 2-tuples giving the
-        subset of input residues whose peptide bonds are twisted more than 30
-        degrees from planar.
+        Returns a list of (:class:`chimerax.Residue`, angle) 2-tuples giving
+        the subset of input residues whose peptide bonds are twisted from
+        planar by more than ``defaults.CIS_PEPTIDE_BOND_CUTOFF`` but less
+        than ``pi - defaults.TWISTED_PEPTIDE_BOND_DELTA`` (default 30 - 150
+        degrees in absolute value).
         '''
         from chimerax.atomic import Residue
+        from ..constants import defaults
+        from math import pi
         residues = residues[residues.polymer_types==Residue.PT_AMINO]
         omegas = self._dihedral_mgr.get_dihedrals(residues, 'omega')
-        from math import radians
         import numpy
         angles = omegas.angles
         abs_angles = numpy.abs(angles)
-        twisted_mask = numpy.logical_and(abs_angles >= radians(30), abs_angles < radians(150))
+        twisted_mask = numpy.logical_and(
+            abs_angles >= defaults.CIS_PEPTIDE_BOND_CUTOFF,
+            abs_angles < pi - defaults.TWISTED_PEPTIDE_BOND_DELTA)
         return [(t.residue, angle) for t, angle in zip(omegas[twisted_mask], numpy.degrees(angles[twisted_mask]))]
 
 

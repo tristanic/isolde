@@ -11,18 +11,12 @@ tooltip = ('Create disulphide bonds between any free cysteine residues with disu
 def run_script(session):
     from chimerax.core.commands import run
     from chimerax.core.errors import UserError
-    from chimerax.isolde.atomic.building.build_utils import current_and_possible_disulfides, create_disulfide
+    from chimerax.isolde.atomic.building.build_utils import create_all_sensible_disulfides
     run(session, 'isolde start', log=False)
     m = session.isolde.selected_model
     if m is None:
         raise UserError('Select a model in ISOLDE first!')
-    current, possible, ambiguous = current_and_possible_disulfides(m)
-    for cys_pair in possible:
-        create_disulfide(*cys_pair)
-    if len(possible):
-        session.logger.info('Created disulfide bonds between the following residues: \n{}'.format(
-            '; '.join(['-'.join(['{}{}{}'.format (c.chain_id, c.number, c.insertion_code) for c in p]) for p in possible])
-        ))
+    _possible, ambiguous = create_all_sensible_disulfides(m, logger=session.logger)
     if len(ambiguous):
         warn_str = ('The following cysteine residues are clustered too close to '
             'automatically assign disulphide-bonded pairs. Please check manually.\n{}').format(
