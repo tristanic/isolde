@@ -48,5 +48,12 @@ def run_script(session):
     cids = sel.unique_chain_ids
     for cid in cids:
         chain = m.chains[m.chains.chain_ids==cid][0]
-        last_res = chain.residues[-1]
-        add_oxt(session, last_res)
+        i = len(chain.residues) - 1
+        last_res = chain.residues[i]
+        while last_res is None:
+            i -= 1
+            if i < 0:
+                break
+            last_res = chain.residues[i]
+        if last_res is not None:
+            add_oxt(session, last_res)
