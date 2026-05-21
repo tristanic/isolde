@@ -11,16 +11,25 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         - target_model: the model to copy into
         - residues: the residues to be copied. Isotropic B-factors will be
             copied, but aniso_u records will be ignored.
-        - chain_id: if provided, all residues must be from one chain. The copied
+        - chain_id: ignored if anchor_n and/or anchor_c are provided. 
+            If provided, all residues must be from one chain. The copied
             residues will be given this chain ID.
-        - renumber_from: if provided, all residues will be renumbered with an
-            offset of (lowest residue number - renumber_from)
+        - renumber_from: an integer value or "auto". If a number is provided, 
+            all residues will be renumbered with an offset of (lowest residue number - renumber_from).
+            If "auto" is provided, the reesidues will be renumbered based on anchor_n and/or anchor_c. 
+            If anchor_n is provided, the first residue in the fragment will be renumbered to be one more 
+            than the number of anchor_n. If anchor_c is provided, the last residue in the fragment will 
+            be renumbered to be one less than the number of anchor_c. If both are provided, the offset 
+            will be calculated based on anchor_n and applied to all residues, but an error will be thrown 
+            if any renumbered residue numbers do not fit between the numbers of anchor_n and anchor_c.
         - anchor_n: an amino acid residue or None. If provided, the first amino
             acid residue in the fragment will be linked to this one. Throws an
-            error if anchor_n has another residue linked at its C-terminus.
+            error if anchor_n has another residue linked at its C-terminus. Both
+            anchor_n and anchor_c must be from the same chain.
         - anchor_c: an amino acid residue or None. If provided, the last amino
             acid residue in the fragment will be linked to this one. Throws an
-            error if anchor_c has another residue linked at its C-terminus.
+            error if anchor_c has another residue linked at its C-terminus. Both
+            anchor_n and anchor_c must be from the same chain.
         - transform: a Place or None. If provided, the atoms will be placed at
             the transformed coordinates.
     '''
@@ -39,6 +48,10 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         if not len(protein_residues):
             raise UserError('N- and/or C-terminal anchors were specified, but '
                 'the copied selection does not contain any amino acid residues!')
+        if anchor_n and anchor_c:
+            if anchor_n.chain_id != anchor_c.chain_id:
+                raise UserError('If both N- and C-terminal anchors are specified, they must be from the same chain!')
+        chain_id = anchor_n.chain_id if anchor_n else anchor_c.chain_id
 
     import numpy
     fm = us[0]
@@ -47,8 +60,18 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     atoms = residues.atoms
     coords = atoms.coords
     atom_map = {}
-    if renumber_from:
+    if isinstance(renumber_from, int):
         offset = residues[0].number - renumber_from
+    elif renumber_from == 'auto':
+        offset = 0
+        if anchor_n:
+            offset = anchor_n.number + 1 - residues[0].number
+        if anchor_c:
+            c_offset = anchor_c.number - 1 - residues[-1].number
+            if offset and c_offset and c_offset != offset:
+                raise UserError('The specified anchors would require conflicting residue renumbering!')
+            elif c_offset:
+                offset = c_offset
     else:
         offset = 0
 
