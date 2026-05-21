@@ -141,3 +141,273 @@ def register_rama(logger):
     )
     register('rama stop', undesc, unrama, logger=logger)
     create_alias('~rama', 'rama stop $*', logger=logger)
+
+
+# ---------------------------------------------------------------------------
+# Read-only ``isolde preflight`` commands.
+#
+# These commands let an agent (or scripted user) ask whether a model is ready
+# for an ISOLDE simulation without actually trying to start one. They are safe
+# to call at any time: they never construct an OpenMM ``Context``, never raise
+# on missing parameters, and never modify the model.
+# ---------------------------------------------------------------------------
+
+from chimerax.core.errors import UserError
+
+from .unparameterised import (
+    H_TO_HEAVY_ATOM_THRESHOLD_RATIO,
+    suspiciously_low_h,
+    waters_without_h,
+)
+
+
+def _resolve_model(session, model):
+    if model is not None:
+        return model
+    isolde = getattr(session, 'isolde', None)
+    if isolde is not None and isolde.selected_model is not None:
+        return isolde.selected_model
+    raise UserError(
+        'No model specified and no model is currently selected in ISOLDE. '
+        'Either pass a model argument or run "isolde select <model>" first.'
+    )
+
+
+def _residue_summary(r):
+    return {
+        'chain_id': r.chain_id,
+        'name': r.name,
+        'number': int(r.number),
+        'insertion_code': r.insertion_code,
+        'spec': r.atomspec,
+    }
+
+
+def _residue_label(r):
+    icode = r.insertion_code.strip()
+    return '/{} {} {}{}'.format(r.chain_id, r.name, r.number, icode)
+
+
+def isolde_preflight_hydrogens(session, model=None):
+    '''
+    Preflight check: does ``model`` (or ISOLDE's currently selected model)
+    appear to have a complete set of hydrogens for an MD simulation? Uses the
+    same heuristics ISOLDE's "Unparametrised residues" panel applies before
+    launching a simulation.
+
+    Does not modify the model and does not start a simulation. Returns a dict
+    suitable for programmatic consumption; also logs a one-line summary.
+    '''
+    m = _resolve_model(session, model)
+    residues = m.residues
+    atoms = residues.atoms
+    enames = atoms.element_names
+    n_h = int((enames == 'H').sum())
+    n_heavy = int((enames != 'H').sum())
+    ratio = (n_h / n_heavy) if n_heavy else 0.0
+    waters = residues[residues.names == 'HOH']
+    waters_missing = sum(1 for w in waters if len(w.atoms) != 3)
+
+    if n_h == 0:
+        status = 'missing'
+        message = 'No hydrogens present.'
+    elif suspiciously_low_h(residues):
+        message = (
+            'H/heavy-atom ratio {:.2f} is below the expected threshold of {:.2f}.'
+            .format(ratio, H_TO_HEAVY_ATOM_THRESHOLD_RATIO)
+        )
+        status = 'low'
+    elif waters_without_h(residues):
+        status = 'waters_missing'
+        message = '{} water residue(s) are missing one or both hydrogens.'.format(
+            waters_missing
+        )
+    else:
+        status = 'ok'
+        message = 'Hydrogens look complete.'
+
+    log = session.logger
+    summary = (
+        'ISOLDE hydrogen check ({}): {} ({} H / {} heavy, ratio {:.2f}; '
+        '{} waters, {} missing H).'.format(
+            m.atomspec, message, n_h, n_heavy, ratio, len(waters), waters_missing
+        )
+    )
+    if status == 'ok':
+        log.info(summary)
+    else:
+        log.warning(summary)
+        log.info('Recommendation: run "addh" before starting an ISOLDE simulation.')
+
+    return {
+        'model': m.atomspec,
+        'status': status,
+        'message': message,
+        'hydrogen_count': n_h,
+        'heavy_atom_count': n_heavy,
+        'ratio': ratio,
+        'water_count': int(len(waters)),
+        'waters_missing_hydrogens': int(waters_missing),
+        'recommend_addh': status != 'ok',
+    }
+
+
+def _get_forcefield(session, ff_name):
+    '''
+    Return ``(forcefield, ligand_db, ff_name)``. Reuses ISOLDE's cached
+    ``ForcefieldMgr`` if available so we don't reload the forcefield from
+    disk; otherwise creates a temporary local manager. Either way no
+    simulation is started.
+    '''
+    isolde = getattr(session, 'isolde', None)
+    if isolde is not None:
+        ffmgr = isolde.forcefield_mgr
+        if ff_name is None:
+            ff_name = isolde.sim_params.forcefield
+    else:
+        from ..openmm.forcefields import ForcefieldMgr
+        ffmgr = ForcefieldMgr(session)
+        if ff_name is None:
+            from ..constants import defaults
+            ff_name = defaults.OPENMM_FORCEFIELD
+    ff = ffmgr[ff_name]
+    ligand_db = ffmgr.ligand_db(ff_name)
+    return ff, ligand_db, ff_name
+
+
+def isolde_preflight_parameters(session, model=None, forcefield=None,
+        ignore_external_bonds=True):
+    '''
+    Preflight check: run ISOLDE's MD-template assignment over the given model
+    (or ISOLDE's currently selected model) without starting a simulation, and
+    report any residues that are unparametrised or ambiguous.
+
+    This is the same dry-run that the "Unparametrised residues" panel
+    performs - it does not call the OpenMM ``Context`` constructor and so
+    cannot raise the cryptic errors that arise from a real simulation start.
+
+    Parameters
+    ----------
+    model : AtomicStructure, optional
+        The model to check. Defaults to ISOLDE's currently selected model.
+    forcefield : str, optional
+        The forcefield name to check against (e.g. ``'amber14'``). Defaults
+        to ISOLDE's currently configured forcefield.
+    ignore_external_bonds : bool, default True
+        Whether to ignore external bonds when matching residues to templates.
+        ``True`` matches the behaviour used by the GUI panel.
+
+    Returns
+    -------
+    dict
+        Summary including counts and per-residue details for any unmatched or
+        ambiguous residues.
+    '''
+    m = _resolve_model(session, model)
+    log = session.logger
+
+    ff, ligand_db, ff_name = _get_forcefield(session, forcefield)
+
+    from chimerax.atomic import Residues
+    residues = Residues(sorted(m.residues,
+        key=lambda r: (r.chain_id, r.number, r.insertion_code)))
+
+    from ..openmm.openmm_interface import (
+        find_residue_templates, create_openmm_topology
+    )
+    template_dict = find_residue_templates(
+        residues, ff, ligand_db=ligand_db, logger=log
+    )
+    top, residue_templates = create_openmm_topology(
+        residues.atoms, template_dict
+    )
+    unique, ambiguous, unmatched = ff.assignTemplates(
+        top, ignoreExternalBonds=ignore_external_bonds,
+        explicit_templates=residue_templates,
+    )
+
+    unmatched_info = []
+    for r in unmatched:
+        cx_res = residues[r.index]
+        info = _residue_summary(cx_res)
+        # Suggest possible templates so the agent has something actionable.
+        try:
+            by_name, by_comp = ff.find_possible_templates(r)
+        except Exception:
+            by_name, by_comp = [], []
+        info['candidates_by_name'] = [
+            {'template': t, 'score': float(s)} for (t, s) in by_name
+        ]
+        info['candidates_by_topology'] = [
+            {'template': t, 'score': float(s)} for (t, s) in by_comp
+        ]
+        unmatched_info.append(info)
+
+    ambiguous_info = []
+    for r, template_info in ambiguous.items():
+        cx_res = residues[r.index]
+        info = _residue_summary(cx_res)
+        info['candidates'] = [t[0].name for t in template_info]
+        ambiguous_info.append(info)
+
+    n_total = len(residues)
+    n_unique = len(unique)
+    n_ambig = len(ambiguous)
+    n_unmatched = len(unmatched)
+
+    header = (
+        'ISOLDE parameter check ({}, forcefield {}): '
+        '{} residues, {} matched, {} ambiguous, {} unmatched.'.format(
+            m.atomspec, ff_name, n_total, n_unique, n_ambig, n_unmatched
+        )
+    )
+    if n_unmatched == 0 and n_ambig == 0:
+        log.info(header)
+    else:
+        log.warning(header)
+        if unmatched_info:
+            log.info('  Unmatched: ' + ', '.join(
+                _residue_label(residues[u.index]) for u in unmatched
+            ))
+        if ambiguous_info:
+            log.info('  Ambiguous: ' + ', '.join(
+                _residue_label(residues[r.index]) for r in ambiguous
+            ))
+
+    return {
+        'model': m.atomspec,
+        'forcefield': ff_name,
+        'ignore_external_bonds': bool(ignore_external_bonds),
+        'n_total': int(n_total),
+        'n_matched': int(n_unique),
+        'n_ambiguous': int(n_ambig),
+        'n_unmatched': int(n_unmatched),
+        'ready_for_simulation': n_unmatched == 0 and n_ambig == 0,
+        'unmatched': unmatched_info,
+        'ambiguous': ambiguous_info,
+    }
+
+
+def register_preflight_commands(logger):
+    from chimerax.core.commands import (
+        register, CmdDesc, BoolArg, StringArg,
+    )
+    from ..cmd.argspec import IsoldeStructureArg
+
+    desc_h = CmdDesc(
+        optional=[('model', IsoldeStructureArg)],
+        synopsis='Preflight check: does the model have plausible hydrogens for MD?',
+    )
+    register('isolde preflight hydrogens', desc_h,
+        isolde_preflight_hydrogens, logger=logger)
+
+    desc_p = CmdDesc(
+        optional=[('model', IsoldeStructureArg)],
+        keyword=[
+            ('forcefield', StringArg),
+            ('ignore_external_bonds', BoolArg),
+        ],
+        synopsis='Preflight check: do all residues match an MD forcefield template?',
+    )
+    register('isolde preflight parameters', desc_p,
+        isolde_preflight_parameters, logger=logger)

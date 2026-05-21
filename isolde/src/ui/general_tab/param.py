@@ -47,48 +47,17 @@ class ParameteriseDialog(UI_Panel_Base):
         from chimerax.core.selection import SELECTION_CHANGED
         self._chimerax_trigger_handlers.append(self.session.triggers.add_handler(SELECTION_CHANGED, self._selection_changed_cb))
     
-    def _get_residue_names_from_xml(self, xml_file, resname_prefix=''):
-        """Parse XML file and return list of residue names"""
-        import xml.etree.ElementTree as ET
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        names = []
-        residues_section = root.find('Residues')
-        if residues_section is not None:
-            for residue in residues_section.findall('Residue'):
-                if 'name' in residue.attrib:
-                    names.append(resname_prefix + residue.attrib['name'])
-        return names
-    
-    def _delete_residue_templates(self, forcefield, template_names):
-        """Delete residue templates from forcefield if they exist"""
-        for name in template_names:
-            if name in forcefield._templates:
-                template = forcefield._templates[name]
-                # Remove from main template dict
-                del forcefield._templates[name]
-                # Remove from signature index
-                from openmm.app.forcefield import _createResidueSignature
-                signature = _createResidueSignature([atom.element for atom in template.atoms])
-                if signature in forcefield._templateSignatures:
-                    if template in forcefield._templateSignatures[signature]:
-                        forcefield._templateSignatures[signature].remove(template)
-    
     def _load_params_cb(self, *_):
         files = self._choose_ff_files(self.load_defs_button)
-        if files is not None and len(files):
-            ff = self.isolde.forcefield_mgr[self.isolde.sim_params.forcefield]
-            for f in files:
-                try:
-                    # Extract residue names and delete existing templates
-                    template_names = self._get_residue_names_from_xml(f, resname_prefix='USER_')
-                    self._delete_residue_templates(ff, template_names)
-                    # Now load the file (will succeed since templates are deleted)
-                    ff.loadFile(f, resname_prefix='USER_')
-                except ValueError as e:
-                    self.session.logger.warning(f'Failed to add {f}: {str(e)}')
-                except:
-                    raise
+        if not files:
+            return
+        from chimerax.isolde.openmm.cmd import _load_user_ffxml
+        ff = self.isolde.forcefield_mgr[self.isolde.sim_params.forcefield]
+        for f in files:
+            try:
+                _load_user_ffxml(ff, f)
+            except ValueError as e:
+                self.session.logger.warning(f'Failed to add {f}: {str(e)}')
 
     def _choose_ff_files(self, parent):
         caption = 'Choose one or more ffXML files'

@@ -63,6 +63,57 @@ def isolde_select(session, model):
             return DEREGISTER
         isolde.triggers.add_handler(isolde.GUI_STARTED, select_model)
 
+def isolde_status(session):
+    '''Report ISOLDE's current state without modifying anything.
+
+    Safe to call at any time, including before ``isolde start``. Logs a
+    one-line summary and returns a dict so an agent or script can
+    programmatically confirm which model (if any) is currently selected.
+    '''
+    isolde = getattr(session, 'isolde', None)
+    log = session.logger
+
+    if isolde is None:
+        log.info('ISOLDE status: not started. Run "isolde start" first.')
+        return {
+            'isolde_started': False,
+            'selected_model': None,
+            'selected_model_spec': None,
+            'selected_model_name': None,
+            'simulation_running': False,
+            'forcefield': None,
+            'sim_fidelity_mode': None,
+        }
+
+    m = isolde.selected_model
+    sp = isolde.sim_params
+    ff_name = getattr(sp, 'forcefield', None)
+    fidelity = getattr(sp, 'sim_fidelity_mode', None)
+    sim_running = bool(isolde.simulation_running)
+
+    if m is None:
+        log.warning(
+            'ISOLDE status: started, but no model is selected. '
+            'Run "isolde select <model>" before preflight checks or simulation.'
+        )
+    else:
+        log.info(
+            'ISOLDE status: model {} ({}) selected; forcefield={}; '
+            'simulation_running={}.'.format(
+                m.atomspec, m.name, ff_name, sim_running
+            )
+        )
+
+    return {
+        'isolde_started': True,
+        'selected_model': m.id_string if m is not None else None,
+        'selected_model_spec': m.atomspec if m is not None else None,
+        'selected_model_name': m.name if m is not None else None,
+        'simulation_running': sim_running,
+        'forcefield': ff_name,
+        'sim_fidelity_mode': fidelity,
+    }
+
 def isolde_sim(session, cmd, atoms=None, discard_to=None):
     '''
     Start, stop or pause an interactive simulation.
@@ -370,6 +421,12 @@ def register_isolde(logger):
         )
         register('isolde select', desc, isolde_select, logger=logger)
 
+    def register_isolde_status():
+        desc = CmdDesc(
+            synopsis="Report ISOLDE's current state (selected model, sim status, forcefield)"
+        )
+        register('isolde status', desc, isolde_status, logger=logger)
+
     def register_isolde_report():
         desc = CmdDesc(
             optional=[('report', BoolArg),],
@@ -462,6 +519,7 @@ def register_isolde(logger):
     register_isolde_start()
     register_isolde_set()
     register_isolde_select()
+    register_isolde_status()
     register_isolde_sim()
     register_isolde_report()
     register_isolde_ignore()
@@ -490,3 +548,5 @@ def register_isolde(logger):
     register_isolde_param(logger)
     from chimerax.isolde.benchmark import register_isolde_benchmark
     register_isolde_benchmark(logger)
+    from chimerax.isolde.validation.cmd import register_preflight_commands
+    register_preflight_commands(logger)
