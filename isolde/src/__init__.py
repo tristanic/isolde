@@ -28,6 +28,11 @@ def register_model_isolde_init_attr(session):
     AtomicStructure.register_attr(session, 'isolde_initialized',
         'isolde', attr_type=bool)
 
+def register_template_name_attr(session):
+    from chimerax.atomic import Residue
+    Residue.register_attr(session, 'isolde_template_name',
+        'isolde', attr_type=str, can_return_none=True)
+
 
 __version__ = "1.11.1"
 
@@ -45,6 +50,7 @@ class _MyAPI(BundleAPI):
         register_ignored_residues_attr(session)
         register_domain_cluster_attr(session)
         register_model_isolde_init_attr(session)
+        register_template_name_attr(session)
         from . import settings
         settings.basic_settings = settings._IsoldeBasicSettings(session, 'isolde')
         settings.color_settings = settings._IsoldeColorSettings(session, 'isolde')

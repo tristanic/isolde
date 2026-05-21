@@ -3016,11 +3016,23 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
     template_names = forcefield._templates.keys()
     import numpy
     templates = {}
+    registered_template_names = [getattr(r, 'isolde_template_name', None) for r in residues]
+    for i, tname in enumerate(registered_template_names):
+        if tname is not None:
+            if tname in template_names:
+                templates[i] = tname
+            else:
+                logger.warning('Residue {} has registered template name {}, but this is not present in the forcefield. Ignoring the registered template name.'.format(residues[i], tname))
     cys_indices = numpy.where(residues.names == 'CYS')[0]
+    # remove any CYS residues that already have a registered template name
+    cys_indices = set(cys_indices) - set(templates.keys())
     for c_i in cys_indices:
-        rtype = cys_type(residues[c_i])
+        r = residues[c_i]
+        rtype = cys_type(r)
         if rtype is not None:
             templates[c_i] = rtype
+            # Don't do this yet. Need to add code to clear the template name if the residue's atoms change
+            # r.isolde_template_name = rtype
 
     # Check USER_ templates for ALL residues first, regardless of polymer type.
     # This ensures that custom templates loaded via "Load residue parameters"
@@ -3036,11 +3048,16 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
         user_name = 'USER_{}'.format(name)
         if user_name in template_names:
             indices = numpy.where(residues.names == name)[0]
+            indices = set(indices) - set(templates.keys())
             for i in indices:
                 templates[i] = user_name
 
+    # filter out residues that already have templates assigned
+    filter = numpy.ones(len(residues), dtype=bool)
+    filter[list(templates.keys())] = False
+    filtered_residues = residues[filter]
     from chimerax.atomic import Residue
-    ligands = residues[residues.polymer_types == Residue.PT_NONE]
+    ligands = filtered_residues[filtered_residues.polymer_types == Residue.PT_NONE]
     ligands = ligands[ligands.names != 'HOH']
     names = numpy.unique(ligands.names)
     from .amberff.glycam import (
