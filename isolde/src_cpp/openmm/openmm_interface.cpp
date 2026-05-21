@@ -47,31 +47,47 @@ void OpenmmThreadHandler::_step_threaded(size_t steps)
         // _thread_finished = false;
         size_t steps_done = 0;
         _starting_state = _final_state;
+        auto& integr = integrator();
 
-        while (steps_done < steps)
+        if (steps >= STEPS_PER_VELOCITY_CHECK)
         {
-            size_t these_steps, remaining_steps = steps-steps_done;
-            auto& integr = integrator();
-            integr.setCurrentIntegrator(MAIN);
-            if (remaining_steps > STEPS_PER_VELOCITY_CHECK) {
-                these_steps = STEPS_PER_VELOCITY_CHECK;
-                integr.step(STEPS_PER_VELOCITY_CHECK);
-                integr.setCurrentIntegrator(VELOCITY_CHECK);
-                integr.step(1);
-                auto& vcheck = static_cast<OpenMM::CustomIntegrator&>(integr.getIntegrator(VELOCITY_CHECK));
-                if (vcheck.getGlobalVariable(0) > 0.0) {
-                    std::cerr << int(vcheck.getGlobalVariableByName("fast_count")) << " atoms are moving too fast!" << std::endl;
-                    _unstable = true;
-                    break;
+            while (steps_done < steps)
+            {
+                size_t these_steps, remaining_steps = steps-steps_done;
+                integr.setCurrentIntegrator(MAIN);
+                if (remaining_steps > STEPS_PER_VELOCITY_CHECK) {
+                    these_steps = STEPS_PER_VELOCITY_CHECK;
+                    integr.step(STEPS_PER_VELOCITY_CHECK);
+                    integr.setCurrentIntegrator(VELOCITY_CHECK);
+                    integr.step(1);
+                    auto& vcheck = static_cast<OpenMM::CustomIntegrator&>(integr.getIntegrator(VELOCITY_CHECK));
+                    if (vcheck.getGlobalVariable(0) > 0.0) {
+                        std::cerr << int(vcheck.getGlobalVariableByName("fast_count")) << " atoms are moving too fast!" << std::endl;
+                        _unstable = true;
+                        break;
+                    }
+                    integr.setCurrentIntegrator(SMOOTH);
+                    integr.step(1);
+                } else {
+                    these_steps = remaining_steps;
+                    integr.step(these_steps);
                 }
-                integr.setCurrentIntegrator(SMOOTH);
-                integr.step(1);
-            } else {
-                these_steps = remaining_steps;
-                integr.step(these_steps);
-            }
 
-            steps_done += these_steps;
+                steps_done += these_steps;
+            }
+        } else 
+        {
+            integr.setCurrentIntegrator(MAIN);
+            integr.step(steps);
+            integr.setCurrentIntegrator(VELOCITY_CHECK);
+            integr.step(1);
+            integr.setCurrentIntegrator(SMOOTH);
+            integr.step(1);
+            auto& vcheck = static_cast<OpenMM::CustomIntegrator&>(integr.getIntegrator(VELOCITY_CHECK));
+            if (vcheck.getGlobalVariable(0) > 0.0) {
+                std::cerr << int(vcheck.getGlobalVariableByName("fast_count")) << " atoms are moving too fast!" << std::endl;
+                _unstable = true;
+            }
         }
         _final_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
         _apply_smoothing(static_cast<OpenMM::CustomIntegrator&>(integrator().getIntegrator(SMOOTH)), _final_state);
