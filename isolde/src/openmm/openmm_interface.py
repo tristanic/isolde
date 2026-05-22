@@ -3130,11 +3130,25 @@ def cys_type(residue):
                 if 'H1' in names:
                     return 'NCYX'
                 return 'CYX'
-            elif a.name == "CH3":
+            elif a.element.name == "C":
+                # SG bonded to any external carbon -- a thioether.
+                # Previously this branch only matched a partner atom
+                # literally named "CH3" (the ACEcyc head cap), which
+                # missed thioether bonds to any other external carbon
+                # (covalent-inhibitor warheads, post-translational
+                # modifications, designed bioconjugates, ...).  The
+                # CYScyc / CCYScyc templates only depend on SG having
+                # one external bond; the partner atom's name does not
+                # affect the internal charges, so the broadened match
+                # is safe.
                 if 'OXT' in names:
                     return 'CCYScyc'
-                else:
-                    return 'CYScyc'
+                if 'H1' in names:
+                    # No NCYScyc template ships in termods.xml yet, so
+                    # return CYM rather than silently mis-parameterise
+                    # an N-terminal Cys with an S--C external bond.
+                    return 'CYM'
+                return 'CYScyc'
             # Assume metal binding - will eventually need to do something better here
             return 'CYM'
         if a.name == 'HG':
