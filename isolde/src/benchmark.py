@@ -246,14 +246,8 @@ class GraphicsPerformanceTracker:
             self._last_time = current_time
 
 def _system_summary():
-    import sys
-    from chimerax.bug_reporter.bug_reporter_gui import _darwin_info, _win32_info, _linux_info
-    if sys.platform == 'win32':
-        return _win32_info()
-    if sys.platform == 'linux':
-        return _linux_info()
-    if sys.platform == 'darwin':
-        return _darwin_info()
+    from chimerax.bug_reporter.tool import system_summary
+    return system_summary()
 
 def _opengl_info(session):
     r = session.main_view.render
