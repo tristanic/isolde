@@ -1051,4 +1051,197 @@ isolde remote xmlrpc
 
 See :ref:`remote_control_cmd`
 
+.. _brefine:
+
+isolde brefine
+==============
+
+Syntax: isolde brefine [*model*]
+[**refineB** *true/false* (true)]
+[**maxCycles** *N* (50)]
+[**bMinFactor** *number* (2.0)]
+[**bMax** *number* (200.0)]
+[**nThreads** *N*]
+[**logLevel** *none/info/debug* (info)]
+[**rworkTolerance** *number* (0.02)]
+[**autoTolerances** *true/false* (true)]
+[**deltaToleranceFactor** *number* (1.0)]
+[**epsilonToleranceFactor** *number* (1.0)]
+[**ignoreHydrogens** *true/false* (true)]
+[**wInternal** *number* (0.0)]
+[**wLocal** *number* (0.0)]
+[**cLocal** *number* (4.0)]
+
+Refine the isotropic B-factors (and, optionally, occupancies) of all atoms
+in the model against the crystallographic structure factors loaded with
+``clipper open``.  Refinement is performed using the Agarwal (1978) real-space
+gradient approach with a self-consistent crystallographic target: at each
+L-BFGS-B step the scale factor *k* and driving density are recomputed from the
+current Fc, so the optimiser always descends a fixed, well-defined objective.
+
+If *model* is not specified and only one Clipper session is open, that session
+is used automatically.
+
+**refineB** — whether to refine B-factors.  Default *true*.
+
+**maxCycles** — maximum number of L-BFGS-B iterations.  Default 50.
+
+**bMinFactor** — scale factor for the resolution-dependent B-factor floor.
+The floor is ``bMinFactor × d_min²`` (Å²).  Default 2.0.
+
+**bMax** — upper bound on B-factors (Å²).  Default 200.0.  Setting this
+prevents poorly-fitted atoms from drifting to extreme values.
+
+**nThreads** — number of threads for the gradient calculation.  Defaults to
+the number of available CPU cores.
+
+**logLevel** — verbosity: *none* suppresses all output; *info* (default) logs
+a one-line completion message and the before/after R-factors; *debug* adds
+timing and full configuration details.
+
+**rworkTolerance** — if the R-work computed from the refined parameters
+exceeds the pre-refinement R-work by more than this amount, the results are
+discarded without modifying the model.  Default 0.02.  Set to *none* to
+disable the check.
+
+**autoTolerances** — if *true* (default), L-BFGS-B convergence thresholds are
+scaled to the atom count (√N) and data resolution (d_min²) automatically.
+
+**deltaToleranceFactor** — multiplier on the auto-scaled *lbfgs_delta*
+threshold.  Values < 1 tighten convergence; values > 1 loosen it.
+Abbreviated to **d** on the command line.
+
+**epsilonToleranceFactor** — multiplier on the auto-scaled *lbfgs_epsilon*
+threshold.  Same semantics.  Abbreviated to **e** on the command line.
+
+**ignoreHydrogens** — exclude hydrogen atoms from the refinement.
+Default *true*.
+
+**wInternal** — weight for two-sided pairwise restraints tying the
+B-factors of covalently-bonded atoms together.  The weight is **automatically
+normalized to the data** (it is a relative emphasis, not an absolute scale), so a
+given value behaves comparably across resolutions/datasets.  Default 0.0 (off).
+
+**wLocal** — weight for two-sided pairwise restraints between
+spatially-close *non-bonded* atoms, **including crystallographic symmetry
+contacts**, encouraging atoms in close contact to share similar B-factors.  The
+per-pair weight is scaled by separation (closer contacts weighted more strongly)
+and normalized by coordination number and the data scale (as above).  Default 0.0
+(off).  Note: over a whole structure this can generate a large number of
+restraints; enable deliberately.
+
+**cLocal** — distance (Å) within which a non-bonded contact
+contributes a local restraint.  Default 4.0.
+
+
+.. _brsr:
+
+isolde brsr
+===========
+
+Syntax: isolde brsr [*atoms*]
+[**map** *map-handler*]
+[**contextRange** *number* (5.0)]
+[**wBoundary** *number* (1.0)]
+[**cBoundary** *number* (4.0)]
+[**wInternal** *number* (1.0)]
+[**wholeMap** *true/false* (false)]
+[**padding** *number* (6.0)]
+[**taperWidth** *number* (3.0)]
+[**maxCycles** *N* (50)]
+[**bMinFactor** *number* (2.0)]
+[**bMax** *number* (200.0)]
+[**nThreads** *N*]
+[**logLevel** *none/info/debug* (info)]
+[**resolution** *number*]
+[**autoTolerances** *true/false* (true)]
+[**deltaToleranceFactor** *number* (1.0)]
+[**epsilonToleranceFactor** *number* (1.0)]
+[**ignoreHydrogens** *true/false* (true)]
+
+Refine the isotropic B-factors of the specified atoms against a fixed
+real-space target density.  A subregion of the target map is extracted,
+cosine-tapered at the edges to suppress periodic wrap-around artefacts, and
+copied into a Clipper P1 Xmap.  B-factors are then optimised so that the
+calculated density best matches the target, using a per-iteration least-squares
+scale factor to make the result independent of the map's absolute normalisation.
+
+This command is suitable for both cryo-EM maps and local real-space refinement
+against a crystallographic difference map.
+
+If *atoms* is not specified, all atoms of the single available Clipper model
+are refined.  If *map* is not specified, the command looks for the single
+available Clipper map handler in the session.
+
+**atoms** — the atoms to refine.  Must all belong to a single structure that
+is associated with a Clipper session.  Atoms from the same structure that are
+not in this selection but lie within *contextRange* of it will contribute to
+the calculated density without being refined themselves.
+
+**map** — the target map handler.  Must be a Clipper map handler
+(crystallographic or non-crystallographic).
+
+**contextRange** — radius (Å) around the refined atoms within which
+neighbouring atoms contribute to the calculated density.  Default 5.0.
+
+**wBoundary** — weight on the one-sided restraints that pull each
+refined atom's B-factor toward a fixed target derived from its surrounding
+context atoms.  The target is the **distance-weighted mean** of the (fixed)
+B-factors of the context atoms within *cBoundary* — closer
+neighbours count more strongly — and the search is **symmetry-aware**, so a
+crystallographic symmetry mate packing against the fragment contributes just as
+a directly-adjacent atom would.  These suppress the tendency of a freshly-fitted
+fragment's B-factors to drift away from those of its surroundings.  The weight is
+**automatically normalized to the data** (a relative emphasis, not an absolute
+scale), so a given value behaves comparably across resolutions.  Default 1.0.
+Set to 0 to disable boundary restraints.
+
+**cBoundary** — distance (Å) within which a context atom (or its
+symmetry image) contributes to a refined atom's boundary target.  Should be ≤
+*contextRange*.  Default 4.0.
+
+**wInternal** — weight on the pairwise restraints between bonded
+atoms *within* the refined set.  Boundary restraints only anchor atoms adjacent
+to the context; the internal network propagates that information into the
+fragment interior, where atoms would otherwise be unconstrained.  Like
+*wBoundary*, this weight is automatically normalized to the data.
+Default 1.0.  Set to 0 to disable internal restraints; setting both restraint
+weights to 0 reproduces the old unrestrained behaviour.
+
+**wholeMap** — if *true*, refine against the full extent of the map without
+cropping to the atom bounding box.  Only valid for non-crystallographic
+(cryo-EM) maps; crystallographic live maps only hold data within the current
+spotlight box.  Default *false*.
+
+**padding** — extra space (Å) on all sides of the atom bounding box when
+extracting the target density subregion.  Default 6.0.
+
+**taperWidth** — width (Å) of the cosine taper applied to the edges of the
+extracted subregion.  Default 3.0.
+
+**maxCycles** — maximum number of L-BFGS-B iterations.  Default 50.
+
+**bMinFactor** — scale factor for the resolution-dependent B-factor floor.
+Default 2.0.
+
+**bMax** — upper bound on B-factors (Å²).  Default 200.0.
+
+**nThreads** — number of threads.  Defaults to available CPU cores.
+
+**logLevel** — verbosity level: *none*, *info* (default), or *debug*.
+
+**resolution** — nominal resolution of the target map (Å), used to set the
+L-BFGS-B convergence thresholds when *autoTolerances* is *true*.  If not
+given, the resolution is first sought from the session's symmetry manager
+(appropriate when the target is a crystallographic map), then estimated as
+3 × max(voxel_step).
+
+**autoTolerances** — auto-scale convergence thresholds.  Default *true*.
+
+**deltaToleranceFactor** — multiplier on *lbfgs_delta*.  Abbreviated **d**.
+
+**epsilonToleranceFactor** — multiplier on *lbfgs_epsilon*.  Abbreviated **e**.
+
+**ignoreHydrogens** — exclude hydrogen atoms.  Default *true*.
+
 
