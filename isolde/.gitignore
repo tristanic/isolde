@@ -26,7 +26,6 @@ pyproject.toml
 
 # Distribution / packaging
 bin/
-src/docs/
 docs/source/_build/
 build/
 develop-eggs/
