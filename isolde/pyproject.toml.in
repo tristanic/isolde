@@ -22,7 +22,7 @@ dependencies = [
     "ChimeraX-Core >=1.12rc0, ==1.12.*",
     "ChimeraX-Atomic ~=1.67.0",
     "ChimeraX-AtomicLibrary ~=14.4.0",
-    "ChimeraX-Clipper ~=0.26.0",
+    "ChimeraX-Clipper ~=0.27.0",
     "ChimeraX-Arrays ~=1.0" 
 ]
 
