@@ -550,3 +550,5 @@ def register_isolde(logger):
     register_isolde_benchmark(logger)
     from chimerax.isolde.validation.cmd import register_preflight_commands
     register_preflight_commands(logger)
+    from chimerax.isolde.refine.bfactor_refine import register_bfactor_refine_commands
+    register_bfactor_refine_commands(logger)
