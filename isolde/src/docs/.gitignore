@@ -1,0 +1,7 @@
+# Sphinx writes the built user documentation into this directory after the
+# first ISOLDE install.  Those build products must NOT be committed, but the
+# directory itself has to exist on a fresh checkout because the bundle manifest
+# (pyproject.toml) references src/docs.  So: ignore everything in here except
+# this file, which keeps the otherwise-empty directory tracked.
+*
+!.gitignore
