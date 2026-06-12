@@ -34,7 +34,7 @@ def register_template_name_attr(session):
         'isolde', attr_type=str, can_return_none=True)
 
 
-__version__ = "1.12.0"
+__version__ = "1.13.0"
 
 ISOLDE_STATE_VERSION = 3
 
