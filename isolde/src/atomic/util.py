@@ -1,5 +1,28 @@
 rings = ('PHE','TYR') #,'TYS','PTR') <- non-standard amino acids currently throw a RuntimeError (25/10/2021)
 
+
+def clear_altlocs(model, logger=None):
+    '''
+    Drop all alternate conformations from ``model`` and reset the affected
+    atoms' occupancies to 1.0. Mirrors the action ISOLDE offers via the
+    auto-popup the first time a model with alt locs is selected.
+
+    Returns the number of atoms that had alternate conformers before the
+    call.
+    '''
+    atoms_with_alt_locs = model.atoms[model.atoms.num_alt_locs > 0]
+    n = int(len(atoms_with_alt_locs))
+    if n:
+        model.delete_alt_locs()
+        atoms_with_alt_locs.occupancies = 1
+        if logger is not None:
+            logger.info(
+                'Removed all altlocs in #{} ({} atom(s)) and reset associated '
+                'occupancies to 1.'.format(model.id_string, n)
+            )
+    return n
+
+
 def correct_pseudosymmetric_sidechain_atoms(session, residues):
     '''
     Protein sidechain atom names follow strict rules dictating the names of atoms 
