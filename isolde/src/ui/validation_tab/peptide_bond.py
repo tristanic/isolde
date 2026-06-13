@@ -37,42 +37,35 @@ class PeptideBondDialog(UI_Panel_Base):
         
 
     def _populate_table(self, *_):
-        import numpy
         table = self.table
         table.setRowCount(0)
         m = self.isolde.selected_model
         if m is None or m.deleted:
             return
         from chimerax.isolde.session_extensions import get_proper_dihedral_mgr
+        from chimerax.isolde.validation.cmd import classify_peptide_bonds
         pdm = get_proper_dihedral_mgr(self.session)
         if self.isolde.simulation_running:
             residues = self.isolde.sim_manager.sim_construct.mobile_residues
         else:
             residues = m.residues
-        omegas = pdm.get_dihedrals(residues, 'omega')
-        abs_angles = numpy.abs(omegas.angles)
-        from math import pi
-        from chimerax.isolde.constants import defaults
-        cc = defaults.CIS_PEPTIDE_BOND_CUTOFF
-        tc = defaults.TWISTED_PEPTIDE_BOND_DELTA
-        cis_mask = abs_angles < cc
-        twisted_mask = numpy.logical_and(abs_angles >= cc, abs_angles < pi-tc)
-        iffy_mask = numpy.logical_or(cis_mask, twisted_mask)
-        iffy = omegas[iffy_mask]
-        angles = numpy.degrees(iffy.angles)
-        cis_mask = cis_mask[iffy_mask]
+        iffy = classify_peptide_bonds(pdm, residues)
 
         table.setRowCount(len(iffy))
 
         cis_nonpro_color = QBrush(QColor(255, 100, 100), Qt.SolidPattern)
         cis_pro_color = QBrush(QColor(100,255,100), Qt.SolidPattern)
         twisted_color = QBrush(QColor(240, 200, 160), Qt.SolidPattern)
-        for i, (omega, angle, cis) in enumerate(zip(iffy, angles, cis_mask)):
-            res1, res2 = omega.atoms.unique_residues
-            if cis:
+        for i, it in enumerate(iffy):
+            res1 = it['res1']
+            res2 = it['res2']
+            angle = it['omega_deg']
+            if it['is_cis']:
                 conf_text = 'cis'
+                color = cis_pro_color if it['is_proline'] else cis_nonpro_color
             else:
                 conf_text = 'twisted'
+                color = twisted_color
             data = (
                 res1.chain_id,
                 f'{res1.name}:{res1.number}-{res2.name}:{res2.number}',
@@ -81,16 +74,9 @@ class PeptideBondDialog(UI_Panel_Base):
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
                 item.setData(Qt.ItemDataRole.UserRole, res2)
-                if cis:
-                    if res2.name == 'PRO':
-                        color = cis_pro_color
-                    else:
-                        color = cis_nonpro_color
-                else:
-                    color = twisted_color
                 item.setBackground(color)
                 table.setItem(i, j, item)
-            if cis:
+            if it['is_cis']:
                 from chimerax.core.commands import run
                 def cb(_, r=res2):
                     run(self.session, f'isolde cisflip #{m.id_string}/{r.chain_id}:{r.number}')

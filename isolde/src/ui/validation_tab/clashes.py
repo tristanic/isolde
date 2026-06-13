@@ -82,18 +82,17 @@ class ClashesDialog(UI_Panel_Base):
         t.setRowCount(0)
         if not len(atoms):
             return
-        from chimerax.isolde.validation.clashes import unique_clashes
+        from chimerax.isolde.validation.clashes import unique_clashes, clash_atom_label
         clashes = unique_clashes(self.session, atoms)
 
         t.setRowCount(len(clashes))
         for i, clash in enumerate(clashes):
             catoms = clash.atoms
             a1, a2 = catoms
-            r1, r2 = catoms.residues
             data = (
-            "{} {}{}: {}".format(r1.name, r1.chain_id, r1.number, a1.name),
-            "{} {}{}: {}".format(r2.name, r2.chain_id, r2.number, a2.name),
-            "{:0.2f}".format(clash.overlap)
+                clash_atom_label(a1),
+                clash_atom_label(a2),
+                "{:0.2f}".format(clash.overlap),
             )
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
