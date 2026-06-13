@@ -4,6 +4,17 @@ import numpy
 SEVERE_CUTOFF=0.6
 STRICT_CUTOFF=0.4
 
+
+def clash_atom_label(atom):
+    '''
+    Human-readable label for one side of a clash, e.g. ``'ALA A12: CB'``.
+    Shared by ISOLDE's GUI "Clashes" panel and the
+    ``isolde validate clashes`` command so the two stay in sync.
+    '''
+    r = atom.residue
+    return '{} {}{}: {}'.format(r.name, r.chain_id, r.number, atom.name)
+
+
 def unique_clashes(session, atoms, severe_only = False):
     from chimerax.clashes import find_clashes
     if severe_only:
