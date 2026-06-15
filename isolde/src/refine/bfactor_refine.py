@@ -2,7 +2,7 @@
 # @Date:   10-Jun-2026
 # @Email:  tcroll@altoslabs.com
 # @Last modified by:   tic20
-# @Last modified time: 11-Jun-2026
+# @Last modified time: 13-Jun-2026
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright:2016-2019 Tristan Croll
 
@@ -28,14 +28,38 @@ from chimerax.core.commands import AtomSpecArg
 #: Convert an isotropic B-factor (Å²) to U_iso (Å²): U = B / (8·π²).
 U_FROM_B = 1.0 / (8.0 * _PI * _PI)
 
-#: Per-type Geman-McClure half-max scale σ (U-space, Å²).  Bonded atoms share B
-#: closely → tight σ (σ_B ≈ 5 Å²); non-bonded context contacts can differ more →
-#: wider σ (σ_B ≈ 15 Å²) so genuine B-gradients/outliers are still pulled in.
-_SIGMA_BONDED = 0.063    # σ_B ≈ 5 Å²
-_SIGMA_CONTEXT = 0.19    # σ_B ≈ 15 Å²
+#: Per-type Barron quadratic-core scale ``c`` (U-space, Å²; ≡ the old GM ``σ``).
+#: This sets the quadratic-core width / origin curvature (= weight/c²) and is a
+#: pure stiffness knob — the tail shape is now controlled independently by ``α``
+#: (see below).  Bonded atoms share B closely → tight c (c_B ≈ 5 Å²); non-bonded
+#: context contacts can differ more → wider c (c_B ≈ 15 Å²).
+_SIGMA_BONDED = 0.063    # c_B ≈ 5 Å²
+_SIGMA_CONTEXT = 0.19    # c_B ≈ 15 Å²
 
 #: Distance kernel scale (Å): w(d) = ε²/(d²+ε²) — ≈1 at contact, decays outward.
 _DIST_KERNEL_EPS = 3.5
+
+#: Barron robust-loss shape parameter ``α`` (CVPR 2019).  α=2 harmonic, α=1
+#: Charbonnier (quadratic core + saturating linear tail — the default), α=0
+#: Cauchy, α=−2 reproduces the old Geman-McClure family, α→−∞ Welsch.  Lower α ⇒
+#: more saturating/redescending tail ⇒ a pair is allowed to diverge if the data
+#: insists.  ``alpha auto`` (per-restraint) maps a [0,1] confidence onto this band:
+#: high confidence (rigid bonds, atoms in solid VdW contact) → ALPHA_HIGH; low
+#: confidence (rotamer tips, loose non-contacts) → ALPHA_LOW.
+ALPHA_DEFAULT = 1.0      # Charbonnier — flat-α default when no value is given
+ALPHA_HIGH = 1.0         # confidence = 1 → Charbonnier (keep B-factors tracking)
+ALPHA_LOW = -2.0         # confidence = 0 → Geman-McClure (release floppy pairs)
+
+#: Superatom contact-confidence tuning (non-bonded families, ``alpha auto``).  The
+#: refined set is heavy-only, but the model carries H (explicit or implicit), so a
+#: heavy-atom VdW radius is inflated by H_SHELL to recover the H-group envelope
+#: (hydrophobic CHₙ packing); a donor/acceptor pair gets HBOND_BONUS of extra
+#: reach (polar / H-mediated contact, inferred from idatm type — no explicit H
+#: needed).  Confidence ramps from 1 at solid overlap to 0 once a GAP_FULL gap
+#: opens.  Å throughout; first guesses — refine from the log.
+_H_SHELL = 0.8
+_GAP_FULL = 1.0
+_HBOND_BONUS = 0.5
 
 #: Master normalization constants ("fraction of data energy a restraint family may
 #: spend"; see build_b_restraints_for_refinement).  These bridge the unitless data
@@ -43,9 +67,13 @@ _DIST_KERNEL_EPS = 3.5
 #: ONCE from a logged run: pick η so a user weight of ~1.0 gives gentle-but-active
 #: regularization (reproduces the empirically-good raw ≈ 0.001 at 3 Å).  Because
 #: the per-run data energy S already tracks dataset size/|Fo|², the calibrated η is
-#: then portable across resolutions.  First guesses only — refine from the log.
-_ETA_XTAL = 1.0e-7       # crystallographic (brefine); calibrated, sweet spot ~ w=1
-_ETA_RS = 10.0           # real-space (brsr); calibrated (sweet spot was ~ w=10 at eta=1.0)
+#: then portable across resolutions.
+#: Calibrated for Barron's normalized loss with α auto (the runaway-atom artifact
+#: is now controlled by the tail shape, not by cranking weights): a user weight of
+#: ~1.0 gives well-behaved regularization on a 3 Å test case.  These are 5× the
+#: original GM-tuned values, which were a touch too weak under the new loss.
+_ETA_XTAL = 5.0e-7       # crystallographic (brefine); Barron/α-auto calibrated, w≈1
+_ETA_RS = 50.0           # real-space (brsr); Barron/α-auto calibrated, w≈1
 
 
 class _StructuresOrSymmetryMgrsArg(AtomSpecArg):
@@ -90,6 +118,130 @@ def _distance_weight(d):
     '''Smooth inverse-square distance kernel; works on scalars or numpy arrays.'''
     e2 = _DIST_KERNEL_EPS * _DIST_KERNEL_EPS
     return e2 / (d * d + e2)
+
+
+# -----------------------------------------------------------------------------
+# Per-restraint Barron α ("auto-confidence") heuristics
+#
+# In ``alpha auto`` mode each restraint's tail shape is set from a [0,1] local
+# confidence: rigid bonds / atoms in solid VdW contact → ALPHA_HIGH (commit, keep
+# B-factors tracking); rotamer tips / loose non-contacts → ALPHA_LOW (let the data
+# pull them apart).  Classification is driven entirely by ChimeraX ``idatm_type``
+# + ``bond.in_cycle`` + heavy-atom degree, so it works for ligands / nucleotides /
+# modified residues, not just the standard amino acids.
+# -----------------------------------------------------------------------------
+
+def _alpha_from_confidence(c):
+    '''Map a confidence in [0,1] onto the α band (ALPHA_LOW … ALPHA_HIGH).'''
+    if c < 0.0:
+        c = 0.0
+    elif c > 1.0:
+        c = 1.0
+    return ALPHA_LOW + c * (ALPHA_HIGH - ALPHA_LOW)
+
+
+def _heavy_degree(atom):
+    '''Number of non-hydrogen atoms covalently bonded to ``atom``.'''
+    return sum(1 for n in atom.neighbors if n.element.number > 1)
+
+
+def _is_sp3(idatm_type, type_info, tetrahedral):
+    '''True if the IDATM type is tetrahedral (sp3) — i.e. rotatable single-bond
+    character at this atom.'''
+    info = type_info.get(idatm_type)
+    return info is not None and info.geometry == tetrahedral
+
+
+def _is_donor(atom, type_info):
+    '''H-bond donor test from heavy-atom IDATM type (no explicit H needed); mirrors
+    the predicate in chimerax.clashes — an N/O/S that either has room for an
+    (implicit) H or already carries one.'''
+    if atom.element.number not in (7, 8, 16):   # N, O, S
+        return False
+    info = type_info.get(atom.idatm_type)
+    if info is not None and atom.num_bonds < info.substituents:
+        return True
+    return any(n.element.number == 1 for n in atom.neighbors)
+
+
+def _is_acceptor(atom, type_info):
+    '''H-bond acceptor test from IDATM type (lone pair available): substituents <
+    geometry.  Mirrors chimerax.clashes.'''
+    info = type_info.get(atom.idatm_type)
+    return info is not None and info.substituents < info.geometry
+
+
+def _effective_radius(atom, type_info):
+    '''Superatom VdW radius: the heavy-atom radius inflated by ``_H_SHELL`` when the
+    atom bears hydrogens (explicit or implicit), recovering the H-group envelope so
+    a heavy-only contact test still sees hydrophobic CHₙ packing.'''
+    r = atom.default_radius
+    info = type_info.get(atom.idatm_type)
+    n_h = (info.substituents - _heavy_degree(atom)) if info is not None \
+        else sum(1 for n in atom.neighbors if n.element.number == 1)
+    if n_h > 0:
+        r += _H_SHELL
+    return r
+
+
+def _atom_contact_props(atoms):
+    '''Precompute (superatom radius, donor flag, acceptor flag) for an ``Atoms``
+    array, returned as numpy arrays parallel to ``atoms`` (so callers can index by
+    the same position they already hold).  Only needed for ``alpha auto``.'''
+    import numpy
+    from chimerax.atomic.idatm import type_info
+    n = len(atoms)
+    radii = numpy.empty(n, dtype=numpy.float64)
+    donor = numpy.zeros(n, dtype=bool)
+    acceptor = numpy.zeros(n, dtype=bool)
+    for i in range(n):
+        a = atoms[i]
+        radii[i] = _effective_radius(a, type_info)
+        donor[i] = _is_donor(a, type_info)
+        acceptor[i] = _is_acceptor(a, type_info)
+    return radii, donor, acceptor
+
+
+def _overlap_confidence(r_i, r_j, donor_i, acc_i, donor_j, acc_j, dist):
+    '''Contact confidence in [0,1] from superatom-radius overlap, with a donor/
+    acceptor reach bonus for polar / H-mediated contacts.  1 at solid overlap,
+    ramping to 0 once a ``_GAP_FULL`` gap opens.'''
+    reach = r_i + r_j
+    if (donor_i and acc_j) or (donor_j and acc_i):
+        reach += _HBOND_BONUS
+    c = 1.0 + (reach - dist) / _GAP_FULL
+    if c < 0.0:
+        return 0.0
+    return 1.0 if c > 1.0 else c
+
+
+def _bonded_alpha(bond, a1, a2, alpha, type_info, tetrahedral):
+    '''Per-bond α for the bonded family.  Flat passthrough unless ``alpha == 'auto'``,
+    in which case a 3-tier confidence: rigid (ring / non-sp3 endpoint, or a rigid
+    coordination hub) → high; acyclic sp3–sp3 interior → mid; terminal tip (an
+    endpoint with one heavy neighbour, e.g. Lys Cε–Nζ / Ser Cβ–Oγ) → low.'''
+    if alpha != 'auto':
+        return float(alpha)
+    if bond.in_cycle or not (_is_sp3(a1.idatm_type, type_info, tetrahedral)
+                             and _is_sp3(a2.idatm_type, type_info, tetrahedral)):
+        return _alpha_from_confidence(1.0)
+    d1, d2 = _heavy_degree(a1), _heavy_degree(a2)
+    if d1 == 1 or d2 == 1:
+        # Terminal heavy atom.  Distinguish a rigid coordination hub from a genuine
+        # floppy tip by the *parent* (the non-terminal endpoint; both are already
+        # tetrahedral here).  A non-carbon centre holding ≥3 heavy ligands — a
+        # sulfate S (Sac), phosphate/phosphonate P (Pac), sulfonyl S, … — is a rigid
+        # polyhedron whose central atom moves *with* the group; treat it as rigid
+        # (persistent Charbonnier) so the GM tail can't abandon a runaway centre
+        # (e.g. sulfate S drifting to b_max while its oxygens stay low).  Charbonnier
+        # still saturates, so a weakly-bound group can go out-of-step if the data
+        # insists.  Carbon-centred tips (hydroxyl, amine, thiol, methyl, branch
+        # methyl) keep the floppy GM tier.
+        parent, parent_deg = (a2, d2) if d1 == 1 else (a1, d1)
+        if parent.element.number != 6 and parent_deg >= 3:
+            return _alpha_from_confidence(1.0)
+        return _alpha_from_confidence(0.0)
+    return _alpha_from_confidence(0.5)
 
 
 class _ConformerTable:
@@ -209,12 +361,15 @@ def _bonded_index_pairs(refined_atoms):
     return out
 
 
-def build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens):
+def build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens,
+                              alpha=ALPHA_DEFAULT):
     '''Two-sided pairwise restraints along covalent bonds (heavy atoms only).
 
     The ``ks`` column holds **relative** weights (ω = 1 for every bond); the
-    orchestrator rescales them to the data-normalized family budget.  Returns a
-    ``(atoms1, altlocs1, atoms2, altlocs2, sigmas, ks)`` tuple, or ``None``.
+    orchestrator rescales them to the data-normalized family budget.  ``alpha`` is
+    either a float (broadcast) or ``'auto'`` (per-bond 3-tier confidence; see
+    :func:`_bonded_alpha`).  Returns a
+    ``(atoms1, altlocs1, atoms2, altlocs2, sigmas, ks, alphas)`` tuple, or ``None``.
     '''
     bonds = refined_atoms.intra_bonds
     if len(bonds) == 0:
@@ -225,7 +380,12 @@ def build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens):
     el1 = a1s.elements.numbers
     el2 = a2s.elements.numbers
     als_by_atom = _altlocs_by_atom(table)
-    atoms1, altlocs1, atoms2, altlocs2, sigmas, ks = [], [], [], [], [], []
+    auto = (alpha == 'auto')
+    if auto:
+        from chimerax.atomic.idatm import type_info, tetrahedral
+    flat_alpha = None if auto else float(alpha)
+    atoms1, altlocs1, atoms2, altlocs2, sigmas, ks, alphas = \
+        [], [], [], [], [], [], []
     seen = set()
     for b in range(len(bonds)):
         i, j = int(idx1[b]), int(idx2[b])
@@ -233,6 +393,9 @@ def build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens):
             continue
         if el1[b] == 1 or el2[b] == 1:   # heavy-only
             continue
+        # α depends only on bond geometry, so it is shared across altloc pairs.
+        b_alpha = (_bonded_alpha(bonds[b], a1s[b], a2s[b], alpha, type_info,
+                                 tetrahedral) if auto else flat_alpha)
         for ai, aj in _pair_altlocs(als_by_atom.get(i, ['']),
                                     als_by_atom.get(j, [''])):
             key = _pair_key(i, ai, j, aj)
@@ -245,9 +408,10 @@ def build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens):
             altlocs2.append(aj)
             sigmas.append(_SIGMA_BONDED)
             ks.append(1.0)   # relative weight ω; orchestrator rescales
+            alphas.append(b_alpha)
     if not atoms1:
         return None
-    return (atoms1, altlocs1, atoms2, altlocs2, sigmas, ks)
+    return (atoms1, altlocs1, atoms2, altlocs2, sigmas, ks, alphas)
 
 
 def _apply_place(place, coord):
@@ -322,12 +486,17 @@ def _expand_context_candidates(context_master, symmats, per_op):
 
 
 def build_boundary_b_target_restraints(sym_mgr, refined_atoms, refined_table,
-                                       ignore_hydrogens, cutoff):
+                                       ignore_hydrogens, cutoff,
+                                       alpha=ALPHA_DEFAULT):
     '''One-sided restraints pulling each refined atom toward the distance-weighted
     mean B of its (symmetry-aware) context neighbours.  The ``ks`` column holds
-    relative weights (ω = 1 per target); the orchestrator rescales them.
+    relative weights (ω = 1 per target); the orchestrator rescales them.  ``alpha``
+    is a float (broadcast) or ``'auto'`` — in auto mode each target's confidence is
+    the *best* superatom-contact confidence over its contributing context
+    neighbours (is this atom genuinely packed against context, or loosely
+    surrounded?).
 
-    Returns a ``(atoms, altlocs, target_us, sigmas, ks)`` tuple, or ``None``.
+    Returns a ``(atoms, altlocs, target_us, sigmas, ks, alphas)`` tuple, or ``None``.
     '''
     if cutoff <= 0:
         return None
@@ -364,7 +533,13 @@ def build_boundary_b_target_restraints(sym_mgr, refined_atoms, refined_table,
     c_mi = ctx.master_index
     c_alt = ctx.altloc
 
-    atoms, altlocs, target_us = [], [], []
+    auto = (alpha == 'auto')
+    flat_alpha = None if auto else float(alpha)
+    if auto:
+        r_radii, r_don, r_acc = _atom_contact_props(refined_atoms)
+        c_radii, c_don, c_acc = _atom_contact_props(context_master)
+
+    atoms, altlocs, target_us, alphas = [], [], [], []
     for rr in r_heavy:
         rc = refined_table.coord[rr]
         near = find_close_points(numpy.array([rc]), c_coords, cutoff)[1]
@@ -381,15 +556,27 @@ def build_boundary_b_target_restraints(sym_mgr, refined_atoms, refined_table,
         dists = numpy.array([v[0] for v in best.values()])
         us = numpy.array([c_u[v[1]] for v in best.values()])
         w = _distance_weight(dists)
-        atoms.append(int(refined_table.refined_index[rr]))
+        ri = int(refined_table.refined_index[rr])
+        atoms.append(ri)
         altlocs.append(str(refined_table.altloc[rr]))
         target_us.append(float((w * us).sum() / w.sum()))
+        if auto:
+            conf = 0.0
+            for d, li in best.values():
+                cm = int(c_mi[li])
+                cc = _overlap_confidence(r_radii[ri], c_radii[cm], r_don[ri],
+                                         r_acc[ri], c_don[cm], c_acc[cm], d)
+                if cc > conf:
+                    conf = cc
+            alphas.append(_alpha_from_confidence(conf))
+        else:
+            alphas.append(flat_alpha)
     if not atoms:
         return None
 
     sigmas = [_SIGMA_CONTEXT] * len(atoms)
     ks = [1.0] * len(atoms)   # relative weight ω; orchestrator rescales
-    return (atoms, altlocs, target_us, sigmas, ks)
+    return (atoms, altlocs, target_us, sigmas, ks, alphas)
 
 
 def _operators_for(sym_mgr, atoms, cutoff):
@@ -415,11 +602,14 @@ def _operators_for(sym_mgr, atoms, cutoff):
 
 
 def build_local_context_b_restraints(sym_mgr, refined_atoms, table,
-                                     ignore_hydrogens, cutoff, exclude_bonded=True):
+                                     ignore_hydrogens, cutoff, exclude_bonded=True,
+                                     alpha=ALPHA_DEFAULT):
     '''Two-sided per-pair restraints between near (non-bonded) refined atoms,
     including crystallographic symmetry contacts.  The ``ks`` column holds
     relative weights ω = w(d)/√(K_i·K_j) (distance kernel ÷ the endpoints' contact
-    counts); the orchestrator rescales them.  Returns a 6-tuple or ``None``.
+    counts); the orchestrator rescales them.  ``alpha`` is a float (broadcast) or
+    ``'auto'`` (per-pair superatom-contact confidence; see
+    :func:`_overlap_confidence`).  Returns a 7-tuple or ``None``.
 
     ``exclude_bonded`` — when the bonded family is also active, covalently-bonded
     pairs are handled there (with their tighter σ), so they are dropped here to
@@ -427,7 +617,9 @@ def build_local_context_b_restraints(sym_mgr, refined_atoms, table,
     restraints are off, so those near contacts are still covered locally.
 
     Cost note: over a whole structure this enumerates all heavy contacts within
-    ``cutoff`` (× symmetry operators), so it is opt-in (default weight 0).
+    ``cutoff`` (× symmetry operators) — bounded by the cutoff, but not free; it is
+    on by default (``wLocal`` 1.0) because at ISOLDE's usual resolutions the local
+    network is almost always needed.  Set ``wLocal 0`` to disable.
     '''
     if cutoff <= 0:
         return None
@@ -477,7 +669,12 @@ def build_local_context_b_restraints(sym_mgr, refined_atoms, table,
         contacts[int(master[a])] += 1
         contacts[int(master[b])] += 1
 
-    atoms1, altlocs1, atoms2, altlocs2, sigmas, ks = [], [], [], [], [], []
+    auto = (alpha == 'auto')
+    flat_alpha = None if auto else float(alpha)
+    if auto:
+        radii, donor, acceptor = _atom_contact_props(refined_atoms)
+    atoms1, altlocs1, atoms2, altlocs2, sigmas, ks, alphas = \
+        [], [], [], [], [], [], []
     for (a, b), dist in best.items():
         mi, mj = int(master[a]), int(master[b])
         omega = float(_distance_weight(dist)) / ((contacts[mi] * contacts[mj]) ** 0.5)
@@ -487,7 +684,13 @@ def build_local_context_b_restraints(sym_mgr, refined_atoms, table,
         altlocs2.append(str(altl[b]))
         sigmas.append(_SIGMA_CONTEXT)
         ks.append(omega)   # relative weight ω; orchestrator rescales
-    return (atoms1, altlocs1, atoms2, altlocs2, sigmas, ks)
+        if auto:
+            conf = _overlap_confidence(radii[mi], radii[mj], donor[mi], acceptor[mi],
+                                       donor[mj], acceptor[mj], dist)
+            alphas.append(_alpha_from_confidence(conf))
+        else:
+            alphas.append(flat_alpha)
+    return (atoms1, altlocs1, atoms2, altlocs2, sigmas, ks, alphas)
 
 
 def _concat_restraint_tuples(t1, t2, n):
@@ -509,13 +712,14 @@ def _strip_self_pairs(b_restraints):
     ``None`` if nothing remains.'''
     if b_restraints is None:
         return None
-    a1, al1, a2, al2, sig, ks = b_restraints
+    a1, al1, a2, al2, sig, ks, alphas = b_restraints
     keep = [k for k in range(len(a1)) if a1[k] != a2[k]]
     if len(keep) == len(a1):
         return b_restraints
     if not keep:
         return None
-    return tuple([seq[k] for k in keep] for seq in (a1, al1, a2, al2, sig, ks))
+    return tuple([seq[k] for k in keep]
+                 for seq in (a1, al1, a2, al2, sig, ks, alphas))
 
 
 def _data_energy_scale(data_source, crystallographic, n_refined_heavy=0):
@@ -562,20 +766,21 @@ def _data_energy_scale(data_source, crystallographic, n_refined_heavy=0):
 
 
 def _normalize_family(restraints, w_user, eta, S):
-    '''Rescale a family's *relative* ω weights (the tuple's last column) to the
-    data-normalized budget: ``k_eff(r) = w_user·η·S·ω_r / Σω``.  So the family's
-    total weight ≈ ``w_user·η·S`` regardless of restraint count, and per-restraint
-    strength tracks the data energy ``S`` (→ portable).  Returns the tuple, or
-    ``None`` if the family is empty/disabled.'''
+    '''Rescale a family's *relative* ω weights (the ``ks`` column — now second-to-
+    last, since the trailing column holds per-restraint α) to the data-normalized
+    budget: ``k_eff(r) = w_user·η·S·ω_r / Σω``.  So the family's total weight ≈
+    ``w_user·η·S`` regardless of restraint count, and per-restraint strength tracks
+    the data energy ``S`` (→ portable).  Returns the tuple, or ``None`` if the
+    family is empty/disabled.'''
     if restraints is None or w_user is None or w_user <= 0:
         return None
     cols = list(restraints)
-    omega = cols[-1]
+    omega = cols[-2]
     total = float(sum(omega))
     if total <= 0:
         return None
     scale = float(w_user) * float(eta) * float(S) / total
-    cols[-1] = [float(o) * scale for o in omega]
+    cols[-2] = [float(o) * scale for o in omega]
     return tuple(cols)
 
 
@@ -584,9 +789,14 @@ def build_b_restraints_for_refinement(sym_mgr, refined_atoms, context_atoms,
                                       ignore_hydrogens, crystallographic,
                                       internal_weight=0.0,
                                       boundary_weight=0.0, boundary_cutoff=0.0,
-                                      local_weight=0.0, local_cutoff=0.0):
+                                      local_weight=0.0, local_cutoff=0.0,
+                                      alpha=ALPHA_DEFAULT):
     '''Build the restraint tuples for a refinement run, with per-family data
     normalization (see :func:`_normalize_family`).
+
+    ``alpha`` is the Barron robust-loss shape — a float broadcast to every
+    restraint, or ``'auto'`` for the per-restraint confidence heuristic.  It rides
+    in the trailing column of each tuple (the engine defaults it to 1 if absent).
 
     Returns ``(b_restraints, b_target_restraints, diag)``; the first two may be
     ``None``; ``diag`` carries the data energy / budgets for calibration logging.
@@ -612,7 +822,8 @@ def build_b_restraints_for_refinement(sym_mgr, refined_atoms, context_atoms,
     bonded = None
     if internal_weight and internal_weight > 0:
         bonded = _normalize_family(
-            build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens),
+            build_bonded_b_restraints(refined_atoms, table, ignore_hydrogens,
+                                      alpha=alpha),
             internal_weight, eta, S)
         if bonded is not None:
             diag['budgets']['bonded'] = internal_weight * eta * S
@@ -626,37 +837,47 @@ def build_b_restraints_for_refinement(sym_mgr, refined_atoms, context_atoms,
             local = _normalize_family(
                 build_local_context_b_restraints(
                     sym_mgr, refined_atoms, table, ignore_hydrogens, local_cutoff,
-                    exclude_bonded=bonded_active),
+                    exclude_bonded=bonded_active, alpha=alpha),
                 local_weight, eta, S)
             if local is not None:
                 diag['budgets']['local'] = local_weight * eta * S
-        b_restraints = _strip_self_pairs(_concat_restraint_tuples(bonded, local, 6))
+        b_restraints = _strip_self_pairs(_concat_restraint_tuples(bonded, local, 7))
         return b_restraints, None, diag
 
     boundary = None
     if boundary_weight and boundary_weight > 0:
         boundary = _normalize_family(
             build_boundary_b_target_restraints(
-                sym_mgr, refined_atoms, table, ignore_hydrogens, boundary_cutoff),
+                sym_mgr, refined_atoms, table, ignore_hydrogens, boundary_cutoff,
+                alpha=alpha),
             boundary_weight, eta, S)
         if boundary is not None:
             diag['budgets']['boundary'] = boundary_weight * eta * S
     return _strip_self_pairs(bonded), boundary, diag
 
 
-def _log_restraint_counts(session, command, b_restraints, b_target_restraints, diag):
+def _log_restraint_counts(session, command, b_restraints, b_target_restraints,
+                          diag, alpha):
     n_pair = len(b_restraints[0]) if b_restraints is not None else 0
     n_targ = len(b_target_restraints[0]) if b_target_restraints is not None else 0
     msg = f'{command}: {n_pair} pairwise B-factor restraint(s)'
     if b_target_restraints is not None:
         msg += f', {n_targ} one-sided target restraint(s)'
 
+    # Weights are now the second-to-last column (the last column holds α).
     def _maxk(t):
-        return max(t[-1]) if (t is not None and len(t[-1])) else 0.0
+        return max(t[-2]) if (t is not None and len(t[-2])) else 0.0
     rep = max(_maxk(b_restraints), _maxk(b_target_restraints))
+    a_vals = []
+    for t in (b_restraints, b_target_restraints):
+        if t is not None and len(t[-1]):
+            a_vals.extend(t[-1])
+    a_desc = f'{min(a_vals):.3g}..{max(a_vals):.3g}' if a_vals else 'n/a'
+    mode = 'auto' if alpha == 'auto' else f'{float(alpha):.3g}'
     budgets = ', '.join(f'{k}={v:.4g}' for k, v in diag['budgets'].items()) or 'none'
     msg += (f'.  [S_data={diag["S_data"]:.4g}, eta={diag["eta"]:.3g}; '
-            f'family budgets: {budgets}; max k_eff={rep:.4g}]')
+            f'family budgets: {budgets}; max k_eff={rep:.4g}; '
+            f'alpha={mode} (range {a_desc})]')
     session.logger.info(msg)
 
 
@@ -670,9 +891,10 @@ def isolde_brefine_cmd(session, structure=None,
                        log_level='info', auto_tolerances=True,
                        delta_tolerance_factor=1.0, epsilon_tolerance_factor=1.0,
                        ignore_hydrogens=True,
-                       w_internal=0.0,
-                       w_local=0.0,
-                       c_local=4.0):
+                       w_internal=1.0,
+                       w_local=1.0,
+                       c_local=4.0,
+                       alpha=ALPHA_DEFAULT):
     from chimerax.core.errors import UserError
     from chimerax.clipper.symmetry import SymmetryManager, get_symmetry_handler
     from chimerax.atomic import AtomicStructure
@@ -718,8 +940,8 @@ def isolde_brefine_cmd(session, structure=None,
     b_restraints, _, diag = build_b_restraints_for_refinement(
         sym_mgr, atoms, None, xmapset, ignore_hydrogens=ignore_hydrogens,
         crystallographic=True, internal_weight=w_internal,
-        local_weight=w_local, local_cutoff=c_local)
-    _log_restraint_counts(session, 'isolde brefine', b_restraints, None, diag)
+        local_weight=w_local, local_cutoff=c_local, alpha=alpha)
+    _log_restraint_counts(session, 'isolde brefine', b_restraints, None, diag, alpha)
 
     from chimerax.clipper.clipper_python.ext import RefineConfig
     cfg = RefineConfig()
@@ -748,7 +970,8 @@ def isolde_brsr_cmd(session, atoms=None, map=None,
                     w_internal=1.0,
                     n_threads=None, log_level='info', resolution=None,
                     auto_tolerances=True, delta_tolerance_factor=1.0,
-                    epsilon_tolerance_factor=1.0, ignore_hydrogens=True):
+                    epsilon_tolerance_factor=1.0, ignore_hydrogens=True,
+                    alpha=ALPHA_DEFAULT):
     from chimerax.core.errors import UserError
     from chimerax.clipper.symmetry import SymmetryManager, get_symmetry_handler
 
@@ -819,9 +1042,9 @@ def isolde_brsr_cmd(session, atoms=None, map=None,
         ignore_hydrogens=ignore_hydrogens,
         crystallographic=False, internal_weight=w_internal,
         boundary_weight=w_boundary,
-        boundary_cutoff=c_boundary)
+        boundary_cutoff=c_boundary, alpha=alpha)
     _log_restraint_counts(session, 'isolde brsr', b_restraints,
-                          b_target_restraints, diag)
+                          b_target_restraints, diag, alpha)
 
     from chimerax.clipper.clipper_python.ext import RefineConfig
     cfg = RefineConfig()
@@ -846,8 +1069,12 @@ def isolde_brsr_cmd(session, atoms=None, map=None,
 
 def register_bfactor_refine_commands(logger):
     from chimerax.core.commands import (
-        register, CmdDesc, BoolArg, FloatArg, IntArg, StringArg)
+        register, CmdDesc, BoolArg, FloatArg, IntArg, StringArg, Or, EnumOf)
     from chimerax.atomic import AtomsArg
+
+    # Barron loss shape: a float (broadcast) or the literal 'auto' (per-restraint
+    # confidence).  EnumOf is tried first so 'auto' parses as the string.
+    AlphaArg = Or(EnumOf(['auto']), FloatArg)
 
     brefine_desc = CmdDesc(
         optional=[('structure', _StructuresOrSymmetryMgrsArg)],
@@ -862,6 +1089,7 @@ def register_bfactor_refine_commands(logger):
             ('w_internal', FloatArg),
             ('w_local', FloatArg),
             ('c_local', FloatArg),
+            ('alpha', AlphaArg),
         ],
         synopsis='Refine B-factors against crystallographic data using the '
                  'ML gradient-map approach')
@@ -882,6 +1110,7 @@ def register_bfactor_refine_commands(logger):
             ('w_boundary', FloatArg),
             ('c_boundary', FloatArg),
             ('w_internal', FloatArg),
+            ('alpha', AlphaArg),
         ],
         synopsis='Real-space B-factor refinement against a density map')
     register('isolde brsr', brsr_desc, isolde_brsr_cmd, logger=logger)

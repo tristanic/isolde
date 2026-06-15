@@ -1068,9 +1068,10 @@ Syntax: isolde brefine [*model*]
 [**deltaToleranceFactor** *number* (1.0)]
 [**epsilonToleranceFactor** *number* (1.0)]
 [**ignoreHydrogens** *true/false* (true)]
-[**wInternal** *number* (0.0)]
-[**wLocal** *number* (0.0)]
+[**wInternal** *number* (1.0)]
+[**wLocal** *number* (1.0)]
 [**cLocal** *number* (4.0)]
+[**alpha** *number/auto* (1.0)]
 
 Refine the isotropic B-factors (and, optionally, occupancies) of all atoms
 in the model against the crystallographic structure factors loaded with
@@ -1120,18 +1121,35 @@ Default *true*.
 **wInternal** — weight for two-sided pairwise restraints tying the
 B-factors of covalently-bonded atoms together.  The weight is **automatically
 normalized to the data** (it is a relative emphasis, not an absolute scale), so a
-given value behaves comparably across resolutions/datasets.  Default 0.0 (off).
+given value behaves comparably across resolutions/datasets.  Default 1.0 (on at
+the calibrated sweet spot); set to 0 to disable.
 
 **wLocal** — weight for two-sided pairwise restraints between
 spatially-close *non-bonded* atoms, **including crystallographic symmetry
 contacts**, encouraging atoms in close contact to share similar B-factors.  The
 per-pair weight is scaled by separation (closer contacts weighted more strongly)
-and normalized by coordination number and the data scale (as above).  Default 0.0
-(off).  Note: over a whole structure this can generate a large number of
-restraints; enable deliberately.
+and normalized by coordination number and the data scale (as above).  Default 1.0
+(on) — at the resolutions ISOLDE is typically used at, the local network is almost
+always needed.  Set to 0 to disable.
 
 **cLocal** — distance (Å) within which a non-bonded contact
 contributes a local restraint.  Default 4.0.
+
+**alpha** — shape of the robust loss used by the B-factor restraints (Barron's
+general robust loss). A number selects a fixed shape applied to every restraint:
+**2** = harmonic (squared error, never saturates), **1** = Charbonnier /
+pseudo-Huber (quadratic core with a saturating linear tail; the **default**),
+**0** = Cauchy, **−2** = Geman-McClure (redescends toward zero influence for
+large deviations). Lower values are more tolerant of a restrained pair drifting
+apart. The scale of the quadratic core is unchanged and still set by *cLocal* (and
+the per-type internal scale). Alternatively, **auto** chooses a *per-restraint*
+shape from local chemistry: bonds in rings or between non-rotatable
+(sp²/aromatic) atoms, the bonds within rigid coordination centres (the S–O / P–O
+bonds of sulfate, phosphate and sulfonyl groups), and atoms in solid van der Waals
+contact, are kept stiff (α ≈ 1) — so a central S/P atom cannot drift to a higher
+B-factor than its oxygens — while flexible rotamer tips (e.g. lysine Cε–Nζ, serine
+Cβ–Oγ) and loose non-contacts are relaxed toward Geman-McClure (α ≈ −2) so their
+B-factors may legitimately diverge from their neighbours'. Default 1.0.
 
 
 .. _brsr:
@@ -1145,6 +1163,7 @@ Syntax: isolde brsr [*atoms*]
 [**wBoundary** *number* (1.0)]
 [**cBoundary** *number* (4.0)]
 [**wInternal** *number* (1.0)]
+[**alpha** *number/auto* (1.0)]
 [**wholeMap** *true/false* (false)]
 [**padding** *number* (6.0)]
 [**taperWidth** *number* (3.0)]
@@ -1207,6 +1226,17 @@ fragment interior, where atoms would otherwise be unconstrained.  Like
 *wBoundary*, this weight is automatically normalized to the data.
 Default 1.0.  Set to 0 to disable internal restraints; setting both restraint
 weights to 0 reproduces the old unrestrained behaviour.
+
+**alpha** — shape of the robust loss used by both the boundary and internal
+B-factor restraints (Barron's general robust loss). A number selects a fixed
+shape for every restraint: **2** = harmonic, **1** = Charbonnier (quadratic core
+with a saturating tail; the **default**), **0** = Cauchy, **−2** = Geman-McClure
+(redescends for large deviations). Lower values tolerate a restrained pair drifting
+apart; the quadratic-core scale is unchanged (still set by *cBoundary* and the
+internal scale). Alternatively, **auto** picks a *per-restraint* shape from local
+chemistry — rigid bonds, rigid coordination centres (sulfate/phosphate/sulfonyl
+S–O / P–O bonds), and atoms in solid contact stay stiff (α ≈ 1), while flexible
+rotamer tips and loose contacts relax toward Geman-McClure (α ≈ −2). Default 1.0.
 
 **wholeMap** — if *true*, refine against the full extent of the map without
 cropping to the atom bounding box.  Only valid for non-crystallographic
