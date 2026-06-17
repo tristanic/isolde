@@ -870,7 +870,8 @@ Syntax: isolde brefine [*model*]
 [**bMax** *number* (200.0)]
 [**nThreads** *N*]
 [**logLevel** *none/info/debug* (info)]
-[**rworkTolerance** *number* (0.02)]
+[**rfreeTolerance** *number/none* (0.02)]
+[**gapTolerance** *number/none* (0.07)]
 [**autoTolerances** *true/false* (true)]
 [**deltaToleranceFactor** *number* (1.0)]
 [**epsilonToleranceFactor** *number* (1.0)]
@@ -907,10 +908,24 @@ the number of available CPU cores.
 a one-line completion message and the before/after R-factors; *debug* adds
 timing and full configuration details.
 
-**rworkTolerance** — if the R-work computed from the refined parameters
-exceeds the pre-refinement R-work by more than this amount, the results are
-discarded without modifying the model.  Default 0.02.  Set to *none* to
-disable the check.
+**rfreeTolerance** — overfitting guard.  If R-free rises by more than this amount
+between the pre- and post-refinement parameters, the result is discarded without
+modifying the model.  Default 0.02.  Set to *none* to disable this guard.
+
+**gapTolerance** — overfitting guard.  The maximum acceptable R-free − R-work gap
+(an absolute ceiling, not a per-run change).  A result is discarded only if it
+pushes the gap above this ceiling *and* widens it relative to the starting model —
+so a model that already has a wide gap is not penalised unless refinement makes it
+worse.  A widening gap (R-work falling while R-free rises) is the direct signal of
+overfitting.  Default 0.07.  Set to *none* to disable this guard.
+
+.. note::
+   R-work is deliberately **not** a rejection criterion: a small R-work rise
+   accompanied by an R-free fall is a *good* outcome.  At low data-to-parameter
+   ratio (incomplete models, low resolution) unrestrained per-atom B-factors
+   overfit, so these guards may correctly reject a run — the remedy is stronger
+   B-factor restraints (raise *wInternal* / *wLocal*, or use *alpha* **auto**),
+   which curb the overfitting so the result passes and is applied.
 
 **autoTolerances** — if *true* (default), L-BFGS-B convergence thresholds are
 scaled to the atom count (√N) and data resolution (d_min²) automatically.
@@ -957,6 +972,69 @@ contact, are kept stiff (α ≈ 1) — so a central S/P atom cannot drift to a h
 B-factor than its oxygens — while flexible rotamer tips (e.g. lysine Cε–Nζ, serine
 Cβ–Oγ) and loose non-contacts are relaxed toward Geman-McClure (α ≈ −2) so their
 B-factors may legitimately diverge from their neighbours'. Default 1.0.
+
+
+.. _`brefine_optimiseparams`:
+
+isolde brefine optimiseparams
+=============================
+
+Syntax: isolde brefine optimiseparams [*model*]
+[**strategy** *weight/weightAlpha/coarseFine* (weight)]
+[**gapWeight** *number* (1.0)]
+[**weightMin** *number* (0.25)]
+[**weightMax** *number* (8.0)]
+[**nSteps** *N* (6)]
+[**apply** *true/false* (false)]
+[**maxCycles** *N* (50)]
+[**bMinFactor** *number* (2.0)]
+[**bMax** *number* (200.0)]
+[**nThreads** *N*]
+[**ignoreHydrogens** *true/false* (true)]
+[**wInternal** *number* (1.0)]
+[**wLocal** *number* (1.0)]
+[**cLocal** *number* (4.0)]
+
+Search for the B-factor restraint strength that best fits *this* model against the
+crystallographic data, then report it.  The command runs a series of `isolde
+brefine`_ refinements in the background at different restraint weights (and,
+optionally, *alpha* shapes), scoring each by R-free and the R-free − R-work gap,
+and prints a table plus the recommended settings.  Each trial is **evaluation
+only** — it measures R-factors but does **not** change the model — so the search
+is non-destructive and does not block ChimeraX.
+
+.. warning::
+   The search runs on the model **as it stands when the command is issued**, and
+   reads the live structure as each trial proceeds.  Do **not** modify the model
+   while it is running — moving, adding or removing atoms, starting a simulation,
+   or editing B-factors/occupancies — or the search will abort with a warning (it
+   leaves the model unchanged either way).
+
+**strategy** — which settings to scan.  *weight* (default) scales *wInternal* and
+*wLocal* together over a geometric range, with *alpha* = **auto**.  *weightAlpha*
+crosses that weight scan with *alpha* ∈ {auto, 1.0}.  *coarseFine* runs a coarse
+weight scan, then a finer scan bracketing the best coarse value.
+
+**gapWeight** — weighting of the overfitting penalty in the score
+``R_free + gapWeight·(R_free − R_work)`` (lower is better).  Higher values favour
+a narrower R-free − R-work gap (more conservative against overfitting) at the
+expense of slightly higher R-free.  Default 1.0.
+
+**weightMin**, **weightMax**, **nSteps** — the geometric range and number of
+weight multipliers for the scan.  Defaults 0.25, 8.0, 6.
+
+**apply** — if *true*, run one final ordinary (model-modifying) `isolde brefine`_
+with the winning settings once the search completes.  Default *false* (report
+only; the recommended command is printed for you to run).
+
+The remaining arguments (**maxCycles**, **bMinFactor**, **bMax**, **nThreads**,
+**ignoreHydrogens**, **wInternal**, **wLocal**, **cLocal**) are passed through to
+each trial as in `isolde brefine`_; *wInternal*/*wLocal* are the **base** weights
+that the scan multiplier scales.  Convergence tolerances are auto-scaled
+(*autoTolerances*) for speed.
+
+*Requires a build of ChimeraX-Clipper with evaluation-only refinement support; an
+older version raises an error asking you to update.*
 
 
 .. _brsr:

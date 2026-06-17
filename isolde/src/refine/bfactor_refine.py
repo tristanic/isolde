@@ -887,7 +887,8 @@ def _log_restraint_counts(session, command, b_restraints, b_target_restraints,
 
 def isolde_brefine_cmd(session, structure=None,
                        refine_b=True, max_cycles=50, b_min_factor=2.0,
-                       b_max=200.0, n_threads=None, rwork_tolerance=0.02,
+                       b_max=200.0, n_threads=None,
+                       rfree_tolerance=0.02, gap_tolerance=0.07,
                        log_level='info', auto_tolerances=True,
                        delta_tolerance_factor=1.0, epsilon_tolerance_factor=1.0,
                        ignore_hydrogens=True,
@@ -896,46 +897,28 @@ def isolde_brefine_cmd(session, structure=None,
                        c_local=4.0,
                        alpha=ALPHA_DEFAULT):
     from chimerax.core.errors import UserError
-    from chimerax.clipper.symmetry import SymmetryManager, get_symmetry_handler
-    from chimerax.atomic import AtomicStructure
 
-    if structure is None or len(structure) == 0:
-        sym_mgrs = [m for m in session.models if isinstance(m, SymmetryManager)]
-        if not sym_mgrs:
-            raise UserError('isolde brefine: no Clipper sessions found — '
-                            'load structure factors first with "clipper open".')
-        if len(sym_mgrs) > 1:
-            raise UserError('isolde brefine: multiple Clipper sessions found; '
-                            'please specify a model (e.g. "isolde brefine #1").')
-        sym_mgr = sym_mgrs[0]
-    elif len(structure) > 1:
-        raise UserError('isolde brefine: specify a single structure or Clipper model.')
-    else:
-        item = structure[0]
-        if isinstance(item, SymmetryManager):
-            sym_mgr = item
-        elif isinstance(item, AtomicStructure):
-            sym_mgr = get_symmetry_handler(item)
-            if sym_mgr is None:
-                raise UserError('isolde brefine: no Clipper session is associated '
-                                'with the selected structure — load structure '
-                                'factors first with "clipper open".')
-        else:
-            raise UserError(f'isolde brefine: expected an atomic structure or '
-                            f'Clipper model, got {type(item).__name__}.')
-
+    sym_mgr = _resolve_sym_mgr(session, structure, 'isolde brefine')
     atoms = sym_mgr.structure.atoms
-    xmapset = next((x for x in sym_mgr.map_mgr.xmapsets
-                    if x.live_xmap_mgr is not None), None)
-    if xmapset is None:
-        raise UserError('isolde brefine: no live crystallographic map set found — '
-                        'the structure factors must be loaded with a live '
-                        '(auto-updating) map to drive refinement.')
+    xmapset = _live_xmapset(sym_mgr, 'isolde brefine')
 
     level_map = {'none': None, 'info': 'info', 'debug': 'debug'}
     if log_level not in level_map:
         raise UserError(f'isolde brefine: logLevel must be none, info, or debug '
                         f'(got "{log_level}").')
+
+    # Overfitting guards.  rfree_tolerance caps the rise in R-free; gap_tolerance is
+    # an absolute *ceiling* on the R-free − R-work gap (not a per-run change),
+    # enforced only when a run also widens the gap — so an already-wide model is not
+    # penalised unless refinement makes it worse.  Both accept None ("none" on the
+    # command line) to disable.
+    # TODO: gap_tolerance could be scaled by data resolution and computed here
+    # client-side (wider gaps are expected at lower resolution) instead of the flat
+    # default, then passed through unchanged.
+    if rfree_tolerance == 'none':
+        rfree_tolerance = None
+    if gap_tolerance == 'none':
+        gap_tolerance = None
 
     b_restraints, _, diag = build_b_restraints_for_refinement(
         sym_mgr, atoms, None, xmapset, ignore_hydrogens=ignore_hydrogens,
@@ -953,7 +936,8 @@ def isolde_brefine_cmd(session, structure=None,
     mgr = BFactorOccRefineManager(
         session, sym_mgr, xmapset, config=cfg,
         b_min_resolution_factor=b_min_factor, n_threads=n_threads,
-        rwork_tolerance=rwork_tolerance, log_level=level_map[log_level])
+        rfree_tolerance=rfree_tolerance, gap_tolerance=gap_tolerance,
+        log_level=level_map[log_level])
     mgr.launch(atoms, ignore_hydrogens=ignore_hydrogens,
                auto_tolerances=auto_tolerances,
                delta_tolerance_factor=delta_tolerance_factor,
@@ -1067,6 +1051,358 @@ def isolde_brsr_cmd(session, atoms=None, map=None,
         b_target_restraints=b_target_restraints)
 
 
+# -----------------------------------------------------------------------------
+# Restraint-weight optimiser (isolde brefine optimiseparams)
+# -----------------------------------------------------------------------------
+
+def _resolve_sym_mgr(session, structure, cmd):
+    '''Resolve the single Clipper SymmetryManager for a brefine-style command
+    (shared by ``isolde brefine`` and ``isolde brefine optimiseparams``).'''
+    from chimerax.core.errors import UserError
+    from chimerax.clipper.symmetry import SymmetryManager, get_symmetry_handler
+    from chimerax.atomic import AtomicStructure
+    if structure is None or len(structure) == 0:
+        sym_mgrs = [m for m in session.models if isinstance(m, SymmetryManager)]
+        if not sym_mgrs:
+            raise UserError(f'{cmd}: no Clipper sessions found — load structure '
+                            'factors first with "clipper open".')
+        if len(sym_mgrs) > 1:
+            raise UserError(f'{cmd}: multiple Clipper sessions found; please '
+                            f'specify a model (e.g. "{cmd} #1").')
+        return sym_mgrs[0]
+    if len(structure) > 1:
+        raise UserError(f'{cmd}: specify a single structure or Clipper model.')
+    item = structure[0]
+    if isinstance(item, SymmetryManager):
+        return item
+    if isinstance(item, AtomicStructure):
+        sym_mgr = get_symmetry_handler(item)
+        if sym_mgr is None:
+            raise UserError(f'{cmd}: no Clipper session is associated with the '
+                            'selected structure — load structure factors first '
+                            'with "clipper open".')
+        return sym_mgr
+    raise UserError(f'{cmd}: expected an atomic structure or Clipper model, got '
+                    f'{type(item).__name__}.')
+
+
+def _live_xmapset(sym_mgr, cmd):
+    '''The first xmapset with a live (auto-updating) crystallographic map.'''
+    from chimerax.core.errors import UserError
+    xmapset = next((x for x in sym_mgr.map_mgr.xmapsets
+                    if x.live_xmap_mgr is not None), None)
+    if xmapset is None:
+        raise UserError(f'{cmd}: no live crystallographic map set found — the '
+                        'structure factors must be loaded with a live '
+                        '(auto-updating) map to drive refinement.')
+    return xmapset
+
+
+def _optimizer_trials(strategy, w_min, w_max, n_steps):
+    '''Geometrically-spaced weight multipliers per strategy.  Each trial is a
+    ``{'multiplier', 'alpha'}`` dict.  For ``coarsefine`` this is the coarse pass
+    only; the fine pass is appended at run time around the best coarse multiplier.'''
+    n_steps = max(2, int(n_steps))
+    ratio = (w_max / w_min) ** (1.0 / (n_steps - 1))
+
+    def geom(n):
+        r = (w_max / w_min) ** (1.0 / (max(2, n) - 1))
+        return [w_min * r ** i for i in range(max(2, n))]
+
+    if strategy == 'weightalpha':
+        return [dict(multiplier=m, alpha=a)
+                for a in ('auto', 1.0) for m in geom(n_steps)]
+    if strategy == 'coarsefine':
+        coarse = max(4, n_steps // 2 + 1)
+        return [dict(multiplier=m, alpha='auto') for m in geom(coarse)]
+    return [dict(multiplier=m, alpha='auto') for m in geom(n_steps)]
+
+
+class _BFactorWeightOptimizer:
+    '''Non-blocking scan over ``brefine`` restraint settings.
+
+    Runs a series of *evaluate-only* B-factor refinements (the model is never
+    modified) on the live structure, scoring each by ``R_free + gap_weight·(R_free −
+    R_work)`` (lower is better), and reports the best restraint weights.  Trials are
+    chained across frames via :func:`delayed_reaction`, so the GUI stays responsive.
+    Because evaluate-only trials touch nothing, any change to the model during the
+    scan is unambiguously the user's, and the scan aborts gracefully.
+    '''
+
+    #: Atom-change reasons (ChimeraX ``ChangeTracker``) that invalidate the scan.
+    USER_REASONS = frozenset((
+        'coord changed', 'coordset changed', 'bfactor changed',
+        'occupancy changed', 'aniso_u changed', 'element changed',
+        'idatm_type changed'))
+
+    #: Decimal places at which two scores count as a tie (matches the logged
+    #: precision).  Among ties the weakest restraint wins (see _best_result).
+    _SCORE_DP = 4
+
+    def __init__(self, session, sym_mgr, xmapset, *, trials, strategy, gap_weight,
+                 b_min_factor, b_max, max_cycles, n_threads, ignore_hydrogens,
+                 c_local, w_internal, w_local, apply_best):
+        self.session = session
+        self.sym_mgr = sym_mgr
+        self.structure = sym_mgr.structure
+        self.atoms = self.structure.atoms
+        self.xmapset = xmapset
+        self._trials = list(trials)
+        self._strategy = strategy
+        self._gap_weight = gap_weight
+        self._b_min_factor = b_min_factor
+        self._ignore_hydrogens = ignore_hydrogens
+        self._c_local = c_local
+        self._w_internal = w_internal
+        self._w_local = w_local
+        self._apply_best = apply_best
+        self._results = []
+        self._idx = 0
+        self._aborted = False
+        self._finished = False
+        self._dr = None
+        self._fine_added = (strategy != 'coarsefine')
+
+        from chimerax.clipper.clipper_python.ext import RefineConfig
+        cfg = RefineConfig()
+        cfg.refine_b = True
+        cfg.max_cycles = max_cycles
+        cfg.b_max = b_max
+        from chimerax.clipper.refine.bfactor_occ import BFactorOccRefineManager
+        # Guards disabled (None): we want to MEASURE every trial, never discard.
+        self._mgr = BFactorOccRefineManager(
+            session, sym_mgr, xmapset, config=cfg,
+            b_min_resolution_factor=b_min_factor, n_threads=n_threads,
+            rfree_tolerance=None, gap_tolerance=None, log_level=None)
+
+        self._handlers = []
+        st = self.structure.triggers
+        self._handlers.append((st, st.add_handler('changes', self._on_changes)))
+        from chimerax.core.models import REMOVE_MODELS
+        self._handlers.append(
+            (session.triggers,
+             session.triggers.add_handler(REMOVE_MODELS, self._on_remove_models)))
+
+        session.logger.warning(
+            f'isolde brefine optimiseparams: scanning {len(self._trials)} restraint '
+            f'setting(s) on {self.structure.name} (#{self.structure.id_string}).  '
+            'Do NOT modify this model — moving/adding/removing atoms, starting a '
+            'simulation, or editing B-factors/occupancies — until the scan '
+            'finishes, or it will abort. The optimiser itself leaves the model '
+            'unchanged.')
+        self._start_next()
+
+    # -- trial loop -----------------------------------------------------------
+
+    def _start_next(self):
+        if self._aborted:
+            return
+        if not self._fine_added and self._idx >= len(self._trials):
+            self._add_fine_trials()
+            self._fine_added = True
+        if self._idx >= len(self._trials):
+            self._finish()
+            return
+        from ..delayed_reaction import delayed_reaction
+        self._dr = delayed_reaction(
+            self.session.triggers, 'new frame',
+            self._launch_current, [],
+            lambda: self._mgr.ready,
+            self._on_trial_done, [])
+
+    def _launch_current(self):
+        t = self._trials[self._idx]
+        mult, alpha = t['multiplier'], t['alpha']
+        b_restraints, _, _ = build_b_restraints_for_refinement(
+            self.sym_mgr, self.atoms, None, self.xmapset,
+            ignore_hydrogens=self._ignore_hydrogens, crystallographic=True,
+            internal_weight=self._w_internal * mult,
+            local_weight=self._w_local * mult,
+            local_cutoff=self._c_local, alpha=alpha)
+        self.session.logger.status(
+            f'brefine optimiseparams: trial {self._idx + 1}/{len(self._trials)} '
+            f'(weight ×{mult:.3g}, alpha {alpha})')
+        self._mgr.launch(self.atoms, ignore_hydrogens=self._ignore_hydrogens,
+                         auto_tolerances=True, b_restraints=b_restraints,
+                         evaluate_only=True)
+
+    def _on_trial_done(self):
+        if self._aborted:
+            return
+        t = self._trials[self._idx]
+        # Read before launching the next trial (which replaces the worker thread).
+        rwb, rfb = self._mgr.initial_rfactors()
+        rwa, rfa = self._mgr.compute_rfactors()
+        if rfa is None or rfa < 0 or rwa < 0:
+            self.session.logger.warning(
+                f'brefine optimiseparams: trial {self._idx + 1} produced no valid '
+                'R-factors; skipped.')
+        else:
+            gap = rfa - rwa
+            score = rfa + self._gap_weight * gap
+            self._results.append(dict(
+                multiplier=t['multiplier'], alpha=t['alpha'], rwork=rwa,
+                rfree=rfa, gap=gap, score=score))
+            self.session.logger.info(
+                f'  trial {self._idx + 1}: weight ×{t["multiplier"]:.3g} '
+                f'alpha {t["alpha"]}  Rwork {rwa:.4f}  Rfree {rfa:.4f}  '
+                f'gap {gap:.4f}  score {score:.4f}')
+        self._idx += 1
+        self._start_next()
+
+    def _best_result(self):
+        '''The winning trial: lowest score *rounded to the logged precision*, and
+        among ties the WEAKEST restraint (smallest weight multiplier).  When extra
+        restraint strength does not measurably improve the score (R-factors saturate),
+        prefer the least restraint rather than imposing unjustified bias.'''
+        dp = self._SCORE_DP
+        best_score = min(round(r['score'], dp) for r in self._results)
+        tied = [r for r in self._results if round(r['score'], dp) == best_score]
+        return min(tied, key=lambda r: r['multiplier'])
+
+    def _add_fine_trials(self):
+        '''Append a fine pass bracketing the best coarse multiplier (±√2, ±2×).'''
+        if not self._results:
+            return
+        m = self._best_result()['multiplier']
+        seen = {round(r['multiplier'], 6) for r in self._results}
+        for f in (m / 2.0, m / 1.4142, m * 1.4142, m * 2.0):
+            if round(f, 6) not in seen:
+                self._trials.append(dict(multiplier=f, alpha='auto'))
+
+    # -- abort / completion ---------------------------------------------------
+
+    def _on_changes(self, trigger_name, data):
+        if self._aborted or self._finished:
+            return
+        changes = data[1]
+        try:
+            modified = (changes.num_deleted_atoms() > 0
+                        or len(changes.created_atoms()) > 0)
+            reasons = set(changes.atom_reasons())
+            try:
+                reasons |= set(changes.reasons())
+            except Exception:
+                pass
+        except Exception:
+            return
+        if modified or (reasons & self.USER_REASONS):
+            self._abort('the model was modified')
+
+    def _on_remove_models(self, trigger_name, models):
+        if self._aborted or self._finished:
+            return
+        if self.structure in models or self.sym_mgr in models:
+            self._abort('the model was closed')
+
+    def _abort(self, reason):
+        if self._aborted or self._finished:
+            return
+        self._aborted = True
+        if self._dr is not None:
+            try:
+                self._dr.cancel()
+            except Exception:
+                pass
+            self._dr = None
+        self._remove_handlers()
+        self._clear_session_ref()
+        # Any in-flight evaluate-only trial may still finish; it writes nothing.
+        self.session.logger.warning(
+            f'isolde brefine optimiseparams: aborted — {reason}.  The optimiser made no '
+            'changes to the model.')
+
+    def _finish(self):
+        if self._finished:
+            return
+        self._finished = True
+        self._remove_handlers()
+        self._clear_session_ref()
+        log = self.session.logger
+        if not self._results:
+            log.warning('isolde brefine optimiseparams: no valid trials to report.')
+            return
+        best = self._best_result()
+        log.info('isolde brefine optimiseparams — results (lower score is better):')
+        log.info('   weight   alpha     Rwork     Rfree       gap     score')
+        for r in sorted(self._results, key=lambda r: r['multiplier']):
+            mark = '   <== best' if r is best else ''
+            log.info(f'   ×{r["multiplier"]:6.3g}  {str(r["alpha"]):>5}   '
+                     f'{r["rwork"]:.4f}    {r["rfree"]:.4f}    {r["gap"]:.4f}   '
+                     f'{r["score"]:.4f}{mark}')
+        dp = self._SCORE_DP
+        n_tied = sum(1 for r in self._results
+                     if round(r['score'], dp) == round(best['score'], dp))
+        if n_tied > 1:
+            log.info(f'  ({n_tied} settings tied at score {best["score"]:.{dp}f}; '
+                     'chose the weakest — extra restraint did not improve the fit.)')
+        wi = self._w_internal * best['multiplier']
+        wl = self._w_local * best['multiplier']
+        cmd = (f'isolde brefine #{self.structure.id_string} '
+               f'wInternal {wi:.3g} wLocal {wl:.3g} alpha {best["alpha"]}')
+        log.info(
+            f'Best: weight ×{best["multiplier"]:.3g}, alpha {best["alpha"]} '
+            f'(Rfree {best["rfree"]:.4f}, gap {best["gap"]:.4f}).  Apply with:')
+        log.info(f'    {cmd}')
+        if self._apply_best:
+            log.info('isolde brefine optimiseparams: applying best settings...')
+            from chimerax.core.commands import run
+            run(self.session, cmd)
+
+    def _remove_handlers(self):
+        for ts, h in self._handlers:
+            try:
+                ts.remove_handler(h)
+            except Exception:
+                pass
+        self._handlers = []
+
+    def _clear_session_ref(self):
+        if getattr(self.session, '_isolde_brefine_optimizer', None) is self:
+            self.session._isolde_brefine_optimizer = None
+
+
+def isolde_brefine_optimize_params_cmd(session, structure=None,
+                                       strategy='weight', gap_weight=1.0,
+                                       weight_min=0.25, weight_max=8.0, n_steps=6,
+                                       apply=False, max_cycles=50, b_min_factor=2.0,
+                                       b_max=200.0, n_threads=None,
+                                       ignore_hydrogens=True, w_internal=1.0,
+                                       w_local=1.0, c_local=4.0):
+    from chimerax.core.errors import UserError
+    cmd = 'isolde brefine optimiseparams'
+    sym_mgr = _resolve_sym_mgr(session, structure, cmd)
+    xmapset = _live_xmapset(sym_mgr, cmd)
+
+    # Capability guard: the optimiser needs Clipper's evaluate-only mode.
+    import inspect
+    from chimerax.clipper.refine.bfactor_occ import BFactorOccRefineManager
+    if 'evaluate_only' not in inspect.signature(
+            BFactorOccRefineManager.launch).parameters:
+        raise UserError(f'{cmd} requires a newer ChimeraX-Clipper with evaluate-'
+                        'only refinement support.  Please update ChimeraX-Clipper.')
+
+    strategy = str(strategy).lower()
+    if strategy not in ('weight', 'weightalpha', 'coarsefine'):
+        raise UserError(f'{cmd}: strategy must be weight, weightalpha, or '
+                        f'coarsefine (got "{strategy}").')
+    if weight_min <= 0 or weight_max <= 0 or weight_max <= weight_min:
+        raise UserError(f'{cmd}: require 0 < weightMin < weightMax.')
+
+    existing = getattr(session, '_isolde_brefine_optimizer', None)
+    if existing is not None and not existing._finished and not existing._aborted:
+        raise UserError(f'{cmd}: an optimisation is already running.  Wait for it '
+                        'to finish, or close/re-run.')
+
+    trials = _optimizer_trials(strategy, weight_min, weight_max, n_steps)
+    session._isolde_brefine_optimizer = _BFactorWeightOptimizer(
+        session, sym_mgr, xmapset, trials=trials, strategy=strategy,
+        gap_weight=gap_weight, b_min_factor=b_min_factor, b_max=b_max,
+        max_cycles=max_cycles, n_threads=n_threads,
+        ignore_hydrogens=ignore_hydrogens, c_local=c_local,
+        w_internal=w_internal, w_local=w_local, apply_best=apply)
+
+
 def register_bfactor_refine_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, FloatArg, IntArg, StringArg, Or, EnumOf)
@@ -1076,13 +1412,17 @@ def register_bfactor_refine_commands(logger):
     # confidence).  EnumOf is tried first so 'auto' parses as the string.
     AlphaArg = Or(EnumOf(['auto']), FloatArg)
 
+    # Overfitting-guard tolerance: a float, or 'none' to disable that guard.
+    ToleranceArg = Or(EnumOf(['none']), FloatArg)
+
     brefine_desc = CmdDesc(
         optional=[('structure', _StructuresOrSymmetryMgrsArg)],
         keyword=[
             ('refine_b', BoolArg), ('max_cycles', IntArg),
             ('b_min_factor', FloatArg), ('b_max', FloatArg),
             ('n_threads', IntArg), ('log_level', StringArg),
-            ('rwork_tolerance', FloatArg), ('auto_tolerances', BoolArg),
+            ('rfree_tolerance', ToleranceArg), ('gap_tolerance', ToleranceArg),
+            ('auto_tolerances', BoolArg),
             ('delta_tolerance_factor', FloatArg),
             ('epsilon_tolerance_factor', FloatArg),
             ('ignore_hydrogens', BoolArg),
@@ -1094,6 +1434,24 @@ def register_bfactor_refine_commands(logger):
         synopsis='Refine B-factors against crystallographic data using the '
                  'ML gradient-map approach')
     register('isolde brefine', brefine_desc, isolde_brefine_cmd, logger=logger)
+
+    optimize_params_desc = CmdDesc(
+        optional=[('structure', _StructuresOrSymmetryMgrsArg)],
+        keyword=[
+            ('strategy', EnumOf(['weight', 'weightalpha', 'coarsefine'])),
+            ('gap_weight', FloatArg),
+            ('weight_min', FloatArg), ('weight_max', FloatArg),
+            ('n_steps', IntArg), ('apply', BoolArg),
+            ('max_cycles', IntArg), ('b_min_factor', FloatArg),
+            ('b_max', FloatArg), ('n_threads', IntArg),
+            ('ignore_hydrogens', BoolArg),
+            ('w_internal', FloatArg), ('w_local', FloatArg),
+            ('c_local', FloatArg),
+        ],
+        synopsis='Scan brefine restraint weights and report the best setting '
+                 '(by R-free and the R-free−R-work gap)')
+    register('isolde brefine optimiseparams', optimize_params_desc,
+             isolde_brefine_optimize_params_cmd, logger=logger)
 
     brsr_desc = CmdDesc(
         optional=[('atoms', AtomsArg)],
