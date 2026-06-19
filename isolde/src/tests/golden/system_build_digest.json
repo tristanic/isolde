@@ -1,0 +1,17 @@
+{
+  "force_counts": {
+    "HarmonicAngleForce": 1,
+    "HarmonicBondForce": 1,
+    "NonbondedForce": 1,
+    "PeriodicTorsionForce": 1
+  },
+  "force_groups": {
+    "HarmonicAngleForce": 2,
+    "HarmonicBondForce": 1,
+    "NonbondedForce": 0,
+    "PeriodicTorsionForce": 3
+  },
+  "num_particles": 189,
+  "potential_energy_kj_mol": 1359.25532406659,
+  "total_charge": -2.0
+}
