@@ -336,9 +336,11 @@ class MapSettingsDialog(UI_Panel_Base):
         w.setLayout(l)
         l.addStretch()
         sb = MapWeightSpinBox()
-        sb.setValue(mgr.global_k*map.sigma)
+        # global_k is now the sigma-normalised weight (the MDFF energy divides by the
+        # map sigma), so it is displayed/stored directly — no × / ÷ sigma here.
+        sb.setValue(mgr.global_k)
         def set_weight(value, m=mgr):
-            mgr.global_k = value/map.sigma
+            mgr.global_k = value
         sb.valueChanged.connect(set_weight)
         l.addWidget(sb)
         l.addStretch()

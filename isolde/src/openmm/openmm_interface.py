@@ -2450,7 +2450,8 @@ class SimHandler:
         # particles in this force, it needs a unique name so it doesn't
         # interfere with other instances of the same force.
         suffix = str(len(self.mdff_forces)+1)
-        f = CubicInterpMapForce(data, region_tf.matrix, suffix, units='angstroms')
+        f = CubicInterpMapForce(data, region_tf.matrix, suffix, units='angstroms',
+                                map_sigma=v.sigma)
         f.setForceGroup(MAP_FORCE_GROUP)
         self.all_forces.append(f)
         self._system.addForce(f)
@@ -2471,11 +2472,15 @@ class SimHandler:
             def data_changed_cb(reason, v=volume, r=region, checker=RfactorChecker(volume)):
                 if reason=='values changed' and checker.r_improved():
                     f.update_map_data(v.region_matrix(region=r))
+                    # Keep the sigma normalisation in lockstep with the data the
+                    # force actually samples (only swapped in when R-work improves).
+                    f.set_map_sigma(v.sigma)
                     self.force_update_needed()
         else:                
             def data_changed_cb(reason, v = volume, r = region):
                 if reason == 'values changed':
                     f.update_map_data(v.region_matrix(region=r))
+                    f.set_map_sigma(v.sigma)
                     self.force_update_needed()
         v.data.add_change_callback(data_changed_cb)
         def remove_change_cb(*_):
@@ -2561,27 +2566,27 @@ class SimHandler:
             f.update_transform(region_tf.matrix, context=context)
 
 
-    def set_mdff_scale_factor(self, volume, scale_factor):
+    def set_mdff_magnification_factor(self, volume, magnification_factor):
         '''
-        Adjust the dimensions of the mdff map in the simulation. This is
-        typically used to optimize the scaling in the course of a single
-        simulation. The final scale should be applied back to the original map,
-        so that in future simulations the scale factor is 1.0.
+        Adjust the dimensions (coordinate magnification) of the mdff map in the
+        simulation. This is typically used to optimize the scaling in the course of
+        a single simulation. The final magnification should be applied back to the
+        original map, so that in future simulations the factor is 1.0.
 
         Args:
             * volume:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force
-            * scale_factor:
-                - the new scale factor (dimensionless). Changing the scale
-                  factor by more than 1-2% in a single go is dangerous!
+            * magnification_factor:
+                - the new magnification factor (dimensionless). Changing it by
+                  more than 1-2% in a single go is dangerous!
         '''
         f = self.mdff_forces[volume]
         if self.sim_running:
             context = self.thread_handler.context
-            f.set_map_scale_factor(scale_factor, context=context)
+            f.set_map_magnification_factor(magnification_factor, context=context)
         else:
-            f.set_map_scale_factor(scale_factor)
+            f.set_map_magnification_factor(magnification_factor)
             self.context_reinit_needed()
 
     def update_mdff_atoms(self, mdff_atoms, volume):
@@ -2873,7 +2878,7 @@ class MapScaleOptimizer:
             v.data.set_origin(rc + scale*(o-rc))
             v.update_drawings()
             sh.update_mdff_transform(v)
-            # sh.set_mdff_scale_factor(v, scale)
+            # sh.set_mdff_magnification_factor(v, scale)
         atoms = self.sim_manager.sim_construct.all_atoms
         c = atoms.coords.mean(axis=0)
         oc = self._initial_model_center

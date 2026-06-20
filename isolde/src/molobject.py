@@ -1980,11 +1980,13 @@ class MDFFMgr(_RestraintMgr):
         # Cryo-EM maps tend to have *much* steeper contours than
         # crystallographic ones at the same resolution, so scaling constants
         # that work well for the latter tend to be too strong for the former.
+        # Calibrated for the sigma-level guess_global_k against 1-3 A crystal
+        # structures and a ~3 A cryo-EM map.
         from chimerax.clipper.maps import NXmapHandler
         if isinstance(volume, NXmapHandler):
-            default_scaling_constant = 1
-        else:
             default_scaling_constant = 2
+        else:
+            default_scaling_constant = 4
 
         if guess_global_k:
             self.guess_global_k(scaling_constant = default_scaling_constant)
@@ -2009,29 +2011,31 @@ class MDFFMgr(_RestraintMgr):
         '''
         return self._volume
 
-    def guess_global_k(self, distance_cutoff=3, percentile=90, scaling_constant=2):
+    def guess_global_k(self, percentile=90, scaling_constant=4):
         '''
-        Guesses a reasonable value for the global coupling constant defining how
-        strongly the map "pulls" on atoms, based on the steepness of the map
-        gradients in the vicinity of the model. Each heavy atom coordinate is
-        randomly perturbed by up to 0.25 A along each axis, and the gradient at
-        that point is calculated based on linear interpolation of surrounding
-        voxels. The gradients are ranked in increasing order of value, and the
-        the value at the given `percentile` is selected. The final global_k is
-        selected such that value * global_k = scaling_constant.
+        Guesses a reasonable value for the global coupling constant from how deeply
+        the model's heavy atoms sit in the map density.  The map value at each heavy
+        atom is interpolated and expressed as a *sigma-level* ``(value - mean) /
+        sigma`` — a scale- and resolution-invariant measure of local density.  The
+        weight is set so that an atom at the given ``percentile`` sigma-level
+        contributes a target potential proportional to ``scaling_constant``.
+
+        Because the coupling now divides the energy by the map sigma (see
+        :class:`~chimerax.isolde.openmm.custom_forces.CubicInterpMapForce`),
+        ``global_k`` is a *sigma-normalised weight*, and this estimate is computed in
+        the same units.  Working in scale-free sigma-levels (rather than the old
+        gradient magnitude) means the estimate no longer blows up on smooth
+        low-resolution maps, which previously caused over-coupling there.
 
         Args:
-            * distance_cutoff:
-                - mask radius in Angstroms
             * percentile:
-                - defines the gradient value to be selected for the weighting
-                  calculation
-            * scaling constant:
-                - Defines the final strength of the map forces (larger value =
-                  stronger pull)
+                - the sigma-level percentile used as the reference density depth
+            * scaling_constant:
+                - sets the final strength of the map forces (larger = stronger pull);
+                  a calibration constant — tune so defaults give gentle-but-active
+                  coupling.
         '''
         import numpy
-        session = self.session
         m = self.model
         v = self.volume
 
@@ -2039,22 +2043,26 @@ class MDFFMgr(_RestraintMgr):
         is_xmap = isinstance(v, XmapHandlerBase)
         if is_xmap:
             sh = v.crystal_mgr
-
             spotlight_mode = sh.spotlight_mode
             sh.isolate_and_cover_selection(m.atoms, focus=False)
 
         from chimerax.geometry import identity
-        coords = m.atoms[m.atoms.element_names!='H'].coords
-        import numpy
-        coords += numpy.random.rand(len(coords),3)*0.5-0.25
-        gradients = v.interpolated_gradients(coords, identity())
-        gradient_mags = numpy.linalg.norm(gradients, axis=1)
-        ref_g = numpy.percentile(gradient_mags, percentile)
+        coords = m.atoms[m.atoms.element_names != 'H'].coords
+        mean, sigma, rms = v.mean_sd_rms()
+        vals = v.interpolated_values(coords, identity())
 
         if is_xmap:
             sh.spotlight_mode = spotlight_mode
 
-        self.global_k = scaling_constant/ref_g
+        if sigma <= 0:
+            self.global_k = scaling_constant
+            return
+        levels = (numpy.asarray(vals) - mean) / sigma
+        ref_level = numpy.percentile(levels, percentile)
+        # Floor away from zero so atoms in weak/negative density can't drive the
+        # weight to extremes.
+        ref_level = max(ref_level, 1.0)
+        self.global_k = scaling_constant / ref_level
 
     def _get_mdff_atoms(self, atoms, create=False):
         f = c_function('mdff_mgr_get_mdff_atom',
@@ -2161,8 +2169,18 @@ class MDFFMgr(_RestraintMgr):
     def set_state_from_snapshot(self, session, data):
         from chimerax.core.models import Model
         Model.set_state_from_snapshot(self, session, data['model state'])
+        # global_k changed meaning in ISOLDE_STATE_VERSION 4: it is now a
+        # sigma-normalised weight (= the old absolute value × the map sigma),
+        # because the MDFF energy is now divided by the map sigma.  Convert any
+        # pre-v4 session on load so the effective coupling is preserved.
+        version = data.get('version', 0)
         data = data['restraint info']
-        self.global_k = data['global k']
+        global_k = data['global k']
+        if version <= 3:
+            sigma = getattr(self.volume, 'sigma', None)
+            if sigma:
+                global_k = global_k * sigma
+        self.global_k = global_k
         matoms = self.add_mdff_atoms(data['atoms'], True)
         matoms.enableds = data['enableds']
         matoms.coupling_constants = data['coupling constants']
