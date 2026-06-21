@@ -288,7 +288,10 @@ class ChiralMgr(_DihedralMgr):
             chiral_atom = atoms[0]
             improp_atoms = [[a] for a in atoms[1:]]
             for resname in residue_names:
-                rdict = cdict.get(resname, dict())
+                # setdefault (not get) so the entry actually lands in chiral_center_dict
+                # -- otherwise sugars absent from chirals.json register in C++ but stay
+                # invisible to Python, and get needlessly regenerated every init.
+                rdict = cdict.setdefault(resname, dict())
                 rdict[chiral_atom] = [improp_atoms, target]
                 self._add_chiral_def(resname, chiral_atom, *improp_atoms, target, [0,0,1])
         generic_defs = gd['generic']

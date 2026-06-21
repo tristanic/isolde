@@ -25,14 +25,22 @@ Python-only changes can skip `clean`: `make_win.bat release app-install`.
 `devel install .`), and Git Bash/MSYS mangles `cmd.exe` flags (`/c`, `/d`) and
 Windows paths. Two gotchas compound: MSYS rewrites `/d`, and `cmd.exe` won't
 search the current directory for the batch file (NoDefaultCurrentDirectoryInExePath).
-The invocation that works — set `MSYS_NO_PATHCONV=1`, use a single `/c`, and call
-the batch file by **absolute path** (its internal relative paths still resolve
-against the inherited cwd):
+The invocation that works — **`cd` into the bundle dir first** (its internal
+relative paths resolve against the inherited cwd), set `MSYS_NO_PATHCONV=1`, use a
+single `/c`, and call the batch file by **absolute path**:
 ```sh
+cd /c/Users/tcroll/my_gits/isolde/isolde && \
 MSYS_NO_PATHCONV=1 cmd.exe /c "C:\Users\tcroll\my_gits\isolde\isolde\make_win.bat release app-install"
 ```
 (`//c` only works *without* `MSYS_NO_PATHCONV`, but then `/d`/paths get mangled —
 so prefer single `/c` + `MSYS_NO_PATHCONV=1` + absolute bat path.)
+
+**Gotcha — silent build failure on wrong cwd:** if cwd is *not* the bundle dir
+(e.g. you `cd`'d to the repo root for git first), `prep_toml.py` / `devel install .`
+aren't found, the bat logs the error mid-stream **but still prints a stale
+"Installed …" line and exits 0** — so the install silently keeps the previous
+build. Always run the build from the bundle dir, and grep the log for
+`error`/`prep_toml`/`does not exist`, not just "Installed".
 
 **Linux / macOS:**
 ```sh
@@ -118,3 +126,24 @@ Do **not** modify the following without an explicit instruction to do so. They c
 | `isolde/extern/pybind11` | Git submodule — Python ↔ C++ bindings |
 | `bundle_info.xml` | ChimeraX bundle manifest (tool/command declarations, dependencies) |
 | `pyproject.toml.in` | Build config template (processed by `prep_toml.py`) |
+
+---
+
+## TODO / future work
+
+### Generalise & expose the pyranose "chair" torsion restraints
+ISOLDE ships a hand-curated set of torsion-restraint targets that pull pyranose
+sugars toward the canonical **chair** conformation — overwhelmingly favoured in
+reality, but in simulation it's easy to get trapped in a higher-energy
+conformation and not notice. Two problems to solve (this mirrors the chirality
+work — see the `chemcomp`-backed chiral generator in `src/atomic/chirality.py`):
+
+1. **No user control (real problem).** There's currently no user-facing way to
+   turn these restraints off or dial in a *different* target conformation. When
+   non-chair conformations genuinely occur they're usually functionally
+   important, and the restraints would silently fight them — so users need a way
+   to disable / re-target per residue (or per selection).
+2. **Narrow coverage.** Like the old curated chiral set, the targets cover only
+   the small set of sugars curated so far. A CCD/`chemcomp`-driven approach
+   (analogous to how `chiral_definitions_from_ccd` now generates chiral defs from
+   the local CCD store) could generalise them to arbitrary pyranoses.

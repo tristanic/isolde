@@ -52,17 +52,38 @@ def _signed_volume(pts):
     return float(numpy.dot(s1 - c, numpy.cross(s2 - c, s3 - c)))
 
 
+def _leaving_atom_flags(session, resname):
+    '''``{atom_id: bool}`` from the CCD ``pdbx_leaving_atom_flag`` (via the local
+    ChemComp store). Empty if unavailable -- callers then treat every centre as
+    intra-residue (the pre-6a behaviour).'''
+    try:
+        from chimerax import chemcomp
+        rec = chemcomp.record(session, resname)
+    except Exception:
+        return {}
+    if not rec:
+        return {}
+    return {a[0]: (len(a) > 5 and a[5] == 'Y') for a in rec['atoms']}
+
+
 def chiral_definitions_from_ccd(session, resname):
-    '''Generate intra-residue chiral-centre definitions for a CCD component.
+    '''Generate chiral-centre definitions for a CCD component.
 
     Returns a dict
-    ``{centre_name: ([s1], [s2], [s3], expected_angle_rad, signed_volume)}`` (the
-    substituent names are single-element lists, matching ``add_chiral_def``'s
-    "list of possible names" convention). The signed volume is carried for
-    diagnostics / the ordering self-check; the registered restraint derives its
-    target sign from the angle. Only centres whose substituent atoms are all
-    within the residue are produced; cross-residue (external) centres are handled
-    separately.
+    ``{centre_name: ([s1], [s2], [s3], expected_angle_rad, signed_volume,
+    externals)}`` -- substituent names as single-element lists (matching
+    ``add_chiral_def``'s "list of possible names" convention) and ``externals`` a
+    3-list of 0/1 flags.
+
+    Cross-residue (linkage) centres are handled: if one of the three
+    highest-priority substituents is a CCD polymerisation *leaving* atom
+    (``pdbx_leaving_atom_flag``), it is replaced by the wildcard ``'*'`` and its
+    slot flagged external, so the def matches the *linked* residue -- where that
+    atom is gone, replaced by the bond to the neighbouring residue (e.g. a
+    glycosidic anomeric centre). The sign/volume come from the monomer reference
+    geometry (the leaving atom sits where the linkage partner will). Centres with
+    two leaving atoms among the top three are skipped: the single-external model
+    can't represent them.
     '''
     mol, _status = rb.template_to_rdkit(session, resname)
     if mol is None or mol.GetNumConformers() == 0:
@@ -71,6 +92,7 @@ def chiral_definitions_from_ccd(session, resname):
         Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
     except Exception:
         return {}
+    leaving = _leaving_atom_flags(session, resname)
     conf = mol.GetConformer()
     from chimerax.geometry import dihedral
     defs = {}
@@ -88,14 +110,35 @@ def chiral_definitions_from_ccd(session, resname):
         subs = nbrs[:3]
         if any(not n.HasProp(rb.NAME_PROP) for n in subs):
             continue
+        s_names = [n.GetProp(rb.NAME_PROP) for n in subs]
+        ext_mask = [bool(leaving.get(nm)) for nm in s_names]
+        if sum(ext_mask) >= 2:
+            # >1 leaving atom among the top-3 substituents: the single external
+            # wildcard can't represent this, so skip rather than mis-define.
+            continue
+        # The C++ Chiral_Def only permits the wildcard in the final (s3) slot, so
+        # put any external substituent last (keeping the other two in CIP order)
+        # and compute the target improper for THAT ordering -- the sign stays
+        # self-consistent because the C++/OpenMM volume uses the same order.
+        order = (
+            [i for i in range(3) if not ext_mask[i]] + [i for i in range(3) if ext_mask[i]]
+        )
+        ordered = [subs[i] for i in order]
         pts = [_conf_coord(conf, atom.GetIdx())]
-        pts += [_conf_coord(conf, n.GetIdx()) for n in subs]
-        # Same improper ISOLDE's ChiralCenter computes: dihedral(centre,s1,s2,s3).
+        pts += [_conf_coord(conf, n.GetIdx()) for n in ordered]
+        # Computed on the monomer (leaving atom in place); its sign is the
+        # handedness the linked partner atom will occupy.
         angle = radians(dihedral(*pts))
         volume = _signed_volume(pts)
         centre_name = atom.GetProp(rb.NAME_PROP)
-        s_names = [n.GetProp(rb.NAME_PROP) for n in subs]
-        defs[centre_name] = ([s_names[0]], [s_names[1]], [s_names[2]], angle, volume)
+        names = [s_names[i] for i in order]
+        externals = [0, 0, 0]
+        if any(ext_mask):
+            # The single external (now last) is absent in the linked residue;
+            # name it with the cross-residue wildcard.
+            names[2] = '*'
+            externals = [0, 0, 1]
+        defs[centre_name] = ([names[0]], [names[1]], [names[2]], angle, volume, externals)
     return defs
 
 
@@ -108,12 +151,21 @@ def register_chiral_definitions(session, resname, override=False):
     mgr = get_chiral_mgr(session)
     existing = mgr.chiral_center_dict.get(resname, {})
     added = 0
-    for centre, (s1, s2, s3, angle, volume) in chiral_definitions_from_ccd(session, resname).items():
+    for centre, (s1, s2, s3, angle, volume, externals) in \
+            chiral_definitions_from_ccd(session, resname).items():
         if centre in existing and not override:
             continue
         try:
-            mgr.add_chiral_def(resname, centre, s1, s2, s3, angle,
-                expected_volume=volume)
+            mgr.add_chiral_def(
+                resname,
+                centre,
+                s1,
+                s2,
+                s3,
+                angle,
+                externals=externals,
+                expected_volume=volume
+            )
             added += 1
         except Exception as e:
             session.logger.info(
@@ -165,22 +217,25 @@ def chiral_outliers(session, atoms, ensure_defs=True):
 
 
 def ensure_chiral_definitions(session, residues):
-    '''For each unique residue name among ``residues`` that has no chiral
-    definition yet (not in the curated dictionary, not already generated this
-    session), generate and register one from the CCD so its chirality is
-    restrained during simulation.
+    '''For each unique residue name among ``residues``, generate chiral-centre
+    definitions from the CCD and register any centre not already defined, so its
+    chirality is restrained during simulation.
+
+    This *supplements* the hand-curated dictionary rather than deferring to it:
+    :func:`register_chiral_definitions` keeps any curated centre (skips it per
+    atom) and only adds the missing ones. That matters for the curated sugars,
+    which define only the anomeric carbon -- their ring stereocentres would
+    otherwise go unrestrained.
 
     Defensive by design -- it never raises, since chirality restraints are
-    best-effort and must not break simulation setup. Each novel residue name is
+    best-effort and must not break simulation setup. Each residue name is
     attempted at most once per session.
     '''
-    from chimerax.isolde.molobject import get_chiral_mgr
-    mgr = get_chiral_mgr(session)
     attempted = getattr(session, '_isolde_chiral_attempted', None)
     if attempted is None:
         attempted = session._isolde_chiral_attempted = set()
     for name in set(r.name for r in residues):
-        if name in attempted or name in mgr.chiral_center_dict:
+        if name in attempted:
             continue
         attempted.add(name)
         try:
@@ -223,7 +278,7 @@ def validate_against_curated(session, resnames=None, tol=0.15):
             if centre not in gen:
                 issues.append((resname, centre, 'missing in generated', None, cdata))
                 continue
-            gs1, gs2, gs3, gangle, gvol = gen[centre]
+            gs1, gs2, gs3, gangle, gvol, gext = gen[centre]
             gen_names = [gs1, gs2, gs3]
             if gen_names != cur_names:
                 issues.append((resname, centre, 'substituent order differs',
