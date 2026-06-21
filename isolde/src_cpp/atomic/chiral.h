@@ -71,6 +71,12 @@ public:
     //! deleted/added and always reflects the live bonding.
     Atom* fourth_substituent() const;
     Atom* chiral_atom() const { return _atoms[0]; }
+    //! Flip the expected target to the opposite (mirror) handedness: negate the
+    //! expected dihedral and, if set, the expected volume. Used by the experts-only
+    //! "force" chiral flip, which retargets selected centres to their enantiomer.
+    //! Session-transient: the chirals.json / ChiralMgr definition is untouched, so
+    //! reloading the model restores the original target.
+    void flip_expected();
     const Bonds& bonds() const { return _bonds; }
 
 private:

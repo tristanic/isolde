@@ -11,7 +11,7 @@ class ChiralPanel(CollapsibleArea):
         self.setContentLayout(cd.main_layout)
 
 class ChiralDialog(UI_Panel_Base):
-    COLUMN_LABELS = ('Chain', 'Residue', 'Resname', 'Atom', 'State')
+    COLUMN_LABELS = ('Chain', 'Residue', 'Resname', 'Atom', 'State', '')
     def __init__(self, session, isolde, gui, collapse_area, sim_sensitive=True):
         super().__init__(session, isolde, gui, collapse_area.content_area, sim_sensitive=sim_sensitive)
 
@@ -58,14 +58,33 @@ class ChiralDialog(UI_Panel_Base):
             o = oriented[index]
             a = cc.chiral_atom
             res = a.residue
-            state = 'Inverted' if o < 0 else 'Strained'
+            inverted = o < 0
+            state = 'Inverted' if inverted else 'Strained'
             data = (res.chain_id, str(res.number), res.name, a.name, state)
             for j, d in enumerate(data):
                 item = QTableWidgetItem(d)
-                item.setData(Qt.ItemDataRole.UserRole, res)
-                if o < 0:
+                # Store the chiral *atom* (not the residue) so clicking focuses on
+                # the centre itself and the Flip button knows which centre to act on.
+                item.setData(Qt.ItemDataRole.UserRole, a)
+                if inverted:
                     item.setBackground(badColor)
                 table.setItem(row, j, item)
+            # Offer a flip only where the handedness is actually wrong: flipping a
+            # merely-strained (but correctly-handed) centre would invert it.
+            if inverted:
+                from chimerax.core.commands import run
+
+                def cb(_, atom=a, mdl=m):
+                    r = atom.residue
+                    run(
+                        self.session, 'isolde chiralflip #{}/{}:{}{}@{}'.format(
+                            mdl.id_string, r.chain_id, r.number, r.insertion_code, atom.name
+                        )
+                    )
+
+                b = QPushButton('Flip')
+                b.clicked.connect(cb)
+                table.setCellWidget(row, 5, b)
         if self._first_rebuild and len(order):
             table.resizeColumnsToContents()
             self._first_rebuild = False
@@ -89,10 +108,15 @@ class ChiralDialog(UI_Panel_Base):
             self._populate_table()
 
     def _item_clicked_cb(self, item):
-        res = item.data(Qt.ItemDataRole.UserRole)
-        m = self.isolde.selected_model
-        from chimerax.core.commands import run
-        run(self.session, f'isolde step #{m.id_string}/{res.chain_id}:{res.number}', log=False)
+        a = item.data(Qt.ItemDataRole.UserRole)
+        if a is None or a.deleted:
+            return
+        from chimerax.atomic import Atoms
+        from chimerax.isolde.view import focus_on_selection
+        # Frame the chiral centre and its immediate substituents -- not the whole
+        # residue, which over-zooms for large ligands -- then highlight the centre.
+        focus_on_selection(self.session, Atoms([a] + list(a.neighbors)), pad=1.5)
+        a.selected = True
 
     def _model_changes_cb(self, trigger_name, changes):
         if changes[1].num_deleted_atoms():

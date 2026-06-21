@@ -88,6 +88,17 @@ double ChiralCenter::true_chiral_volume() const
     return ax*(by*cz - bz*cy) + ay*(bz*cx - bx*cz) + az*(bx*cy - by*cx);
 }
 
+void ChiralCenter::flip_expected()
+{
+    // Negate the stored target handedness (experts-only "force" flip): the centre
+    // now expects the mirror isomer. Mutates only this ChiralCenter instance --
+    // the shared definition is untouched -- so a model reload restores the
+    // original target.
+    _expected_angle = -_expected_angle;
+    if (!std::isnan(_expected_volume))
+        _expected_volume = -_expected_volume;
+}
+
 double ChiralCenter::expected_volume() const
 {
     // Prefer the real reference volume supplied at construction. If none was

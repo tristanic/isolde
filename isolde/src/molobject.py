@@ -1376,7 +1376,7 @@ class RotaMgr:
         f = c_function('rota_mgr_delete_rotamer', args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t))
         n = len(rotamers)
         f(self.cpp_pointer, rotamers._c_pointers, n)
-    
+
     def delete_rotamer(self, rotamer):
         self.delete_rotamers(_rotamers([rotamer]))
 
@@ -3560,8 +3560,10 @@ class ChiralRestraintMgr(_RestraintMgr):
             * chiral:
                 - a :py:class:`ChiralCenter` instance
         '''
-        from .molarray import Chirals
-        r = self._get_restraints(Chirals([chiral]), create=False)
+        from .molarray import ChiralCenters
+        r = self._get_restraints(
+            ChiralCenters(numpy.array([chiral._c_pointer.value], dtype=cptr)), create=False
+        )
         if len(r):
             return r[0]
         return None
@@ -4080,8 +4082,8 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
             args=(ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
                   ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_uint8)))
         f(self._c_pointer, pointer(maxc), pointer(midc), pointer(minc))
-        return maxc, midc, minc    
-        
+        return maxc, midc, minc
+
 
     def _model_changes_cb(self, trigger_name, changes):
         update_needed = False
@@ -4610,9 +4612,9 @@ class RotamerRestraintMgr(_RestraintMgr):
             if not self.valid_preview(rotamer):
                 raise TypeError(
                 'No target index has been chosen and there is no suitable preview '
-               +'to choose it from!')
+                +'to choose it from!')
             else:
-               target_index = pm.target_index
+                target_index = pm.target_index
         rr.target_index = target_index
         self.remove_preview()
 
@@ -4655,7 +4657,7 @@ class RotamerRestraintMgr(_RestraintMgr):
             ma.coords = tf.transform_points(ma.coords)
         from chimerax.core.commands import run
         run(self.session, f'label #{pm.id_string} residues text \"{target_def["Name"]} ({target_def["Frequency"]:0.2f}% \" ', log=False)
-        
+
 
     def remove_preview(self):
         pm = self._preview_model
@@ -5243,7 +5245,7 @@ class DistanceRestraint(State):
             doc = 'Restraint spring constant in :math:`kJ mol^{-1} nm^{-2}`')
     distance = c_property('distance_restraint_distance', float64, read_only=True,
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
-    satisfied_limit = c_property('distance_restraint_satisfied_limit', float64, 
+    satisfied_limit = c_property('distance_restraint_satisfied_limit', float64,
             doc = 'Deviation from target distance (in Angstroms) beyond which this restraint will be considered unsatisfied.')
     satisfied = c_property('distance_restraint_satisfied', bool, read_only=True,
             doc = 'Returns true if deviation from target distance is less than satisfied_limit. Read only.')
@@ -5348,7 +5350,7 @@ class AdaptiveDistanceRestraint(State):
             doc = 'Current distance between restrained atoms in Angstroms. Read only.')
     applied_force = c_property('adaptive_distance_restraint_force_magnitude', float64, read_only=True,
             doc = 'Total force currently being applied to this restraint. Read only.')
-    satisfied_limit = c_property('adaptive_distance_restraint_satisfied_limit', float64, 
+    satisfied_limit = c_property('adaptive_distance_restraint_satisfied_limit', float64,
             doc = 'Deviation from target distance (in Angstroms) beyond which this restraint will be considered unsatisfied.')
     satisfied = c_property('adaptive_distance_restraint_satisfied', bool, read_only=True,
             doc = 'Returns true if deviation from target distance is less than satisfied_limit. Read only.')
@@ -5415,6 +5417,18 @@ class ChiralRestraint(State):
     def clear_sim_index(self):
         f = c_function('chiral_restraint_clear_sim_index',
             args = (ctypes.c_void_p, ctypes.c_size_t))
+        f(self._c_pointer_ref, 1)
+
+    def flip_target(self):
+        '''
+        **Experts only.** Flip this restraint's target to the opposite (mirror)
+        handedness, and notify any running simulation to update immediately (see
+        ``isolde chiralflip force``). The change is session-transient: it mutates
+        only this restraint's :class:`ChiralCenter` instance, not the shared
+        :attr:`ChiralMgr.chiral_center_dict` definition, so reloading the model
+        restores the original target handedness.
+        '''
+        f = c_function('chiral_restraint_flip_target', args=(ctypes.c_void_p, ctypes.c_size_t))
         f(self._c_pointer_ref, 1)
 
     @property
@@ -5529,7 +5543,7 @@ class _ProperDihedralRestraint_Base(State):
             doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
         cls.annotation_color = c_property(cls._C_FUNCTION_PREFIX+'_annotation_color', uint8, 4, read_only=True,
             doc = 'Get the color of the annotation for this restraint according to the current colormap. Read only.')
-        cls.satisfied_limit = c_property(cls._C_FUNCTION_PREFIX+'_satisfied_limit', float64, 
+        cls.satisfied_limit = c_property(cls._C_FUNCTION_PREFIX+'_satisfied_limit', float64,
             doc = 'Deviation from target angle beyond which restraint will be considered unsatisfied.')
         cls.satisfied = c_property(cls._C_FUNCTION_PREFIX+'_satisfied', bool, read_only=True,
             doc='Returns True if the current deviation from the target angle is less than satisfied_limit.')
@@ -5598,7 +5612,7 @@ class AdaptiveDihedralRestraint(_ProperDihedralRestraint_Base):
             r'the well will become repulsive.')
         )
     applied_moment = c_property('adaptive_dihedral_restraint_applied_moment', float64,
-        doc='Current moment (or torque) around the axis of this dihedral, in kJ/mol',   
+        doc='Current moment (or torque) around the axis of this dihedral, in kJ/mol',
         read_only=True
     )
 

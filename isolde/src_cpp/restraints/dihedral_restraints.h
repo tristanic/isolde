@@ -161,6 +161,15 @@ public:
     {
         throw std::logic_error("Chiral restraint targets are immutable!");
     }
+    //! Experts-only ("force" chiral flip): flip the target to the opposite
+    //! (mirror) handedness, then notify so a running simulation updates the force
+    //! immediately (REASON_TARGET_CHANGED -> update_chiral_restraints).
+    //! Session-transient (the shared definition is unchanged).
+    void flip_target()
+    {
+        _dihedral->flip_expected();
+        base_mgr()->track_change(this, change_tracker()->REASON_TARGET_CHANGED);
+    }
     //! (current - target) signed volume; large and opposite-signed when inverted.
     double offset() const override
     {

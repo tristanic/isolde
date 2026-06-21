@@ -567,6 +567,18 @@ chiral_restraint_clear_sim_index(void *restraint, size_t n)
 }
 
 extern "C" EXPORT void
+chiral_restraint_flip_target(void *restraint, size_t n)
+{
+    ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
+    try {
+        for (size_t i=0; i<n; ++i)
+            (*r++)->flip_target();
+    } catch (...) {
+        molc_error();
+    }
+}
+
+extern "C" EXPORT void
 chiral_restraint_cutoff(void *restraint, size_t n, double *cutoff)
 {
     ChiralRestraint **r = static_cast<ChiralRestraint **>(restraint);
