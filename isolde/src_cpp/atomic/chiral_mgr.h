@@ -43,9 +43,13 @@ struct Chiral_Def
     std::array<std::vector<std::string>, 3> substituents;
     std::array<bool, 3> externals = {{false, false, false}};
     double expected_angle;
+    // Target signed chiral volume (Angstrom^3) for the correct isomer. NaN if the
+    // definition carries only an angle (ChiralCenter then falls back to a nominal
+    // magnitude with the angle's sign).
+    double expected_volume = NAN_NOT_SET;
     Chiral_Def() {} // null constructor
     Chiral_Def(const std::vector<std::string>& s1, const std::vector<std::string>& s2,
-        const std::vector<std::string>& s3, double angle)
+        const std::vector<std::string>& s3, double angle, double volume=NAN_NOT_SET)
     {
         for (const auto& s: s1)
             if (s=="*")
@@ -57,10 +61,12 @@ struct Chiral_Def
         substituents[1] = s2;
         substituents[2] = s3;
         expected_angle = angle;
+        expected_volume = volume;
     }
     Chiral_Def(const std::vector<std::string>& s1, const std::vector<std::string>& s2,
-        const std::vector<std::string>& s3, double angle, const std::vector<bool>& ext)
-        : Chiral_Def(s1, s2, s3, angle)
+        const std::vector<std::string>& s3, double angle, const std::vector<bool>& ext,
+        double volume=NAN_NOT_SET)
+        : Chiral_Def(s1, s2, s3, angle, volume)
     {
         for (size_t i=0; i<3; ++i)
             externals[i] = ext[i];
@@ -91,14 +97,16 @@ public:
         const std::vector<std::string>& s1,
         const std::vector<std::string>& s2,
         const std::vector<std::string>& s3,
-        double expected_angle);
+        double expected_angle,
+        double expected_volume=NAN_NOT_SET);
 
     void add_chiral_def(const std::string& resname, const std::string& atom_name,
         const std::vector<std::string>& s1,
         const std::vector<std::string>& s2,
         const std::vector<std::string>& s3,
         double expected_angle,
-        const std::vector<bool>& externals);
+        const std::vector<bool>& externals,
+        double expected_volume=NAN_NOT_SET);
 
 
     const Chiral_Def& get_chiral_def(const std::string& resname, const std::string& atom_name);

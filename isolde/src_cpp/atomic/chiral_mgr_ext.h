@@ -81,7 +81,8 @@ a list of possible names.
 extern "C" EXPORT void
 chiral_mgr_add_chiral_def(void *mgr, pyobject_t *rname, pyobject_t *cname,
     pyobject_t *s1_names, pyobject_t *s2_names, pyobject_t *s3_names,
-    size_t ns1, size_t ns2, size_t ns3, double expected_angle, npy_bool* externals)
+    size_t ns1, size_t ns2, size_t ns3, double expected_angle, npy_bool* externals,
+    double expected_volume)
 {
     ChiralMgr *m = static_cast<ChiralMgr *>(mgr);
     try {
@@ -99,7 +100,7 @@ chiral_mgr_add_chiral_def(void *mgr, pyobject_t *rname, pyobject_t *cname,
         std::vector<bool> ext;
         for (size_t i=0; i<3; ++i)
             ext.push_back(externals[i]);
-        m->add_chiral_def(resname, chiral_name, subs1, subs2, subs3, expected_angle, ext);
+        m->add_chiral_def(resname, chiral_name, subs1, subs2, subs3, expected_angle, ext, expected_volume);
     } catch(...) {
         molc_error();
     }

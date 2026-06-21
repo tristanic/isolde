@@ -1042,6 +1042,131 @@ class TopOutBondForce(CustomBondForce):
         self.update_needed = True
 
 
+class ChiralVolumeRestraintForce(CustomCompoundBondForce):
+    r'''
+    A :py:class:`openmm.CustomCompoundBondForce` restraining the SIGNED CHIRAL
+    VOLUME of a chiral centre to the correct handedness. The four particles per
+    bond are ``(centre, s1, s2, s3)`` -- identical to the atom order of a
+    :py:class:`ChiralCenter` -- and the signed volume is
+    :math:`V = (s_1-c)\cdot[(s_2-c)\times(s_3-c)]`.
+
+    Unlike a dihedral-based chiral restraint, :math:`V` is monotonic across the
+    planar inversion barrier and its sign is the handedness, so an inverted centre
+    is always pushed back (no top-out trap) and can never be reported satisfied.
+    The energy is a flat-bottom well on the oriented volume
+    :math:`v_o = \text{target\_sign}\cdot V` (scaled to :math:`\mathrm{\AA}^3`):
+    zero while :math:`v_o` stays above the engagement threshold ``tol``, harmonic
+    below it, with a TopOut-style linear cap on the applied force.
+
+    To avoid pumping high-frequency jitter into the integrator, the flat-bottom
+    edge is **smoothly rounded**: instead of the hard deviation
+    :math:`\max(0, tol-v_o)` (whose stiffness jumps discontinuously at the edge),
+    we use the C-infinity rectifier
+    :math:`d_{soft} = \tfrac{1}{2}\bigl(d + \sqrt{d^2 + \varepsilon^2}\bigr)`,
+    :math:`d = tol - v_o`. This is ~0 well inside the flat region, ~:math:`d`
+    outside, and rounds the transition over a width :math:`\varepsilon`
+    (``veps``). The energy is then
+    :math:`E = \tfrac{1}{2} k\, d_{soft}^2` (capped at ``max_force``).
+
+    NOTE: the volume is in :math:`\mathrm{\AA}^3` (OpenMM nm^3 is scaled by 1000),
+    so ``k`` is in :math:`kJ\,mol^{-1}\,\mathrm{\AA}^{-6}` -- NOT the
+    :math:`rad^{-2}` of the old dihedral restraint. ``k``, ``tol``, ``veps`` and
+    ``max_force`` are tunable; verify with the inversion test.
+    '''
+    def __init__(self, max_force, smoothing=0.15):
+        '''
+        Args:
+            * max_force:
+                - cap on the (volume-conjugate) restraining force.
+            * smoothing:
+                - rounding width epsilon (Angstrom^3) of the flat-bottom edge.
+        '''
+        terms = [
+            'select(step(enabled-0.5), select(step(dsoft - max_force/k), linear, quad), 0)',
+            'linear = max_force*(dsoft - 0.5*max_force/k)',
+            'quad = 0.5*k*dsoft^2',
+            # Smoothly-rectified deviation below the engagement threshold: ~0 well
+            # inside the flat region, ~dv outside, with the kink at dv=0 rounded
+            # over width `veps` so there is no stiffness step for thermal motion
+            # to cross (the cause of the near-equilibrium jitter).
+            'dsoft = 0.5*(dv + sqrt(dv*dv + veps*veps))',
+            'dv = tol - vo',
+            'vo = target_sign*1000*V',                  # nm^3 -> Angstrom^3
+            # Signed volume V = (s1-c).[(s2-c)x(s3-c)]; this ordering MUST match
+            # ChiralCenter::chiral_volume() in src_cpp/atomic/chiral.cpp.
+            'V = ax*(by*cz - bz*cy) + ay*(bz*cx - bx*cz) + az*(bx*cy - by*cx)',
+            'ax = x2-x1', 'ay = y2-y1', 'az = z2-z1',
+            'bx = x3-x1', 'by = y3-y1', 'bz = z3-z1',
+            'cx = x4-x1', 'cy = y4-y1', 'cz = z4-z1',
+        ]
+        super().__init__(4, '; '.join(terms))
+        self.enabled_index = self.addPerBondParameter('enabled')
+        self.k_index = self.addPerBondParameter('k')
+        self.target_sign_index = self.addPerBondParameter('target_sign')
+        self.tol_index = self.addPerBondParameter('tol')
+        self.max_force_index = self.addGlobalParameter('max_force', 0)
+        self.veps_index = self.addGlobalParameter('veps', smoothing)
+        self.max_force = max_force
+        self.update_needed = False
+
+    @property
+    def max_force(self):
+        'Cap on the volume-conjugate restraining force.'
+        return self._max_force
+
+    @max_force.setter
+    def max_force(self, force):
+        if type(force) == Quantity:
+            force = force.value_in_unit(OPENMM_FORCE_UNIT)
+        self.setGlobalParameterDefaultValue(self.max_force_index, force)
+        self._max_force = force
+        self.update_needed = True
+
+    def add_restraints(self, atom_indices, enableds, spring_constants, target_signs, tolerances):
+        '''
+        Add a set of chiral-volume restraints.
+
+        Args:
+            * atom_indices:
+                - a 4-tuple of integer arrays giving the indices of the centre
+                  and its three substituents (centre, s1, s2, s3)
+            * enableds:
+                - Boolean array
+            * spring_constants:
+                - float array in :math:`kJ\\,mol^{-1}\\,\\mathrm{\\AA}^{-6}`
+            * target_signs:
+                - float array of +1.0 / -1.0 (the target handedness)
+            * tolerances:
+                - float array of oriented-volume *engagement thresholds* in
+                  :math:`\\mathrm{\\AA}^3`: the restraint turns on when the oriented
+                  volume falls below this (typically the target magnitude minus a
+                  tolerance), pulling it back up
+        '''
+        n = len(enableds)
+        ind = numpy.empty((n,4), numpy.int32)
+        for i, ai in enumerate(atom_indices):
+            ind[:,i] = ai
+        params = numpy.empty((n,4), numpy.float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = target_signs
+        params[:,3] = tolerances
+        return _openmm_force_ext.customcompoundbondforce_add_bonds(int(self.this), ind, params)
+
+    def update_targets(self, indices, enableds, spring_constants, target_signs, tolerances):
+        '''
+        Update a set of chiral-volume restraints (fast C++ path).
+        '''
+        n = len(indices)
+        params = numpy.empty((n,4), numpy.float64)
+        params[:,0] = enableds
+        params[:,1] = spring_constants
+        params[:,2] = target_signs
+        params[:,3] = tolerances
+        _openmm_force_ext.customcompoundbondforce_update_bond_parameters(int(self.this), indices, params)
+        self.update_needed = True
+
+
 class TopOutRestraintForce(CustomExternalForce):
     r'''
     A :py:class:`openmm.CustomExternalForce` subclass designed to restrain atoms

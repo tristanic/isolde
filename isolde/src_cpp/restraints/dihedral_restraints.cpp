@@ -121,10 +121,11 @@ ChiralRestraint::ChiralRestraint(
     ChiralCenter *chiral, Dihedral_Restraint_Change_Mgr *mgr)
     : Dihedral_Restraint_Base<ChiralCenter>(chiral, mgr)
     {
-        // ChiralRestraint instances are enabled by default.
+        // ChiralRestraint instances are enabled by default. Defaults are now in
+        // signed-volume units (Angstrom^3 / Angstrom^6), not dihedral angle.
         _enabled = true;
-        _spring_constant = DEFAULT_CHIRAL_RESTRAINT_SPRING_CONSTANT;
-        _cutoff = DEFAULT_CHIRAL_RESTRAINT_CUTOFF;
+        _spring_constant = DEFAULT_CHIRAL_VOLUME_SPRING_CONSTANT;
+        _cutoff = DEFAULT_CHIRAL_VOLUME_TOLERANCE;
     }
 
 ChiralRestraintMgr* ChiralRestraint::mgr() const { return static_cast<ChiralRestraintMgr*>(base_mgr()); }

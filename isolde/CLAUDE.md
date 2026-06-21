@@ -18,6 +18,21 @@ All changes — Python or C++ — require a full wheel rebuild and ChimeraX rela
 ```bat
 make_win.bat release clean app-install
 ```
+Python-only changes can skip `clean`: `make_win.bat release app-install`.
+
+**Invoking the Windows build from Git Bash / an agent shell (non-cmd):**
+`make_win.bat` uses paths relative to its own directory (`prep_toml.py`,
+`devel install .`), and Git Bash/MSYS mangles `cmd.exe` flags (`/c`, `/d`) and
+Windows paths. Two gotchas compound: MSYS rewrites `/d`, and `cmd.exe` won't
+search the current directory for the batch file (NoDefaultCurrentDirectoryInExePath).
+The invocation that works — set `MSYS_NO_PATHCONV=1`, use a single `/c`, and call
+the batch file by **absolute path** (its internal relative paths still resolve
+against the inherited cwd):
+```sh
+MSYS_NO_PATHCONV=1 cmd.exe /c "C:\Users\tcroll\my_gits\isolde\isolde\make_win.bat release app-install"
+```
+(`//c` only works *without* `MSYS_NO_PATHCONV`, but then `/d`/paths get mangled —
+so prefer single `/c` + `MSYS_NO_PATHCONV=1` + absolute bat path.)
 
 **Linux / macOS:**
 ```sh

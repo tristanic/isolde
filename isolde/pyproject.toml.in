@@ -23,7 +23,14 @@ dependencies = [
     "ChimeraX-Atomic ~=1.67",
     "ChimeraX-AtomicLibrary ~=14.4.0",
     "ChimeraX-Clipper ~=0.28.0",
-    "ChimeraX-Arrays ~=1.0" 
+    "ChimeraX-Arrays ~=1.0",
+    # RDKit supplies bond-order- and chirality-aware cheminformatics (CCD->mol
+    # conversion, rdFMCS matching, CIP stereo perception). ChimeraX does not ship
+    # it, so it is declared here and pip-installed into the ChimeraX environment.
+    "rdkit >=2023.3",
+    # Fast, offline local copy of the Chemical Component Dictionary (and any
+    # user-supplied collections). ccd_records() consults it before the network.
+    "ChimeraX-ChemComp ~=0.1"
 ]
 
 [tool.setuptools.dynamic]
@@ -88,6 +95,14 @@ description = "Remove live Ramachandran model markup"
 [chimerax.command."~rota"]
 category = "General"
 description = "Remove live rotamer model markup"
+
+[chimerax.command.chiral]
+category = "General"
+description = "Live chiral-centre validation markup"
+
+[chimerax.command."~chiral"]
+category = "General"
+description = "Remove live chiral-centre validation markup"
 
 [chimerax.library.molc]
 sources = [

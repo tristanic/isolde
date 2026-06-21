@@ -47,8 +47,8 @@ def replace_residue(session, residue, with_residue=None, apply_md_template=False
         fix_residue_from_template,
         fix_residue_to_match_md_template
     )
-    fix_residue_from_template(residue, template, rename_residue=True,
-        match_by='element')
+    corrected, unfixable = fix_residue_from_template(residue, template,
+        rename_residue=True, match_by='element')
     if apply_md_template:
         ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
         ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
@@ -58,26 +58,29 @@ def replace_residue(session, residue, with_residue=None, apply_md_template=False
         md_template_name = tdict.get(0)
         if md_template_name is not None:
             fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=template)
-    from chimerax.atomic import Atoms, Atom
-    try:
-        chiral_centers = Atoms([a for a in residue.atoms if residue.ideal_chirality(a.name) != 'N'])
-    except KeyError:
-        session.logger.warning('Cannot auto-detect chiral centers for non-CCD templates. Check results with care!')
-        chiral_centers = []
-    if len(chiral_centers):
-        warn_str = ('Rebuilt ligand {} has chiral centres at atoms {} '
-            '(highlighted). Since the current algorithm used to match topologies '
-            'is not chirality aware, you should check these sites carefully to '
-            'ensure they are sensible. If in doubt, it is best to delete with '
-            '"del #{}/{}:{}{}" and replace with "isolde add ligand {}".').format(
-                residue.name, ','.join(chiral_centers.names),
+    # Only speak up about chirality when something actually happened: report the
+    # in-place corrections, and highlight only centres that could NOT be fixed
+    # automatically (which genuinely need the user's attention).
+    if corrected:
+        session.logger.info('Corrected {} inverted chiral centre(s) ({}) in {}; '
+            'run a quick energy minimisation to relax them.'.format(
+                len(corrected), ','.join(corrected), residue.name))
+    if unfixable:
+        from chimerax.atomic import Atoms, Atom
+        bad = Atoms([a for a in (residue.find_atom(n) for n in unfixable)
+                     if a is not None])
+        warn_str = ('Rebuilt ligand {} has chiral centre(s) at {} (highlighted) '
+            'that could not be corrected automatically (no rotatable substituent). '
+            'Check these carefully; if wrong, delete with "del #{}/{}:{}{}" and '
+            'replace with "isolde add ligand {}".').format(
+                residue.name, ','.join(unfixable),
                 residue.structure.id_string, residue.chain_id, residue.number,
                 residue.insertion_code, residue.name)
         session.selection.clear()
-        chiral_centers.selected=True
-        chiral_centers.draw_modes = Atom.BALL_STYLE
+        bad.selected = True
+        bad.draw_modes = Atom.BALL_STYLE
         from chimerax.isolde.view import focus_on_selection
-        focus_on_selection(session, chiral_centers)
+        focus_on_selection(session, bad)
         session.logger.warning(warn_str)
 
 def add_ligand(session, *args, **kwargs):

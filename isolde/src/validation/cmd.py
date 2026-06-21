@@ -104,6 +104,71 @@ def unrama(session, structures=None):
         if ra is not None:
             session.models.close([ra])
 
+def chiral(session, structures=None, report=False):
+    '''
+    Add a live chiral-centre validator to each of the given structures, and
+    optionally report a summary of current chiral outliers (wrong-handed or
+    badly strained centres).
+    '''
+    from chimerax.isolde import session_extensions as sx
+    if structures is None:
+        from chimerax.atomic import AtomicStructure
+        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+    for structure in structures:
+        sx.get_chiral_annotator(structure)
+    if report:
+        from chimerax.isolde.atomic.chirality import chiral_outliers
+        report_str = 'CHIRAL OUTLIERS:\n'
+        any_found = False
+        for structure in structures:
+            chirals, oriented, severity = chiral_outliers(session, structure.atoms)
+            for cc, o in zip(chirals, oriented):
+                any_found = True
+                a = cc.chiral_atom
+                r = a.residue
+                state = 'inverted' if o < 0 else 'strained'
+                report_str += '#{:<6} {}:\t{} {} atom {} ({}, oriented volume {:.3f} A^3)\n'.format(
+                    r.structure.id_string, r.chain_id, r.name, r.number, a.name, state, o)
+        if not any_found:
+            report_str += '  (none)\n'
+        session.logger.info(report_str)
+
+def unchiral(session, structures=None):
+    '''
+    Delete any chiral annotators associated with the given models.
+    '''
+    if structures is None:
+        from chimerax.atomic import AtomicStructure
+        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+    from chimerax.isolde import session_extensions as sx
+    for structure in structures:
+        ca = sx.get_chiral_annotator(structure, create=False)
+        if ca is not None:
+            session.models.close([ca])
+
+def register_chiral(logger):
+    from chimerax.core.commands import (
+        register, CmdDesc, BoolArg, create_alias
+    )
+    from chimerax.atomic import StructuresArg
+    desc = CmdDesc(
+        optional=[
+            ('structures', StructuresArg),
+            ],
+        keyword=[
+            ('report', BoolArg),
+        ],
+        synopsis='Add chiral-centre validator markup to models and optionally report current outliers'
+    )
+    register('chiral', desc, chiral, logger=logger)
+    undesc = CmdDesc(
+        optional=[('structures', StructuresArg)],
+        synopsis='Close the chiral annotators for the given models (or all if no models given)'
+    )
+    register('chiral stop', undesc, unchiral, logger=logger)
+    create_alias('~chiral', 'chiral stop $*', logger=logger)
+
+
 def register_rota(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, create_alias

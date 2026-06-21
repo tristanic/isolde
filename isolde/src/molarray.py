@@ -116,6 +116,12 @@ class ChiralCenters(_Dihedrals):
         doc='The equilibrium angle of each chiral dihedral in its correct isomeric state. Read only.')
     deviations = cvec_property('chiral_center_deviation', float64, read_only=True,
         doc='The difference between each current dihedral angle and its :attr:`expected_angle`. Read only.')
+    chiral_volumes = cvec_property('chiral_center_chiral_volume', float64, read_only=True,
+        doc='Signed chiral volume of each centre in Angstrom^3 (sign is handedness). Read only.')
+    expected_volumes = cvec_property('chiral_center_expected_volume', float64, read_only=True,
+        doc='Target signed chiral volume of each centre in Angstrom^3. Read only.')
+    true_chiral_volumes = cvec_property('chiral_center_true_chiral_volume', float64, read_only=True,
+        doc='Four-substituent signed volume of each centre in Angstrom^3 (robust handedness for validation). Read only.')
     chiral_atoms = cvec_property('chiral_center_chiral_atom', cptr, astype=convert.atoms, read_only=True,
         doc='The chiral atoms. Read only.')
     centers = cvec_property('chiral_center_center', float64, value_count=3, read_only=True,

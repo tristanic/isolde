@@ -233,3 +233,22 @@ def get_rama_annotator(model, create=True):
             return m
     if create:
         return RamaAnnotator(model)
+
+def get_chiral_annotator(model, create=True):
+    '''
+    Get the :class:`ChiralAnnotator` for the given model, optionally creating it
+    if it doesn't yet exist.
+
+    Args:
+        * model:
+            - a :class:`chimerax.AtomicStructure` instance
+        * create (default=True):
+            - if True and no :class:`ChiralAnnotator` already exists for the
+              model, one will be created and returned.
+    '''
+    from .validation.chiral_annotation import ChiralAnnotator
+    for m in model.child_models():
+        if isinstance(m, ChiralAnnotator):
+            return m
+    if create:
+        return ChiralAnnotator(model)

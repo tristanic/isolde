@@ -530,11 +530,19 @@ class SimManager:
             # ramas = ramas.restrict_to_sel(self.sim_construct.all_atoms)
             sh.add_amber_cmap_torsions(ramas)
 
+        # Best-effort: generate chiral restraint definitions for any novel
+        # residue types (e.g. ligands not in the curated dictionary) so their
+        # chirality is restrained. Must never break simulation setup.
+        try:
+            from ..atomic.chirality import ensure_chiral_definitions
+            ensure_chiral_definitions(self.session, mobile_res)
+        except Exception as e:
+            self.session.logger.info(f'Chiral definition generation skipped: {e}')
         cr_m = self.chiral_restraint_mgr
         crs = cr_m.add_restraints_by_atoms(sc.mobile_heavy_atoms)
         # crs = crs.restrict_to_sel(sc.all_atoms)
-        sh.add_dihedral_restraints(crs)
-        uh.append((cr_m, cr_m.triggers.add_handler('changes', self._dihe_r_changed_cb)))
+        sh.add_chiral_restraints(crs)
+        uh.append((cr_m, cr_m.triggers.add_handler('changes', self._chiral_r_changed_cb)))
 
         pdr_m = self.proper_dihedral_restraint_mgr
         pdrs = pdr_m.add_all_defined_restraints_for_residues(mobile_res)
@@ -891,7 +899,7 @@ class SimManager:
         return DEREGISTER
 
     def _dihe_r_changed_cb(self, trigger_name, changes):
-        '''Used for proper dihedral and chiral restraints.'''
+        '''Used for proper dihedral restraints.'''
         mgr, changes = changes
         change_types = list(changes.keys())
         from chimerax.atomic import concatenate
@@ -915,6 +923,31 @@ class SimManager:
             all_changeds = concatenate(changeds, remove_duplicates=True)
             all_changeds = all_changeds[all_changeds.sim_indices != -1]
             self.sim_handler.update_dihedral_restraints(all_changeds)
+
+    def _chiral_r_changed_cb(self, trigger_name, changes):
+        '''Used for chiral (signed-volume) restraints, which live on their own
+        force separate from proper dihedral restraints.'''
+        mgr, changes = changes
+        change_types = list(changes.keys())
+        from chimerax.atomic import concatenate
+        changeds = []
+        if 'created' in change_types:
+            created = changes['created']
+            created = created[created.sim_indices == -1]
+            all_atoms = self.sim_construct.all_atoms
+            indices = numpy.array([all_atoms.indices(atoms) for atoms in created.atoms])
+            created = created[numpy.all(indices != -1, axis=0)]
+            self.sim_handler.add_chiral_restraints(created)
+        if 'target changed' in change_types:
+            changeds.append(changes['target changed'])
+        if 'enabled/disabled' in change_types:
+            changeds.append(changes['enabled/disabled'])
+        if 'spring constant changed' in change_types:
+            changeds.append(changes['spring constant changed'])
+        if len(changeds):
+            all_changeds = concatenate(changeds, remove_duplicates=True)
+            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            self.sim_handler.update_chiral_restraints(all_changeds)
 
 
     def _dihe_r_sim_end_cb(self, *_):
@@ -1412,6 +1445,7 @@ class SimHandler:
             self.initialize_adaptive_distance_restraints_force()
         if dihedral_restraints:
             self.initialize_dihedral_restraints_force()
+            self.initialize_chiral_restraints_force(params.restraint_max_force)
         if adaptive_dihedral_restraints:
             self.initialize_adaptive_dihedral_restraints_force()
 
@@ -1841,6 +1875,56 @@ class SimHandler:
         df.setForceGroup(RESTRAINT_FORCE_GROUP)
         self._system.addForce(df)
         self.all_forces.append(df)
+
+    def initialize_chiral_restraints_force(self, max_force):
+        '''
+        Initialise the signed-chiral-volume restraint force. Must be called before
+        the simulation starts and before any chiral restraints are added.
+        '''
+        from .custom_forces import ChiralVolumeRestraintForce
+        cf = self._chiral_restraint_force = ChiralVolumeRestraintForce(max_force)
+        cf.setForceGroup(RESTRAINT_FORCE_GROUP)
+        self._system.addForce(cf)
+        self.all_forces.append(cf)
+
+    def add_chiral_restraints(self, restraints):
+        '''
+        Add a set of :py:class:`ChiralRestraints` to the signed-volume force,
+        setting each restraint's :attr:`sim_index`. The four atoms of each chiral
+        centre (centre, s1, s2, s3) become the force's four particles, and the
+        target handedness is the sign of each restraint's (volume) target.
+        '''
+        force = self._chiral_restraint_force
+        all_atoms = self._atoms
+        chiral_atoms = restraints.dihedrals.atoms
+        atom_indices = numpy.array([all_atoms.indices(atoms) for atoms in chiral_atoms])
+        # Filter out those which don't have all atoms in the simulation
+        ifilter = numpy.all(atom_indices!=-1, axis=0)
+        atom_indices = [a[ifilter] for a in atom_indices]
+        restraints = restraints[ifilter]
+        target_signs = numpy.where(restraints.targets >= 0, 1.0, -1.0)
+        # The force engages when the oriented volume falls below this threshold,
+        # i.e. a tolerance (cutoff) below the per-centre target magnitude.
+        thresholds = numpy.abs(restraints.targets) - restraints.cutoffs
+        restraints.sim_indices = force.add_restraints(atom_indices,
+            restraints.enableds, restraints.spring_constants, target_signs,
+            thresholds)
+        self.context_reinit_needed()
+
+    def update_chiral_restraints(self, restraints):
+        '''
+        Update the signed-volume force to match the parameters (enabled,
+        spring constant, dead-band, target handedness) of the given chiral
+        restraints. Restraints not in the current simulation are ignored.
+        '''
+        force = self._chiral_restraint_force
+        restraints = restraints[restraints.sim_indices != -1]
+        target_signs = numpy.where(restraints.targets >= 0, 1.0, -1.0)
+        thresholds = numpy.abs(restraints.targets) - restraints.cutoffs
+        force.update_targets(restraints.sim_indices,
+            restraints.enableds, restraints.spring_constants, target_signs,
+            thresholds)
+        self.force_update_needed()
 
     def add_dihedral_restraints(self, restraints):
         '''

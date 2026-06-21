@@ -14,6 +14,8 @@ class ValidationTab(IsoldeTab):
         self.addWidget(RamaPanel(session, isolde, parent, gui))
         from .rotamer import RotamerPanel
         self.addWidget(RotamerPanel(session, isolde, parent, gui))
+        from .chiral import ChiralPanel
+        self.addWidget(ChiralPanel(session, isolde, parent, gui))
         from .clashes import ClashesPanel
         self.addWidget(ClashesPanel(session, isolde, parent, gui))
         from .unparameterised import UnparameterisedResiduesPanel

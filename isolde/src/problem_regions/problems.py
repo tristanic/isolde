@@ -14,12 +14,13 @@ class ProblemAggregator:
             'Protein sidechains':               self.get_rotamer_problems,
             'Protein backbone':                 self.get_protein_backbone_problems,
             'Clashes':                          self.get_clashes,
+            'Chiral outliers':                  self.get_chiral_problems,
         }
 
     from chimerax.isolde.molobject import (
         ProperDihedralRestraint, DistanceRestraint,
         AdaptiveDihedralRestraint, AdaptiveDistanceRestraint,
-        Rotamer, Rama
+        Rotamer, Rama, ChiralCenter
     )
     from chimerax.isolde.validation.clashes import Clash
 
@@ -30,7 +31,8 @@ class ProblemAggregator:
         'Reference distance restraints': AdaptiveDistanceRestraint,
         'Protein sidechains': Rotamer,
         'Protein backbone': Rama,
-        'Clashes': Clash
+        'Clashes': Clash,
+        'Chiral outliers': ChiralCenter
     }
 
     _registered_names = {val:key for key, val in _registered_types.items()}
@@ -161,3 +163,12 @@ class ProblemAggregator:
         from chimerax.isolde.validation.clashes import unique_clashes
         clashes = unique_clashes(structure.session, structure.atoms, severe_only=outliers_only)
         return clashes
+
+    @staticmethod
+    def get_chiral_problems(structure, outliers_only=True):
+        # Chiral centres whose handedness is wrong or badly strained, judged from
+        # the centre geometry (works on a static model, no simulation required).
+        # Non-outlier centres are never "problems", so outliers_only is moot here.
+        from chimerax.isolde.atomic.chirality import chiral_outliers
+        chirals, oriented, severity = chiral_outliers(structure.session, structure.atoms)
+        return chirals

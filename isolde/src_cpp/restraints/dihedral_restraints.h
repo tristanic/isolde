@@ -98,7 +98,7 @@ public:
 
     void set_satisfied_limit(double limit) { _satisfied_limit = limit; }
     double get_satisfied_limit() const { return _satisfied_limit; }
-    bool satisfied() const { return std::abs(offset()) < _satisfied_limit; }
+    virtual bool satisfied() const { return std::abs(offset()) < _satisfied_limit; }
 
     Coord center() const { return _dihedral->center(); }
 
@@ -116,7 +116,7 @@ public:
         return 0;
     }
     //! Returns (current angle) - (target angle) in radians
-    double offset() const {return util::wrapped_angle(_dihedral->angle()-get_target());}
+    virtual double offset() const {return util::wrapped_angle(_dihedral->angle()-get_target());}
     //! Returns (current angle) - (target angle) in degrees
     double offset_deg() const {return util::degrees(offset()); }
     //! Get the transform mapping an annotation primitive to the dihedral location
@@ -155,10 +155,27 @@ class ChiralRestraint:
 {
 public:
     ChiralRestraint(ChiralCenter *chiral, Dihedral_Restraint_Change_Mgr *mgr);
-    double get_target() const { return _dihedral->expected_angle(); }
+    //! Target signed chiral volume (Angstrom^3). Sign is the handedness.
+    double get_target() const { return _dihedral->expected_volume(); }
     void set_target(double target)
     {
         throw std::logic_error("Chiral restraint targets are immutable!");
+    }
+    //! (current - target) signed volume; large and opposite-signed when inverted.
+    double offset() const override
+    {
+        return _dihedral->chiral_volume() - get_target();
+    }
+    //! Satisfied iff the oriented (handedness-correct) volume is within `_cutoff`
+    //! of the target magnitude -- i.e. the centre is close to its ideal geometry.
+    //! Engaging near the target (rather than near zero) means a centre is held
+    //! firmly and reported unsatisfied as soon as it distorts toward inversion,
+    //! long before it actually flips.
+    bool satisfied() const override
+    {
+        double tgt = get_target();
+        double s = (tgt >= 0.0) ? 1.0 : -1.0;
+        return s * _dihedral->chiral_volume() >= std::abs(tgt) - _cutoff;
     }
     void set_enabled(bool flag)
     {
@@ -178,11 +195,11 @@ public:
     }
     void set_spring_constant(const double &k)
     {
-        _spring_constant = k<0 ? 0.0 : ( k > MAX_RADIAL_SPRING_CONSTANT ? MAX_RADIAL_SPRING_CONSTANT : k);
+        _spring_constant = k<0 ? 0.0 : ( k > MAX_CHIRAL_VOLUME_SPRING_CONSTANT ? MAX_CHIRAL_VOLUME_SPRING_CONSTANT : k);
        base_mgr()->track_change(this, change_tracker()->REASON_SPRING_CONSTANT_CHANGED);
     }
 
-    // Optional cutoff angle below which no force will be applied
+    // Oriented-volume dead-band (Angstrom^3) below which no force is applied.
     void set_cutoff(double cutoff)
     {
         _cutoff = cutoff; _cutoffs[1] = cutoff;

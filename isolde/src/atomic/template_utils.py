@@ -143,9 +143,12 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
     - the hydrogen addition has misfired, adding too many or too few hydrogens
     - this isn't actually the correct template for the residue
 
-    This method compares the graph representations of residue and template to
-    find the maximal overlap, returning a dict mapping atoms in the residue to
-    those in the template.
+    This method compares RDKit representations of residue and template to find
+    the maximal overlap, returning a dict mapping atoms in the residue to those
+    in the template. Matching is bond-order- and chirality-aware: an inverted
+    stereocentre (e.g. a D-sugar against an L-template) is excluded from the
+    correspondence so it is rebuilt from the template geometry rather than
+    silently kept with the wrong coordinates.
 
     Args:
         * residue
@@ -174,39 +177,74 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
         add_bonds_from_template_by_matched_names(residue, template)
     bonds = residue.atoms.intra_bonds
     if len(bonds) == 0:
-        from chimerax.core.errors import UserError
         raise UserError(f'Residue {residue.name} {residue.chain_id}{residue.number}{residue.insertion_code} has no bonds, and no atom names '
             f'in common with template {template.name}. This will need to be corrected manually.')
-    rg = residue_graph(residue, label=match_by)
-    from chimerax.atomic import Residue
-    from chimerax.atomic.cytmpl import TmplResidue
-    if isinstance(template, Residue):
-        tg = residue_graph(template, label=match_by)
-    elif isinstance(template, TmplResidue):
-        tg = template_graph(template, label=match_by)
+    from .template_proxy import TemplateProxy
+    from . import rdkit_bridge as rb
+    proxy = TemplateProxy(residue.session, template)
+
+    # Convert both sides to RDKit molecules with stereochemistry assigned from
+    # coordinates (heavy-atom graphs; H handled separately by name below).
+    use_names = (match_by == 'name' and atom_names_unique(residue))
+    res_mol, res_map = rb.residue_to_rdkit(residue)
+    tmpl_mol, tmpl_map = proxy.to_rdkit()
+    # The FMCS path *is* the correspondence engine, so a conversion failure there
+    # is fatal (and actionable). The name path only needs RDKit for the chirality
+    # check, so it degrades gracefully when conversion fails.
+    if not use_names:
+        if res_mol is None:
+            raise UserError(
+                f'Could not interpret the chemistry of residue {residue.name} '
+                f'{residue.chain_id}{residue.number}{residue.insertion_code}. It '
+                'may be missing atoms or have badly distorted geometry. Try '
+                'adding hydrogens, or delete it and rebuild with '
+                '"isolde add ligand".')
+        if tmpl_mol is None:
+            raise UserError(
+                f'Could not interpret the chemistry of template {proxy.name}.')
+
+    # Heavy-atom correspondence. In 'name' mode (unique names) trust the names;
+    # otherwise use the bond-order-aware maximum common subgraph.
+    amap = {}
+    if use_names:
+        for a in residue.atoms:
+            if a.element.number == 1:
+                continue
+            ta = proxy.find_atom(a.name)
+            if ta is not None and ta.element.name == a.element.name:
+                amap[a] = ta
     else:
-        raise TypeError('Template should be either a Residue or a TmplResidue')
-    residue_indices, template_indices, timed_out = rg.maximum_common_subgraph(tg, big_first=True)
-    if timed_out:
-        ri2, ti2, to2 = rg.maximum_common_subgraph(tg, timeout=5)
-        if len(ri2) > len(residue_indices):
-            residue_indices, template_indices = ri2, ti2
-        if to2:
-            residue.session.logger.warning('Timed out trying to match residue {} to template {}. Match may not be ideal.'.format(residue.name, template.name))
+        for ri, ti in rb.fmcs_index_correspondence(res_mol, tmpl_mol):
+            ra = res_map.get(ri)
+            ta = tmpl_map.get(ti)
+            if ra is not None and ta is not None:
+                amap[ra] = ta
+
+    # Inverted stereocentres are intentionally kept in the correspondence (they
+    # are the *same* atom, just mis-handed). Chirality is repaired separately and
+    # locally by correct_chirality_to_template() after the structural fix, which
+    # is far less disruptive than deleting and rebuilding a complete centre.
+
+    # Match hydrogens by name (the heavy-atom RDKit graphs carry no H), so any
+    # already-correct H aren't deleted as "extra" and missing template H are
+    # still flagged for building -- preserving the previous behaviour.
+    matched_t = set(amap.values())
+    for a in residue.atoms:
+        if a.element.number != 1:
+            continue
+        ta = proxy.find_atom(a.name)
+        if ta is not None and ta.element.number == 1 and ta not in matched_t:
+            amap[a] = ta
+            matched_t.add(ta)
+
     tatoms = template.atoms
     if limit_template_indices is not None:
-        import numpy
-        tatoms = [tatoms[i] for i in range(len(tatoms)) if i in limit_template_indices]
-        mask = numpy.in1d(template_indices, limit_template_indices)
-        residue_indices = residue_indices[mask]
-        template_indices = template_indices[mask]
-
-    amap = {residue.atoms[ri]: template.atoms[ti] for ri, ti in zip(residue_indices, template_indices)}
+        allowed = set(template.atoms[i] for i in limit_template_indices)
+        amap = {ra: ta for ra, ta in amap.items() if ta in allowed}
+        tatoms = [template.atoms[i] for i in limit_template_indices]
 
     residue_extra_atoms = Atoms(set(residue.atoms).difference(set(amap.keys())))
     template_extra_atoms = list(set(tatoms).difference(set(amap.values())))
-
-
 
     return amap, residue_extra_atoms, template_extra_atoms
 
@@ -275,7 +313,7 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
         warn_str += ', '.join(['->'.join(apair) for apair in renamed_atoms])
         session.logger.warning(warn_str)
     if rename_atoms_only:
-        return
+        return [], []
 
     still_missing = set(template_extra)
     remaining = len(still_missing)
@@ -311,8 +349,161 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
             continue
         if a2 not in a1.neighbors:
             add_bond(a1, a2)
+    # Now that the residue is structurally complete, repair any inverted chiral
+    # centres in place (rotate the smallest substituent rather than rebuild).
+    corrected, unfixable = [], []
+    try:
+        corrected, unfixable = correct_chirality_to_template(residue, template)
+    except Exception as e:
+        session.logger.info(f'Chirality correction skipped for {residue.name}: {e}')
     if rename_residue:
         residue.name = template.name
+    return corrected, unfixable
+
+# Largest substituent (heavy-atom count) we'll rigidly rotate to invert a chiral
+# centre. A methyl is 1; small groups (hydroxyl, amino, halide) are fine. Bigger
+# rigid groups swing too far and are left for delete-and-rebuild instead. Tunable.
+MAX_ROTATABLE_CHIRAL_BRANCH = 4
+
+
+def _branch_atoms(chiral_atom, root):
+    '''Atoms of the substituent branch rooted at `root` (a neighbour of
+    `chiral_atom`), traversing within the residue but never back through
+    `chiral_atom`.
+
+    Returns ``(atoms, cyclic)`` where ``cyclic`` is True if the branch loops back
+    to another neighbour of the chiral atom -- i.e. it is part of a ring and so
+    cannot be rigidly rotated to invert the centre.
+    '''
+    residue = chiral_atom.residue
+    # A branch is cyclic if it reaches ANOTHER neighbour of the chiral atom (a
+    # ring back through the centre). Reaching the root again is NOT cyclic -- it
+    # is just the branch's own internal bonding (e.g. a methyl's hydrogens are
+    # bonded to the root carbon), so the root must be excluded here.
+    ring_closers = set(chiral_atom.neighbors)
+    ring_closers.discard(root)
+    seen = {chiral_atom, root}
+    out = [root]
+    stack = [root]
+    cyclic = False
+    while stack:
+        a = stack.pop()
+        for nb in a.neighbors:
+            if nb is chiral_atom:
+                continue
+            if nb in ring_closers:
+                cyclic = True       # branch reconnects to the centre via a ring
+            if nb in seen or nb.residue is not residue:
+                continue
+            seen.add(nb)
+            out.append(nb)
+            stack.append(nb)
+    return out, cyclic
+
+
+def invert_chiral_center(chiral_atom):
+    '''Invert the stereochemistry at `chiral_atom` in place by rigidly rotating
+    its smallest exocyclic substituent branch 180 degrees about an axis through
+    the atom.
+
+    This flips the centre's handedness without *mirroring* the moved branch, so
+    the branch's internal geometry is preserved (a reflection could introduce new
+    stereo errors in a substituent that is itself chiral). The result is
+    geometrically strained by design; energy minimisation relaxes it into the
+    correct (now inverted) well, which it cannot escape without crossing the
+    planar inversion barrier.
+
+    Returns True if the centre was inverted, or False if it has no rotatable
+    (exocyclic) substituent -- e.g. an all-ring centre -- in which case the
+    caller should fall back to delete-and-rebuild.
+    '''
+    import numpy
+    from chimerax.geometry import rotation
+    neighbors = list(chiral_atom.neighbors)
+    if len(neighbors) < 3:
+        return False
+    # Rank rotatable (acyclic) substituent branches by heavy-atom count, then mass
+    # (so a lone hydrogen is preferred, then a methyl, etc.).
+    candidates = []
+    for nb in neighbors:
+        atoms, cyclic = _branch_atoms(chiral_atom, nb)
+        if cyclic:
+            continue
+        n_heavy = sum(1 for a in atoms if a.element.number != 1)
+        weight = sum(a.element.mass for a in atoms)
+        candidates.append((n_heavy, weight, nb, atoms))
+    if not candidates:
+        return False
+    candidates.sort(key=lambda c: (c[0], c[1]))
+    n_heavy, _, root, branch_atoms = candidates[0]
+    if n_heavy > MAX_ROTATABLE_CHIRAL_BRANCH:
+        # Even the smallest movable substituent is too large to rotate safely;
+        # leave this centre for delete-and-rebuild.
+        return False
+
+    C = numpy.array(chiral_atom.coord)
+    v = numpy.array(root.coord) - C
+    # A 180 deg rotation about any axis through C perpendicular to the C-root
+    # bond sends the root to the antipodal side, inverting the centre. Bias the
+    # axis away from the other substituents where possible to reduce clashes.
+    others = [numpy.array(nb.coord) - C for nb in neighbors if nb is not root]
+    ref = numpy.sum(others, axis=0) if others else numpy.array([1.0, 0.0, 0.0])
+    axis = numpy.cross(v, ref)
+    if numpy.linalg.norm(axis) < 1e-6:
+        for trial in ([1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]):
+            axis = numpy.cross(v, trial)
+            if numpy.linalg.norm(axis) >= 1e-6:
+                break
+    axis = axis / numpy.linalg.norm(axis)
+    tf = rotation(axis, 180.0, center=chiral_atom.coord)
+    for a in branch_atoms:
+        a.coord = tf * a.coord
+    return True
+
+
+def correct_chirality_to_template(residue, template):
+    '''Repair inverted chiral centres in `residue` so their handedness matches
+    `template`, in place.
+
+    Each mis-handed centre is fixed locally by :func:`invert_chiral_center`
+    (rotating its smallest substituent) rather than by deleting and rebuilding --
+    appropriate when the residue is structurally complete and only the
+    configuration is wrong. Relaxation of the (intentionally strained) result is
+    left to the caller's normal energy minimisation / simulation.
+
+    Returns ``(corrected, unfixable)``: lists of the chiral-atom names that were
+    corrected in place and that could not be corrected (e.g. all-ring centres with
+    no rotatable substituent). Both empty if nothing needed fixing.
+    '''
+    from . import rdkit_bridge as rb
+    from .template_proxy import TemplateProxy
+    session = residue.structure.session
+    res_mol, _ = rb.residue_to_rdkit(residue)
+    if res_mol is None:
+        return [], []
+    res_cip = rb.cip_codes_by_name(res_mol)
+    if not res_cip:
+        return [], []
+    proxy = TemplateProxy(session, template)
+    tmpl_mol, _ = proxy.to_rdkit()
+    if tmpl_mol is None:
+        return [], []
+    tmpl_cip = rb.cip_codes_by_name(tmpl_mol)
+    corrected = []
+    unfixable = []
+    for name, cip in res_cip.items():
+        ref = tmpl_cip.get(name)
+        if ref is None or ref == cip:
+            continue
+        atom = residue.find_atom(name)
+        if atom is None:
+            continue
+        if invert_chiral_center(atom):
+            corrected.append(name)
+        else:
+            unfixable.append(name)
+    return corrected, unfixable
+
 
 def add_bonds_from_template_by_matched_names(residue, template):
     from chimerax.atomic.struct_edit import add_bond

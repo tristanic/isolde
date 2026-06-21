@@ -35,9 +35,10 @@ void ChiralMgr::add_chiral_def(const std::string& resname,
     const std::vector<std::string>& s1,
     const std::vector<std::string>& s2,
     const std::vector<std::string>& s3,
-    double expected_angle)
+    double expected_angle,
+    double expected_volume)
 {
-    _defs[resname][atom_name] = Chiral_Def(s1, s2, s3, expected_angle);
+    _defs[resname][atom_name] = Chiral_Def(s1, s2, s3, expected_angle, expected_volume);
 }
 
 void ChiralMgr::add_chiral_def(const std::string& resname,
@@ -46,9 +47,10 @@ void ChiralMgr::add_chiral_def(const std::string& resname,
     const std::vector<std::string>& s2,
     const std::vector<std::string>& s3,
     double expected_angle,
-    const std::vector<bool>& externals)
+    const std::vector<bool>& externals,
+    double expected_volume)
 {
-    _defs[resname][atom_name] = Chiral_Def(s1, s2, s3, expected_angle, externals);
+    _defs[resname][atom_name] = Chiral_Def(s1, s2, s3, expected_angle, externals, expected_volume);
 }
 
 const Chiral_Def& ChiralMgr::get_chiral_def(
@@ -135,7 +137,8 @@ ChiralCenter* ChiralMgr::_new_chiral(Atom* center)
         }
     }
     ChiralCenter* c = new ChiralCenter(
-        center, substituents[0], substituents[1], substituents[2], def.expected_angle);
+        center, substituents[0], substituents[1], substituents[2], def.expected_angle,
+        def.expected_volume);
     _add_chiral(c);
     return c;
 

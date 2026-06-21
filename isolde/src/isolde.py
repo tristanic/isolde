@@ -832,6 +832,7 @@ class Isolde():
             from . import session_extensions as sx
             sx.get_rota_annotator(m)
             sx.get_rama_annotator(m)
+            sx.get_chiral_annotator(m)
             self._initialize_maps(m)
             self.triggers.activate_trigger('selected model changed', data=m)
 

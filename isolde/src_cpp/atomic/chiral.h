@@ -11,6 +11,7 @@
 
 
 #include "dihedral.h"
+#include "../constants.h"
 
 #ifndef ISOLDE_CHIRAL
 #define ISOLDE_CHIRAL
@@ -41,11 +42,34 @@ class ChiralCenter: public Dihedral, public pyinstance::PythonInstance<ChiralCen
 
 public:
     ChiralCenter() {} // null constructor
-    ChiralCenter(Atom* center, Atom* s1, Atom* s2, Atom* s3, double expected_angle);
+    ChiralCenter(Atom* center, Atom* s1, Atom* s2, Atom* s3, double expected_angle,
+        double expected_volume=NAN_NOT_SET);
     // Returns true if the central atom is visible;
     bool visible() const { return _atoms[0]->visible(); }
     double expected_angle() const { return _expected_angle; }
     double deviation() const { return util::wrapped_angle(angle()-expected_angle()); }
+    //! Signed chiral volume V = (s1-c).[(s2-c)x(s3-c)] in Angstrom^3. Its sign is
+    //! the handedness; it is zero at the planar inversion barrier and monotonic
+    //! across it. The vector ordering MUST match the OpenMM restraint expression.
+    double chiral_volume() const;
+    //! Target signed volume for the correct isomer (Angstrom^3). Computed by the
+    //! generator from the reference (CCD ideal) geometry and supplied at
+    //! construction. If not supplied, falls back to sign(expected_angle) times a
+    //! nominal ideal-tetrahedral magnitude.
+    double expected_volume() const;
+    //! Signed volume of the tetrahedron of the FOUR substituents
+    //! (s1-s4).[(s2-s4)x(s3-s4)], using the lowest-priority (4th) substituent as
+    //! apex. Unlike chiral_volume() (centre + 3 substituents) this cannot be
+    //! fooled by the 4th substituent being stuck on the wrong side, so it is the
+    //! robust handedness measure used for *validation* (the restraint stays on
+    //! chiral_volume()). Falls back to chiral_volume() for 3-coordinate centres.
+    double true_chiral_volume() const;
+    //! The lowest-priority (4th) substituent, dropped from chiral_volume()'s
+    //! improper. nullptr for a 3-coordinate centre. Also the natural axis for
+    //! orienting validation markup. Computed from the centre's CURRENT neighbours
+    //! on each call (never cached), so it can never dangle when atoms are
+    //! deleted/added and always reflects the live bonding.
+    Atom* fourth_substituent() const;
     Atom* chiral_atom() const { return _atoms[0]; }
     const Bonds& bonds() const { return _bonds; }
 
@@ -53,6 +77,7 @@ private:
     const char* err_msg_not_bonded() const
         { return "Substituent atoms must all be bonded to the chiral center"; }
     double _expected_angle;
+    double _expected_volume;
     // const std::string _r = "R";
     // const std::string _s = "S";
 

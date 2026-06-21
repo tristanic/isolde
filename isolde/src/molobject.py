@@ -326,12 +326,12 @@ class ChiralMgr(_DihedralMgr):
         return self._chiral_dict
 
     def _add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
-        s3_names, expected_angle, externals=[0,0,0]):
+        s3_names, expected_angle, externals=[0,0,0], expected_volume=None):
         f = c_function('chiral_mgr_add_chiral_def',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                 ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                 ctypes.c_size_t,ctypes.c_size_t, ctypes.c_size_t,
-                ctypes.c_double, ctypes.c_void_p)
+                ctypes.c_double, ctypes.c_void_p, ctypes.c_double)
             )
         rn_key = ctypes.py_object()
         rn_key.value = residue_name
@@ -344,13 +344,17 @@ class ChiralMgr(_DihedralMgr):
             sname_objs.append(numpy.array(sname_list, object))
         ext = numpy.empty(3, bool)
         ext[:] = externals
+        if expected_volume is None:
+            from math import nan
+            expected_volume = nan
 
         f(self._c_pointer, ctypes.byref(rn_key), ctypes.byref(cn_key),
-            *[pointer(n) for n in sname_objs], *snums, expected_angle, pointer(ext))
+            *[pointer(n) for n in sname_objs], *snums, expected_angle, pointer(ext),
+            expected_volume)
 
 
     def add_chiral_def(self, residue_name, chiral_atom_name, s1_names, s2_names,
-        s3_names, expected_angle, externals=[0,0,0]):
+        s3_names, expected_angle, externals=[0,0,0], expected_volume=None):
         '''
         Add a definition to the dictionary of known chiral centres. The
         definition will only be valid for the current session. All instances of
@@ -371,18 +375,19 @@ class ChiralMgr(_DihedralMgr):
             * s3_names:
                 - a list of potential names for the third substituent
             * expected_angle:
-                - the expected dihedral angle (in radians) for the chiral centre
-                  at equilibrium. While it is best to provide more accurate
-                  measures based on an energy-minimised model of your compound,
-                  fairly typical values are 0.6 for a (S) isomer and -0.6 for a
-                  (R) isomer. Note that chirality restraints only become active
-                  for deviations more than 15 degrees (0.26 radians), from the
-                  expected angle, relying on the forcefield parameterisation
-                  inside that range.
+                - the expected improper dihedral angle (in radians) for the
+                  correct isomer. Its SIGN sets the target handedness (positive
+                  for S, negative for R); the restraint itself now acts on the
+                  signed chiral volume.
             * externals:
                 - an array of three Boolean values, where True indicates that
                   the corresponding atom should be outside the main atom's
                   residue.
+            * expected_volume:
+                - optional target signed chiral volume in Angstrom^3, measured
+                  from a reference (ideal) geometry. Strongly preferred: it lets
+                  the restraint hold the centre near its true geometry. If omitted,
+                  a nominal magnitude with the angle's sign is used.
             '''
         cdict = self._chiral_dict
         try:
@@ -395,7 +400,7 @@ class ChiralMgr(_DihedralMgr):
             cdict[residue_name] = {}
         cdict[residue_name][chiral_atom_name] = [[s1_names, s2_names, s3_names], expected_angle]
         self._add_chiral_def(residue_name, chiral_atom_name, s1_names, s2_names,
-            s3_names, expected_angle, externals)
+            s3_names, expected_angle, externals, expected_volume)
 
     def get_chiral(self, atom, create=True):
         '''
@@ -4746,6 +4751,19 @@ class ChiralCenter(_Dihedral):
         doc='The equilibrium angle of the chiral dihedral in its correct isomeric state. Read only.')
     deviation = c_property('chiral_center_deviation', float64, read_only=True,
         doc='The difference between the current dihedral angle and :attr:`expected_angle`. Read only.')
+    chiral_volume = c_property('chiral_center_chiral_volume', float64, read_only=True,
+        doc='Signed chiral volume V=(s1-c).[(s2-c)x(s3-c)] in Angstrom^3. Its sign is '
+            'the handedness (S positive, R negative); zero at the planar inversion '
+            'barrier. Read only.')
+    expected_volume = c_property('chiral_center_expected_volume', float64, read_only=True,
+        doc='Target signed chiral volume: sign from :attr:`expected_angle`, nominal '
+            'ideal-tetrahedral magnitude. Read only.')
+    true_chiral_volume = c_property('chiral_center_true_chiral_volume', float64, read_only=True,
+        doc='Signed volume of the four-substituent tetrahedron (Angstrom^3). Unlike '
+            ':attr:`chiral_volume` this cannot be fooled by the 4th substituent being '
+            'on the wrong side, so it is used for validation. Read only.')
+    fourth_substituent = c_property('chiral_center_fourth_substituent', cptr, astype=convert.atom_or_none, read_only=True,
+        doc='The lowest-priority (4th) substituent, or None for a 3-coordinate centre. Read only.')
     chiral_atom = c_property('chiral_center_chiral_atom', cptr, astype=convert.atom_or_none, read_only=True,
         doc='The chiral atom. Read only.')
     center = c_property('chiral_center_center', float64, value_count=3, read_only=True,
@@ -5364,9 +5382,15 @@ class ChiralRestraint(State):
     '''
     Handles the restraint of a single chiral centre in simulations. Unlike other
     restraints, :class:`ChiralRestraint` instances are enabled by default. In
-    addition, :attr:`target` is immutable, and set to the equilibrium angle of
-    the chiral improper dihedral (defined in `dictionaries/chirals.json` and
-    viewable via :attr:`ChiralMgr.chiral_center_dict`).
+    addition, :attr:`target` is immutable.
+
+    The restraint acts on the **signed chiral volume**
+    :math:`V=(s_1-c)\\cdot[(s_2-c)\\times(s_3-c)]` (Angstrom^3), not the improper
+    dihedral angle. The volume's sign is the handedness and it is monotonic across
+    the planar inversion barrier, so an inverted centre is always driven back and
+    is never reported satisfied. The target sign comes from the centre's
+    `expected_angle` (a proven sign identity), so the `chirals.json` /
+    :attr:`ChiralMgr.chiral_center_dict` definitions are unchanged.
     '''
     SESSION_SAVE=True
     def __init__(self, c_pointer):
@@ -5412,23 +5436,24 @@ class ChiralRestraint(State):
     mgr = c_property('chiral_restraint_get_manager', cptr, astype=_chiral_restraint_mgr, read_only=True,
         doc=':class:`ChiralRestraintMgr` for this restraint. Read only.')
     target = c_property('chiral_restraint_target', float64, read_only = True,
-        doc = 'Target angle for this restraint in radians. Read only.')
+        doc = 'Target signed chiral volume in Angstrom^3 (sign is the handedness). Read only.')
     dihedral = c_property('chiral_restraint_chiral_center', cptr, astype=_chiral_center_or_none, read_only=True,
         doc = 'The restrained :py:class:`ChiralCenter`. Read only.')
     offset = c_property('chiral_restraint_offset', float64, read_only = True,
-        doc = 'Difference between current and target angle in radians. Read only.')
+        doc = 'Current signed chiral volume minus target, in Angstrom^3. Large and '
+              'opposite-signed when the centre is inverted. Read only.')
     cutoff = c_property('chiral_restraint_cutoff', float64,
-        doc = 'Cutoff angle offset below which no restraint will be applied. Can be set.')
+        doc = 'Oriented-volume dead-band (Angstrom^3) below which no restraint is applied. Can be set.')
     enabled = c_property('chiral_restraint_enabled', bool,
         doc = 'Enable/disable this restraint or get its current state.')
     spring_constant = c_property('chiral_restraint_k', float64,
-        doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} rad^{-2}`')
-    satisfied_limit = c_property('chiral_restraint_satisfied_limit', float64, 
-        doc = 'Deviation from target angle beyond which restraint will be considered unsatisfied.')
+        doc = 'Get/set the spring constant for this restraint in :math:`kJ mol^{-1} \\AA^{-6}`')
+    satisfied_limit = c_property('chiral_restraint_satisfied_limit', float64,
+        doc = 'Unused for chiral restraints (satisfied is decided by the oriented-volume dead-band).')
     satisfied = c_property('chiral_restraint_satisfied', bool, read_only=True,
-        doc='Returns True if the current deviation from the target angle is less than satisfied_limit.')
+        doc='True if the oriented (handedness-correct) chiral volume exceeds the dead-band cutoff.')
     unsatisfied = c_property('chiral_restraint_unsatisfied', bool, read_only=True,
-        doc='Returns True if the current deviation from the target angle is greater than or equal to satisfied_limit.')
+        doc='True if the oriented chiral volume is at or below the dead-band cutoff (degrading toward inversion).')
     sim_index = c_property('chiral_restraint_sim_index', int32,
         doc='''
         Index of this restraint in the relevant Force in a running simulation.

@@ -68,6 +68,40 @@ chiral_center_deviation(void *chirals, size_t n, double *angles)
     error_wrap_array_get(c, n, &ChiralCenter::deviation, angles);
 }
 
+extern "C" EXPORT void
+chiral_center_chiral_volume(void *chirals, size_t n, double *volumes)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    error_wrap_array_get(c, n, &ChiralCenter::chiral_volume, volumes);
+}
+
+extern "C" EXPORT void
+chiral_center_expected_volume(void *chirals, size_t n, double *volumes)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    error_wrap_array_get(c, n, &ChiralCenter::expected_volume, volumes);
+}
+
+extern "C" EXPORT void
+chiral_center_true_chiral_volume(void *chirals, size_t n, double *volumes)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    error_wrap_array_get(c, n, &ChiralCenter::true_chiral_volume, volumes);
+}
+
+extern "C" EXPORT void
+chiral_center_fourth_substituent(void *chirals, size_t n, pyobject_t *atoms)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    try {
+        for (size_t i=0; i<n; ++i) {
+            *atoms++ = (*c++)->fourth_substituent();
+        }
+    } catch(...) {
+        molc_error();
+    }
+}
+
 
 extern "C" EXPORT void
 chiral_center_chiral_atom(void *chirals, size_t n, pyobject_t *atoms)
