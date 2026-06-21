@@ -334,6 +334,41 @@ def fragment_by_names(mol, keep_names):
     return m
 
 
+def rigid_fragments(mol):
+    '''Partition ``mol`` into rigid fragments for block placement: the connected
+    components left after cutting *rotatable* bonds (acyclic single bonds between
+    two non-terminal atoms). Ring systems and their terminal substituents
+    (methyls, hydroxyls, halides, ...) stay together in one fragment.
+
+    Returns a list of sets of heavy-atom names (the ``cxName`` prop). Atoms with
+    no name (e.g. the hydrogens the CCD mol omits) are not included; callers
+    assign each hydrogen to its parent heavy atom's fragment.
+    '''
+    # RDKit's standard rotatable-bond pattern: single, not-in-ring, between two
+    # non-terminal (degree > 1), non-triple-bonded atoms. On a heavy-atom-only mol
+    # this keeps terminal heavy groups (a methyl C, a hydroxyl O) with their parent.
+    patt = Chem.MolFromSmarts('[!$(*#*)&!D1]-!@[!$(*#*)&!D1]')
+    bond_idx = []
+    for a1, a2 in mol.GetSubstructMatches(patt):
+        b = mol.GetBondBetweenAtoms(a1, a2)
+        if b is not None:
+            bond_idx.append(b.GetIdx())
+    if bond_idx:
+        # addDummies=False keeps atom count/order, so frag indices map back to mol.
+        groups = Chem.GetMolFrags(Chem.FragmentOnBonds(mol, bond_idx, addDummies=False))
+    else:
+        groups = [tuple(range(mol.GetNumAtoms()))]
+    out = []
+    for grp in groups:
+        names = set(
+            mol.GetAtomWithIdx(i).GetProp(NAME_PROP) for i in grp
+            if mol.GetAtomWithIdx(i).HasProp(NAME_PROP)
+        )
+        if names:
+            out.append(names)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # ChimeraX-side helpers (main thread only)
 # ---------------------------------------------------------------------------

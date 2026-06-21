@@ -261,6 +261,103 @@ def add_metal_bonds_from_template(residue, template):
             if not rn in rmet.neighbors:
                 add_bond(rmet, rn)
 
+
+def _place_rigid_blocks(residue, template, missing):
+    '''Place as many of the `missing` template atoms as possible by rigid-block
+    superposition, returning the template atoms NOT placed (for the caller's
+    per-atom fallback).
+
+    The template is decomposed into rigid fragments (ring systems + terminal
+    groups; rotatable bonds cut). For each fragment that still has >=3 heavy atoms
+    present in the residue, the template fragment is superposed onto those anchors
+    (`align_points`) and the fragment's missing atoms -- hydrogens included, riding
+    along in the same rigid frame -- are added by that transform. This avoids the
+    error accumulation of the per-atom internal-coordinate builder and, because Hs
+    travel with their heavy neighbours, places them on the correct side.
+    '''
+    import numpy
+    from . import rdkit_bridge as rb
+    session = residue.structure.session
+    mol = None
+    try:
+        mol, _status = rb.template_to_rdkit(session, template.name)
+    except Exception:
+        mol = None
+    if mol is None:
+        try:
+            mol = rb.residue_to_rdkit(template)
+        except Exception:
+            mol = None
+    if mol is None:
+        return set(missing)
+    try:
+        heavy_groups = rb.rigid_fragments(mol)
+    except Exception:
+        heavy_groups = []
+    if not heavy_groups:
+        return set(missing)
+    name_to_frag = {}
+    for fid, names in enumerate(heavy_groups):
+        for nm in names:
+            name_to_frag[nm] = fid
+
+    def frag_of(tatom):
+        fid = name_to_frag.get(tatom.name)
+        if fid is not None:
+            return fid
+        # Hydrogens (and anything the CCD mol omitted) inherit a heavy neighbour's
+        # fragment.
+        for nb in tatom.neighbors:
+            fid = name_to_frag.get(nb.name)
+            if fid is not None:
+                return fid
+        return None
+
+    from collections import defaultdict
+    frag_atoms = defaultdict(list)
+    for a in template.atoms:
+        fid = frag_of(a)
+        if fid is not None:
+            frag_atoms[fid].append(a)
+
+    from chimerax.geometry import align_points
+    from chimerax.atomic.struct_edit import add_atom
+    placed = set()
+    for fid, tatoms in frag_atoms.items():
+        frag_missing = [a for a in tatoms if a in missing]
+        if not frag_missing:
+            continue
+        # Anchors: this fragment's heavy template atoms already present in the
+        # residue (heavy only -- more reliable than possibly-sparse hydrogens).
+        anchors = []
+        for ta in tatoms:
+            if ta.element.number == 1:
+                continue
+            ra = residue.find_atom(ta.name)
+            if ra is not None:
+                anchors.append((ta, ra))
+        if len(anchors) < 3:
+            continue  # leave to the per-atom fallback / 3b torsion placement
+        t_coords = numpy.array([ta.coord for ta, ra in anchors])
+        r_coords = numpy.array([ra.coord for ta, ra in anchors])
+        tf, rms = align_points(t_coords, r_coords)
+        bfactor = float(numpy.mean([ra.bfactor for ta, ra in anchors]))
+        occupancy = float(numpy.mean([ra.occupancy for ta, ra in anchors]))
+        for ta in frag_missing:
+            if residue.find_atom(ta.name) is not None:
+                continue
+            add_atom(
+                ta.name,
+                ta.element,
+                residue,
+                tf * ta.coord,
+                occupancy=occupancy,
+                bfactor=bfactor
+            )
+            placed.add(ta)
+    return set(missing) - placed
+
+
 def fix_residue_from_template(residue, template, rename_atoms_only=False,
         rename_residue=False, match_by='name', template_indices=None):
     import numpy
@@ -279,11 +376,11 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
             final_string = (f'Try deleting this residue and replacing it with "isolde add aa {residue.name}"')
         else:
             final_string = ('Adding of nucleic acid residues is not currently possible in ISOLDE. To move forward, just delete this residue.')
-            
+
         raise UserError(f'Residue {residue.name} {residue.chain_id}{residue.number}{residue.insertion_code} '
             f'has only {len(matched_nodes)} atoms in common with the template. At least 3 are needed to rebuild automatically. '
             f'{final_string}')
-            
+
     m = residue.structure
     session = m.session
     rnames = set(residue.atoms.names)
@@ -315,7 +412,10 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     if rename_atoms_only:
         return [], []
 
-    still_missing = set(template_extra)
+    # Place whole rigid fragments by superposition first (no error accumulation);
+    # anything that can't be block-placed (e.g. a fully-missing fragment) falls
+    # through to the per-atom internal-coordinate builder below.
+    still_missing = _place_rigid_blocks(residue, template, set(template_extra))
     remaining = len(still_missing)
     found = set()
     while remaining:
@@ -475,33 +575,57 @@ def correct_chirality_to_template(residue, template):
     corrected in place and that could not be corrected (e.g. all-ring centres with
     no rotatable substituent). Both empty if nothing needed fixing.
     '''
+    import numpy
     from . import rdkit_bridge as rb
     from .template_proxy import TemplateProxy
     session = residue.structure.session
-    res_mol, _ = rb.residue_to_rdkit(residue)
-    if res_mol is None:
-        return [], []
-    res_cip = rb.cip_codes_by_name(res_mol)
-    if not res_cip:
-        return [], []
     proxy = TemplateProxy(session, template)
     tmpl_mol, _ = proxy.to_rdkit()
     if tmpl_mol is None:
         return [], []
+    # The clean template tells us WHICH atoms are stereocentres (reliable CIP).
     tmpl_cip = rb.cip_codes_by_name(tmpl_mol)
+    if not tmpl_cip:
+        return [], []
+
+    def _signed_vol(center, subs):
+        c = numpy.asarray(center)
+        v = [numpy.asarray(s) - c for s in subs]
+        return float(numpy.dot(v[0], numpy.cross(v[1], v[2])))
+
     corrected = []
     unfixable = []
-    for name, cip in res_cip.items():
-        ref = tmpl_cip.get(name)
-        if ref is None or ref == cip:
-            continue
+    for name in tmpl_cip:
         atom = residue.find_atom(name)
-        if atom is None:
+        tatom = template.find_atom(name)
+        if atom is None or tatom is None:
             continue
-        if invert_chiral_center(atom):
-            corrected.append(name)
-        else:
-            unfixable.append(name)
+        # Compare handedness by GEOMETRY -- the signed chiral volume of three
+        # common heavy substituents, in the SAME order, in the residue vs the
+        # template. This is robust to stripped hydrogens and to mis-perceived
+        # bonds (e.g. a malformed linkage typed aromatic), unlike comparing RDKit
+        # CIP codes of the residue, which can flip a correctly-placed centre when
+        # the residue is mid-rebuild or chemically mis-perceived.
+        pairs = []
+        for tn in tatom.neighbors:
+            if tn.element.number == 1:
+                continue
+            ra = residue.find_atom(tn.name)
+            if ra is not None and ra.element.number > 1:
+                pairs.append((ra, tn))
+            if len(pairs) == 3:
+                break
+        if len(pairs) < 3:
+            continue
+        rv = _signed_vol(atom.coord, [ra.coord for ra, tn in pairs])
+        tv = _signed_vol(tatom.coord, [tn.coord for ra, tn in pairs])
+        if rv == 0.0 or tv == 0.0:
+            continue
+        if (rv > 0) != (tv > 0):
+            if invert_chiral_center(atom):
+                corrected.append(name)
+            else:
+                unfixable.append(name)
     return corrected, unfixable
 
 
