@@ -359,7 +359,8 @@ def _place_rigid_blocks(residue, template, missing):
 
 
 def fix_residue_from_template(residue, template, rename_atoms_only=False,
-        rename_residue=False, match_by='name', template_indices=None):
+        rename_residue=False, match_by='name', template_indices=None,
+        optimise_torsions=True):
     import numpy
     from chimerax.atomic import Atoms
     from chimerax.atomic.struct_edit import add_bond
@@ -456,9 +457,142 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
         corrected, unfixable = correct_chirality_to_template(residue, template)
     except Exception as e:
         session.logger.info(f'Chirality correction skipped for {residue.name}: {e}')
+    # Settle freshly-built pendant groups into density / out of clashes by
+    # optimising the torsion about each rotatable bond that moves them. The block
+    # placement above fixes each fragment's internal geometry but leaves the
+    # inter-fragment torsions at whatever the template happened to have.
+    if optimise_torsions and len(template_extra):
+        try:
+            _optimise_pendant_torsions(
+                residue, template, set(a.name for a in template_extra))
+        except Exception as e:
+            session.logger.info(
+                f'Pendant-torsion optimisation skipped for {residue.name}: {e}')
     if rename_residue:
         residue.name = template.name
     return corrected, unfixable
+
+
+def _best_torsion_angle(angles, scores, eps=0.02):
+    '''Pick the lowest-scoring angle, but on a (near-)tie prefer the one closest
+    to 0 -- i.e. closest to the template/rebuild torsion. Without this, a tie (no
+    clashes, no map) would let argmin pick an arbitrary angle and gratuitously
+    rotate an already-good pendant. Scores within ``eps`` are treated as tied.
+    '''
+
+    def dist_from_zero(a):
+        a = a % 360
+        return min(a, 360 - a)
+
+    return min(
+        zip(angles, scores), key=lambda asc: (round(asc[1] / eps), dist_from_zero(asc[0]))
+    )[0]
+
+
+def _optimise_pendant_torsions(
+    residue, template, built_names, map_weight=1.0, clash_weight=1.0
+):
+    '''Optimise the torsion about each rotatable bond that moves freshly-built
+    atoms, to settle pendant groups into density (when an MDFF map is available)
+    and out of clashes. A coarse 30-degree scan seeds a local +/-15-degree refine
+    per bond -- robust and gradient-free, and a no-op where the template torsion
+    is already best (so it never gratuitously disturbs a good rebuild).
+
+    Bonds are taken from the template's rigid-fragment decomposition (an
+    inter-fragment, in-residue single bond is rotatable); the moving side is the
+    smaller of the two, and only bonds whose moving side contains a freshly-built
+    atom are touched. Parent bonds (larger moving side) are optimised before their
+    children so a pendant's frame is settled before its own substituents.
+    '''
+    from . import rdkit_bridge as rb
+    from ..refine.fit_utils import near_atoms, pose_score
+    model = residue.structure
+    session = model.session
+
+    mol = None
+    try:
+        mol, _status = rb.template_to_rdkit(session, template.name)
+    except Exception:
+        mol = None
+    if mol is None:
+        return []
+    try:
+        heavy_groups = rb.rigid_fragments(mol)
+    except Exception:
+        return []
+    if len(heavy_groups) < 2:
+        return []
+    name_to_frag = {}
+    for fid, names in enumerate(heavy_groups):
+        for nm in names:
+            name_to_frag[nm] = fid
+
+    # Collect rotatable bonds: in-residue single bonds between heavy atoms in two
+    # different rigid fragments, whose smaller side carries a freshly-built atom.
+    jobs = []
+    for b in residue.atoms.intra_bonds:
+        a1, a2 = b.atoms
+        if a1.element.number == 1 or a2.element.number == 1:
+            continue
+        f1 = name_to_frag.get(a1.name)
+        f2 = name_to_frag.get(a2.name)
+        if f1 is None or f2 is None or f1 == f2:
+            continue
+        try:
+            side1 = b.side_atoms(a1)
+            side2 = b.side_atoms(a2)
+        except Exception:
+            # In a ring/cycle -- not actually rotatable; skip.
+            continue
+        if len(side1) <= len(side2):
+            moving_atom, moving_side = a1, side1
+        else:
+            moving_atom, moving_side = a2, side2
+        if not any(a.name in built_names for a in moving_side):
+            continue
+        jobs.append((b, moving_atom, len(moving_side)))
+
+    if not jobs:
+        return []
+    # Parent-first: larger moving side before smaller.
+    jobs.sort(key=lambda j: j[2], reverse=True)
+
+    from chimerax.geometry import rotation
+    from ..refine.fit_utils import active_mdff_map
+    volume, _gk = active_mdff_map(model)
+
+    optimised = []
+    coarse = list(range(0, 360, 30))
+    for b, moving_atom, _size in jobs:
+        moving_side = b.side_atoms(moving_atom)
+        # The moving-side atom sits on the rotation axis, so axis/centre are fixed
+        # across all trial angles; snapshot once and apply each angle absolutely.
+        centre = moving_atom.coord
+        axis = centre - b.other_atom(moving_atom).coord
+        orig = moving_side.coords.copy()
+        surrounds = near_atoms(moving_side, model, 5.0)
+
+        def score_at(angle):
+            tf = rotation(axis, angle, centre)
+            moving_side.coords = tf.transform_points(orig)
+            return pose_score(
+                session,
+                moving_side,
+                surrounds,
+                volume,
+                map_weight=map_weight,
+                clash_weight=clash_weight
+            )
+
+        best = _best_torsion_angle(coarse, [score_at(a) for a in coarse])
+        fine = [best + d for d in range(-15, 16, 5)]
+        best = _best_torsion_angle(fine, [score_at(a) for a in fine])
+        # Leave the moving side at the best pose.
+        score_at(best)
+        if best % 360 != 0:
+            optimised.append((moving_atom.name, best % 360))
+    return optimised
+
 
 # Largest substituent (heavy-atom count) we'll rigidly rotate to invert a chiral
 # centre. A methyl is 1; small groups (hydroxyl, amino, halide) are fine. Bigger

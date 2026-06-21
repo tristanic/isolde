@@ -9,6 +9,8 @@
 
 
 from math import radians
+from .fit_utils import clash_score, near_atoms
+
 _lbfgs_opts = {
     'eps': radians(2),
     'ftol': 1e-4,
@@ -340,35 +342,13 @@ class Backrub:
         return result
         # return -sum(self._density_map.interpolated_values(check_atoms.coords))
 
+
 def _true():
     return True
 
-def clash_score(session, atoms, surrounds):
-    '''
-    Returns the sum of overlap distances for clashing atoms
-    '''
-    from chimerax.clashes import clashes
-    clash_dict = clashes.find_clashes(session, atoms, restrict=surrounds)
-    # Make list of unique clashing atom pairs and their distances
-    seen = set()
-    clash_sum = 0
-    for a1, clashes in clash_dict.items():
-        seen.add(a1)
-        for a2, dist in clashes.items():
-            if a2 in seen:
-                continue
-            clash_sum += dist
-    return clash_sum
 
-
-def near_atoms(atoms, model, distance):
-    from chimerax.geometry import find_close_points
-    all_atoms = model.atoms
-    other_atoms = all_atoms.subtract(atoms)
-    other_coords = other_atoms.coords
-    test_coords = atoms.coords
-    a, _ = find_close_points(other_coords, test_coords, distance)
-    return other_atoms.filter(a)
+# clash_score() and near_atoms() now live in fit_utils and are imported above so
+# the rebuild torsion optimiser and Backrub score poses identically.
 
 
 def apply_backrub(isolde, mdff_mgr, residue, clash_weight=0.5, focus=False):
