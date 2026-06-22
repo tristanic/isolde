@@ -124,19 +124,18 @@ class ChiralAnnotator(Model):
         )
         # Only mark up centres whose atom is actually shown, consistent with
         # ISOLDE's other validation glyphs -- so hiding part of the model hides its
-        # markup too. "Shown" is ribbon-aware (like the Rama annotator): an atom
-        # counts if it is displayed OR its residue is shown as ribbon (hidden only
-        # by the ribbon), so backbone chiral centres still get markup in the usual
-        # ribbon view. Refreshed on display/hide changes (see
+        # markup too. "Shown" is ribbon-aware, exactly as the Rama annotator's
+        # Atom visible-ignoring-ribbon test (chiral.cpp):
+        #     display() && !(hide() & ~HIDE_RIBBON)
+        # i.e. displayed AND not hidden by anything other than the ribbon, so
+        # backbone chiral centres keep their markup in the usual ribbon view but a
+        # genuinely hidden atom loses it. Refreshed on display/hide changes (see
         # _update_graphics_if_needed). TODO: a per-validator option to keep outlier
         # markup visible even for hidden atoms.
         if len(chirals):
             cas = chirals.chiral_atoms
-            ribbon_shown = (
-                cas.residues.ribbon_displays
-                & ((cas.hides & cas.HIDE_RIBBON) != 0)
-            )
-            chirals = chirals[cas.displays | ribbon_shown]
+            shown = cas.displays & ((cas.hides & ~cas.HIDE_RIBBON) == 0)
+            chirals = chirals[shown]
         self._current_chirals = chirals
         self._rebuild_places()
         return DEREGISTER
