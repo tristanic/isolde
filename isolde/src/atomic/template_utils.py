@@ -366,7 +366,22 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     from chimerax.atomic.struct_edit import add_bond
     if any([numpy.any(numpy.isnan(a.coord)) for a in template.atoms]):
         raise TypeError('Template is missing one or more atom coordinates!')
-    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(residue, template, limit_template_indices=template_indices, match_by=match_by)
+    # Everything downstream matches and bonds atoms by name. Heavy atoms are safe
+    # (matched via the bond-aware graph and renamed to the template's names), but
+    # hydrogens are matched purely by name -- and a residue's existing H (e.g. from
+    # `addh`) may follow a different convention than the template, so the template's
+    # "H21" can sit on a different atom than the residue's "H21". That cross-matches
+    # hydrogens, yielding duplicated and cross-bonded H. Strip them up front so
+    # every H is (re)built (plain path) or re-added to match the MD template
+    # (heavy-only path) with the template's own naming. rename_atoms_only must stay
+    # non-destructive, so it keeps its hydrogens.
+    if not rename_atoms_only:
+        existing_h = residue.atoms[residue.atoms.element_names == 'H']
+        if len(existing_h):
+            existing_h.delete()
+    matched_nodes, residue_extra, template_extra = find_maximal_isomorphous_fragment(
+        residue, template, limit_template_indices=template_indices, match_by=match_by
+    )
 
     if len(matched_nodes) < 3:
         from chimerax.atomic import Residue
@@ -564,6 +579,7 @@ def _optimise_pendant_torsions(
     # Parent-first: larger moving side before smaller.
     jobs.sort(key=lambda j: j[2], reverse=True)
 
+    from chimerax.atomic import Atoms
     from chimerax.geometry import rotation
     from ..refine.fit_utils import active_mdff_map
     volume, _gk = active_mdff_map(model)
@@ -577,7 +593,16 @@ def _optimise_pendant_torsions(
         centre = moving_atom.coord
         axis = centre - b.other_atom(moving_atom).coord
         orig = moving_side.coords.copy()
-        surrounds = near_atoms(moving_side, model, 5.0)
+        # Clash partners must cover the WHOLE rotational sweep, not just the start
+        # pose -- otherwise a pose that swings the group into nearby protein isn't
+        # penalised (the offending atoms were never in the context set). Union the
+        # neighbours found at every coarse angle.
+        near = set()
+        for ang in coarse:
+            moving_side.coords = rotation(axis, ang, centre).transform_points(orig)
+            near.update(near_atoms(moving_side, model, 5.0))
+        moving_side.coords = orig
+        surrounds = Atoms(list(near))
 
         def score_at(angle):
             tf = rotation(axis, angle, centre)

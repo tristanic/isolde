@@ -77,11 +77,15 @@ def density_score(volume, atoms, weights=None):
 def active_mdff_map(model):
     '''
     Find the model's preferred density map for fitting and return
-    ``(volume, weight)``, or ``(None, None)`` if no usable map exists (no
-    ChimeraX-Clipper map manager, or no enabled MDFF manager).
+    ``(volume, weight)``, or ``(None, None)`` if no usable map exists.
 
-    A live MDFF-potential map is preferred when present (it already excludes the
-    free set); otherwise the first enabled MDFF manager's volume is used.
+    Preference order:
+      1. an enabled MDFF manager's volume (the map ISOLDE is actively fitting to;
+         a live ``MDFF potential`` map wins as it already excludes the free set);
+      2. failing that -- e.g. before any simulation has been set up, which is the
+         usual state during a template rebuild -- the model's best crystallographic
+         map straight from the Clipper map manager, excluding difference maps and
+         live MDFF-potential maps (which only exist during simulation).
     '''
     try:
         from chimerax.clipper.symmetry import get_map_mgr
@@ -103,9 +107,17 @@ def active_mdff_map(model):
         if fallback is None:
             fallback = mdff_mgr
     chosen = preferred or fallback
-    if chosen is None:
-        return None, None
-    return chosen.volume, chosen.global_k
+    if chosen is not None:
+        return chosen.volume, chosen.global_k
+    # No enabled MDFF manager: fall back to a plain crystallographic map for
+    # scoring. Skip difference maps (mFo-DFc) and the live MDFF-potential maps.
+    candidates = [
+        v for v in mgr.all_maps
+        if not getattr(v, 'is_difference_map', False) and 'MDFF potential' not in v.name
+    ]
+    if candidates:
+        return candidates[0], 1.0
+    return None, None
 
 
 def pose_score(session, moving_atoms, surrounds, volume, map_weight=1.0, clash_weight=1.0):
