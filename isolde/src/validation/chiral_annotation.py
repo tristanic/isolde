@@ -24,6 +24,15 @@ from chimerax.geometry import (translation, rotation, Places, Place,
 
 from ..geometry import exclamation_mark
 
+# Glyph sizing. The marker is drawn in scene (Angstrom) units, so by default it
+# scales with the model. To keep it legible when scanning a zoomed-out model we
+# enforce a minimum on-screen size, but never shrink below its natural size (so it
+# scales normally when zoomed in) and never grow beyond roughly an alanine residue
+# (so it can't balloon when zoomed way out). All tunable.
+GLYPH_BASE_A = 0.85  # natural glyph extent in Angstrom (~mark height + offset)
+MIN_SCREEN_PX = 30.0  # minimum on-screen glyph height in pixels
+MAX_GLYPH_A = 4.0  # absolute size cap (~ an alanine residue)
+
 
 class ChiralAnnotator(Model):
     '''
@@ -40,12 +49,21 @@ class ChiralAnnotator(Model):
         # Chirality is binary (wrong-handed or not), so every marker is the same
         # fixed size -- no severity scaling (cf. the cis/trans peptide markup).
         self._scale = 1.0
+        # Cached outlier set (refreshed only on structure changes) + the pixel
+        # size at which the glyph Places were last built (for the camera gate).
+        self._current_chirals = None
+        self._last_pixel_size = None
         d = self._drawing = self._chiral_indicator()
         self.add([d])
         structure.add([self])
         t = structure.triggers
         self._structure_change_handler = t.add_handler(
-            'changes', self._update_graphics_if_needed)
+            'changes', self._update_graphics_if_needed
+        )
+        # Rescale the glyphs to a fixed minimum on-screen size as the camera zooms.
+        self._graphics_update_handler = session.triggers.add_handler(
+            'graphics update', self._rescale_for_camera
+        )
         self.update_graphics()
 
     @property
@@ -65,6 +83,10 @@ class ChiralAnnotator(Model):
                 and not self._atomic_structure.deleted:
             self._atomic_structure.triggers.remove_handler(h)
         self._structure_change_handler = None
+        gh = getattr(self, '_graphics_update_handler', None)
+        if gh is not None:
+            self.session.triggers.remove_handler(gh)
+        self._graphics_update_handler = None
         Model.delete(self)
 
     def _update_graphics_if_needed(self, trigger_name, changes):
@@ -88,21 +110,57 @@ class ChiralAnnotator(Model):
             get_triggers().add_handler('changes done', self.update_graphics)
 
     def update_graphics(self, *_):
+        # Structure-change path: re-detect outliers (the expensive part) and cache
+        # them, then (re)build the glyph placements. The per-frame camera rescale
+        # reuses the cached set so it never re-runs outlier detection.
         from chimerax.core.triggerset import DEREGISTER
         if not self.visible:
             return DEREGISTER
         from ..atomic.chirality import chiral_outliers
         chirals, oriented, severity = chiral_outliers(
-            self.session, self._atomic_structure.atoms)
+            self.session, self._atomic_structure.atoms
+        )
+        self._current_chirals = chirals
+        self._rebuild_places()
+        return DEREGISTER
+
+    def _glyph_scale(self, cc):
+        # Scale that keeps the glyph at least MIN_SCREEN_PX tall on screen, but
+        # never below its natural Angstrom size and never above MAX_GLYPH_A. Uses
+        # the centre's scene coordinate so it tracks the camera distance correctly.
+        ps = self.session.main_view.pixel_size(cc.chiral_atom.scene_coord)
+        eff_a = min(max(MIN_SCREEN_PX * ps, GLYPH_BASE_A), MAX_GLYPH_A)
+        return self._scale * eff_a / GLYPH_BASE_A
+
+    def _rebuild_places(self):
         d = self._drawing
-        if not len(chirals):
+        chirals = self._current_chirals
+        if chirals is None or not len(chirals):
             d.display = False
-            return DEREGISTER
-        places = [self._marker_place(chirals[i], self._scale)
-                  for i in range(len(chirals))]
+            return
+        # Remember the representative pixel size these placements were built at, so
+        # the camera handler can skip rebuilding while the zoom is unchanged.
+        self._last_pixel_size = self.session.main_view.pixel_size()
+        places = [
+            self._marker_place(chirals[i], self._glyph_scale(chirals[i]))
+            for i in range(len(chirals))
+        ]
         d.positions = Places(places)
         d.display = True
-        return DEREGISTER
+
+    def _rescale_for_camera(self, *_):
+        # Persistent 'graphics update' handler: rebuild the glyph placements only
+        # when the zoom (pixel size) has actually changed, so an idle view is free.
+        if not self.visible:
+            return
+        chirals = self._current_chirals
+        if chirals is None or not len(chirals):
+            return
+        ps = self.session.main_view.pixel_size()
+        last = self._last_pixel_size
+        if last is not None and abs(ps - last) <= 1e-4 * last:
+            return
+        self._rebuild_places()
 
     @staticmethod
     def _unit(v, fallback=(0.0, 0.0, 1.0)):

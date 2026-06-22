@@ -115,7 +115,13 @@ class ChiralDialog(UI_Panel_Base):
         from chimerax.isolde.view import focus_on_selection
         # Frame the chiral centre and its immediate substituents -- not the whole
         # residue, which over-zooms for large ligands -- then highlight the centre.
-        focus_on_selection(self.session, Atoms([a] + list(a.neighbors)), pad=1.5)
+        disp = Atoms([a] + list(a.neighbors))
+        # Force the centre and all four substituents visible. ISOLDE hides
+        # non-polar hydrogens by default (display=False), but the pendant H on a
+        # chiral centre is exactly what you need to see to interpret a flip, so
+        # un-hide it here.
+        disp.displays = True
+        focus_on_selection(self.session, disp, pad=1.5)
         a.selected = True
 
     def _model_changes_cb(self, trigger_name, changes):
