@@ -129,9 +129,7 @@ def chiral_flip(session, atoms, force=False):
         # alone -- the fewest moves to a state that minimises against all the new
         # targets.
         to_move = chirals[oriented > 0]
-        if not isolde.simulation_running:
-            from ..cmd import isolde_sim
-            isolde_sim(session, 'start', chirals.chiral_atoms.unique_residues.atoms)
+        sim_was_running = isolde.simulation_running
         from chimerax.isolde import session_extensions as sx
         crm = sx.get_chiral_restraint_mgr(m)
         for r in crm.add_restraints(chirals):
@@ -141,7 +139,14 @@ def chiral_flip(session, atoms, force=False):
             (moved if invert_chiral_center(cc.chiral_atom) else unmovable).append(
                 cc.chiral_atom.name
             )
-        if isolde.simulation_running and moved:
+        # Flip targets + geometry FIRST, then start the simulation, so its
+        # automatic initial minimisation relaxes the strained result (see the
+        # default-path note below). Into an already-running sim, pushing the moved
+        # coords re-triggers minimisation, so that path is kept.
+        if not sim_was_running:
+            from ..cmd import isolde_sim
+            isolde_sim(session, 'start', chirals.chiral_atoms.unique_residues.atoms)
+        elif moved:
             isolde.sim_handler.push_coords_to_sim()
         session.logger.warning(
             'isolde chiralflip force (EXPERTS ONLY): flipped the '
@@ -186,9 +191,16 @@ def chiral_flip(session, atoms, force=False):
                 len(correct), ', '.join(correct.chiral_atoms.names), len(to_flip)
             )
         )
-    if not isolde.simulation_running:
-        from ..cmd import isolde_sim
-        isolde_sim(session, 'start', to_flip.chiral_atoms.unique_residues.atoms)
+    # Flip the geometry FIRST, then start the simulation (or push into a running
+    # one). A freshly-started sim runs an automatic initial energy minimisation
+    # that relaxes the deliberately-strained flipped centre. Starting the sim
+    # *before* flipping and pushing the inverted coords in afterwards skips that
+    # relaxation -- on the very first run a post-start coordinate push does not
+    # re-trigger minimisation, so dynamics resume from the strained geometry and
+    # kick hard enough to corrupt neighbouring residues (the first-flip glitch).
+    # Pushing into an *already-running* sim does re-trigger minimisation, so that
+    # path is kept.
+    sim_was_running = isolde.simulation_running
     flipped_mask = numpy.zeros(len(to_flip), dtype=bool)
     unflippable = []
     for i, cc in enumerate(to_flip):
@@ -197,7 +209,10 @@ def chiral_flip(session, atoms, force=False):
         else:
             unflippable.append(cc.chiral_atom.name)
     flipped = to_flip[flipped_mask]
-    if isolde.simulation_running and len(flipped):
+    if not sim_was_running:
+        from ..cmd import isolde_sim
+        isolde_sim(session, 'start', to_flip.chiral_atoms.unique_residues.atoms)
+    elif len(flipped):
         isolde.sim_handler.push_coords_to_sim()
     if len(flipped):
         session.logger.info(
