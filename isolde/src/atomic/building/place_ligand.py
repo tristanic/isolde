@@ -81,7 +81,6 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
     purposes, and continue with your model building.
     '''
     from chimerax.geometry import find_closest_points
-    from chimerax import mmcif
     from chimerax.core.errors import UserError
     if hasattr(session, 'isolde') and session.isolde.simulation_running:
         raise UserError('Cannot add atoms when a simulation is running!')
@@ -110,30 +109,45 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
         if chain is None:
             chain = na.residue.chain_id
         if bfactor is None:
-            bfactor = na.residue.atoms.bfactors.mean()+5
-    tmpl = mmcif.find_template_residue(session, ligand_id)
-    r = new_residue_from_template(model, tmpl, chain, position, b_factor=bfactor)
-    if use_md_template and len(r.atoms) > 3:
-        ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
-        if md_template_name is None:
-            from chimerax.isolde.openmm.amberff.template_utils import ccd_to_known_template
-            md_template_name = ccd_to_known_template.get(ligand_id, None)
-        if md_template_name is None:
-            ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
-            from chimerax.isolde.openmm.openmm_interface import find_residue_templates
-            from chimerax.atomic import Residues
-            tdict = find_residue_templates(Residues([r]), ff, ligand_db=ligand_db, logger=session.logger)
-            md_template_name = tdict.get(0)
-        md_template = None
-        if md_template_name is not None:
-            md_template = ff._templates.get(md_template_name, None)
+            bfactor = na.residue.atoms.bfactors.mean() + 5
+    # The ligand may be a CCD id (built from the local ChemComp store) or a
+    # user-supplied residue used as a custom geometry template. Resolve both to a
+    # single coordinate-template residue; delete the throwaway structure (CCD path
+    # only) once placement and any MD-template correction are done.
+    tmpl, owns_template = _resolve_ligand_template(session, ligand_id)
+    try:
+        ligand_name = tmpl.name
+        r = new_residue_from_template(model, tmpl, chain, position, b_factor=bfactor)
+        if use_md_template and len(r.atoms) > 3:
+            ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
+            if md_template_name is None:
+                from chimerax.isolde.openmm.amberff.template_utils import ccd_to_known_template
+                md_template_name = ccd_to_known_template.get(ligand_name, None)
+            if md_template_name is None:
+                ligand_db = session.isolde.forcefield_mgr.ligand_db(
+                    session.isolde.sim_params.forcefield
+                )
+                from chimerax.isolde.openmm.openmm_interface import find_residue_templates
+                from chimerax.atomic import Residues
+                tdict = find_residue_templates(
+                    Residues([r]), ff, ligand_db=ligand_db, logger=session.logger
+                )
+                md_template_name = tdict.get(0)
+            md_template = None
+            if md_template_name is not None:
+                md_template = ff._templates.get(md_template_name, None)
 
-        if md_template is None:
-            session.logger.warning('place_ligand() was called with use_md_template=True, '
-                'but no suitable template was found. This command has been ignored.')
-            return
-        from ..template_utils import fix_residue_to_match_md_template
-        fix_residue_to_match_md_template(session, r, md_template, cif_template=tmpl)
+            if md_template is None:
+                session.logger.warning(
+                    'place_ligand() was called with use_md_template=True, '
+                    'but no suitable template was found. This command has been ignored.'
+                )
+                return
+            from ..template_utils import fix_residue_to_match_md_template
+            fix_residue_to_match_md_template(session, r, md_template, cif_template=tmpl)
+    finally:
+        if owns_template:
+            tmpl.structure.delete()
 
 
     matoms.selected=False
@@ -142,19 +156,94 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
         if not hasattr(session, 'isolde'):
             session.logger.warning('ISOLDE is not running. sim_settle argument ignored.')
         elif model != session.isolde.selected_model:
-            session.logger.warning("New ligand was not added to ISOLDE's "
-                "selected model. sim_settle argument ignored.")
+            session.logger.warning(
+                "New ligand was not added to ISOLDE's "
+                "selected model. sim_settle argument ignored."
+            )
         else:
             # defer the simulation starting until after the new atoms have been
             # drawn, to make sure their styling "sticks"
             def do_run(*_, session=session):
                 from chimerax.core.commands import run
                 from chimerax.atomic import selected_residues, concise_residue_spec
-                run(session, f'isolde sim start {concise_residue_spec(session, selected_residues(session))}')
+                run(
+                    session,
+                    f'isolde sim start {concise_residue_spec(session, selected_residues(session))}'
+                )
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER
+
             session.triggers.add_handler('frame drawn', do_run)
     return r
+
+
+def _ccd_template_residue(session, ccd_id):
+    '''Build a throwaway one-residue :class:`AtomicStructure` for a CCD component
+    from ISOLDE's local ChemComp store, and return its :class:`Residue`.
+
+    Uses :func:`rdkit_bridge.ccd_records`, which consults the local store first
+    (instant, offline) and only falls back to the per-residue network fetch if the
+    store misses -- so this is the store-backed replacement for
+    ``mmcif.find_template_residue`` as a *geometry* template. The structure is not
+    added to the session; the caller is responsible for deleting it
+    (``residue.structure.delete()``).
+    '''
+    import numpy
+    from chimerax.core.errors import UserError
+    from chimerax.atomic import AtomicStructure, Element
+    from chimerax.atomic.struct_edit import add_atom, add_bond
+    from chimerax.isolde.atomic.rdkit_bridge import ccd_records
+    recs = ccd_records(session, ccd_id)
+    if recs is None:
+        raise UserError(
+            'Could not find a definition for "{}" in the local ChemComp store or '
+            'the Chemical Components Dictionary. For a novel residue not in the '
+            'CCD, supply a built residue as the template instead.'.format(ccd_id)
+        )
+    atoms, bonds, coords = recs
+    s = AtomicStructure(session, name='{} template'.format(ccd_id), auto_style=False)
+    r = s.new_residue(ccd_id, 'A', 1)
+    amap = {}
+    for (aid, sym, _charge, _arom) in atoms:
+        xyz = coords.get(aid)
+        if xyz is None:
+            # No ideal/model coordinate for this atom -- can't place it.
+            continue
+        e = Element.get_element((sym or 'C').strip().capitalize())
+        amap[aid] = add_atom(aid, e, r, numpy.array(xyz, dtype=numpy.float64))
+    for (a1, a2, _order, _arom) in bonds:
+        x1, x2 = amap.get(a1), amap.get(a2)
+        if x1 is not None and x2 is not None and x2 not in x1.neighbors:
+            add_bond(x1, x2)
+    return r
+
+
+def _resolve_ligand_template(session, ligand):
+    '''Resolve the ``ligand`` argument of :func:`place_ligand` to a coordinate
+    template, returning ``(template_residue, owns_structure)``.
+
+    * a CCD id (str) -> a residue built from the local ChemComp store
+      (``owns_structure=True``: the caller must delete its throwaway structure);
+    * a :class:`Residue`/:class:`Residues` -> used directly as a custom geometry
+      template (``owns_structure=False``).
+    '''
+    from chimerax.core.errors import UserError
+    from chimerax.atomic import Residue, Residues
+    if isinstance(ligand, Residues):
+        if len(ligand) != 1:
+            raise UserError('Please specify a single residue as the ligand template!')
+        ligand = ligand[0]
+    if isinstance(ligand, Residue):
+        from chimerax.isolde.atomic.template_utils import (
+            atom_names_unique, make_atom_names_unique)
+        if not atom_names_unique(ligand):
+            session.logger.warning(
+                'Atom names in template {} are not unique. Reassigning unique '
+                'names.'.format(ligand.name))
+            make_atom_names_unique(ligand)
+        return ligand, False
+    return _ccd_template_residue(session, ligand), True
+
 
 def new_residue_from_template(model, template, chain_id, center,
         residue_number=None, insert_code=' ', b_factor=50, precedes=None):

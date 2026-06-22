@@ -216,9 +216,14 @@ def register_isolde_add(logger):
     register_isolde_add_water()
 
     def register_isolde_add_ligand():
+        from chimerax.core.commands import Or
         desc = CmdDesc(
             required = [
-                ('ligand_id', StringArg),
+                # A CCD id (built from ISOLDE's local ChemComp store, with network
+                # fallback) OR a single residue to use as a custom geometry
+                # template (for novel ligands not in the CCD). Try the residue
+                # spec first, falling back to a plain string.
+                ('ligand_id', Or(ResiduesArg, StringArg)),
             ],
             optional = [
                 ('model', StructureArg),
@@ -232,7 +237,7 @@ def register_isolde_add(logger):
                 ('use_md_template', BoolArg),
                 ('md_template_name', StringArg)
             ],
-            synopsis = 'Add a ligand from the Chemical Components Dictionary'
+            synopsis = 'Add a ligand from the local ChemComp store (CCD id) or a supplied residue template'
         )
         register('isolde add ligand', desc, add_ligand, logger=logger)
     register_isolde_add_ligand()
