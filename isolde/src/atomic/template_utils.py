@@ -566,11 +566,22 @@ def _optimise_pendant_torsions(
         except Exception:
             # In a ring/cycle -- not actually rotatable; skip.
             continue
-        if len(side1) <= len(side2):
+        # Move the side carrying the freshly-built atoms, leaving the kept,
+        # correctly-placed side alone -- even if the built side is the larger one
+        # (that is exactly the lever that swings a whole diverged assembly back
+        # into density). Only when both sides are freshly built does "move the
+        # smaller side" apply, to keep the swing local. A bond with no built atom
+        # on either side is already settled and is skipped.
+        side1_built = any(a.name in built_names for a in side1)
+        side2_built = any(a.name in built_names for a in side2)
+        if side1_built and side2_built:
+            moving_atom, moving_side = (a1, side1) if len(side1) <= len(side2) \
+                else (a2, side2)
+        elif side1_built:
             moving_atom, moving_side = a1, side1
-        else:
+        elif side2_built:
             moving_atom, moving_side = a2, side2
-        if not any(a.name in built_names for a in moving_side):
+        else:
             continue
         jobs.append((b, moving_atom, len(moving_side)))
 
