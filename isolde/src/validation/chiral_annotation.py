@@ -26,12 +26,14 @@ from ..geometry import exclamation_mark
 
 # Glyph sizing. The marker is drawn in scene (Angstrom) units, so by default it
 # scales with the model. To keep it legible when scanning a zoomed-out model we
-# enforce a minimum on-screen size, but never shrink below its natural size (so it
-# scales normally when zoomed in) and never grow beyond roughly an alanine residue
-# (so it can't balloon when zoomed way out). All tunable.
+# enlarge it as the field of view widens: it stays at its natural size while the
+# view is narrow (<= VIEW_WIDTH_MIN_A, so it scales with the model when zoomed in)
+# and ramps linearly up to a cap (~ an alanine residue) by the time the view is
+# wide (>= VIEW_WIDTH_MAX_A), so it can neither vanish nor balloon. All tunable.
 GLYPH_BASE_A = 0.85  # natural glyph extent in Angstrom (~mark height + offset)
-MIN_SCREEN_PX = 30.0  # minimum on-screen glyph height in pixels
-MAX_GLYPH_A = 4.0  # absolute size cap (~ an alanine residue)
+MAX_GLYPH_A = 4.0  # size cap (~ an alanine residue)
+VIEW_WIDTH_MIN_A = 6.0  # view width at/below which the glyph is its natural size
+VIEW_WIDTH_MAX_A = 40.0  # view width at/above which the glyph reaches the cap
 
 
 class ChiralAnnotator(Model):
@@ -120,16 +122,39 @@ class ChiralAnnotator(Model):
         chirals, oriented, severity = chiral_outliers(
             self.session, self._atomic_structure.atoms
         )
+        # Only mark up centres whose atom is actually shown, consistent with
+        # ISOLDE's other validation glyphs -- so hiding part of the model hides its
+        # markup too. "Shown" is ribbon-aware (like the Rama annotator): an atom
+        # counts if it is displayed OR its residue is shown as ribbon (hidden only
+        # by the ribbon), so backbone chiral centres still get markup in the usual
+        # ribbon view. Refreshed on display/hide changes (see
+        # _update_graphics_if_needed). TODO: a per-validator option to keep outlier
+        # markup visible even for hidden atoms.
+        if len(chirals):
+            cas = chirals.chiral_atoms
+            ribbon_shown = (
+                cas.residues.ribbon_displays
+                & ((cas.hides & cas.HIDE_RIBBON) != 0)
+            )
+            chirals = chirals[cas.displays | ribbon_shown]
         self._current_chirals = chirals
         self._rebuild_places()
         return DEREGISTER
 
     def _glyph_scale(self, cc):
-        # Scale that keeps the glyph at least MIN_SCREEN_PX tall on screen, but
-        # never below its natural Angstrom size and never above MAX_GLYPH_A. Uses
-        # the centre's scene coordinate so it tracks the camera distance correctly.
-        ps = self.session.main_view.pixel_size(cc.chiral_atom.scene_coord)
-        eff_a = min(max(MIN_SCREEN_PX * ps, GLYPH_BASE_A), MAX_GLYPH_A)
+        # Ramp the glyph size with the field-of-view width: natural size while the
+        # view is <= VIEW_WIDTH_MIN_A wide (so it scales with the model when zoomed
+        # in), linearly up to MAX_GLYPH_A by VIEW_WIDTH_MAX_A (so it stays legible
+        # when zoomed out), capped beyond. view_width() is evaluated at the centre's
+        # scene coordinate so it is correct under perspective.
+        vw = self.session.main_view.camera.view_width(cc.chiral_atom.scene_coord)
+        if vw <= VIEW_WIDTH_MIN_A:
+            eff_a = GLYPH_BASE_A
+        elif vw >= VIEW_WIDTH_MAX_A:
+            eff_a = MAX_GLYPH_A
+        else:
+            frac = (vw - VIEW_WIDTH_MIN_A) / (VIEW_WIDTH_MAX_A - VIEW_WIDTH_MIN_A)
+            eff_a = GLYPH_BASE_A + frac * (MAX_GLYPH_A - GLYPH_BASE_A)
         return self._scale * eff_a / GLYPH_BASE_A
 
     def _rebuild_places(self):

@@ -147,3 +147,15 @@ work — see the `chemcomp`-backed chiral generator in `src/atomic/chirality.py`
    the small set of sugars curated so far. A CCD/`chemcomp`-driven approach
    (analogous to how `chiral_definitions_from_ccd` now generates chiral defs from
    the local CCD store) could generalise them to arbitrary pyranoses.
+
+### Per-validator control over markup visibility for hidden atoms
+ISOLDE's validation glyphs (Ramachandran, rotamer, chirality, …) only draw on
+atoms that are actually visible (`display & !hide`) — so hiding part of the model
+hides its markup. That's the right default, but for outlier markup there's a case
+for the opposite: keep the marker visible even when its atoms are hidden, so a
+serious error in a hidden region can't be missed. Add a user-facing, per-validator
+option to choose this behaviour (e.g. a "show outliers even when atoms hidden"
+toggle per validator type). The chirality annotator (`ChiralAnnotator` in
+`src/validation/chiral_annotation.py`) currently hard-codes the visible-atoms-only
+convention via `chirals.chiral_atoms.visibles`; the Rama annotator already has a
+related `ignore_ribbon_hides` knob to model the API on.
