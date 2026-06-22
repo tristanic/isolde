@@ -177,6 +177,39 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
     return r
 
 
+def register_ligand(
+    session, *, residue=None, smiles=None, name=None, collection="user", session_only=False
+):
+    """Register a ligand template -- from a modelled `residue` or a `smiles`
+    string -- into the local ChemComp store under identifier `name`, so it can
+    later be placed with ``isolde add ligand <name>``. Returns the stored id.
+
+    Persistent by default (a user collection in its own ``<collection>.sqlite3``,
+    safe from ``chemcomp update``); ``session_only=True`` stores it in the
+    session collection that travels with the ``.cxs`` session file. ISOLDE owns
+    the chemistry (records via :mod:`rdkit_bridge`); ChemComp only stores.
+    """
+    from chimerax.core.errors import UserError
+    from ..rdkit_bridge import records_from_residue, records_from_smiles
+    try:
+        from chimerax import chemcomp
+    except ImportError:
+        raise UserError('The ChimeraX-ChemComp bundle is required to register ligands.')
+    if residue is not None:
+        rec = records_from_residue(residue, comp_id=(name or residue.name))
+    elif smiles is not None:
+        if not name:
+            raise UserError('A name (identifier) is required when registering from SMILES.')
+        rec = records_from_smiles(smiles, comp_id=name)
+        if rec is None:
+            raise UserError('Could not parse or embed SMILES: %r' % smiles)
+    else:
+        raise UserError('Provide a residue or a SMILES string to register.')
+    return chemcomp.register_record(
+        session, rec, collection=collection, persistent=not session_only
+    )
+
+
 def _ccd_template_residue(session, ccd_id):
     '''Build a throwaway one-residue :class:`AtomicStructure` for a CCD component
     from ISOLDE's local ChemComp store, and return its :class:`Residue`.

@@ -134,7 +134,7 @@ def add_aa_cmd(session, resname, stem_residue=None, add_direction=None, structur
                     aa_neighbors.append(n)
         if len(aa_neighbors) > 1:
             raise UserError('Selection is not a terminal residue!')
-        elif len(aa_neighbors) == 0: 
+        elif len(aa_neighbors) == 0:
             if add_direction is None:
                 raise UserError('Stem residue has no existing neighbors. Please specify a build direction')
             if add_direction == 'N':
@@ -143,9 +143,9 @@ def add_aa_cmd(session, resname, stem_residue=None, add_direction=None, structur
                 prev_res = residue
             else:
                 raise UserError('Stem residue must be one of "N" or "C"!')
-        else: 
+        else:
             n = aa_neighbors[0]
-            if (n.number < residue.number or 
+            if (n.number < residue.number or
                 (n.number == residue.number and n.insertion_code < residue.insertion_code)):
                 prev_res = residue
             else:
@@ -167,25 +167,89 @@ def mod_his_command(session, residues, protonated_atom):
 
 
 
+def add_registered_ligand_from_residue(
+    session, residue, name=None, collection="user", sessionOnly=False
+):
+    block_if_sim_running(session)
+    from chimerax.core.errors import UserError
+    if len(residue) != 1:
+        raise UserError('Select a single residue to register as a ligand template.')
+    from .place_ligand import register_ligand
+    cid = register_ligand(
+        session,
+        residue=residue[0],
+        name=name,
+        collection=collection,
+        session_only=sessionOnly
+    )
+    session.logger.info(
+        'Registered ligand template "%s". Place copies with "isolde add ligand %s".' %
+        (cid, cid)
+    )
+
+
+def add_registered_ligand_from_smiles(
+    session, smiles, name=None, collection="user", sessionOnly=False
+):
+    block_if_sim_running(session)
+    from .place_ligand import register_ligand
+    cid = register_ligand(
+        session, smiles=smiles, name=name, collection=collection, session_only=sessionOnly
+    )
+    session.logger.info(
+        'Registered ligand template "%s" from SMILES. Place copies with '
+        '"isolde add ligand %s".' % (cid, cid)
+    )
+
+
 def register_building_commands(logger):
     register_isolde_replace(logger)
     register_isolde_add(logger)
+    register_isolde_register_ligand(logger)
+
+
+def register_isolde_register_ligand(logger):
+    from chimerax.core.commands import register, CmdDesc, StringArg, BoolArg
+    from chimerax.atomic import ResiduesArg
+    res_desc = CmdDesc(
+        required=[('residue', ResiduesArg)],
+        keyword=[('name', StringArg), ('collection', StringArg), ('sessionOnly', BoolArg)],
+        synopsis=(
+            'Register a single residue as a reusable ligand template in the '
+            'local ChemComp store (persistent by default; sessionOnly true '
+            'keeps it only in this .cxs session).'
+        )
+    )
+    register(
+        'isolde register ligand', res_desc, add_registered_ligand_from_residue, logger=logger
+    )
+    smi_desc = CmdDesc(
+        required=[('smiles', StringArg)],
+        keyword=[('name', StringArg), ('collection', StringArg), ('sessionOnly', BoolArg)],
+        synopsis=(
+            'Register a ligand template from a SMILES string (a 3D '
+            'conformer is generated) into the local ChemComp store. '
+            'Requires name <identifier>.'
+        )
+    )
+    register(
+        'isolde register ligand smiles',
+        smi_desc,
+        add_registered_ligand_from_smiles,
+        logger=logger
+    )
+
 
 def register_isolde_replace(logger):
-    from chimerax.core.commands import (
-        register, CmdDesc, StringArg, Or, BoolArg
-    )
+    from chimerax.core.commands import (register, CmdDesc, StringArg, Or, BoolArg)
     from chimerax.atomic import ResiduesArg
     desc = CmdDesc(
         required=[
             ('residue', ResiduesArg),
-            
         ],
-        keyword=[
-            ('with_residue', Or(ResiduesArg, StringArg)),
-            ('apply_md_template', BoolArg)
-        ],
-        synopsis='(EXPERIMENTAL) Replace an existing ligand with a related one, keeping as much of the original as possible'
+        keyword=[('with_residue', Or(ResiduesArg, StringArg)), ('apply_md_template', BoolArg)],
+        synopsis=
+        '(EXPERIMENTAL) Replace an existing ligand with a related one, keeping as much of the original as possible'
     )
     register('isolde replace ligand', desc, replace_residue, logger=logger)
 
@@ -263,7 +327,7 @@ def register_isolde_add(logger):
         )
         register('isolde add aa', desc, add_aa_cmd, logger=logger)
     register_isolde_add_aa()
-    
+
     def register_isolde_mod_his():
         desc = CmdDesc(
             synopsis='Set the protonation state of one or more histidine residues',

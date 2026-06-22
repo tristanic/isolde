@@ -750,3 +750,161 @@ def residue_to_rdkit(residue, template=None):
 
     # Fallback: perceive from geometry.
     return perceive_residue(session, residue)
+
+
+# ---------------------------------------------------------------------------
+# RDKit mol / residue -> ChemComp record dicts (ligand registration)
+# ---------------------------------------------------------------------------
+
+
+def _ccd_value_order(bond):
+    '''CCD ``value_order`` string for an RDKit bond (default 'SING').'''
+    bt = bond.GetBondType()
+    return {
+        Chem.BondType.SINGLE: 'SING',
+        Chem.BondType.DOUBLE: 'DOUB',
+        Chem.BondType.TRIPLE: 'TRIP',
+        Chem.BondType.QUADRUPLE: 'QUAD',
+        Chem.BondType.AROMATIC: 'AROM',
+    }.get(bt, 'SING')
+
+
+def _generated_atom_names(mol):
+    '''Per-element sequential names (C1, C2, N1, O1, H1, ...) for a mol whose
+    atoms lack a :data:`NAME_PROP` (e.g. one built from SMILES).'''
+    counts = {}
+    names = []
+    for a in mol.GetAtoms():
+        el = a.GetSymbol().upper()
+        counts[el] = counts.get(el, 0) + 1
+        names.append('%s%d' % (el, counts[el]))
+    return names
+
+
+def records_from_mol(mol, comp_id, display_name=None):
+    '''Build a ChemComp record dict from an RDKit ``mol`` that carries a 3D
+    conformer. Atom ids come from the ``cxName`` property when present, else are
+    generated per-element. Returns the dict shape
+    :func:`chimerax.chemcomp.register_record` consumes
+    (``{'id', 'atoms'[6], 'bonds'[4], 'coords', 'display_name'?}``), or ``None``
+    if the mol has no conformer.'''
+    if mol is None or mol.GetNumConformers() == 0:
+        return None
+    try:
+        Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
+    except Exception:
+        pass
+    conf = mol.GetConformer()
+    have_names = all(a.HasProp(NAME_PROP) for a in mol.GetAtoms())
+    gen = None if have_names else _generated_atom_names(mol)
+    idx_name = {}
+    atoms = []
+    coords = {}
+    for i, a in enumerate(mol.GetAtoms()):
+        name = a.GetProp(NAME_PROP) if a.HasProp(NAME_PROP) else gen[i]
+        idx_name[a.GetIdx()] = name
+        stereo = a.GetProp('_CIPCode') if a.HasProp('_CIPCode') else ''
+        atoms.append(
+            [
+                name,
+                a.GetSymbol().upper(),
+                str(a.GetFormalCharge()), 'Y' if a.GetIsAromatic() else 'N', stereo, ''
+            ]
+        )
+        p = conf.GetAtomPosition(a.GetIdx())
+        coords[name] = [float(p.x), float(p.y), float(p.z)]
+    bonds = []
+    for b in mol.GetBonds():
+        bonds.append(
+            [
+                idx_name[b.GetBeginAtomIdx()], idx_name[b.GetEndAtomIdx()],
+                _ccd_value_order(b), 'Y' if b.GetIsAromatic() else 'N'
+            ]
+        )
+    rec = {'id': comp_id, 'atoms': atoms, 'bonds': bonds, 'coords': coords}
+    if display_name:
+        rec['display_name'] = display_name
+    return rec
+
+
+def records_from_residue(residue, comp_id=None, display_name=None):
+    '''Build a ChemComp record dict from a modelled ``residue``, keeping **all**
+    atoms (hydrogens included) with their model coordinates. Bond orders, formal
+    charges, aromaticity and CIP stereo are perceived on the heavy-atom skeleton
+    via :func:`residue_to_rdkit`; bonds to/within hydrogens default to single.
+    Returns the record dict (see :func:`records_from_mol`).'''
+    comp_id = comp_id or residue.name
+    order = {}  # frozenset({name1, name2}) -> (value_order, arom_flag)
+    stereo = {}  # name -> 'R'/'S'
+    charges = {}  # name -> int formal charge
+    arom_atom = {}  # name -> bool
+    try:
+        mol, _amap = residue_to_rdkit(residue)
+    except Exception:
+        mol = None
+    if mol is not None:
+        try:
+            Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
+        except Exception:
+            pass
+        for a in mol.GetAtoms():
+            if not a.HasProp(NAME_PROP):
+                continue
+            nm = a.GetProp(NAME_PROP)
+            charges[nm] = a.GetFormalCharge()
+            arom_atom[nm] = a.GetIsAromatic()
+            if a.HasProp('_CIPCode'):
+                stereo[nm] = a.GetProp('_CIPCode')
+        for b in mol.GetBonds():
+            a1, a2 = b.GetBeginAtom(), b.GetEndAtom()
+            if a1.HasProp(NAME_PROP) and a2.HasProp(NAME_PROP):
+                key = frozenset((a1.GetProp(NAME_PROP), a2.GetProp(NAME_PROP)))
+                order[key] = (_ccd_value_order(b), 'Y' if b.GetIsAromatic() else 'N')
+    atoms = []
+    coords = {}
+    for a in residue.atoms:
+        atoms.append(
+            [
+                a.name,
+                a.element.name.upper(),
+                str(charges.get(a.name, 0)), 'Y' if arom_atom.get(a.name) else 'N',
+                stereo.get(a.name, ''), ''
+            ]
+        )
+        coords[a.name] = [float(c) for c in a.coord]
+    bonds = []
+    for b in residue.atoms.intra_bonds:
+        a1, a2 = b.atoms
+        vo, ar = order.get(frozenset((a1.name, a2.name)), ('SING', 'N'))
+        bonds.append([a1.name, a2.name, vo, ar])
+    rec = {'id': comp_id, 'atoms': atoms, 'bonds': bonds, 'coords': coords}
+    if display_name:
+        rec['display_name'] = display_name
+    return rec
+
+
+def records_from_smiles(smiles, comp_id, display_name=None, seed=0xf00d):
+    '''Build a ChemComp record dict from a SMILES string: parse, add hydrogens,
+    embed a 3D conformer (ETKDG), assign stereo from the geometry, and emit the
+    record (see :func:`records_from_mol`). Returns ``None`` if SMILES parsing or
+    embedding fails.'''
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    mol = Chem.AddHs(mol)
+    from rdkit.Chem import AllChem
+    params = AllChem.ETKDGv3()
+    params.randomSeed = seed
+    if AllChem.EmbedMolecule(mol, params) != 0:
+        params.useRandomCoords = True
+        if AllChem.EmbedMolecule(mol, params) != 0:
+            return None
+    try:
+        AllChem.MMFFOptimizeMolecule(mol)
+    except Exception:
+        pass
+    try:
+        Chem.AssignStereochemistryFrom3D(mol)
+    except Exception:
+        pass
+    return records_from_mol(mol, comp_id, display_name=display_name)
