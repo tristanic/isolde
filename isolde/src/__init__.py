@@ -33,6 +33,15 @@ def register_template_name_attr(session):
     Residue.register_attr(session, 'isolde_template_name',
         'isolde', attr_type=str, can_return_none=True)
 
+def register_chemcomp_id_attr(session):
+    # Maps an in-model ligand whose residue carries a short generated name (e.g.
+    # LIG01) back to its real ChemComp identifier, so chirality/rebuild can fetch
+    # its chemistry. Distinct from isolde_template_name (the MD-template key).
+    # Registered (not just set) so it round-trips through .cxs session files.
+    from chimerax.atomic import Residue
+    Residue.register_attr(session, 'isolde_chemcomp_id',
+        'isolde', attr_type=str, can_return_none=True)
+
 
 __version__ = "1.13.0"
 
@@ -51,6 +60,7 @@ class _MyAPI(BundleAPI):
         register_domain_cluster_attr(session)
         register_model_isolde_init_attr(session)
         register_template_name_attr(session)
+        register_chemcomp_id_attr(session)
         from . import settings
         settings.basic_settings = settings._IsoldeBasicSettings(session, 'isolde')
         settings.color_settings = settings._IsoldeColorSettings(session, 'isolde')

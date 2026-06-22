@@ -9,7 +9,6 @@
 from chimerax.isolde.cmd import block_if_sim_running
 
 def replace_residue(session, residue, with_residue=None, apply_md_template=False):
-    new_residue = with_residue
     block_if_sim_running(session)
     from chimerax.core.errors import UserError
     from chimerax.isolde.cmd import isolde_start
@@ -22,42 +21,41 @@ def replace_residue(session, residue, with_residue=None, apply_md_template=False
     if len(residue.neighbors):
         raise UserError('Replacement by graph matching is currently only '
             'supported for ligands with no covalent bonds to other residues!')
-    if isinstance(new_residue, Residues):
-        if len(new_residue) != 1:
-            raise UserError('Must specify a single residue as the new template!')
-        template = new_residue[0]
-        if len(template.neighbors):
-            raise UserError('Replacement by graph matching is currently only '
-                'supported for ligands with no covalent bonds to other residues!')
-        from chimerax.isolde.atomic.template_utils import atom_names_unique, make_atom_names_unique
-        if not atom_names_unique(template):
-            session.logger.warning(f'Atom names in template {template.name} are not unique. Reassigning unique names')
-            make_atom_names_unique(template)
-    elif isinstance(new_residue, str):
-        from chimerax import mmcif
-        try:
-            template = mmcif.find_template_residue(session, new_residue)
-        except:
-            err_str = ('Could not find a mmCIF template for residue name {}. '
-                'For novel residues not in the Chemical Components Dictionary, '
-                'you will need to provide this first.').format(new_residue)
-            raise UserError(err_str)
-
-    from ..template_utils import (
-        fix_residue_from_template,
-        fix_residue_to_match_md_template
-    )
-    corrected, unfixable = fix_residue_from_template(residue, template,
-        rename_residue=True, match_by='element')
-    if apply_md_template:
-        ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
-        ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
-        from chimerax.isolde.openmm.openmm_interface import find_residue_templates
-        from chimerax.atomic import Residues
-        tdict = find_residue_templates(Residues([residue]), ff, ligand_db=ligand_db, logger=session.logger)
-        md_template_name = tdict.get(0)
-        if md_template_name is not None:
-            fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=template)
+    # The replacement template is a ChemComp identifier (a CCD code or a
+    # registered id), resolved from the local store. Using an extant residue as a
+    # one-off template was retired -- register it first with "isolde register
+    # ligand", then replace by identifier.
+    if not isinstance(with_residue, str):
+        raise UserError(
+            'isolde replace ligand requires a ChemComp identifier (string) for '
+            '"withResidue". To use a built residue as a template, register it '
+            'first with "isolde register ligand".')
+    from .place_ligand import _ccd_template_residue, _ligand_residue_name
+    template = _ccd_template_residue(session, with_residue)
+    try:
+        from ..template_utils import (
+            fix_residue_from_template,
+            fix_residue_to_match_md_template
+        )
+        corrected, unfixable = fix_residue_from_template(residue, template,
+            rename_residue=False, match_by='element')
+        # Name the rebuilt residue like a freshly-placed ligand (CCD code direct,
+        # else LIGnn + isolde_chemcomp_id), so a long/registered id never becomes
+        # the residue name.
+        resname, chemcomp_id = _ligand_residue_name(residue.structure, with_residue)
+        residue.name = resname
+        if chemcomp_id is not None:
+            residue.isolde_chemcomp_id = chemcomp_id
+        if apply_md_template:
+            ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
+            ligand_db = session.isolde.forcefield_mgr.ligand_db(session.isolde.sim_params.forcefield)
+            from chimerax.isolde.openmm.openmm_interface import find_residue_templates
+            tdict = find_residue_templates(Residues([residue]), ff, ligand_db=ligand_db, logger=session.logger)
+            md_template_name = tdict.get(0)
+            if md_template_name is not None:
+                fix_residue_to_match_md_template(session, residue, ff._templates[md_template_name], cif_template=template)
+    finally:
+        template.structure.delete()
     # Only speak up about chirality when something actually happened: report the
     # in-place corrections, and highlight only centres that could NOT be fixed
     # automatically (which genuinely need the user's attention).
@@ -241,15 +239,15 @@ def register_isolde_register_ligand(logger):
 
 
 def register_isolde_replace(logger):
-    from chimerax.core.commands import (register, CmdDesc, StringArg, Or, BoolArg)
+    from chimerax.core.commands import (register, CmdDesc, StringArg, BoolArg)
     from chimerax.atomic import ResiduesArg
     desc = CmdDesc(
         required=[
             ('residue', ResiduesArg),
         ],
-        keyword=[('with_residue', Or(ResiduesArg, StringArg)), ('apply_md_template', BoolArg)],
+        keyword=[('with_residue', StringArg), ('apply_md_template', BoolArg)],
         synopsis=
-        '(EXPERIMENTAL) Replace an existing ligand with a related one, keeping as much of the original as possible'
+        '(EXPERIMENTAL) Replace an existing ligand with a related one (by ChemComp identifier), keeping as much of the original as possible'
     )
     register('isolde replace ligand', desc, replace_residue, logger=logger)
 
@@ -280,14 +278,13 @@ def register_isolde_add(logger):
     register_isolde_add_water()
 
     def register_isolde_add_ligand():
-        from chimerax.core.commands import Or
         desc = CmdDesc(
             required = [
-                # A CCD id (built from ISOLDE's local ChemComp store, with network
-                # fallback) OR a single residue to use as a custom geometry
-                # template (for novel ligands not in the CCD). Try the residue
-                # spec first, falling back to a plain string.
-                ('ligand_id', Or(ResiduesArg, StringArg)),
+                # A ChemComp identifier: a CCD code, or an id registered with
+                # "isolde register ligand" (resolved from the local ChemComp
+                # store, with network fallback for CCD codes). Using an extant
+                # residue as a one-off template was retired -- register it first.
+                ('ligand_id', StringArg),
             ],
             optional = [
                 ('model', StructureArg),
@@ -301,7 +298,7 @@ def register_isolde_add(logger):
                 ('use_md_template', BoolArg),
                 ('md_template_name', StringArg)
             ],
-            synopsis = 'Add a ligand from the local ChemComp store (CCD id) or a supplied residue template'
+            synopsis = 'Add a ligand by ChemComp identifier (CCD code or a registered id)'
         )
         register('isolde add ligand', desc, add_ligand, logger=logger)
     register_isolde_add_ligand()

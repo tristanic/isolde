@@ -142,17 +142,30 @@ def chiral_definitions_from_ccd(session, resname):
     return defs
 
 
-def register_chiral_definitions(session, resname, override=False):
+def lookup_name(residue):
+    '''The ChemComp identifier under which ``residue``'s chemistry is stored: its
+    ``isolde_chemcomp_id`` when set (e.g. a ``LIG01`` residue placed from a
+    registered compound whose real id is long/proprietary), else the residue name
+    (the usual case -- standard CCD codes are their own identifiers).'''
+    return getattr(residue, 'isolde_chemcomp_id', None) or residue.name
+
+
+def register_chiral_definitions(session, resname, lookup_id=None, override=False):
     '''Register generated chiral definitions for ``resname`` with the session
     ``ChiralMgr`` so they are restrained during simulation. Idempotent: centres
     already defined (e.g. from ``chirals.json``) are skipped unless ``override``.
+
+    Definitions are *registered under* ``resname`` (the in-model residue name the
+    running simulation matches on), but the source chemistry is fetched under
+    ``lookup_id`` (default ``resname``) -- so a ``LIG01`` residue placed from a
+    registered compound gets restraints derived from that compound's geometry.
     Returns the number of new definitions added.'''
     from chimerax.isolde.molobject import get_chiral_mgr
     mgr = get_chiral_mgr(session)
     existing = mgr.chiral_center_dict.get(resname, {})
     added = 0
     for centre, (s1, s2, s3, angle, volume, externals) in \
-            chiral_definitions_from_ccd(session, resname).items():
+            chiral_definitions_from_ccd(session, lookup_id or resname).items():
         if centre in existing and not override:
             continue
         try:
@@ -212,7 +225,8 @@ def chiral_outliers(session, atoms, ensure_defs=True):
     oriented = numpy.sign(ev) * v4
     mask = oriented < CHIRAL_OUTLIER_THRESHOLD
     severity = numpy.clip(
-        (CHIRAL_OUTLIER_THRESHOLD - oriented) / CHIRAL_OUTLIER_THRESHOLD, 0.0, 1.0)
+        (CHIRAL_OUTLIER_THRESHOLD - oriented) / CHIRAL_OUTLIER_THRESHOLD, 0.0, 1.0
+    )
     return chirals[mask], oriented[mask], severity[mask]
 
 
@@ -234,16 +248,22 @@ def ensure_chiral_definitions(session, residues):
     attempted = getattr(session, '_isolde_chiral_attempted', None)
     if attempted is None:
         attempted = session._isolde_chiral_attempted = set()
-    for name in set(r.name for r in residues):
+    # Map each in-model residue name to the ChemComp identifier its chemistry is
+    # stored under (LIG01 -> the registered id; standard codes map to themselves).
+    name_to_id = {}
+    for r in residues:
+        name_to_id.setdefault(r.name, lookup_name(r))
+    for name, lookup_id in name_to_id.items():
         if name in attempted:
             continue
         attempted.add(name)
         try:
-            n = register_chiral_definitions(session, name)
+            n = register_chiral_definitions(session, name, lookup_id=lookup_id)
             if n:
                 session.logger.info(
                     f'ISOLDE: generated {n} chiral restraint definition(s) for '
-                    f'residue {name}.')
+                    f'residue {name}.'
+                )
         except Exception as e:
             session.logger.info(f'Chiral generation for {name} skipped: {e}')
 

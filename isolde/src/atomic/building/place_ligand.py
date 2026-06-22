@@ -117,7 +117,15 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
     tmpl, owns_template = _resolve_ligand_template(session, ligand_id)
     try:
         ligand_name = tmpl.name
-        r = new_residue_from_template(model, tmpl, chain, position, b_factor=bfactor)
+        # Short, name-legal identifiers (e.g. CCD codes like NAG) become the
+        # residue name directly; longer/registered identifiers get a short
+        # generated LIGnn name, with the real identifier recorded on the residue
+        # (isolde_chemcomp_id) so chirality/rebuild can re-find the chemistry.
+        resname, chemcomp_id = _ligand_residue_name(model, ligand_name)
+        r = new_residue_from_template(model, tmpl, chain, position,
+                                      b_factor=bfactor, residue_name=resname)
+        if chemcomp_id is not None:
+            r.isolde_chemcomp_id = chemcomp_id
         if use_md_template and len(r.atoms) > 3:
             ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
             if md_template_name is None:
@@ -210,6 +218,33 @@ def register_ligand(
     )
 
 
+def _ligand_residue_name(model, identifier):
+    """Choose the in-model residue name for a ligand identified by `identifier`,
+    returning ``(residue_name, chemcomp_id_to_record_or_None)``.
+
+    * If a residue mapped to this identifier already exists in the model, reuse
+      its name (so the same compound placed twice is named consistently).
+    * A short, name-legal identifier (e.g. a CCD code) is used as the residue
+      name directly -- no indirection needed.
+    * Otherwise a fresh ``LIGnn`` name is minted and the real identifier is
+      returned to be stored on the new residue's ``isolde_chemcomp_id``.
+    """
+    for r in model.residues:
+        if getattr(r, 'isolde_chemcomp_id', None) == identifier:
+            return r.name, (None if r.name == identifier else identifier)
+        if r.name == identifier:
+            return identifier, None
+    if len(identifier) <= 5 and identifier.isalnum():
+        return identifier, None
+    existing = set(model.residues.names)
+    i = 1
+    while True:
+        nm = 'LIG%02d' % i
+        if nm not in existing:
+            return nm, identifier
+        i += 1
+
+
 def _ccd_template_residue(session, ccd_id):
     '''Build a throwaway one-residue :class:`AtomicStructure` for a CCD component
     from ISOLDE's local ChemComp store, and return its :class:`Residue`.
@@ -230,8 +265,8 @@ def _ccd_template_residue(session, ccd_id):
     if recs is None:
         raise UserError(
             'Could not find a definition for "{}" in the local ChemComp store or '
-            'the Chemical Components Dictionary. For a novel residue not in the '
-            'CCD, supply a built residue as the template instead.'.format(ccd_id)
+            'the Chemical Components Dictionary. For a novel compound, register it '
+            'first with "isolde register ligand".'.format(ccd_id)
         )
     atoms, bonds, coords = recs
     s = AtomicStructure(session, name='{} template'.format(ccd_id), auto_style=False)
@@ -251,37 +286,40 @@ def _ccd_template_residue(session, ccd_id):
     return r
 
 
-def _resolve_ligand_template(session, ligand):
-    '''Resolve the ``ligand`` argument of :func:`place_ligand` to a coordinate
-    template, returning ``(template_residue, owns_structure)``.
+def _resolve_ligand_template(session, identifier):
+    '''Build a coordinate-template residue for `identifier` (a CCD code or a
+    registered ChemComp identifier) from the local ChemComp store, returning
+    ``(template_residue, owns_structure=True)`` -- the caller deletes the
+    throwaway structure.
 
-    * a CCD id (str) -> a residue built from the local ChemComp store
-      (``owns_structure=True``: the caller must delete its throwaway structure);
-    * a :class:`Residue`/:class:`Residues` -> used directly as a custom geometry
-      template (``owns_structure=False``).
+    Using an extant residue as a one-off template was retired in favour of the
+    register/apply split: register the residue once with ``isolde register
+    ligand``, then place copies by identifier.
     '''
     from chimerax.core.errors import UserError
-    from chimerax.atomic import Residue, Residues
-    if isinstance(ligand, Residues):
-        if len(ligand) != 1:
-            raise UserError('Please specify a single residue as the ligand template!')
-        ligand = ligand[0]
-    if isinstance(ligand, Residue):
-        from chimerax.isolde.atomic.template_utils import (
-            atom_names_unique, make_atom_names_unique)
-        if not atom_names_unique(ligand):
-            session.logger.warning(
-                'Atom names in template {} are not unique. Reassigning unique '
-                'names.'.format(ligand.name))
-            make_atom_names_unique(ligand)
-        return ligand, False
-    return _ccd_template_residue(session, ligand), True
+    if not isinstance(identifier, str):
+        raise UserError(
+            'isolde add ligand expects a ChemComp identifier (a string). To use a '
+            'built residue as a template, register it first with "isolde register '
+            'ligand".'
+        )
+    return _ccd_template_residue(session, identifier), True
 
 
-def new_residue_from_template(model, template, chain_id, center,
-        residue_number=None, insert_code=' ', b_factor=50, precedes=None):
+def new_residue_from_template(
+    model,
+    template,
+    chain_id,
+    center,
+    residue_number=None,
+    insert_code=' ',
+    b_factor=50,
+    precedes=None,
+    residue_name=None
+):
     '''
-    Create a new residue based on a template, and add it to the model.
+    Create a new residue based on a template, and add it to the model. The new
+    residue is named `residue_name` if given, else after the template.
     '''
     if residue_number is None:
         if chain_id in model.residues.chain_ids:
@@ -294,7 +332,7 @@ def new_residue_from_template(model, template, chain_id, center,
     t_center = t_coords.mean(axis=0)
     t_coords += numpy.array(center) - t_center
     tatom_to_atom = {}
-    r = model.new_residue(template.name, chain_id, residue_number,
+    r = model.new_residue(residue_name or template.name, chain_id, residue_number,
         insert=insert_code, precedes=precedes)
     from chimerax.atomic.struct_edit import add_bond, add_atom
     for i, ta in enumerate(template.atoms):
