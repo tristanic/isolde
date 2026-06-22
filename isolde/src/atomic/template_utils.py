@@ -417,30 +417,37 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     # anything that can't be block-placed (e.g. a fully-missing fragment) falls
     # through to the per-atom internal-coordinate builder below.
     still_missing = _place_rigid_blocks(residue, template, set(template_extra))
-    remaining = len(still_missing)
-    found = set()
+    remaining = set(still_missing)
     while remaining:
-        for ta in still_missing:
-            found_neighbors = []
+        built_this_pass = set()
+        for ta in remaining:
+            # Candidate anchors: this atom's template neighbours already present in
+            # the residue. Try each in turn -- the first whose own connectivity can
+            # define a dihedral wins. A neighbour that is itself only just placed
+            # (so its further neighbours aren't built yet) is a dead-end anchor and
+            # is skipped, not crashed on; the atom is then retried next pass once a
+            # better-connected neighbour exists.
+            anchors = []
             for tn in ta.neighbors:
                 ra = residue.find_atom(tn.name)
                 if ra:
-                    found_neighbors.append((ra, tn))
-            if len(found_neighbors) == 0:
-                continue
-            else:
-                ra, tn = found_neighbors[0]
-                build_next_atom_from_geometry(residue, ra, tn, ta)
-            found.add(ta)
-        still_missing = still_missing.difference(found)
-        if len(still_missing) and not len(found):
-            raise RuntimeError('Failed to add atoms on last iteration for residue {}. Still missing: {}'.format(
-                '{}{}'.format(residue.chain_id, residue.number), ','.join(still_missing)
-            ))
-        # m.session.logger.status('Still missing: {}'.format(
-        #     ','.join([ta.name for ta in still_missing])
-        # ))
-        remaining = len(still_missing)
+                    anchors.append((ra, tn))
+            for ra, tn in anchors:
+                try:
+                    build_next_atom_from_geometry(residue, ra, tn, ta)
+                    built_this_pass.add(ta)
+                    break
+                except InsufficientAnchorsError:
+                    continue
+        if not built_this_pass:
+            raise RuntimeError(
+                'Could not rebuild residue {} {}{}: the remaining atoms ({}) have '
+                'too few connected reference atoms to place by geometry.'.format(
+                    residue.name, residue.chain_id, residue.number,
+                    ', '.join(sorted(a.name for a in remaining))
+                )
+            )
+        remaining -= built_this_pass
     bonds = set()
     for a in template.atoms:
         bonds.update(set(a.bonds))
@@ -954,6 +961,14 @@ _geometry_to_angle = {
 }
 
 
+class InsufficientAnchorsError(Exception):
+    '''Raised by :func:`build_next_atom_from_geometry` when the chosen anchor does
+    not yet have enough connected, already-present heavy atoms to define the
+    dihedral needed to place the new atom. The caller should try another anchor or
+    defer the atom to a later pass -- it is not a hard failure.'''
+    pass
+
+
 def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, template_new_atom):
     from chimerax.atomic import struct_edit
     from chimerax.geometry import distance, angle, dihedral
@@ -979,11 +994,17 @@ def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, temp
     if len(t_direct_neighbors) > 1:
         a2, a3 = t_direct_neighbors[:2]
         n2, n3 = r_direct_neighbors[:2]
-    else:
+    elif len(t_direct_neighbors) == 1:
         a2 = t_direct_neighbors[0]
         n2 = r_direct_neighbors[0]
+    else:
+        raise InsufficientAnchorsError(
+            'No n2 found - Not enough connected atoms to form a dihedral!'
+        )
     if not n2:
-        raise TypeError('No n2 found - Not enough connected atoms to form a dihedral!')
+        raise InsufficientAnchorsError(
+            'No n2 found - Not enough connected atoms to form a dihedral!'
+        )
     if not n3:
         for a3 in a2.neighbors:
             if a3 not in (a2, tstub) and a3.element.name != 'H':
@@ -991,7 +1012,9 @@ def build_next_atom_from_geometry(residue, residue_anchor, template_anchor, temp
                 if n3:
                     break
         if not n3:
-            raise TypeError('No n3 found - Not enough connected atoms to form a dihedral!')
+            raise InsufficientAnchorsError(
+                'No n3 found - Not enough connected atoms to form a dihedral!'
+            )
 
     # print('Building next atom {} from geometry of {}'.format(template_new_atom.name,
     #     ','.join([n.name for n in (n1, n2, n3)])))
