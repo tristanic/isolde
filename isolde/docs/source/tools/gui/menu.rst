@@ -39,21 +39,21 @@ Model Building
   this does not make any other modifications to the model such as addition/
   removal of hydrogens. 
 
-Disulphides
+Disulfides
 ~~~~~~~~~~~
 
-* **Break Disulphide:** break the disulphide bond between two selected cysteine
+* **Break Disulfide:** break the disulfide bond between two selected cysteine
   residues, adding hydrogens if hydrogens are present in the rest of the model
 
-* **Create Disulphide:** create a disulphide bond between two selected residues
+* **Create Disulfide:** create a disulfide bond between two selected residues
 
-* **Make All Sensible Disulphides:** find and bond all pairs of cysteine residues in
-  your model whose sulphur atoms are within 3 Angstroms of each other but not
+* **Make All Sensible Disulfides:** find and bond all pairs of cysteine residues in
+  your model whose sulfur atoms are within 2.3 Angstroms of each other but not
   bonded. If three or more cysteine residues are clustered in an ambiguous
   manner, they will not be bonded and a warning message with their identities
   will be printed to the log. *(NOTE: this will only be effective if used before running
-  simulations - afterwards, the sulphur atoms will be pushed too far apart to be 
-  recognised as potential disulphides)*
+  simulations - afterwards, the sulfur atoms will be pushed too far apart to be 
+  recognised as potential disulfides)*
 
 Prep
 ----

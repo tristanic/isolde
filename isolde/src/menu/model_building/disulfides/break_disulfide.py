@@ -6,7 +6,7 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
-tooltip = ('Break a disulphide bond to make two free cysteine residues.')
+tooltip = ('Break a disulfide bond to make two free cysteine residues.')
 
 def run_script(session):
     from chimerax.atomic import selected_residues, selected_bonds, Residues
@@ -22,6 +22,6 @@ def run_script(session):
 
     from chimerax.isolde.atomic.building.build_utils import break_disulfide
     break_disulfide(*sel)
-    session.logger.info('Broke disulphide bond between {}.'.format(
+    session.logger.info('Broke disulfide bond between {}.'.format(
     ' and '.join(['{}{}{}'.format(c.chain_id, c.number, c.insertion_code) for c in sel])
     ))

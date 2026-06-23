@@ -6,7 +6,7 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
-tooltip = ('Create disulphide bonds between any free cysteine residues with disulphide-like geometry')
+tooltip = ('Create disulfide bonds between any free cysteine residues with disulfide-like geometry')
 
 def run_script(session):
     from chimerax.core.commands import run
@@ -19,7 +19,7 @@ def run_script(session):
     _possible, ambiguous = create_all_sensible_disulfides(m, logger=session.logger)
     if len(ambiguous):
         warn_str = ('The following cysteine residues are clustered too close to '
-            'automatically assign disulphide-bonded pairs. Please check manually.\n{}').format(
+            'automatically assign disulfide-bonded pairs. Please check manually.\n{}').format(
                 '\n'.join(', '.join(['{}{}{}'.format(c.chain_id, c.number,c.insertion_code) for c in amb_set]) for amb_set in ambiguous
             ))
         session.logger.warning(warn_str)

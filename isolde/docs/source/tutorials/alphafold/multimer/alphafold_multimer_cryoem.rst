@@ -831,7 +831,7 @@ around to see if you can figure it out. A few hints:
 
 (c) In this case it turns out the disulfide bonds are correct. If they weren't,
     it would be possible to break and reform them via the ISOLDE/ Model
-    Building/Disulphides menu.
+    Building/Disulfides menu.
 
 (d) The loop is *very* wrong - the kind of wrong that would almost certainly
     never be fixed by a straightforward "dumb" (unguided) simulation. You might find

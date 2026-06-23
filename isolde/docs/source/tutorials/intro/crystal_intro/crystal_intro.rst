@@ -367,11 +367,11 @@ larger changes you should choose a heavier atom to pull.)*
 This should result in something like the above. There are a few things to note
 here:
 
-* The change in the maps (the large red blob around the sulphur atom, and the
+* The change in the maps (the large red blob around the sulfur atom, and the
   green blob where it **used** to be) is clearly telling you this is wrong
   (quite apart from the R-factors, which in this case have spiked from about
   0.19 to around 0.26);
-* Tugging on the sulphur has had a knock-on effect on the adjacent Asn sidechain
+* Tugging on the sulfur has had a knock-on effect on the adjacent Asn sidechain
   (top) - to re-iterate, in ISOLDE, all atoms feel each other.
 
 You might wonder how the changes you see in the map affect the forces felt by the 
