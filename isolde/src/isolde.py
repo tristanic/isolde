@@ -800,16 +800,23 @@ class Isolde():
 
         with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'):
             if not getattr(m, 'isolde_initialized', False):
-                atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
-                if len(atoms_with_alt_locs):
-                    from .dialog import choice_warning
-                    result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
-                        'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
-                        'output model. In most cases it is best to remove them. Would you like to do so now?')
-                    if result:
-                        m.delete_alt_locs()
-                        atoms_with_alt_locs.occupancies = 1
-                        self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
+                # Skip the alt-loc popup if "isolde preflight altlocs" or
+                # "isolde clear altlocs" has already been run for this model:
+                # they set this flag once the situation has been acknowledged
+                # (or resolved), which lets agent-driven setup handle the
+                # question through a chat round-trip instead of a blocking
+                # GUI dialog.
+                if not getattr(m, '_isolde_altloc_check_done', False):
+                    atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
+                    if len(atoms_with_alt_locs):
+                        from .dialog import choice_warning
+                        result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
+                            'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
+                            'output model. In most cases it is best to remove them. Would you like to do so now?')
+                        if result:
+                            from .atomic.util import clear_altlocs
+                            clear_altlocs(m, logger=self.session.logger)
+                    m._isolde_altloc_check_done = True
                 from .atomic.util import correct_pseudosymmetric_sidechain_atoms
                 correct_pseudosymmetric_sidechain_atoms(session, m.residues)
                 m.isolde_initialized = True

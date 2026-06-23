@@ -170,7 +170,17 @@ class IsoldeMainWin(MainToolWindow):
         from chimerax.core.triggerset import DEREGISTER
         if m is None:
             return DEREGISTER
-        from chimerax.isolde.atomic.building.build_utils import current_and_possible_disulfides
+        # The "isolde preflight disulfides" / "isolde add disulfides auto"
+        # commands set this flag once the user (or a driving agent) has
+        # acknowledged the situation, so that the popup never fires again
+        # for that model. This keeps the GUI flow unchanged for interactive
+        # users while letting agent-driven setup pre-resolve the question
+        # via the preflight commands.
+        if getattr(m, '_isolde_disulfide_check_done', False):
+            return DEREGISTER
+        from chimerax.isolde.atomic.building.build_utils import (
+            current_and_possible_disulfides, create_all_sensible_disulfides
+        )
         current, possible, ambiguous = current_and_possible_disulfides(m, cutoff_distance=2.3)
         from ..dialog import generic_warning, choice_warning
         if len(possible):
@@ -178,12 +188,7 @@ class IsoldeMainWin(MainToolWindow):
                 'specified in the model metadata. Would you like to create them now?')
             result = choice_warning(warn_str, yesno=True)
             if result:
-                from chimerax.isolde.atomic.building.build_utils import create_disulfide
-                for cys_pair in possible:
-                    create_disulfide(*cys_pair)
-                self.session.logger.info('ISOLDE: created disulfide bonds between the following residues: \n{}'.format(
-                    '; '.join(['-'.join(['{}{}{}'.format (c.chain_id, c.number, c.insertion_code) for c in p]) for p in possible])
-                ))
+                create_all_sensible_disulfides(m, logger=self.session.logger)
                 if len(ambiguous):
                     from chimerax.atomic import concise_residue_spec
                     warn_base = ('The following groups of cysteines are clustered too close to automatically assign disulfide bonding and '
@@ -196,6 +201,10 @@ class IsoldeMainWin(MainToolWindow):
                         '<br>'+'<br>'.join([f'<a href="cxcmd:view {concise_residue_spec(self.session, residues)}">{residue_string(residues)}</a>' for residues in ambiguous])
                     )
                     self.session.logger.warning(log_str, is_html=True)
+        # Mark this model as checked so that subsequent ``isolde select``
+        # calls don't re-ask. The flag is also set by the preflight
+        # commands described above.
+        m._isolde_disulfide_check_done = True
         return DEREGISTER
 
 
