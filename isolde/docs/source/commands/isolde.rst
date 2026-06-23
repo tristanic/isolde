@@ -118,6 +118,14 @@ geometry, fit-to-data) under the ISOLDE GUI's **Validate** tab. They never
 construct an OpenMM ``Context``, never raise on missing parameters, and
 never modify the model — safe to call at any time once a model is selected.
 
+The ``disulfides`` and ``altlocs`` preflights additionally *acknowledge* the
+situation they report: calling either one stamps a per-model flag that
+suppresses the corresponding one-time GUI popup (the "create disulfides?" and
+"remove alt locs?" dialogs that otherwise fire the first time a model is
+selected in ISOLDE). This lets an agent resolve the question through a chat
+round-trip — running the preflight, then the matching fix command if desired —
+instead of being blocked by a dialog.
+
 isolde preflight hydrogens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -155,6 +163,42 @@ The *forcefield* keyword defaults to ISOLDE's currently configured
 forcefield (e.g. ``amber14``); pass it explicitly to preflight against a
 different one. *ignoreExternalBonds* defaults to ``true`` to match the
 behaviour of the GUI panel.
+
+isolde preflight disulfides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde preflight disulfides [*model*]
+
+Report cysteine pairs in *model* (or ISOLDE's currently selected model) whose
+SG atoms are close enough to be disulfide-bonded. This is the same geometric
+check that fires the "create disulfides?" GUI popup the first time a model is
+selected in ISOLDE, using a 2.3 Angstrom SG-SG cutoff. It creates no bonds —
+pair it with :ref:`isolde add disulfides auto <add disulfides auto>` to act on
+the result.
+
+Returns a dictionary with three residue lists — ``current`` (pairs already
+disulfide-bonded), ``possible`` (unbonded pairs within the cutoff), and
+``ambiguous`` (clusters of three or more cysteines too close to assign
+automatically) — along with the matching ``n_current`` / ``n_possible`` /
+``n_ambiguous`` counts and a ``recommend_create`` flag. As noted above, calling
+this command suppresses the one-time GUI disulfide popup for the model.
+
+isolde preflight altlocs
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde preflight altlocs [*model*]
+
+Report whether *model* (or ISOLDE's currently selected model) contains atoms
+with alternate conformations. ISOLDE cannot see alt locs during a simulation
+but carries them through to the output, so in most refinement workflows they
+should be removed first. This is the situation behind the "remove alt locs?"
+GUI popup; it removes nothing — pair it with
+:ref:`isolde clear altlocs <clear altlocs>` to act on the result.
+
+Returns a dictionary with ``atoms_with_altlocs`` (the atom count), a
+``residues`` list of the affected residues, ``n_residues``, and a
+``recommend_clear`` flag. As noted above, calling this command suppresses the
+one-time GUI alt-loc popup for the model.
 
 .. _validate:
 
@@ -508,6 +552,42 @@ bonding between elements. Use with caution: the current implementation is not
 aware of bond order nor of chirality, so attempting to replace (for example) a
 D-sugar with its L-enantiomer will simply rename the residue while retaining the
 D coordinates. This will be improved upon in a future release.
+
+.. _`add disulfides auto`:
+
+isolde add disulfides auto
+==========================
+
+Syntax: isolde add disulfides auto [*model*]
+
+Create disulfide bonds for every pair of cysteines in *model* (or ISOLDE's
+currently selected model) whose SG atoms are within 2.3 Angstroms of each other
+but not already bonded — the ``possible`` set reported by
+:ref:`isolde preflight disulfides <preflight>`. Clusters of three or more
+cysteines packed too close to assign unambiguously are left untouched and
+reported as a warning for manual triage. Cannot be run while a simulation is
+running.
+
+Returns a dictionary with the ``model`` spec, the number of bonds ``created``,
+and the number of ``ambiguous`` clusters skipped. Like the preflight command,
+this suppresses the one-time GUI disulfide popup for the model.
+
+.. _`clear altlocs`:
+
+isolde clear altlocs
+====================
+
+Syntax: isolde clear altlocs [*model*]
+
+Drop all alternate conformations from *model* (or ISOLDE's currently selected
+model) and reset the affected atoms' occupancies to 1.0, keeping the
+highest-occupancy conformer. This mirrors the action offered by the "remove alt
+locs?" popup and by :ref:`isolde preflight altlocs <preflight>`. Cannot be run
+while a simulation is running.
+
+Returns a dictionary with the ``model`` spec and ``atoms_cleared`` (the number
+of atoms that had alternate conformers). Like the preflight command, this
+suppresses the one-time GUI alt-loc popup for the model.
 
 .. _`adjust bfactors`:
 
