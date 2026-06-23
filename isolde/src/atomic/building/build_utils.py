@@ -354,20 +354,28 @@ def create_disulfide(cys1, cys2):
     add_bond(s1, s2)
 
 
-def create_all_sensible_disulfides(model, logger=None):
+def create_all_sensible_disulfides(model, cutoff_distance=2.3, logger=None):
     '''
     Create disulfide bonds for every pair of cysteines in ``model`` whose
-    SG atoms are close enough to be disulfide-bonded but currently lack an
-    SG-SG bond. Cysteines that cluster in groups of three or more are not
-    bonded automatically and are returned as the "ambiguous" set so the
-    caller can warn or display them as appropriate.
+    SG atoms are within ``cutoff_distance`` (Angstroms) of each other but
+    currently lack an SG-SG bond. Cysteines that cluster in groups of three
+    or more are not bonded automatically and are returned as the "ambiguous"
+    set so the caller can warn or display them as appropriate.
+
+    The default ``cutoff_distance`` of 2.3 Angstroms matches the value used by
+    the interactive "create disulfides?" GUI popup and the
+    ``isolde preflight disulfides`` report, so that what is reported and what
+    is created always agree. (A real S-S bond is ~2.05 Angstroms; the wider
+    3.0 Angstrom default of :func:`current_and_possible_disulfides` is
+    permissive enough to occasionally invent spurious bonds.)
 
     Returns ``(possible_pairs_created, ambiguous_clusters)`` where
     ``possible_pairs_created`` is the set of cysteine-residue pairs that
     were actually bonded by this call, and ``ambiguous_clusters`` is the
     set of cysteine-residue groups that were left untouched.
     '''
-    _current, possible, ambiguous = current_and_possible_disulfides(model)
+    _current, possible, ambiguous = current_and_possible_disulfides(
+        model, cutoff_distance=cutoff_distance)
     for cys_pair in possible:
         create_disulfide(*cys_pair)
     if logger is not None and possible:
