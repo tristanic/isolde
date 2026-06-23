@@ -170,6 +170,24 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         enable = (data is not None)
         self.fix_button.setEnabled(enable)
 
+    def _residues_matching_template(self, residues, template_name):
+        '''
+        Return the subset of ``residues`` (a list of ChimeraX residues) that
+        match the named MD template under explicit assignment - mirroring how
+        the real simulation build applies an ``isolde_template_name`` override,
+        so a residue is only treated as "fixed" if the next sim start would
+        actually accept it.
+        '''
+        from chimerax.atomic import Residues
+        residues = Residues(residues)
+        ff = self.isolde.forcefield_mgr[self.isolde.sim_params.forcefield]
+        from chimerax.isolde.openmm.openmm_interface import create_openmm_topology
+        template_dict = {i: template_name for i in range(len(residues))}
+        top, residue_templates = create_openmm_topology(residues.atoms, template_dict)
+        unique, ambiguous, unmatched = ff.assignTemplates(
+            top, ignoreExternalBonds=True, explicit_templates=residue_templates)
+        return set(residues[r.index] for r in unique)
+
     def _fix_button_clicked_cb(self, *_):
         ttree = self.template_tree
         table = self.residue_table
@@ -188,9 +206,24 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
             indices = [index]
         from chimerax.isolde.atomic.template_utils import fix_residue_to_match_md_template
         template = self.isolde.forcefield_mgr[self.isolde.sim_params.forcefield]._templates[template_name]
-        for i,r in zip(reversed(indices), reversed(residues)):
+        for r in residues:
             fix_residue_to_match_md_template(self.session, r, template, cif_template=ccd_template)
-            table.removeRow(i)
+        # Re-validate each rebuilt residue against the chosen template. Only
+        # residues that now genuinely match get the override recorded (and their
+        # row removed); any that still don't match stay in the table with a
+        # warning, so the user is never told a residue is "fixed" when the next
+        # simulation start would still reject it (the loop this guards against).
+        matched = self._residues_matching_template(residues, template_name)
+        for i, r in zip(reversed(indices), reversed(residues)):
+            if r in matched:
+                r.isolde_template_name = template_name
+                table.removeRow(i)
+            else:
+                self.session.logger.warning(
+                    'Residue /{}{}{} still does not match template "{}" after '
+                    'rebuilding. Check its atoms and bonding, or choose a '
+                    'different template.'.format(
+                        r.chain_id, r.name, r.number, template_name))
         ttree.clear()
         self.fix_button.setEnabled(False)
         

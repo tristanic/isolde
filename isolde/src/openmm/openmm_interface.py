@@ -1081,9 +1081,11 @@ class SimHandler:
         self.mdff_forces = {}
 
         logger = self.session.logger
-        # Overall simulation topology
-        template_dict = find_residue_templates(sim_construct.all_residues, ff, ligand_db=ligand_db, logger=session.logger)
-        top, residue_templates = create_openmm_topology(atoms, template_dict)
+        # Overall simulation topology + system. The build can recover once from
+        # stale isolde_template_name overrides that no longer match their
+        # residue (see _build_system_with_template_recovery).
+        top, system = self._build_system_with_template_recovery(
+            ff, atoms, sim_construct.all_residues, sim_params, ligand_db, logger)
         self.topology = top
 
 
@@ -1102,8 +1104,7 @@ class SimHandler:
         for name in trigger_names:
             t.add_trigger(name)
 
-        system = self._system = self._create_openmm_system(ff, top,
-            sim_params, residue_templates)
+        self._system = system
 
 
 
@@ -1230,12 +1231,65 @@ class SimHandler:
     def atoms(self):
         return self._atoms
 
-    def _create_openmm_system(self, forcefield, top, params, residue_templates):
+    def _build_system_with_template_recovery(self, ff, atoms, all_residues,
+            sim_params, ligand_db, logger):
+        '''
+        Build the OpenMM topology and system from ``all_residues``.
+
+        If the build fails because one or more residues carry an
+        ``isolde_template_name`` override that does not actually match the
+        residue (or names a template missing from the forcefield), clear those
+        overrides and rebuild **once**. Rebuilding from scratch — rather than
+        just re-running template matching — is important: ``find_residue_templates``
+        deliberately skips its cysteine / USER_ / ligand logic for residues that
+        already carry an override, so the residue only gets a fair shot at
+        automatic assignment after the override is gone. If the residue still
+        cannot be matched (or the failure was never override-related), the
+        UnparameterisedResiduesError propagates and the usual widget path fires.
+
+        Returns ``(topology, system)``.
+        '''
+        for attempt in (0, 1):
+            template_dict = find_residue_templates(all_residues, ff,
+                ligand_db=ligand_db, logger=logger,
+                clear_failed_overrides=True)
+            top, residue_templates = create_openmm_topology(atoms, template_dict)
+            try:
+                system = self._create_openmm_system(ff, top, sim_params,
+                    residue_templates, residues=all_residues)
+            except UnparameterisedResiduesError as e:
+                offenders = [r for r in (e.unmatched + e.ambiguous)
+                    if getattr(r, 'isolde_template_name', None) is not None]
+                if attempt == 0 and offenders:
+                    for r in offenders:
+                        logger.warning(
+                            'Residue {} was assigned template "{}" via its '
+                            'isolde_template_name override, but that template '
+                            'does not match the residue. Clearing the override '
+                            'and retrying with automatic template assignment.'
+                            .format(r, r.isolde_template_name))
+                        r.isolde_template_name = None
+                    continue
+                raise
+            return top, system
+
+    def _create_openmm_system(self, forcefield, top, params, residue_templates,
+            residues=None):
         residue_to_template, ambiguous, unassigned = forcefield.assignTemplates(
             top, ignoreExternalBonds=True, explicit_templates=residue_templates
         )
         if len(ambiguous) or len(unassigned):
-            raise RuntimeError('Unparameterised residue detected')
+            # Map the offending OpenMM topology residues back to their ChimeraX
+            # residues (OpenMM res.index is the order they were added in
+            # create_openmm_topology, which matches `residues`) so the caller
+            # can inspect/clear stale isolde_template_name overrides.
+            unmatched_cx = []
+            ambiguous_cx = []
+            if residues is not None:
+                unmatched_cx = [residues[r.index] for r in unassigned]
+                ambiguous_cx = [residues[r.index] for r in ambiguous]
+            raise UnparameterisedResiduesError(unmatched=unmatched_cx,
+                ambiguous=ambiguous_cx)
 
             # from chimerax.core.errors import UserError
             # err_text = ''
@@ -3006,12 +3060,38 @@ def create_openmm_topology(atoms, residue_templates):
     return top, templates_out
 
 
-def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
+class UnparameterisedResiduesError(RuntimeError):
+    '''
+    Raised when one or more residues cannot be matched to a unique MD template.
+
+    Carries the offending ChimeraX residues (``unmatched`` and ``ambiguous``)
+    so the caller can decide how to recover (e.g. clearing a stale
+    ``isolde_template_name`` override and retrying). The default message starts
+    with "Unparameterised" so that the existing ``str(e).startswith(...)`` catch
+    in :meth:`Isolde.start_sim` still fires the Unparameterised Residues widget
+    when this propagates unhandled.
+    '''
+    def __init__(self, unmatched=None, ambiguous=None,
+            message='Unparameterised residue detected'):
+        super().__init__(message)
+        self.unmatched = list(unmatched) if unmatched else []
+        self.ambiguous = list(ambiguous) if ambiguous else []
+
+
+def find_residue_templates(residues, forcefield, ligand_db = None, logger=None,
+        clear_failed_overrides=False):
     '''
     Works out the template name applicable to cysteine residues (since OpenMM
     can't work this out for itself when ignoreExternalBonds is True), and
     looks up the template name for all known parameterised ligands from the
     CCD.
+
+    If ``clear_failed_overrides`` is True, a residue carrying an
+    ``isolde_template_name`` override that names a template *not present in the
+    forcefield* will have the override reset to ``None`` (rather than merely
+    ignored), so it cannot keep re-triggering the same failure. This must only
+    be set on the real simulation-build path; read-only callers (the preflight
+    command, the GUI display) leave it False so they never mutate the model.
     '''
     template_names = forcefield._templates.keys()
     import numpy
@@ -3021,8 +3101,13 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
         if tname is not None:
             if tname in template_names:
                 templates[i] = tname
+            elif clear_failed_overrides:
+                if logger is not None:
+                    logger.warning('Residue {} has a registered template name {}, but this is not present in the forcefield. Clearing the override and falling back to automatic template assignment.'.format(residues[i], tname))
+                residues[i].isolde_template_name = None
             else:
-                logger.warning('Residue {} has registered template name {}, but this is not present in the forcefield. Ignoring the registered template name.'.format(residues[i], tname))
+                if logger is not None:
+                    logger.warning('Residue {} has registered template name {}, but this is not present in the forcefield. Ignoring the registered template name.'.format(residues[i], tname))
     cys_indices = numpy.where(residues.names == 'CYS')[0]
     # remove any CYS residues that already have a registered template name
     cys_indices = set(cys_indices) - set(templates.keys())

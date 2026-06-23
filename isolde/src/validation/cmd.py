@@ -362,6 +362,9 @@ def isolde_preflight_parameters(session, model=None, forcefield=None,
     for r in unmatched:
         cx_res = residues[r.index]
         info = _residue_summary(cx_res)
+        override = getattr(cx_res, 'isolde_template_name', None)
+        if override is not None:
+            info['overridden_template'] = override
         # Suggest possible templates so the agent has something actionable.
         try:
             by_name, by_comp = ff.find_possible_templates(r)
@@ -379,8 +382,27 @@ def isolde_preflight_parameters(session, model=None, forcefield=None,
     for r, template_info in ambiguous.items():
         cx_res = residues[r.index]
         info = _residue_summary(cx_res)
+        override = getattr(cx_res, 'isolde_template_name', None)
+        if override is not None:
+            info['overridden_template'] = override
         info['candidates'] = [t[0].name for t in template_info]
         ambiguous_info.append(info)
+
+    # Read-only report of stale overrides: residues whose isolde_template_name
+    # names a template absent from the forcefield. These fall back to automatic
+    # matching (so they won't appear in `unmatched`), but the override is dead
+    # weight that should be cleared. This command never mutates the model -
+    # clearing happens only on the real simulation-build path.
+    ff_template_names = ff._templates.keys()
+    overrides_not_in_ff = []
+    for r in residues:
+        tname = getattr(r, 'isolde_template_name', None)
+        if tname is not None and tname not in ff_template_names:
+            rinfo = _residue_summary(r)
+            rinfo['overridden_template'] = tname
+            overrides_not_in_ff.append(rinfo)
+    recommend_clear_overrides = bool(overrides_not_in_ff) or any(
+        'overridden_template' in i for i in unmatched_info + ambiguous_info)
 
     n_total = len(residues)
     n_unique = len(unique)
@@ -406,6 +428,12 @@ def isolde_preflight_parameters(session, model=None, forcefield=None,
                 _residue_label(residues[r.index]) for r in ambiguous
             ))
 
+    if overrides_not_in_ff:
+        log.warning('  Stale isolde_template_name override(s) naming a template not '
+            'in the forcefield (consider clearing): ' + ', '.join(
+                '{} -> {}'.format(i['spec'], i['overridden_template'])
+                for i in overrides_not_in_ff))
+
     return {
         'model': m.atomspec,
         'forcefield': ff_name,
@@ -417,6 +445,8 @@ def isolde_preflight_parameters(session, model=None, forcefield=None,
         'ready_for_simulation': n_unmatched == 0 and n_ambig == 0,
         'unmatched': unmatched_info,
         'ambiguous': ambiguous_info,
+        'overrides_not_in_forcefield': overrides_not_in_ff,
+        'recommend_clear_overrides': recommend_clear_overrides,
     }
 
 
