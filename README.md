@@ -5,6 +5,15 @@ Interactive molecular dynamics based model building into low-resolution crystall
 
 [Home page](https://isolde.cimr.cam.ac.uk/)
 
+> **⚠️ `rdkit` branch — work in progress.**
+> This branch adds an RDKit-based chemistry layer (chirality-aware rebuilding,
+> automatic chiral-restraint generation, and ligand registration/placement). It
+> depends on the **`ChimeraX-ChemComp`** bundle, which is **not yet publicly
+> available**, so it cannot currently be built or installed outside Altos Labs.
+> The dependency is isolated behind a small seam and can be dropped (or
+> `ChemComp` vendored into ISOLDE) once it is released. **For general use, build
+> from the [`master`](https://github.com/tristanic/isolde/tree/master) branch.**
+
 ## What is ISOLDE?
 
 ISOLDE is a plugin to [UCSF ChimeraX](https://www.cgl.ucsf.edu/chimerax/), designed to ease the task of
