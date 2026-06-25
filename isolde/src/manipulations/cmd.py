@@ -141,12 +141,16 @@ def chiral_flip(session, atoms, force=False):
             )
         # Flip targets + geometry FIRST, then start the simulation, so its
         # automatic initial minimisation relaxes the strained result (see the
-        # default-path note below). Into an already-running sim, pushing the moved
-        # coords re-triggers minimisation, so that path is kept.
+        # default-path note below).
         if not sim_was_running:
             from ..cmd import isolde_sim
             isolde_sim(session, 'start', chirals.chiral_atoms.unique_residues.atoms)
-        elif moved:
+        elif moved and not isolde.sim_paused:
+            # Only an actively-running (unpaused) sim overwrites the model
+            # coordinates on its next step, so the inverted coords must be pushed
+            # in (which also re-triggers minimisation). When paused, the coordinate
+            # and (deferred) restraint-target changes are applied automatically on
+            # resume, so no manual push is needed.
             isolde.sim_handler.push_coords_to_sim()
         session.logger.warning(
             'isolde chiralflip force (EXPERTS ONLY): flipped the '
@@ -212,7 +216,10 @@ def chiral_flip(session, atoms, force=False):
     if not sim_was_running:
         from ..cmd import isolde_sim
         isolde_sim(session, 'start', to_flip.chiral_atoms.unique_residues.atoms)
-    elif len(flipped):
+    elif len(flipped) and not isolde.sim_paused:
+        # Only an actively-running (unpaused) sim overwrites the model coordinates
+        # on its next step, so push the inverted coords in (re-triggering
+        # minimisation). When paused, the change is applied automatically on resume.
         isolde.sim_handler.push_coords_to_sim()
     if len(flipped):
         session.logger.info(
