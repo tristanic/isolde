@@ -159,3 +159,36 @@ toggle per validator type). The chirality annotator (`ChiralAnnotator` in
 `src/validation/chiral_annotation.py`) currently hard-codes the visible-atoms-only
 convention via `chirals.chiral_atoms.visibles`; the Rama annotator already has a
 related `ignore_ribbon_hides` knob to model the API on.
+
+### Optional "show R/S on ALL chiral centres" flag
+Complement the current chirality *outlier* glyph (`ChiralAnnotator`) with a
+strictly user-optional mode that labels **every** chiral centre with its absolute
+configuration ("R"/"S"). Two notable design points:
+1. **3D glyph, not a 2D label.** ChimeraX's 2D text labels track a 3D position
+   but always draw *in front of* the 3D scene (no depth occlusion), which looks
+   wrong as in-model markup. The R/S indicator needs to be a real 3D object
+   (extruded letter geometry, depth-tested like the existing glyphs).
+2. **Session-level `...Mgr`, not a per-structure `...Annotator`.** This would be
+   the first in-model markup better owned by a session-level manager than the
+   per-`AtomicStructure` annotator pattern (rama/rota/chiral annotators) — so it
+   needs care: a new manager shape, session save/restore, and per-structure
+   enable/disable that doesn't assume one annotator per model.
+
+### cis/trans markup + restraints + flip for ALL flippable double bonds
+ISOLDE marks up cis/trans peptide bonds and restrains `omega` to stop accidental
+flipping. The same need applies — arguably more so — to **every "flippable"
+double bond** (one not locked by a ring or other geometry). Rationale: a cis
+peptide is at least eyeball-detectable (its HN and carbonyl O are displayed by
+default), but a *trans* fatty-acid double bond is essentially invisible — with
+nonpolar H hidden there's no visual cue it's even a double bond, let alone the
+wrong isomer. Three pieces, mirroring the chiral work just completed:
+1. **Restraints** — analogous to the `omega` peptide restraints, applied to the
+   relevant dihedral of each flippable double bond (skip ring/locked ones).
+2. **Markup** — needs fresh design. The peptide markup (a pseudo-trapezoid filling
+   the "cup" between CA atoms, shown only when cis/twisted) won't transfer: for a
+   natural fatty acid *cis* is correct and *trans* is wrong — the opposite default
+   from peptides. Decide what "wrong/strained" looks like here and when it shows.
+3. **Manual flip command** — a user-facing flip (cf. `isolde cisflip` /
+   `isolde chiralflip`) for when a non-default isomer is genuinely intended.
+Detecting "flippable" double bonds is naturally an RDKit-layer job (bond order +
+ring membership), so it dovetails with the `rdkit_bridge`/`chemcomp` chemistry.
