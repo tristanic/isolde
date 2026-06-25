@@ -4773,6 +4773,11 @@ class ChiralCenter(_Dihedral):
         doc='The chiral atom. Read only.')
     center = c_property('chiral_center_center', float64, value_count=3, read_only=True,
         doc = 'Centroid of the coordinates for the atoms defining the chiral center. Read only.')
+    label = c_property('chiral_center_label', bool,
+        doc = 'Whether this centre\'s absolute configuration ("R"/"S") is drawn as '
+            'in-model markup by the :class:`ChiralAnnotator`. Off by default; an '
+            'opt-in display flag toggled per centre/selection, independent of the '
+            'always-on outlier glyph.')
 
     def take_snapshot(self, session, flags):
         data = {

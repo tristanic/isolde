@@ -71,6 +71,13 @@ public:
     //! deleted/added and always reflects the live bonding.
     Atom* fourth_substituent() const;
     Atom* chiral_atom() const { return _atoms[0]; }
+    //! Whether this centre's absolute configuration ("R"/"S") should be drawn as
+    //! in-model markup. Off by default; an opt-in display flag (cf. Atoms::display)
+    //! the user toggles per centre/selection -- distinct from the always-on
+    //! outlier validation glyph. Session-transient state, but round-tripped by the
+    //! Python ChiralCenter snapshot so it survives save/restore.
+    bool label() const { return _label; }
+    void set_label(bool flag) { _label = flag; }
     //! Flip the expected target to the opposite (mirror) handedness: negate the
     //! expected dihedral and, if set, the expected volume. Used by the experts-only
     //! "force" chiral flip, which retargets selected centres to their enantiomer.
@@ -84,6 +91,7 @@ private:
         { return "Substituent atoms must all be bonded to the chiral center"; }
     double _expected_angle;
     double _expected_volume;
+    bool _label = false;
     // const std::string _r = "R";
     // const std::string _s = "S";
 

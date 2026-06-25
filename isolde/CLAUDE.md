@@ -160,19 +160,40 @@ toggle per validator type). The chirality annotator (`ChiralAnnotator` in
 convention via `chirals.chiral_atoms.visibles`; the Rama annotator already has a
 related `ignore_ribbon_hides` knob to model the API on.
 
-### Optional "show R/S on ALL chiral centres" flag
-Complement the current chirality *outlier* glyph (`ChiralAnnotator`) with a
-strictly user-optional mode that labels **every** chiral centre with its absolute
-configuration ("R"/"S"). Two notable design points:
-1. **3D glyph, not a 2D label.** ChimeraX's 2D text labels track a 3D position
-   but always draw *in front of* the 3D scene (no depth occlusion), which looks
-   wrong as in-model markup. The R/S indicator needs to be a real 3D object
-   (extruded letter geometry, depth-tested like the existing glyphs).
-2. **Session-level `...Mgr`, not a per-structure `...Annotator`.** This would be
-   the first in-model markup better owned by a session-level manager than the
-   per-`AtomicStructure` annotator pattern (rama/rota/chiral annotators) — so it
-   needs care: a new manager shape, session save/restore, and per-structure
-   enable/disable that doesn't assume one annotator per model.
+### Show R/S absolute configuration on selected chiral centres — DONE
+Opt-in in-model markup that labels chosen chiral centres with their as-modelled
+absolute configuration ("R"/"S"), complementing the always-on outlier glyph.
+As-built design (the original "session-level `...Mgr`" idea was dropped — a non-
+`Model` singleton can't draw cleanly):
+1. **State on the object, ChimeraX-style.** A per-`ChiralCenter` boolean `label`
+   (C++ `chiral.h/.cpp`, bound through `chiral_ext.h` → `ChiralCenter.label` /
+   vectorised `ChiralCenters.labels`, cf. `Atoms.displays`). Off by default —
+   protein backbone centres stay unlabelled. NB centres are transient (not
+   serialized), so persistence lives on the **annotator's** snapshot, which records
+   the labelled centres' atoms and re-applies the flag on restore (version 4
+   unchanged). Required fixing a pre-existing gap: `ChiralAnnotator` was missing
+   from the bundle `get_class` table and `validation/__init__.py` exports.
+2. **Rendered by the existing per-structure `ChiralAnnotator`** (not a new
+   manager): it draws `chirals[chirals.labels]` on two child drawings (one "R",
+   one "S"), reusing its placement/visibility/camera-scaling machinery.
+3. **Real 3D letters, camera-facing, fixed-size.** Precomputed extruded "R"/"S"
+   meshes (`src/validation/_rs_glyphs.py`, generated offline by
+   `tools/gen_rs_glyphs.py` — ChimeraX's Python has no font→outline lib, so no
+   runtime dep). They face the camera (re-oriented on rotation via the annotator's
+   `'graphics update'` gate) yet stay depth-tested/occluded, unlike a 2D label.
+   Unlike the view-width-scaled outlier glyph these are purely informational, so
+   they sit at a fixed `LABEL_HEIGHT_A` (0.5 Å) beside the atom (no zoom ramp).
+   Colour via `set_label_color`: `'auto'` (contrasts with the background, tracked
+   live), `'fromatoms'` (per-instance = each chiral atom's colour), or a custom RGBA.
+4. **As-modelled config, cheaply.** `chirality.as_modelled_configs` = the CCD
+   reference config (`reference_cip_codes`: RDKit CIP on the ideal geometry,
+   cached per id) flipped iff `sign(expected_volume)·true_chiral_volume < 0` — no
+   per-residue RDKit at *draw* time (recomputed only when the chiral set changes).
+5. **UI/command.** `chiral [<atoms>] label true|false [labelColor auto|fromAtoms|<color>]`
+   toggles the labels (no atom spec → current selection) and sets their colour.
+   "Label R/S (sel.)" / "Clear R/S (sel.)" buttons in the Validation-tab Chiral
+   widget emit `chiral sel label true|false` (GUI actions log their command
+   equivalent, per ChimeraX convention). Mainly for ligands.
 
 ### cis/trans markup + restraints + flip for ALL flippable double bonds
 ISOLDE marks up cis/trans peptide bonds and restrains `omega` to stop accidental

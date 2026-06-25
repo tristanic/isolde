@@ -104,6 +104,20 @@ chiral_center_fourth_substituent(void *chirals, size_t n, pyobject_t *atoms)
 
 
 extern "C" EXPORT void
+chiral_center_label(void *chirals, size_t n, npy_bool *flag)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    error_wrap_array_get<ChiralCenter, bool, npy_bool>(c, n, &ChiralCenter::label, flag);
+}
+
+extern "C" EXPORT void
+set_chiral_center_label(void *chirals, size_t n, npy_bool *flag)
+{
+    ChiralCenter **c = static_cast<ChiralCenter **>(chirals);
+    error_wrap_array_set<ChiralCenter, bool, npy_bool>(c, n, &ChiralCenter::set_label, flag);
+}
+
+extern "C" EXPORT void
 chiral_center_chiral_atom(void *chirals, size_t n, pyobject_t *atoms)
 {
     ChiralCenter **c = static_cast<ChiralCenter **>(chirals);

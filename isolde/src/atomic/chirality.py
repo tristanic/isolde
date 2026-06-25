@@ -230,6 +230,108 @@ def chiral_outliers(session, atoms, ensure_defs=True):
     return chirals[mask], oriented[mask], severity[mask]
 
 
+def _reference_data(session, lookup_id):
+    '''``(cip_codes, ideal_coords)`` for a ChemComp component, both from one RDKit
+    pass over its reference (CCD ideal) geometry:
+
+      * ``cip_codes``    -- ``{atom_name: 'R'|'S'}`` (true stereocentres only)
+      * ``ideal_coords`` -- ``{atom_name: numpy xyz}`` of the ideal conformer
+
+    Works uniformly for standard CCD codes and registered (store-only) ligands
+    (the same path :func:`chiral_definitions_from_ccd` uses). Both are fixed for a
+    given component, so callers should cache the result per id. Empty dicts if the
+    component is unknown.'''
+    codes, coords = {}, {}
+    mol, _status = rb.template_to_rdkit(session, lookup_id)
+    if mol is None or mol.GetNumConformers() == 0:
+        return codes, coords
+    conf = mol.GetConformer()
+    for a in mol.GetAtoms():
+        if a.HasProp(rb.NAME_PROP):
+            coords[a.GetProp(rb.NAME_PROP)] = _conf_coord(conf, a.GetIdx())
+    try:
+        Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
+    except Exception:
+        pass
+    for a in mol.GetAtoms():
+        if a.HasProp(rb.NAME_PROP) and a.HasProp('_CIPCode'):
+            c = a.GetProp('_CIPCode')
+            if c in ('R', 'S'):
+                codes[a.GetProp(rb.NAME_PROP)] = c
+    return codes, coords
+
+
+def reference_cip_codes(session, lookup_id):
+    '''Reference absolute configuration ``{atom_name: 'R'|'S'}`` for the named
+    ChemComp component (RDKit CIP on the reference geometry). Thin wrapper over
+    :func:`_reference_data`.'''
+    return _reference_data(session, lookup_id)[0]
+
+
+def _reference_volume_sign(cc, ideal_coords):
+    '''Sign (+1.0/-1.0/0.0) of the reference signed chiral volume for centre
+    ``cc``, from ``ideal_coords`` (by atom name) in the centre's own
+    ``[centre, s1, s2, s3]`` ordering. A **flip-immune** stand-in for
+    :attr:`ChiralCenter.expected_volume` (which ``chiralflip force`` mutates).
+    Returns 0.0 if any of the four atoms is absent from the reference (e.g. a
+    cross-residue wildcard substituent), so the caller can skip it.'''
+    atoms = cc.atoms
+    try:
+        pts = [ideal_coords[atoms[j].name] for j in range(4)]
+    except KeyError:
+        return 0.0
+    v = _signed_volume(pts)
+    return 1.0 if v > 0 else (-1.0 if v < 0 else 0.0)
+
+
+def as_modelled_configs(session, chirals):
+    '''As-modelled absolute configuration (``'R'``/``'S'``/``None``) for each
+    centre in ``chirals`` (a :class:`ChiralCenters`).
+
+    Depends ONLY on the live geometry: the as-modelled handedness sign
+    (``sign(true_chiral_volume)``) is compared against the centre's **reference**
+    handedness sign, computed from the CCD ideal coordinates in the *same*
+    substituent ordering (:func:`_reference_volume_sign`); the reference CIP letter
+    is then flipped iff the two signs differ.
+
+    This deliberately avoids :attr:`ChiralCenter.expected_volume`: the experts-only
+    ``isolde chiralflip ... force true`` *retargets* a centre to its enantiomer by
+    negating ``expected_volume``, so a test based on it would wrongly report the
+    flipped geometry as still matching its (also-flipped) target. The *as-modelled*
+    label must track the physical geometry, not the restraint target.
+
+    Returns ``None`` where no reference is available (unknown component, missing
+    CIP code, or a cross-residue wildcard centre); the caller draws nothing there.
+    Computed only when the chiral set / geometry changes, not per frame.'''
+    n = len(chirals)
+    if not n:
+        return []
+    cas = chirals.chiral_atoms
+    residues = cas.residues
+    names = cas.names
+    v4 = chirals.true_chiral_volumes
+    ref_cache = {}
+    out = []
+    for i in range(n):
+        lid = lookup_name(residues[i])
+        ref = ref_cache.get(lid)
+        if ref is None:
+            ref = ref_cache[lid] = _reference_data(session, lid)
+        codes, coords = ref
+        letter = codes.get(names[i])
+        if letter is None:
+            out.append(None)
+            continue
+        ref_sign = _reference_volume_sign(chirals[i], coords)
+        if ref_sign == 0.0:
+            out.append(None)
+            continue
+        if ref_sign * v4[i] < 0:   # live handedness opposite the reference -> flipped
+            letter = 'S' if letter == 'R' else 'R'
+        out.append(letter)
+    return out
+
+
 def ensure_chiral_definitions(session, residues):
     '''For each unique residue name among ``residues``, generate chiral-centre
     definitions from the CCD and register any centre not already defined, so its

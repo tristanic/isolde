@@ -10,3 +10,4 @@
 
 from .rama_annotation import RamaAnnotator
 from .rota_annotation import RotamerAnnotator
+from .chiral_annotation import ChiralAnnotator

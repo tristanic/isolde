@@ -126,6 +126,10 @@ class ChiralCenters(_Dihedrals):
         doc='The chiral atoms. Read only.')
     centers = cvec_property('chiral_center_center', float64, value_count=3, read_only=True,
         doc = 'Centroid of the coordinates for the atoms defining the chiral center. Read only.')
+    labels = cvec_property('chiral_center_label', bool,
+        doc = 'Boolean array controlling whether each centre\'s absolute '
+            'configuration ("R"/"S") is drawn as in-model markup. Settable, e.g. '
+            '``chirals.labels = True`` (cf. ``Atoms.displays``).')
 
     def take_snapshot(self, session, flags):
         data = {

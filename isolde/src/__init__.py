@@ -76,7 +76,7 @@ class _MyAPI(BundleAPI):
         if class_name == 'ISOLDE_ToolUI':
             from . import tool
             return tool.ISOLDE_ToolUI
-        from .validation import RamaAnnotator, RotamerAnnotator
+        from .validation import RamaAnnotator, RotamerAnnotator, ChiralAnnotator
         from .molobject import (
             _RestraintMgr, MDFFMgr, PositionRestraintMgr,
             TuggableAtomsMgr, _DistanceRestraintMgrBase,
@@ -102,6 +102,7 @@ class _MyAPI(BundleAPI):
         ct = {
             'RamaAnnotator':                RamaAnnotator,
             'RotamerAnnotator':             RotamerAnnotator,
+            'ChiralAnnotator':              ChiralAnnotator,
             '_RestraintMgr':                _RestraintMgr,
             'MDFFMgr':                      MDFFMgr,
             'PositionRestraintMgr':         PositionRestraintMgr,

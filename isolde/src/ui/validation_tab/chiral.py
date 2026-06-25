@@ -25,6 +25,20 @@ class ChiralDialog(UI_Panel_Base):
         ml.addWidget(table)
         hl = DefaultHLayout()
         hl.addStretch()
+        # Opt-in R/S absolute-configuration labels on the current selection (mainly
+        # for ligands), independent of the outlier table above. These drive the
+        # per-centre ChiralCenter.label flag via the `chiral showConfig/hideConfig`
+        # commands so the action is logged and scriptable.
+        rb = self.show_rs_button = QPushButton('Label R/S (sel.)')
+        rb.setToolTip('Show absolute-configuration (R/S) labels on the chiral '
+            'centres in the current selection (runs "chiral sel label true").')
+        rb.clicked.connect(self._show_rs_cb)
+        hl.addWidget(rb)
+        hb = self.hide_rs_button = QPushButton('Clear R/S (sel.)')
+        hb.setToolTip('Remove R/S configuration labels from the chiral centres in '
+            'the current selection (runs "chiral sel label false").')
+        hb.clicked.connect(self._hide_rs_cb)
+        hl.addWidget(hb)
         b = self.update_button = QPushButton('Update')
         b.clicked.connect(self._populate_table)
         hl.addWidget(b)
@@ -106,6 +120,14 @@ class ChiralDialog(UI_Panel_Base):
             tih.append(m.triggers.add_handler('changes', self._model_changes_cb))
         if not self.container.is_collapsed:
             self._populate_table()
+
+    def _show_rs_cb(self, *_):
+        from chimerax.core.commands import run
+        run(self.session, 'chiral sel label true')
+
+    def _hide_rs_cb(self, *_):
+        from chimerax.core.commands import run
+        run(self.session, 'chiral sel label false')
 
     def _item_clicked_cb(self, item):
         a = item.data(Qt.ItemDataRole.UserRole)
