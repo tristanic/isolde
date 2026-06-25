@@ -99,6 +99,9 @@ uninstall app-uninstall:	$(WHEEL)
 docs:
 	$(CHIMERAX_EXE) -m sphinx docs/source src/docs/user
 
+docs-clean:
+	$(CHIMERAX_EXE) --nogui --safemode --exit --script clean_docs.py
+
 test:
 	$(CHIMERAX_EXE)
 
@@ -109,4 +112,4 @@ clean:
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel clean . ; exit"
 
 
-.PHONY: docs
+.PHONY: docs docs-clean
