@@ -893,7 +893,7 @@ class RamaMgr:
             args=(ctypes.c_void_p, ctypes.c_size_t, ctypes.POINTER(ctypes.c_double)))
         cdict = {}
         for case in self.RamaCase:
-            if case != RamaCase.NONE:
+            if case != self.RamaCase.NONE:
                 cutoffs = numpy.empty(2, numpy.double)
                 f(self._c_pointer, case, pointer(cutoffs))
                 cdict[case] = cutoffs
@@ -1065,7 +1065,7 @@ class RamaMgr:
         of input residues whose peptide bonds are in the cis conformation.
         '''
         from chimerax.atomic import Residue
-        from ..constants import defaults
+        from .constants import defaults
         residues = residues[residues.polymer_types==Residue.PT_AMINO]
         omegas = self._dihedral_mgr.get_dihedrals(residues, 'omega')
         import numpy
@@ -1081,7 +1081,7 @@ class RamaMgr:
         degrees in absolute value).
         '''
         from chimerax.atomic import Residue
-        from ..constants import defaults
+        from .constants import defaults
         from math import pi
         residues = residues[residues.polymer_types==Residue.PT_AMINO]
         omegas = self._dihedral_mgr.get_dihedrals(residues, 'omega')
@@ -3508,7 +3508,7 @@ class ChiralRestraintMgr(_RestraintMgr):
                 - a :py:class:`ChiralCenter` instance
         '''
         from .molarray import ChiralCenters
-        result = self._get_restraints(Dihedrals([chiral]), create=True)
+        result = self._get_restraints(ChiralCenters([chiral]), create=True)
         if len(result):
             return result[0]
         return None
@@ -4430,6 +4430,7 @@ class RotamerRestraintMgr(_RestraintMgr):
                   all elements belonging to the same molecule as this manager
         '''
         from chimerax.atomic import Residues
+        from .molarray import Rotamers
         if isinstance(rotamers_or_residues, Residues):
             rota_mgr = get_rotamer_mgr(self.session)
             rotamers = rota_mgr.get_rotamers(rotamers_or_residues)
@@ -4451,10 +4452,10 @@ class RotamerRestraintMgr(_RestraintMgr):
                 - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
                   belonging to the same molecule as this manager
         '''
-        from chimerax.atomic import Residue, Residues
+        from chimerax.atomic import Residue
         if isinstance(rotamer_or_residue, Residue):
-            rota_mgr = get_rotamer_mgr(session)
-            r = rota_mgr.get_rotamer(r)
+            rota_mgr = get_rotamer_mgr(self.session)
+            r = rota_mgr.get_rotamer(rotamer_or_residue)
         else:
             r = rotamer_or_residue
         if r is None:
@@ -4475,7 +4476,7 @@ class RotamerRestraintMgr(_RestraintMgr):
                 - a :py:class:`Rotamer` or :py:class:`chimerax.Residue`
                   belonging to the same molecule as this manager
         '''
-        from chimerax.atomic import Residue, Residues
+        from chimerax.atomic import Residue
         if isinstance(rotamer_or_residue, Residue):
             rota_mgr = get_rotamer_mgr(self.session)
             r = rota_mgr.get_rotamer(rotamer_or_residue)
@@ -4742,7 +4743,7 @@ class ChiralCenter(_Dihedral):
 
     @staticmethod
     def restore_snapshot(session, data):
-        get_chiral_mgr(session)
+        cm = get_chiral_mgr(session)
         return cm.get_chiral(data['atom'])
 
 class ProperDihedral(_Dihedral):
@@ -4777,7 +4778,7 @@ class ProperDihedral(_Dihedral):
     @staticmethod
     def restore_snapshot(session, data):
         pdm = get_proper_dihedral_mgr(session)
-        return pdm.get_dihedral(r, name)
+        return pdm.get_dihedral(data['residue'], data['name'])
 
 class Rama(State):
     SESSION_SAVE=True
