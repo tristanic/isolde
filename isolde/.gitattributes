@@ -1,0 +1,4 @@
+# Per-lane launcher scripts: pin line endings across platforms
+# (.bat needs CRLF for cmd.exe; .sh needs LF for POSIX shells).
+*.sh  text eol=lf
+*.bat text eol=crlf
