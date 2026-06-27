@@ -76,6 +76,11 @@ class ISOLDE_ToolUI(ToolInstance):
         splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
         splash.setMask(splash_pix.mask())
         splash.show()
+        # Register the splash so any blocking dialog raised during startup
+        # (e.g. the altloc or unbonded-disulfide warnings) can dismiss it first
+        # rather than be hidden behind this always-on-top window.
+        from .dialog import register_splash
+        register_splash(splash)
         from time import time
         start_time = [time()]
         def _splash_remove_cb(trigger_name, data, start_time=start_time, min_time=2):
@@ -92,6 +97,8 @@ class ISOLDE_ToolUI(ToolInstance):
             opacity = 1-et/fade_time
             if opacity <= 0:
                 splash.close()
+                from .dialog import register_splash
+                register_splash(None)
                 from chimerax.core.triggerset import DEREGISTER
                 return DEREGISTER
             splash.setWindowOpacity(opacity)

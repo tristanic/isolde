@@ -12,7 +12,34 @@
 Dialog boxes for use by the ISOLDE gui
 '''
 
+# Reference to the ISOLDE splash screen while it is on display. The splash is
+# created with Qt.WindowStaysOnTopHint, so any modal dialog raised while it is
+# up would otherwise appear *behind* it (and the render loop that fades it out
+# is blocked by the dialog's nested event loop). We therefore dismiss the splash
+# before showing any blocking dialog. tool.py registers/clears it here.
+_active_splash = None
+
+def register_splash(splash):
+    '''
+    Record (or clear, with ``None``) the ISOLDE splash screen currently on
+    display, so that any blocking dialog can dismiss it first.
+    '''
+    global _active_splash
+    _active_splash = splash
+
+def _dismiss_splash():
+    global _active_splash
+    splash = _active_splash
+    _active_splash = None
+    if splash is not None:
+        try:
+            splash.close()
+        except RuntimeError:
+            # Underlying Qt object has already been deleted; nothing to do.
+            pass
+
 def generic_warning(message):
+    _dismiss_splash()
     from Qt.QtWidgets import QMessageBox
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Warning)
@@ -25,6 +52,7 @@ def choice_warning(message, allow_dont_ask_again=False, yesno=False):
     Pop up a warning dialog box with the given message, and return True
     if the user wants to go ahead.
     '''
+    _dismiss_splash()
     from Qt.QtWidgets import QMessageBox
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Warning)
@@ -60,6 +88,7 @@ def failed_template_warning(residue):
     Warning dialog handling the case where a template is not recognised by
     OpenMM when attempting to start a simulation.
     '''
+    _dismiss_splash()
     from Qt.QtWidgets import QMessageBox, QPushButton
     msg = QMessageBox()
     msg.setIcon(QMessageBox.Warning)
