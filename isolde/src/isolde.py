@@ -1172,14 +1172,23 @@ class Isolde():
         '''
         if not self.simulation_running:
             return
+        from chimerax.atomic import Atoms
         from . import session_extensions as sx
         tugm = sx.get_tuggable_atoms_mgr(self.selected_model, allow_hydrogens=self.sim_params.tug_hydrogens)
-        t_atom = tugm.get_tuggable(atom)
-        t_atom.target = target
+        t_atoms = tugm.get_tuggables(Atoms([atom]))
+        if not len(t_atoms):
+            return  # not tuggable (e.g. a hydrogen, or not mobile in the sim)
         if spring_constant is None:
             spring_constant = self.sim_params.mouse_tug_spring_constant
-        t_atom.spring_constant = spring_constant
-        t_atom.enabled = True
+        # mouse_tug_spring_constant is an OpenMM Quantity (value + units); the
+        # spring_constants array setter needs a plain float (kJ/mol/A^2), so strip
+        # units if present.
+        from openmm import unit
+        if unit.is_quantity(spring_constant):
+            spring_constant = spring_constant.value_in_unit(spring_constant.unit)
+        t_atoms.targets = [target]
+        t_atoms.spring_constants = [float(spring_constant)]
+        t_atoms.enableds = True
 
     def stop_tugging(self, atom_or_atoms):
         '''
