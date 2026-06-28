@@ -777,7 +777,7 @@ _LOG_TABLE_ROW_LIMIT = 500
 # Subcommand names exposed under ``isolde validate``. Used both for
 # registration order and to build the helpful error raised by the bare
 # ``isolde validate`` parent handler below.
-_VALIDATE_SUBCOMMANDS = ('peptidebonds', 'rama', 'rotamers', 'clashes')
+_VALIDATE_SUBCOMMANDS = ('peptidebonds', 'rama', 'rotamers', 'clashes', 'chirals')
 
 
 def isolde_validate(session, model=None):
@@ -1539,6 +1539,112 @@ def isolde_validate_clashes(session, model=None,
     return result
 
 
+def isolde_validate_chirals(session, model=None,
+        save_file=None, log=False, limit=None):
+    '''
+    Report chiral-centre outliers for ``model`` (or ISOLDE's currently
+    selected model): centres whose handedness is inverted or badly strained,
+    judged from the centre geometry alone via
+    :func:`chimerax.isolde.atomic.chirality.chiral_outliers` (the robust
+    four-substituent signed volume, which does not require a running
+    simulation or live chiral restraints).
+
+    Read only - the model is never modified and no live annotators are
+    created. To toggle the live 3D annotators / R-S labels see the existing
+    ``chiral`` command; to repair inverted centres see ``isolde chiralflip``.
+
+    Returns
+    -------
+    dict
+        Summary counts (``n_centres``, ``n_outlier``, ``n_inverted``,
+        ``n_strained``) plus a per-centre ``items`` list (worst first) with the
+        chiral atom spec, ``state`` ('inverted'/'strained'), the signed
+        ``oriented_volume`` (A^3; <0 = inverted) and a ``severity`` in [0, 1].
+    '''
+    from chimerax.isolde.molobject import get_chiral_mgr
+    from chimerax.isolde.atomic.chirality import (
+        chiral_outliers, ensure_chiral_definitions)
+    m = _resolve_model(session, model)
+    logger = session.logger
+
+    ensure_chiral_definitions(session, m.residues)
+    mgr = get_chiral_mgr(session)
+    n_centres = len(mgr.get_chirals(m.atoms, create=True))
+    # ensure_defs=False: we just ensured them above (avoids a redundant pass).
+    chirals, oriented, severity = chiral_outliers(session, m.atoms, ensure_defs=False)
+
+    # Worst (most severe) first, so a limit-truncated list still shows the
+    # centres that matter most.
+    triples = sorted(zip(chirals, oriented, severity),
+        key=lambda t: float(t[2]), reverse=True)
+    items = []
+    for cc, o, s in triples:
+        o = float(o)
+        a = cc.chiral_atom
+        r = a.residue
+        items.append({
+            **_residue_summary(r),
+            'atom': a.name,
+            'atom_spec': a.atomspec,
+            'state': 'inverted' if o < 0 else 'strained',
+            'oriented_volume': o,
+            'severity': float(s),
+        })
+
+    n_inverted = sum(1 for it in items if it['state'] == 'inverted')
+    n_strained = len(items) - n_inverted
+
+    columns = ['Chain', 'Residue', 'Atom', 'State', 'OrientedVol', 'Severity']
+    rows = [
+        (
+            it['chain_id'],
+            '{} {}'.format(it['name'], it['number']),
+            it['atom'],
+            it['state'],
+            '{:.3f}'.format(it['oriented_volume']),
+            '{:.3f}'.format(it['severity']),
+        ) for it in items
+    ]
+
+    summary = (
+        'ISOLDE chiral check ({}): {} outliers ({} inverted, {} strained) '
+        'of {} chiral centres.'.format(
+            m.atomspec, len(items), n_inverted, n_strained, n_centres,
+        )
+    )
+    summary += _full_list_hint(
+        'isolde validate chirals', m.atomspec, len(items))
+    if len(items) > 0:
+        logger.warning(summary)
+    else:
+        logger.info(summary)
+
+    if log:
+        _dump_table_to_log(logger, summary, columns, rows)
+
+    returned_items, truncated, total_count, returned_count = _maybe_limit(items, limit)
+
+    result = {
+        'model': m.atomspec,
+        'n_centres': int(n_centres),
+        'n_outlier': len(items),
+        'n_inverted': int(n_inverted),
+        'n_strained': int(n_strained),
+        'items': returned_items,
+        'returned_count': int(returned_count),
+        'total_count': int(total_count),
+        'truncated': bool(truncated),
+    }
+
+    if save_file is not None:
+        _write_results_file(save_file,
+            summary=summary, columns=columns, rows=rows,
+            json_payload=dict(result, items=items))
+        logger.info('Wrote chiral report to {}'.format(save_file))
+
+    return result
+
+
 def register_validate_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, IntArg, EnumOf, SaveFileNameArg,
@@ -1586,6 +1692,14 @@ def register_validate_commands(logger):
     )
     register('isolde validate clashes', desc_clash,
         isolde_validate_clashes, logger=logger)
+
+    desc_chiral = CmdDesc(
+        optional=[('model', IsoldeStructureArg)],
+        keyword=list(common_kw),
+        synopsis='Validation: report inverted or strained chiral centres.',
+    )
+    register('isolde validate chirals', desc_chiral,
+        isolde_validate_chirals, logger=logger)
 
     # Parent command: catches ``isolde validate`` (no subcommand) and
     # ``isolde validate <model>`` (model spec but no subcommand) and

@@ -68,6 +68,7 @@ AGENT_COMMANDS = {
     'isolde validate rama':      dict(category='validation'),
     'isolde validate rotamers':  dict(category='validation'),
     'isolde validate clashes':   dict(category='validation'),
+    'isolde validate chirals':   dict(category='validation'),
     # Read-only MD-readiness checks (run before starting a simulation).
     'isolde preflight hydrogens':  dict(category='query'),
     'isolde preflight parameters': dict(category='query'),
@@ -105,11 +106,12 @@ AGENT_COMMANDS = {
     'isolde stepto':             dict(category='navigation'),
     'isolde jumpto':             dict(category='navigation'),
 
-    # --- Pre-staged for branches not yet merged (dormant until registered) ---
-    # rdkit branch (chirality is a headline agent capability on merge):
+    # --- Chirality (rdkit branch) ---
+    # Correction tool; the matching read-only validator is
+    # 'isolde validate chirals' (in the query/validation block above). The
+    # top-level 'chiral' markup command is GUI-only (like 'rama'/'rota' markup)
+    # and is intentionally not exposed to agents.
     'isolde chiralflip':         dict(category='manipulation'),
-    'isolde chiral':             dict(category='restraints'),
-    'isolde ~chiral':            dict(category='restraints'),
 }
 
 
