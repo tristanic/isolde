@@ -80,11 +80,13 @@ exit /b %ERRORLEVEL%
 
 :standard
 REM No lane marker -> standard shared user dir. Use the console launcher for
-REM headless/build runs (so stdout shows in the calling console), the GUI
-REM launcher otherwise.
+REM headless / "-m module" / "-c command" runs (so stdout shows in the calling
+REM console, e.g. make_docs' "-m sphinx"); the GUI launcher only for an
+REM interactive session. (-m/-c must lead, so a plain substring test is safe.)
 set "STDEXE=%CX_APP%\bin\ChimeraX.exe"
-set "NOGUI_TEST=!CXARGS:--nogui=!"
-if not "!NOGUI_TEST!"=="!CXARGS!" set "STDEXE=%CX_APP%\bin\ChimeraX-console.exe"
+if not "!CXARGS:--nogui=!"=="!CXARGS!" set "STDEXE=%CX_APP%\bin\ChimeraX-console.exe"
+if not "!CXARGS:-m =!"=="!CXARGS!"     set "STDEXE=%CX_APP%\bin\ChimeraX-console.exe"
+if not "!CXARGS:-c =!"=="!CXARGS!"     set "STDEXE=%CX_APP%\bin\ChimeraX-console.exe"
 echo [run_chimerax] no .chimerax-lane marker; using the standard ChimeraX user directory. 1>&2
 "%STDEXE%" %CXARGS%
 exit /b %ERRORLEVEL%

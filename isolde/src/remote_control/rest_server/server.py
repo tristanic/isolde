@@ -3,6 +3,12 @@ from chimerax.core.tasks import Task
 from chimerax.core.logger import PlainTextLog
 import json
 
+# The render/image-capture endpoint is fully implemented (see render.py) but
+# PARKED: a Qt 6.11 regression makes any offscreen capture break the main
+# window's resize-reshaping (reproducible in vanilla ChimeraX 1.13.dev with
+# `save`, absent in 1.12 / Qt 6.10). Flip to True once Qt is fixed, and uncomment
+# the isolde_render tool in src/mcp/server.py.
+ENABLE_RENDER = False
 
 
 class IsoldeRESTServer(Task):
@@ -11,15 +17,59 @@ class IsoldeRESTServer(Task):
     JSON descriptors of results.
     '''
 
-    def __init__(self, *args, **kw):
+    def __init__(self, *args, auth_token=None, allow_run=False, **kw):
         self.httpd = None
+        # Bearer token required on every request (loopback is still reachable by
+        # other local processes, including the MCP server itself).
+        self.auth_token = auth_token
+        # The free-text 'run' method (arbitrary ChimeraX commands) is the one
+        # acknowledged arbitrary-code path; off unless explicitly enabled.
+        self.allow_run = allow_run
         super().__init__(*args, **kw)
         self._server_methods = {}
         from .. import default_server_methods, thread_safe
-        self.standard_functions = default_server_methods
+        self.standard_functions = dict(default_server_methods)
+        if not allow_run:
+            self.standard_functions.pop('run', None)
+        # Agent transport plane (see agent_methods.py): typed tool manifest,
+        # invoke-by-command, model inventory, atom-spec resolution.
+        from .agent_methods import (
+            agent_tools, agent_invoke, agent_philosophy, list_models, resolve_spec,
+            describe_model, problem_zones, restraint_summary, residue_info, map_info,
+            set_mdff, bfactor_outliers, view_state, tug)
+        from .jobs import job_start, job_poll, job_result
+        self.standard_functions.update({
+            'agent_tools': agent_tools,
+            'agent_philosophy': agent_philosophy,
+            'agent_invoke': agent_invoke,
+            'list_models': list_models,
+            'describe_model': describe_model,
+            'resolve_spec': resolve_spec,
+            'problem_zones': problem_zones,
+            'restraint_summary': restraint_summary,
+            'residue_info': residue_info,
+            'map_info': map_info,
+            'set_mdff': set_mdff,
+            'bfactor_outliers': bfactor_outliers,
+            'view_state': view_state,
+            'tug': tug,
+            'job_start': job_start,
+            'job_poll': job_poll,
+            'job_result': job_result,
+        })
 
+        # `render` is parked (Qt 6.11 capture-breaks-resize regression); only
+        # registered when ENABLE_RENDER is True. It also manages its own UI-thread
+        # marshalling (it must capture inside the redraw loop, on the 'frame drawn'
+        # trigger), so it is registered RAW; everything else is thread_safe-wrapped.
+        render_fn = None
+        if ENABLE_RENDER:
+            from .render import render_view
+            render_fn = render_view
         for fname, func in self.standard_functions.items():
             self.register_server_method(fname, thread_safe(func))
+        if render_fn is not None:
+            self.register_server_method('render', render_fn)
         self._server_methods['batch'] = self.batch_run
 
 
@@ -156,18 +206,45 @@ class IsoldeRESTServer(Task):
 class RESTHandler(BaseHTTPRequestHandler):
     '''Process one REST request.'''
 
+    def log_message(self, format, *args):
+        # Suppress http.server's per-request access logging (it was being routed
+        # to the ChimeraX log on every agent call). Errors are still returned to
+        # the client as structured JSON.
+        pass
+
     def _set_headers(self, status_code=200):
         self.send_response(status_code)
         self.send_header('Content-type', 'application/json')
         self.end_headers()
 
+    def _authorized(self):
+        '''True if the request carries the correct bearer token.'''
+        token = self.server.manager.auth_token
+        if not token:
+            return True  # no token configured -> open (legacy/testing only)
+        import hmac
+        header = self.headers.get('Authorization', '') or ''
+        return hmac.compare_digest(header.strip(), 'Bearer ' + token)
+
+    def _reject_unauthorized(self):
+        self.send_response(401)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('WWW-Authenticate', 'Bearer')
+        self.end_headers()
+        self.wfile.write(json.dumps(
+            {'error': 'missing or invalid bearer token'}).encode('utf-8'))
+
     def do_HEAD(self):
+        if not self._authorized():
+            return self._reject_unauthorized()
         self._set_headers()
 
     def do_GET(self):
         '''
         Return a JSON dict listing all available methods
         '''
+        if not self._authorized():
+            return self._reject_unauthorized()
         self._list_methods()
 
     def _list_methods(self):
@@ -178,8 +255,10 @@ class RESTHandler(BaseHTTPRequestHandler):
 
 
     def do_POST(self):
-        from cgi import parse_header
-        ctype, pdict = parse_header(self.headers.get('content-type'))
+        if not self._authorized():
+            return self._reject_unauthorized()
+        # Parse the content-type without the deprecated/removed cgi module.
+        ctype = (self.headers.get('content-type') or '').split(';')[0].strip()
 
         # refuse to receive non-json requests
         if ctype != 'application/json':

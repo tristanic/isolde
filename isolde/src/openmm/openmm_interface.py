@@ -470,6 +470,9 @@ class SimManager:
         '''
         from ..checkpoint import CheckPoint
         self._current_checkpoint = CheckPoint(self.isolde)
+        sh = self.sim_handler
+        if sh is not None:
+            sh._sim_steps_at_checkpoint = sh.sim_steps
 
     def revert_to_checkpoint(self):
         '''
@@ -1099,6 +1102,11 @@ class SimHandler:
         self._sim_running = False
         self._unstable = True
         self._unstable_counter = 0
+        # Monotonic count of integrator steps run since the sim started, plus the
+        # value captured at the last checkpoint. A cheap, authoritative
+        # "is it stepping / how far" signal (see the sim_steps property).
+        self._sim_steps = 0
+        self._sim_steps_at_checkpoint = 0
 
         atoms = self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
@@ -1553,6 +1561,8 @@ class SimHandler:
         self._sim_running = True
         self._startup = True
         self._startup_counter = 0
+        self._sim_steps = 0
+        self._sim_steps_at_checkpoint = 0
         from chimerax.core.models import REMOVE_MODELS
         self._model_deleted_handler = self.session.triggers.add_handler(REMOVE_MODELS, self._model_deleted_cb)
         self._minimize_and_go()
@@ -1654,6 +1664,10 @@ class SimHandler:
                 self.atoms.coords = th.coords
         except ValueError:
             self.stop(reason=self.REASON_COORD_LENGTH_MISMATCH)
+        # Count integrator steps completed this cycle (equilibration only;
+        # minimisation rounds are not fixed-step).
+        if th._last_mode == 'equil':
+            self._sim_steps += self._params.sim_steps_per_gui_update
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
             self._unstable = True
@@ -1719,6 +1733,20 @@ class SimHandler:
         Returns the :py:class:`OpenmmThreadHandler` object.
         '''
         return self._thread_handler
+
+    @property
+    def sim_steps(self):
+        '''
+        Total number of integrator (equilibration) steps run since the
+        simulation started. Monotonic; a cheap, authoritative signal that the
+        simulation is actually advancing (and by how much).
+        '''
+        return self._sim_steps
+
+    @property
+    def steps_since_checkpoint(self):
+        '''Integrator steps run since the last saved checkpoint.'''
+        return self._sim_steps - self._sim_steps_at_checkpoint
 
     def toggle_pause(self):
         '''Pause the simulation if currently running, or resume if paused'''

@@ -1512,6 +1512,13 @@ def isolde_validate_clashes(session, model=None,
 
     result = {
         'model': m.atomspec,
+        # Name the convention explicitly: this is ChimeraX VDW-overlap clash
+        # detection (chimerax.clashes.find_clashes), NOT canonical reduce/probe.
+        # It under-counts relative to reduce/probe, so an agent comparing against
+        # a MolProbity clashscore must account for the difference.
+        'convention': 'chimerax_vdw_overlap',
+        'convention_note': ('VDW-overlap clashes via chimerax.clashes.find_clashes; '
+                            'not reduce/probe. Under-counts vs a canonical clashscore.'),
         'severe_cutoff': float(SEVERE_CUTOFF),
         'strict_cutoff': float(STRICT_CUTOFF),
         'n_total': n_total,

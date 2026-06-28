@@ -22,7 +22,7 @@ dependencies = [
     "ChimeraX-Core >=1.13.0.dev0, ==1.13.*",
     "ChimeraX-Atomic ~=1.67",
     "ChimeraX-AtomicLibrary ~=14.4.0",
-    "ChimeraX-Clipper ~=0.28.0",
+    "ChimeraX-Clipper >=0.28.dev0, ==0.28.*",
     "ChimeraX-Arrays ~=1.0",
     # RDKit supplies bond-order- and chirality-aware cheminformatics (CCD->mol
     # conversion, rdFMCS matching, CIP stereo perception). ChimeraX does not ship
