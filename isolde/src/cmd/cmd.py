@@ -803,5 +803,7 @@ def _register_isolde_commands(logger):
     register_preflight_commands(logger)
     from chimerax.isolde.validation.cmd import register_validate_commands
     register_validate_commands(logger)
+    from chimerax.isolde.validation.cmd import register_annotate_commands
+    register_annotate_commands(logger)
     from chimerax.isolde.refine.bfactor_refine import register_bfactor_refine_commands
     register_bfactor_refine_commands(logger)

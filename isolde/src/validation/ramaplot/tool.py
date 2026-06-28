@@ -298,9 +298,9 @@ class RamaMainWin(MainToolWindow):
         if self.current_model is not None:
             from chimerax.core.commands import run
             if show:
-                cmd = 'rama'
+                cmd = 'isolde annotate ramachandran'
             else:
-                cmd = '~rama'
+                cmd = 'isolde annotate ramachandran stop'
             run(self.session, f'{cmd} #{self.current_model.id_string}', log=False)
 
 

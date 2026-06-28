@@ -1,6 +1,14 @@
 Live rotamer validation
 =======================
 
+.. note::
+
+   **Deprecated.** The top-level ``rota`` command has moved to
+   :ref:`isolde annotate rotamers <isolde_annotate>` and will be removed in a
+   future ChimeraX-ISOLDE release. ``rota`` still works but now prints a
+   deprecation warning. Text reporting (the old ``report true`` option) now lives
+   in the ``isolde validate rotamers`` command.
+
 Each protein sidechain with at least one rotatable bond (that is, excluding
 alanine and glycine) has a fairly limited range of stable (that is,
 energetically-favourable) conformations known as *rotamers*. Statistical

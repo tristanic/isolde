@@ -3,6 +3,7 @@
 
    isolde_restrain
    isolde_remote
+   isolde_annotate
 
 The ISOLDE Command Line
 -----------------------

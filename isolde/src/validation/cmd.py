@@ -8,10 +8,18 @@
 
 
 
-def rota(session, structures=None, report=False):
+def _structures_spec(session, structures):
+    '''Concise model-spec string for a StructuresArg value (''=all models).'''
+    if structures is None:
+        return ''
+    from chimerax.core.commands import concise_model_spec
+    return concise_model_spec(session, structures)
+
+
+def isolde_annotate_rotamers(session, structures=None):
     '''
-    Add a live rotamer validator to each of the given structures, and optionally
-    report a summary of current outliers.
+    Show live rotamer-validation markup on each of the given structures (all
+    atomic structures if none are given).
     '''
     from chimerax.isolde import session_extensions as sx
     if structures is None:
@@ -19,17 +27,31 @@ def rota(session, structures=None, report=False):
         structures = [m for m in session.models.list() if type(m)==AtomicStructure]
     for structure in structures:
         sx.get_rota_annotator(structure)
+
+
+def rota(session, structures=None, report=False):
+    '''Deprecated alias for ``isolde annotate rotamers`` (markup) and, with
+    ``report true``, ``isolde validate rotamers`` (text report). Slated for
+    removal in a future ChimeraX-ISOLDE release.'''
+    from chimerax.core.commands import run
+    session.logger.warning(
+        "'rota' is deprecated and will be removed in a future ChimeraX-ISOLDE "
+        "release. Use 'isolde annotate rotamers' instead"
+        + (" (and 'isolde validate rotamers' for the text report)." if report else ".")
+    )
+    spec = _structures_spec(session, structures)
+    run(session, ('isolde annotate rotamers ' + spec).strip())
     if report:
-        report_str = 'NON-FAVOURED ROTAMERS: \n'
-        for structure in structures:
-            data = _compute_rotamer_report(session, structure,
-                include='nonfavored')
-            for it in data['items']:
-                report_str += '#{:<6} {}:\t{} {} (P={:.4f})\n'.format(
-                    structure.id_string, it['chain_id'], it['name'],
-                    it['number'], it['score']
-                )
-        session.logger.info(report_str)
+        run(session, ('isolde validate rotamers ' + spec).strip())
+
+
+def _rota_stop_deprecated(session, structures=None):
+    '''Deprecated alias for ``isolde annotate rotamers stop``.'''
+    from chimerax.core.commands import run
+    session.logger.warning(
+        "'rota stop' / '~rota' is deprecated; use "
+        "'isolde annotate rotamers stop' instead.")
+    run(session, ('isolde annotate rotamers stop ' + _structures_spec(session, structures)).strip())
 
 def unrota(session, structures=None):
     '''
@@ -44,11 +66,11 @@ def unrota(session, structures=None):
         if ra is not None:
             session.models.close([ra])
 
-def rama(session, structures=None, show_favored=True, report=False):
+def isolde_annotate_ramachandran(session, structures=None, show_favored=True):
     '''
-    Add a live Ramachandran validator to each of the given structures, and
-    optionally report a summary of current outliers and cis/twisted peptide
-    bonds.
+    Show live Ramachandran-validation markup on each of the given structures
+    (all atomic structures if none are given). ``showFavored false`` hides the
+    markers on favoured residues.
     '''
     from chimerax.isolde import session_extensions as sx
     if structures is None:
@@ -57,39 +79,34 @@ def rama(session, structures=None, show_favored=True, report=False):
     for structure in structures:
         ra = sx.get_rama_annotator(structure)
         ra.hide_favored = not show_favored
+
+
+def rama(session, structures=None, show_favored=True, report=False):
+    '''Deprecated alias for ``isolde annotate ramachandran`` (markup) and, with
+    ``report true``, ``isolde validate rama`` (text report). Slated for removal
+    in a future ChimeraX-ISOLDE release.'''
+    from chimerax.core.commands import run
+    session.logger.warning(
+        "'rama' is deprecated and will be removed in a future ChimeraX-ISOLDE "
+        "release. Use 'isolde annotate ramachandran' instead"
+        + (" (and 'isolde validate rama' for the text report)." if report else ".")
+    )
+    spec = _structures_spec(session, structures)
+    cmd = ('isolde annotate ramachandran ' + spec).strip()
+    if not show_favored:
+        cmd += ' showFavored false'
+    run(session, cmd)
     if report:
-        pep_data_by_structure = [
-            (structure, _compute_peptide_bond_report(session, structure))
-            for structure in structures
-        ]
-        report_str = 'RAMACHANDRAN OUTLIERS: \n'
-        for structure in structures:
-            rd = _compute_rama_report(session, structure, include='outliers')
-            for it in rd['items']:
-                report_str +='#{:<6} {}:\t{} {}\n'.format(
-                    structure.id_string, it['chain_id'],
-                    it['name'], it['number'])
-        report_str += '\nCIS PEPTIDE BONDS: \n'
-        for structure, pd in pep_data_by_structure:
-            for it in pd['items']:
-                if it['conformation'] != 'cis':
-                    continue
-                r2 = it['res2']
-                report_str +='#{:<6} {}:\t{} {}\n'.format(
-                    structure.id_string, r2['chain_id'],
-                    r2['name'], r2['number']
-                )
-        report_str += '\nTWISTED PEPTIDE BONDS: \n'
-        for structure, pd in pep_data_by_structure:
-            for it in pd['items']:
-                if it['conformation'] != 'twisted':
-                    continue
-                r2 = it['res2']
-                report_str += '#{:<6} {}:\t{} {} ({:.1f}°)\n'.format(
-                    structure.id_string, r2['chain_id'],
-                    r2['name'], r2['number'], it['omega_deg']
-                )
-        session.logger.info(report_str)
+        run(session, ('isolde validate rama ' + spec).strip())
+
+
+def _rama_stop_deprecated(session, structures=None):
+    '''Deprecated alias for ``isolde annotate ramachandran stop``.'''
+    from chimerax.core.commands import run
+    session.logger.warning(
+        "'rama stop' / '~rama' is deprecated; use "
+        "'isolde annotate ramachandran stop' instead.")
+    run(session, ('isolde annotate ramachandran stop ' + _structures_spec(session, structures)).strip())
 
 def unrama(session, structures=None):
     '''
@@ -232,9 +249,9 @@ def register_rota(logger):
     register('rota', desc, rota, logger=logger)
     undesc = CmdDesc(
         optional=[('structures', StructuresArg)],
-        synopsis='Close the rotamer annotators for the given models (or all if no models given)'
+        synopsis='Deprecated: use "isolde annotate rotamers stop".'
     )
-    register('rota stop', undesc, unrota, logger=logger)
+    register('rota stop', undesc, _rota_stop_deprecated, logger=logger)
     create_alias('~rota', 'rota stop $*', logger=logger)
 
 
@@ -256,9 +273,9 @@ def register_rama(logger):
     register('rama', desc, rama, logger=logger)
     undesc = CmdDesc(
         optional=[('structures', StructuresArg)],
-        synopsis='Close the Ramachandran annotators for the given models (or all if no models given)'
+        synopsis='Deprecated: use "isolde annotate ramachandran stop".'
     )
-    register('rama stop', undesc, unrama, logger=logger)
+    register('rama stop', undesc, _rama_stop_deprecated, logger=logger)
     create_alias('~rama', 'rama stop $*', logger=logger)
 
 
@@ -1713,3 +1730,57 @@ def register_validate_commands(logger):
             ', '.join(_VALIDATE_SUBCOMMANDS)),
     )
     register('isolde validate', desc_top, isolde_validate, logger=logger)
+
+
+_ANNOTATE_SUBCOMMANDS = ('ramachandran', 'rotamers')
+
+
+def isolde_annotate(session, structures=None):
+    '''
+    Bare ``isolde annotate`` handler: always raises ``UserError`` listing the
+    available markup subcommands. Mirrors ``isolde validate`` so that
+    ``isolde annotate`` / ``isolde annotate <model>`` give a helpful message
+    instead of ChimeraX's generic "Unknown command".
+    '''
+    raise UserError(
+        "'isolde annotate' requires a subcommand. Available: "
+        + ', '.join(_ANNOTATE_SUBCOMMANDS)
+        + ". Example: 'isolde annotate ramachandran #1'."
+    )
+
+
+def register_annotate_commands(logger):
+    from chimerax.core.commands import register, CmdDesc, BoolArg
+    from chimerax.atomic import StructuresArg
+
+    desc_rama = CmdDesc(
+        optional=[('structures', StructuresArg)],
+        keyword=[('show_favored', BoolArg)],
+        synopsis='Show live Ramachandran-validation markup on models.',
+    )
+    register('isolde annotate ramachandran', desc_rama,
+        isolde_annotate_ramachandran, logger=logger)
+    register('isolde annotate ramachandran stop',
+        CmdDesc(optional=[('structures', StructuresArg)],
+            synopsis='Hide Ramachandran-validation markup (all models if none given).'),
+        unrama, logger=logger)
+
+    desc_rota = CmdDesc(
+        optional=[('structures', StructuresArg)],
+        synopsis='Show live rotamer-validation markup on models.',
+    )
+    register('isolde annotate rotamers', desc_rota,
+        isolde_annotate_rotamers, logger=logger)
+    register('isolde annotate rotamers stop',
+        CmdDesc(optional=[('structures', StructuresArg)],
+            synopsis='Hide rotamer-validation markup (all models if none given).'),
+        unrota, logger=logger)
+
+    # Parent command: bare 'isolde annotate' (with or without a model spec)
+    # raises a helpful "expected one of: ..." error (mirrors 'isolde validate').
+    desc_top = CmdDesc(
+        optional=[('structures', StructuresArg)],
+        synopsis='Show ISOLDE live validation markup (requires a subcommand: {}).'.format(
+            ', '.join(_ANNOTATE_SUBCOMMANDS)),
+    )
+    register('isolde annotate', desc_top, isolde_annotate, logger=logger)
