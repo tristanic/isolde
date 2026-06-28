@@ -9,7 +9,7 @@
 
 
 def _structures_spec(session, structures):
-    '''Concise model-spec string for a AtomicStructuresArg value (''=all models).'''
+    '''Concise model-spec string for a IsoldeStructuresArg value (''=all models).'''
     if structures is None:
         return ''
     from chimerax.core.commands import concise_model_spec
@@ -23,8 +23,8 @@ def isolde_annotate_rotamers(session, structures=None):
     '''
     from chimerax.isolde import session_extensions as sx
     if structures is None:
-        from chimerax.atomic import AtomicStructure
-        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+        from chimerax.isolde.cmd.argspec import isolde_target_structures
+        structures = isolde_target_structures(session.models.list())
     for structure in structures:
         sx.get_rota_annotator(structure)
 
@@ -58,8 +58,8 @@ def unrota(session, structures=None):
     Delete any rotamer annotators associated with the given models.
     '''
     if structures is None:
-        from chimerax.atomic import AtomicStructure
-        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+        from chimerax.isolde.cmd.argspec import isolde_target_structures
+        structures = isolde_target_structures(session.models.list())
     from chimerax.isolde import session_extensions as sx
     for structure in structures:
         ra = sx.get_rota_annotator(structure, create=False)
@@ -74,8 +74,8 @@ def isolde_annotate_ramachandran(session, structures=None, show_favored=True):
     '''
     from chimerax.isolde import session_extensions as sx
     if structures is None:
-        from chimerax.atomic import AtomicStructure
-        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+        from chimerax.isolde.cmd.argspec import isolde_target_structures
+        structures = isolde_target_structures(session.models.list())
     for structure in structures:
         ra = sx.get_rama_annotator(structure)
         ra.hide_favored = not show_favored
@@ -113,8 +113,8 @@ def unrama(session, structures=None):
     Delete any Ramachandran annotators associated with the given models.
     '''
     if structures is None:
-        from chimerax.atomic import AtomicStructure
-        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+        from chimerax.isolde.cmd.argspec import isolde_target_structures
+        structures = isolde_target_structures(session.models.list())
     from chimerax.isolde import session_extensions as sx
     for structure in structures:
         ra = sx.get_rama_annotator(structure, create=False)
@@ -139,9 +139,10 @@ def isolde_annotate_chirals(session, atoms=None, label=None, label_color=None):
     For a text report of chiral outliers, use ``isolde validate chirals``.
     '''
     from chimerax.isolde import session_extensions as sx
-    from chimerax.atomic import AtomicStructure, selected_atoms
+    from chimerax.atomic import selected_atoms
+    from chimerax.isolde.cmd.argspec import isolde_target_structures
     if atoms is None:
-        structures = [m for m in session.models.list() if type(m) == AtomicStructure]
+        structures = isolde_target_structures(session.models.list())
         label_atoms = selected_atoms(session)
     else:
         structures = list(atoms.unique_structures)
@@ -182,8 +183,8 @@ def unchiral(session, structures=None):
     Delete any chiral annotators associated with the given models.
     '''
     if structures is None:
-        from chimerax.atomic import AtomicStructure
-        structures = [m for m in session.models.list() if type(m)==AtomicStructure]
+        from chimerax.isolde.cmd.argspec import isolde_target_structures
+        structures = isolde_target_structures(session.models.list())
     from chimerax.isolde import session_extensions as sx
     for structure in structures:
         ca = sx.get_chiral_annotator(structure, create=False)
@@ -194,10 +195,10 @@ def register_rota(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, create_alias
     )
-    from chimerax.atomic import AtomicStructuresArg
+    from ..cmd.argspec import IsoldeStructuresArg
     desc = CmdDesc(
         optional=[
-            ('structures', AtomicStructuresArg),
+            ('structures', IsoldeStructuresArg),
             ],
         keyword=[
             ('report', BoolArg),
@@ -206,7 +207,7 @@ def register_rota(logger):
     )
     register('rota', desc, rota, logger=logger)
     undesc = CmdDesc(
-        optional=[('structures', AtomicStructuresArg)],
+        optional=[('structures', IsoldeStructuresArg)],
         synopsis='Deprecated: use "isolde annotate rotamers stop".'
     )
     register('rota stop', undesc, _rota_stop_deprecated, logger=logger)
@@ -217,10 +218,10 @@ def register_rama(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, create_alias
     )
-    from chimerax.atomic import AtomicStructuresArg
+    from ..cmd.argspec import IsoldeStructuresArg
     desc = CmdDesc(
         optional=[
-            ('structures', AtomicStructuresArg),
+            ('structures', IsoldeStructuresArg),
             ],
         keyword=[
             ('show_favored', BoolArg),
@@ -230,7 +231,7 @@ def register_rama(logger):
     )
     register('rama', desc, rama, logger=logger)
     undesc = CmdDesc(
-        optional=[('structures', AtomicStructuresArg)],
+        optional=[('structures', IsoldeStructuresArg)],
         synopsis='Deprecated: use "isolde annotate ramachandran stop".'
     )
     register('rama stop', undesc, _rama_stop_deprecated, logger=logger)
@@ -1727,7 +1728,7 @@ def isolde_annotate_all(session, structures=None):
     isolde_annotate_ramachandran(session, structures=structures)
     isolde_annotate_rotamers(session, structures=structures)
     # The chiral markup is keyed on atoms, not structures; gather them from the
-    # given structures (AtomicStructuresArg yields a list), or pass None for "all".
+    # given structures (IsoldeStructuresArg yields a list), or pass None for "all".
     if structures:
         from chimerax.atomic import concatenate
         chiral_atoms = concatenate([s.atoms for s in structures])
@@ -1759,28 +1760,29 @@ def isolde_annotate(session, structures=None):
 
 def register_annotate_commands(logger):
     from chimerax.core.commands import register, CmdDesc, BoolArg, ColorArg, EnumOf, Or
-    from chimerax.atomic import AtomicStructuresArg, AtomsArg
+    from chimerax.atomic import AtomsArg
+    from ..cmd.argspec import IsoldeStructuresArg
 
     desc_rama = CmdDesc(
-        optional=[('structures', AtomicStructuresArg)],
+        optional=[('structures', IsoldeStructuresArg)],
         keyword=[('show_favored', BoolArg)],
         synopsis='Show live Ramachandran-validation markup on models.',
     )
     register('isolde annotate ramachandran', desc_rama,
         isolde_annotate_ramachandran, logger=logger)
     register('isolde annotate ramachandran stop',
-        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+        CmdDesc(optional=[('structures', IsoldeStructuresArg)],
             synopsis='Hide Ramachandran-validation markup (all models if none given).'),
         unrama, logger=logger)
 
     desc_rota = CmdDesc(
-        optional=[('structures', AtomicStructuresArg)],
+        optional=[('structures', IsoldeStructuresArg)],
         synopsis='Show live rotamer-validation markup on models.',
     )
     register('isolde annotate rotamers', desc_rota,
         isolde_annotate_rotamers, logger=logger)
     register('isolde annotate rotamers stop',
-        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+        CmdDesc(optional=[('structures', IsoldeStructuresArg)],
             synopsis='Hide rotamer-validation markup (all models if none given).'),
         unrota, logger=logger)
 
@@ -1795,23 +1797,23 @@ def register_annotate_commands(logger):
     register('isolde annotate chirals', desc_chiral,
         isolde_annotate_chirals, logger=logger)
     register('isolde annotate chirals stop',
-        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+        CmdDesc(optional=[('structures', IsoldeStructuresArg)],
             synopsis='Hide chiral-centre validation markup (all models if none given).'),
         unchiral, logger=logger)
 
     register('isolde annotate all',
-        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+        CmdDesc(optional=[('structures', IsoldeStructuresArg)],
             synopsis='Show all live validation markup (ramachandran, rotamers, chirals).'),
         isolde_annotate_all, logger=logger)
     register('isolde annotate all stop',
-        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+        CmdDesc(optional=[('structures', IsoldeStructuresArg)],
             synopsis='Hide all live validation markup.'),
         isolde_annotate_all_stop, logger=logger)
 
     # Parent command: bare 'isolde annotate' (with or without a model spec)
     # raises a helpful "expected one of: ..." error (mirrors 'isolde validate').
     desc_top = CmdDesc(
-        optional=[('structures', AtomicStructuresArg)],
+        optional=[('structures', IsoldeStructuresArg)],
         synopsis='Show ISOLDE live validation markup (requires a subcommand: {}).'.format(
             ', '.join(_ANNOTATE_SUBCOMMANDS)),
     )

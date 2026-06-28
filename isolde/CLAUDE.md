@@ -98,6 +98,17 @@ Do **not** modify the following without an explicit instruction to do so. They c
 1. Implement in `isolde/src/cmd/` (or a relevant submodule)
 2. Register the command descriptor in `isolde/src/__init__.py` under `bundle_api.register_command()`
 
+**Targeting structures — never use `StructuresArg`/`AtomicStructuresArg` directly.**
+For a command that operates on the working model(s), use `IsoldeStructureArg`
+(single) or `IsoldeStructuresArg` (multiple) from `isolde/src/cmd/argspec.py`, and
+for any "default to all open structures" path use `isolde_target_structures()`
+from the same module. These exclude `AtomicStructure`-derived *helper* models that
+sit under a working model and must never be validated/annotated/simulated: ISOLDE's
+rotamer preview (`_RotamerPreview`, a subclass) and ChimeraX's altloc-display
+drawings (plain `AtomicStructure`s nested in an "alternate locations" group under
+the model, created by `altlocs show`). A bare `AtomicStructuresArg` /
+`[m ... if type(m)==AtomicStructure]` captures the altloc drawings.
+
 **New UI widget or panel:**
 - Add to `isolde/src/ui/` for standalone widgets, or extend `isolde/src/tool.py` (`ISOLDE_ToolUI`) for changes to the main panel
 
