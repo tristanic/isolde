@@ -69,6 +69,7 @@ AGENT_COMMANDS = {
     'isolde validate rotamers':  dict(category='validation'),
     'isolde validate clashes':   dict(category='validation'),
     'isolde validate chirals':   dict(category='validation'),
+    'isolde validate all':       dict(category='validation'),
     # Read-only MD-readiness checks (run before starting a simulation).
     'isolde preflight hydrogens':  dict(category='query'),
     'isolde preflight parameters': dict(category='query'),

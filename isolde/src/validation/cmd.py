@@ -9,7 +9,7 @@
 
 
 def _structures_spec(session, structures):
-    '''Concise model-spec string for a StructuresArg value (''=all models).'''
+    '''Concise model-spec string for a AtomicStructuresArg value (''=all models).'''
     if structures is None:
         return ''
     from chimerax.core.commands import concise_model_spec
@@ -194,10 +194,10 @@ def register_rota(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, create_alias
     )
-    from chimerax.atomic import StructuresArg
+    from chimerax.atomic import AtomicStructuresArg
     desc = CmdDesc(
         optional=[
-            ('structures', StructuresArg),
+            ('structures', AtomicStructuresArg),
             ],
         keyword=[
             ('report', BoolArg),
@@ -206,7 +206,7 @@ def register_rota(logger):
     )
     register('rota', desc, rota, logger=logger)
     undesc = CmdDesc(
-        optional=[('structures', StructuresArg)],
+        optional=[('structures', AtomicStructuresArg)],
         synopsis='Deprecated: use "isolde annotate rotamers stop".'
     )
     register('rota stop', undesc, _rota_stop_deprecated, logger=logger)
@@ -217,10 +217,10 @@ def register_rama(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, create_alias
     )
-    from chimerax.atomic import StructuresArg
+    from chimerax.atomic import AtomicStructuresArg
     desc = CmdDesc(
         optional=[
-            ('structures', StructuresArg),
+            ('structures', AtomicStructuresArg),
             ],
         keyword=[
             ('show_favored', BoolArg),
@@ -230,7 +230,7 @@ def register_rama(logger):
     )
     register('rama', desc, rama, logger=logger)
     undesc = CmdDesc(
-        optional=[('structures', StructuresArg)],
+        optional=[('structures', AtomicStructuresArg)],
         synopsis='Deprecated: use "isolde annotate ramachandran stop".'
     )
     register('rama stop', undesc, _rama_stop_deprecated, logger=logger)
@@ -752,7 +752,7 @@ _LOG_TABLE_ROW_LIMIT = 500
 # Subcommand names exposed under ``isolde validate``. Used both for
 # registration order and to build the helpful error raised by the bare
 # ``isolde validate`` parent handler below.
-_VALIDATE_SUBCOMMANDS = ('peptidebonds', 'ramachandran', 'rotamers', 'clashes', 'chirals')
+_VALIDATE_SUBCOMMANDS = ('peptidebonds', 'ramachandran', 'rotamers', 'clashes', 'chirals', 'all')
 
 
 def isolde_validate(session, model=None):
@@ -1612,6 +1612,33 @@ def isolde_validate_chirals(session, model=None,
     return result
 
 
+def isolde_validate_all(session, model=None, log=False, limit=None):
+    '''
+    Run every ISOLDE validator on *model* (or ISOLDE's currently selected model)
+    in one go. Each validator logs its own one-line summary (pass ``log true`` to
+    also dump each full table); the combined result is returned as a dict keyed by
+    validator name. A validator that raises is recorded as ``{'error': ...}`` and
+    does not abort the rest.
+    '''
+    m = _resolve_model(session, model)
+    validators = (
+        ('peptidebonds', isolde_validate_peptidebonds),
+        ('ramachandran', isolde_validate_ramachandran),
+        ('rotamers',     isolde_validate_rotamers),
+        ('clashes',      isolde_validate_clashes),
+        ('chirals',      isolde_validate_chirals),
+    )
+    results = {}
+    for name, fn in validators:
+        try:
+            results[name] = fn(session, model=m, log=log, limit=limit)
+        except Exception as e:
+            session.logger.warning(
+                "isolde validate all: '%s' validator failed: %s" % (name, e))
+            results[name] = {'error': str(e)}
+    return results
+
+
 def register_validate_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc, BoolArg, IntArg, EnumOf, SaveFileNameArg,
@@ -1668,6 +1695,14 @@ def register_validate_commands(logger):
     register('isolde validate chirals', desc_chiral,
         isolde_validate_chirals, logger=logger)
 
+    desc_all = CmdDesc(
+        optional=[('model', IsoldeStructureArg)],
+        keyword=[('log', BoolArg), ('limit', IntArg)],
+        synopsis='Validation: run all validators and return a combined report.',
+    )
+    register('isolde validate all', desc_all,
+        isolde_validate_all, logger=logger)
+
     # Parent command: catches ``isolde validate`` (no subcommand) and
     # ``isolde validate <model>`` (model spec but no subcommand) and
     # turns them into a helpful "expected one of: ..." error instead of
@@ -1682,7 +1717,30 @@ def register_validate_commands(logger):
     register('isolde validate', desc_top, isolde_validate, logger=logger)
 
 
-_ANNOTATE_SUBCOMMANDS = ('ramachandran', 'rotamers', 'chirals')
+_ANNOTATE_SUBCOMMANDS = ('ramachandran', 'rotamers', 'chirals', 'all')
+
+
+def isolde_annotate_all(session, structures=None):
+    '''Show every ISOLDE live-validation markup type at once (Ramachandran,
+    rotamer and chiral-centre markup) on *structures* (all atomic structures if
+    none given).'''
+    isolde_annotate_ramachandran(session, structures=structures)
+    isolde_annotate_rotamers(session, structures=structures)
+    # The chiral markup is keyed on atoms, not structures; gather them from the
+    # given structures (AtomicStructuresArg yields a list), or pass None for "all".
+    if structures:
+        from chimerax.atomic import concatenate
+        chiral_atoms = concatenate([s.atoms for s in structures])
+    else:
+        chiral_atoms = None
+    isolde_annotate_chirals(session, atoms=chiral_atoms)
+
+
+def isolde_annotate_all_stop(session, structures=None):
+    '''Hide every ISOLDE live-validation markup type at once.'''
+    unrama(session, structures=structures)
+    unrota(session, structures=structures)
+    unchiral(session, structures=structures)
 
 
 def isolde_annotate(session, structures=None):
@@ -1701,28 +1759,28 @@ def isolde_annotate(session, structures=None):
 
 def register_annotate_commands(logger):
     from chimerax.core.commands import register, CmdDesc, BoolArg, ColorArg, EnumOf, Or
-    from chimerax.atomic import StructuresArg, AtomsArg
+    from chimerax.atomic import AtomicStructuresArg, AtomsArg
 
     desc_rama = CmdDesc(
-        optional=[('structures', StructuresArg)],
+        optional=[('structures', AtomicStructuresArg)],
         keyword=[('show_favored', BoolArg)],
         synopsis='Show live Ramachandran-validation markup on models.',
     )
     register('isolde annotate ramachandran', desc_rama,
         isolde_annotate_ramachandran, logger=logger)
     register('isolde annotate ramachandran stop',
-        CmdDesc(optional=[('structures', StructuresArg)],
+        CmdDesc(optional=[('structures', AtomicStructuresArg)],
             synopsis='Hide Ramachandran-validation markup (all models if none given).'),
         unrama, logger=logger)
 
     desc_rota = CmdDesc(
-        optional=[('structures', StructuresArg)],
+        optional=[('structures', AtomicStructuresArg)],
         synopsis='Show live rotamer-validation markup on models.',
     )
     register('isolde annotate rotamers', desc_rota,
         isolde_annotate_rotamers, logger=logger)
     register('isolde annotate rotamers stop',
-        CmdDesc(optional=[('structures', StructuresArg)],
+        CmdDesc(optional=[('structures', AtomicStructuresArg)],
             synopsis='Hide rotamer-validation markup (all models if none given).'),
         unrota, logger=logger)
 
@@ -1737,14 +1795,23 @@ def register_annotate_commands(logger):
     register('isolde annotate chirals', desc_chiral,
         isolde_annotate_chirals, logger=logger)
     register('isolde annotate chirals stop',
-        CmdDesc(optional=[('structures', StructuresArg)],
+        CmdDesc(optional=[('structures', AtomicStructuresArg)],
             synopsis='Hide chiral-centre validation markup (all models if none given).'),
         unchiral, logger=logger)
+
+    register('isolde annotate all',
+        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+            synopsis='Show all live validation markup (ramachandran, rotamers, chirals).'),
+        isolde_annotate_all, logger=logger)
+    register('isolde annotate all stop',
+        CmdDesc(optional=[('structures', AtomicStructuresArg)],
+            synopsis='Hide all live validation markup.'),
+        isolde_annotate_all_stop, logger=logger)
 
     # Parent command: bare 'isolde annotate' (with or without a model spec)
     # raises a helpful "expected one of: ..." error (mirrors 'isolde validate').
     desc_top = CmdDesc(
-        optional=[('structures', StructuresArg)],
+        optional=[('structures', AtomicStructuresArg)],
         synopsis='Show ISOLDE live validation markup (requires a subcommand: {}).'.format(
             ', '.join(_ANNOTATE_SUBCOMMANDS)),
     )

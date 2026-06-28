@@ -348,6 +348,21 @@ the signed ``oriented_volume`` and a ``severity`` in [0, 1].
 This is a pure validation command - to toggle ISOLDE's live 3D chiral markup
 see :ref:`isolde annotate chirals <annotate chirals>` instead.
 
+.. _`validate all`:
+
+isolde validate all
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde validate all [*model*] [**log** *true|FALSE*] [**limit** *integer*]
+
+Run every validator above on *model* (or ISOLDE's currently selected model) in a
+single call. Each validator logs its own one-line summary (add ``log true`` to
+also dump each full table); the return value is a dictionary keyed by validator
+name (``peptidebonds``, ``ramachandran``, ``rotamers``, ``clashes``,
+``chirals``), each holding that validator's usual result. A validator that errors
+is recorded as ``{'error': ...}`` and does not abort the rest. To write results
+to a file, run the specific validator (which supports ``saveFile``).
+
 .. _`annotate`:
 
 isolde annotate
@@ -403,6 +418,24 @@ for ligands; with no atom spec, ``label`` targets the current selection).
 ChimeraX colour). Remove the markup with ``isolde annotate chirals stop``
 [*structures*]. For a text report of chiral outliers instead, use
 :ref:`isolde validate chirals <validate>`.
+
+.. _`annotate all`:
+
+isolde annotate all
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde annotate all [*structures*]
+
+Show every live-validation markup type at once (Ramachandran, rotamer and
+chiral-centre markup) on *structures* (all atomic structures if none given).
+
+.. _`annotate all stop`:
+
+isolde annotate all stop
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Hide every live-validation markup type at once (equivalent to running each
+``isolde annotate <type> stop``).
 
 .. _sim:
 
