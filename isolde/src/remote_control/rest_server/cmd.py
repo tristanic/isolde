@@ -10,7 +10,7 @@ def _get_server():
         _server = None
     return _server
 
-def start_server(session, port=None):
+def start_server(session, port=None, allow_run=False):
     from chimerax.core.commands import run
     run(session, 'isolde start')
     global _server
@@ -18,10 +18,28 @@ def start_server(session, port=None):
     if server is not None:
         session.logger.warning('ISOLDE REST server is already running')
     else:
+        import secrets
+        token = secrets.token_urlsafe(32)
         from .server import IsoldeRESTServer
-        _server = IsoldeRESTServer(session)
+        _server = IsoldeRESTServer(session, auth_token=token, allow_run=bool(allow_run))
         _server.start(port)
+        _report_token(session, _server)
     return server
+
+def _report_token(session, server):
+    log = session.logger
+    log.info(
+        'ISOLDE REST server authentication token (required as '
+        '"Authorization: Bearer <token>" on every request):'
+    )
+    # Bold so it is easy to copy from the log; localhost-only, so logging is ok.
+    log.info('    {}'.format(server.auth_token), is_html=False)
+    if server.allow_run:
+        log.warning(
+            'ISOLDE REST server started with allowRun=true: the free-text "run" '
+            'method (arbitrary ChimeraX commands) is ENABLED. Use only for trusted '
+            'local automation.'
+        )
 
 def report_info(session):
     server=_get_server()
@@ -30,6 +48,8 @@ def report_info(session):
         session.logger.info('ISOLDE REST server is not running')
     else:
         session.logger.info('ISOLDE REST server is listening on host {} port {}'.format(*addr))
+        session.logger.info('Authentication token: {}'.format(server.auth_token))
+        session.logger.info('Free-text "run" method enabled: {}'.format(server.allow_run))
 
 def stop_server(session):
     global _server
@@ -50,6 +70,7 @@ def register_isolde_rest_server(logger):
     def register_start(logger):
         desc = CmdDesc(
             keyword=[('port', IntArg),
+                ('allow_run', BoolArg),
                 ],
             synopsis='Start ISOLDE REST server'
         )

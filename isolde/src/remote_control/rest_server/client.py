@@ -12,11 +12,15 @@ class IsoldeRESTClient:
     available method names, required/optional arguments and docstrings can be
     obtained with get_available_methods().
     '''
-    def __init__(self, address, port, timeout=20):
+    def __init__(self, address, port, timeout=20, token=None):
         self._address = address
         self._port = port
         self._timeout = timeout
         self._headers = {'Content-type': 'application/json'}
+        # Bearer token minted by 'isolde remote rest start' (see its log /
+        # 'isolde remote rest info'); required on every request.
+        if token is not None:
+            self._headers['Authorization'] = 'Bearer ' + token
 
     def connect(self):
         import sys
@@ -30,7 +34,7 @@ class IsoldeRESTClient:
     def _get_available_methods(self):
         if not self.connected:
             raise RuntimeError('Not connected to server!')
-        self._connection.request('GET', '')
+        self._connection.request('GET', '', headers=self._headers)
         method_dict = self._get_result()
         return method_dict
 
@@ -118,10 +122,9 @@ def {}_server_method(self{}):
         return self._port
 
     def _get_result(self):
-        from cgi import parse_header
         result = self._connection.getresponse()
 
-        ctype, pdict = parse_header(result.getheader('content-type'))
+        ctype = (result.getheader('content-type') or '').split(';')[0].strip()
         if ctype != 'application/json':
             err_string = ('Server returned a non-supported type, "{}". Only "{}" '
                 'is allowed.').format(ctype, 'application/json')
