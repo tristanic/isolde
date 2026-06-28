@@ -106,6 +106,24 @@ Do **not** modify the following without an explicit instruction to do so. They c
 - Build with `make docs` (requires LaTeX for PDF output)
 - Docstrings use triple-quoted format with parameter descriptions
 
+**Command help auto-linking (important).** ChimeraX turns a logged command into a
+help hyperlink to `help:user/commands/<first-word>.html#<rest-of-command>` — for an
+`isolde X Y` command that means `commands/isolde.html#X-Y`. So every `isolde`
+subcommand must be documented *in* `docs/source/commands/isolde.rst` (which builds
+to `isolde.html`) under an **explicit label whose text is the subcommand path**, e.g.
+
+    .. _`annotate ramachandran`:
+
+    isolde annotate ramachandran
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sphinx slugs that label to the anchor `annotate-ramachandran`, which is exactly what
+the auto-link targets. Relying on the heading's auto-generated id does NOT work — it
+becomes `isolde-annotate-ramachandran` (with the `isolde-` prefix) and the link
+misses. A subcommand may document inline there or just link out (`See :ref:...`) to a
+detail page, but the labelled anchor must live in `isolde.rst`. (Top-level commands
+like `rama`/`rota`/`chiral` link to `rama.html#...` etc.)
+
 ---
 
 ## Key file map

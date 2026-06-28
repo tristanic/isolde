@@ -4,8 +4,8 @@ Live Ramachandran validation
 .. note::
 
    **Deprecated.** The top-level ``rama`` command has moved to
-   :ref:`isolde annotate ramachandran <isolde_annotate>` and will be removed in a
-   future ChimeraX-ISOLDE release. ``rama`` still works but now prints a
+   :ref:`isolde annotate ramachandran <annotate ramachandran>` and will be removed
+   in a future ChimeraX-ISOLDE release. ``rama`` still works but now prints a
    deprecation warning. Text reporting (the old ``report true`` option) now lives
    in the ``isolde validate rama`` command.
 

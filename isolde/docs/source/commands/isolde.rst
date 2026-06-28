@@ -3,7 +3,6 @@
 
    isolde_restrain
    isolde_remote
-   isolde_annotate
 
 The ISOLDE Command Line
 -----------------------
@@ -127,6 +126,8 @@ selected in ISOLDE). This lets an agent resolve the question through a chat
 round-trip — running the preflight, then the matching fix command if desired —
 instead of being blocked by a dialog.
 
+.. _`preflight hydrogens`:
+
 isolde preflight hydrogens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -140,6 +141,8 @@ counts, the H/heavy ratio, water statistics, an overall ``status``
 (``ok``, ``missing``, ``low`` or ``waters_missing``), and a
 ``recommend_addh`` flag indicating whether the agent or user should run the
 ChimeraX ``addh`` command before proceeding.
+
+.. _`preflight parameters`:
 
 isolde preflight parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -165,6 +168,8 @@ forcefield (e.g. ``amber14``); pass it explicitly to preflight against a
 different one. *ignoreExternalBonds* defaults to ``true`` to match the
 behaviour of the GUI panel.
 
+.. _`preflight disulfides`:
+
 isolde preflight disulfides
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -183,6 +188,8 @@ disulfide-bonded), ``possible`` (unbonded pairs within the cutoff), and
 automatically) — along with the matching ``n_current`` / ``n_possible`` /
 ``n_ambiguous`` counts and a ``recommend_create`` flag. As noted above, calling
 this command suppresses the one-time GUI disulfide popup for the model.
+
+.. _`preflight altlocs`:
 
 isolde preflight altlocs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -230,6 +237,8 @@ Each subcommand returns a dictionary with summary counts plus a
   always contains the full list; the returned dict carries
   ``truncated``, ``returned_count`` and ``total_count`` when clipped.
 
+.. _`validate peptidebonds`:
+
 isolde validate peptidebonds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -248,6 +257,8 @@ Returns a dictionary with summary counts (``n_residues``,
 per-bond ``items`` list. Each item carries the chain, both residues,
 the omega angle in degrees, the ``conformation`` (``cis`` or
 ``twisted``), and an ``is_proline`` flag for the C-terminal residue.
+
+.. _`validate rama`:
 
 isolde validate rama
 ~~~~~~~~~~~~~~~~~~~~
@@ -273,6 +284,8 @@ outlier) and the Ramachandran ``case`` (``general``, ``Gly``,
 This is a pure validation command - to toggle ISOLDE's live 3D
 Ramachandran annotators see the existing ``rama`` command instead.
 
+.. _`validate rotamers`:
+
 isolde validate rotamers
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -295,6 +308,8 @@ Returns a dictionary with summary counts (``n_rotameric``,
 This is a pure validation command - to toggle ISOLDE's live 3D
 rotamer annotators see the existing ``rota`` command instead.
 
+.. _`validate clashes`:
+
 isolde validate clashes
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -314,6 +329,81 @@ overlap. *limit* defaults to 200 for this command since the inline
 list dwarfs the other validators on real-world structures; widen with
 *limit* or capture everything with *saveFile*.
 
+.. _`validate chirals`:
+
+isolde validate chirals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde validate chirals [*model*] [**saveFile** *path*]
+[**log** *true|FALSE*] [**limit** *integer*]
+
+Report inverted or badly strained chiral centres in *model* (or ISOLDE's
+currently selected model), judged from the centre geometry alone (the robust
+four-substituent signed volume), so it works on a static model without a running
+simulation. Returns a dictionary with summary counts (``n_centres``,
+``n_outlier``, ``n_inverted``, ``n_strained``) and a per-centre ``items`` list
+(worst first) giving the chiral atom, its ``state`` (``inverted``/``strained``),
+the signed ``oriented_volume`` and a ``severity`` in [0, 1].
+
+This is a pure validation command - to toggle ISOLDE's live 3D chiral markup
+see :ref:`isolde annotate chirals <annotate chirals>` instead.
+
+.. _`annotate`:
+
+isolde annotate
+===================
+
+Add ISOLDE's live, real-time validation *markup* directly onto a model - the
+"draw" counterpart of the read-only :ref:`isolde validate <validate>` reports.
+The markers update with every change in coordinates. The bare ``isolde
+annotate`` command (no subcommand) lists the available markup types.
+
+These commands replace the former top-level ``rama`` / ``rota`` / ``chiral``
+markup commands. ``rama`` and ``rota`` remain as deprecated aliases for now;
+``chiral`` has been removed outright because it shadowed ChimeraX's own
+``chirality`` command.
+
+.. _`annotate ramachandran`:
+
+isolde annotate ramachandran
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde annotate ramachandran [*structures*] [**showFavored** *true|FALSE*]
+
+Show live Ramachandran-validation markup on *structures* (all atomic structures
+if none given): a probability-coloured marker on each residue's C-alpha, plus
+*cis*/twisted peptide-bond flags. ``showFavored false`` draws markers only on
+residues outside the favoured regions. Remove the markup with ``isolde annotate
+ramachandran stop`` [*structures*].
+
+.. _`annotate rotamers`:
+
+isolde annotate rotamers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde annotate rotamers [*structures*]
+
+Show live rotamer-validation markup on *structures* (all atomic structures if
+none given). Remove it with ``isolde annotate rotamers stop`` [*structures*].
+
+.. _`annotate chirals`:
+
+isolde annotate chirals
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde annotate chirals [*atoms*] [**label** *true|false*]
+[**labelColor** *auto|fromAtoms|<color>*]
+
+Show live chiral-centre validation markup on the structures owning *atoms* (all
+atomic structures if none given); inverted or strained centres get an always-on
+outlier glyph. ``label true`` additionally toggles the opt-in, per-centre R/S
+absolute-configuration labels for the chiral centres in *atoms* (mainly useful
+for ligands; with no atom spec, ``label`` targets the current selection).
+``labelColor`` sets the R/S label colour (``auto``, ``fromAtoms``, or any
+ChimeraX colour). Remove the markup with ``isolde annotate chirals stop``
+[*structures*]. For a text report of chiral outliers instead, use
+:ref:`isolde validate chirals <validate>`.
+
 .. _sim:
 
 isolde sim
@@ -323,6 +413,8 @@ Syntax: isolde sim *cmd* [*atoms*] [**discardTo** *discardTo*]
 
 Start, stop or pause an interactive simulation.
 
+.. _`sim start`:
+
 isolde sim start [*atoms*]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -331,6 +423,8 @@ atoms are specified, the simulation will encompass the entirety of the current
 selected model (or the first open model if ISOLDE is not already running). If
 *atoms* is specified, the selected atoms must come from a single model
 (if this is not the current selected model, ISOLDE will automatically switch).
+
+.. _`sim stop`:
 
 isolde sim stop [**discardTo** *discardTo*]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -342,10 +436,14 @@ Stop the currently running simulation, and optionally discard the results. If
 Otherwise, the atomic positions and states of all restraints will be reverted
 either to the starting state or the last saved checkpoint.
 
+.. _`sim pause`:
+
 isolde sim pause
 ~~~~~~~~~~~~~~~~
 
 Pauses the current simulation.
+
+.. _`sim resume`:
 
 isolde sim resume
 ~~~~~~~~~~~~~~~~~
@@ -1168,7 +1266,7 @@ Cβ–Oγ) and loose non-contacts are relaxed toward Geman-McClure (α ≈ −2)
 B-factors may legitimately diverge from their neighbours'. Default 1.0.
 
 
-.. _`brefine_optimiseparams`:
+.. _`brefine optimiseparams`:
 
 isolde brefine optimiseparams
 =============================
