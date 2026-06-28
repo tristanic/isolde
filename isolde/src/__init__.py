@@ -174,9 +174,6 @@ class _MyAPI(BundleAPI):
         elif command_name in ('rota', '~rota'):
             from .validation import cmd
             cmd.register_rota(logger)
-        elif command_name in ('chiral', '~chiral'):
-            from .validation import cmd
-            cmd.register_chiral(logger)
 
 
     @staticmethod

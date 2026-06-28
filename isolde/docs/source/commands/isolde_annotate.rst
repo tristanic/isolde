@@ -45,3 +45,32 @@ every atomic structure in the session if none are given).
 To remove the markup::
 
     isolde annotate rotamers stop [*structures*]
+
+.. _annotate_chirals:
+
+isolde annotate chirals
+-----------------------
+
+Syntax: isolde annotate chirals [*atoms*] [**label** *true/false*] [**labelColor** *auto/fromAtoms/<color>*]
+
+Add live chiral-centre validation markup to the structures owning *atoms* (or to
+every atomic structure in the session if none are given). Inverted or badly
+strained chiral centres are flagged with an always-on outlier glyph.
+
+*label*: turns the opt-in, per-centre R/S absolute-configuration label on or off
+for the chiral centres in *atoms* (mainly useful for ligands). With no atom spec,
+*label* targets the current selection.
+
+*labelColor*: sets the R/S label colour -- ``auto`` (contrasts with the
+background), ``fromAtoms`` (each letter takes its chiral atom's colour), or any
+ChimeraX colour.
+
+To remove the markup::
+
+    isolde annotate chirals stop [*structures*]
+
+.. note::
+
+   This command replaces the former top-level ``chiral`` command (which shadowed
+   ChimeraX's own ``chirality`` command). For a *text* report of chiral outliers,
+   use ``isolde validate chirals``.

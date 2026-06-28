@@ -96,14 +96,6 @@ description = "Remove live Ramachandran model markup"
 category = "General"
 description = "Remove live rotamer model markup"
 
-[chimerax.command.chiral]
-category = "General"
-description = "Live chiral-centre validation markup"
-
-[chimerax.command."~chiral"]
-category = "General"
-description = "Remove live chiral-centre validation markup"
-
 [chimerax.library.molc]
 sources = [
     "src_cpp/atomic/*.cpp",

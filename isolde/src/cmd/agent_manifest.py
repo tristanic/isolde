@@ -108,9 +108,9 @@ AGENT_COMMANDS = {
 
     # --- Chirality (rdkit branch) ---
     # Correction tool; the matching read-only validator is
-    # 'isolde validate chirals' (in the query/validation block above). The
-    # top-level 'chiral' markup command is GUI-only (like 'rama'/'rota' markup)
-    # and is intentionally not exposed to agents.
+    # 'isolde validate chirals' (in the query/validation block above). The live
+    # markup command ('isolde annotate chirals', like the other 'isolde annotate'
+    # markup) is GUI-only and intentionally not exposed to agents.
     'isolde chiralflip':         dict(category='manipulation'),
 }
 

@@ -121,22 +121,22 @@ def unrama(session, structures=None):
         if ra is not None:
             session.models.close([ra])
 
-def chiral(session, atoms=None, report=False, label=None, label_color=None):
+def isolde_annotate_chirals(session, atoms=None, label=None, label_color=None):
     '''
-    Add a live chiral-centre validator to each of the given structures, and
-    optionally report a summary of current chiral outliers (wrong-handed or badly
-    strained centres).
+    Show live chiral-centre validation markup on the structures owning ``atoms``
+    (all atomic structures if none are given).
 
     ``label true``/``label false`` additionally turns the in-model R/S absolute-
     configuration markup on/off for the chiral centres in ``atoms`` -- an opt-in,
     per-centre display flag (:attr:`ChiralCenter.label`) distinct from the always-on
-    outlier glyph, intended mainly for ligands. With no atom spec, the validator
-    applies to all structures (as before) while ``label`` targets the current
-    selection.
+    outlier glyph, intended mainly for ligands. With no atom spec, the markup
+    applies to all structures while ``label`` targets the current selection.
 
     ``labelColor`` sets the R/S label colour: ``auto`` (default on a new annotator
     -- a tone contrasting with the background), ``fromAtoms`` (each letter takes its
     chiral atom's colour), or any ChimeraX colour.
+
+    For a text report of chiral outliers, use ``isolde validate chirals``.
     '''
     from chimerax.isolde import session_extensions as sx
     from chimerax.atomic import AtomicStructure, selected_atoms
@@ -154,22 +154,6 @@ def chiral(session, atoms=None, report=False, label=None, label_color=None):
         value = label_color.lower() if isinstance(label_color, str) else label_color.uint8x4()
         for structure in structures:
             sx.get_chiral_annotator(structure).set_label_color(value)
-    if report:
-        from chimerax.isolde.atomic.chirality import chiral_outliers
-        report_str = 'CHIRAL OUTLIERS:\n'
-        any_found = False
-        for structure in structures:
-            chirals, oriented, severity = chiral_outliers(session, structure.atoms)
-            for cc, o in zip(chirals, oriented):
-                any_found = True
-                a = cc.chiral_atom
-                r = a.residue
-                state = 'inverted' if o < 0 else 'strained'
-                report_str += '#{:<6} {}:\t{} {} atom {} ({}, oriented volume {:.3f} A^3)\n'.format(
-                    r.structure.id_string, r.chain_id, r.name, r.number, a.name, state, o)
-        if not any_found:
-            report_str += '  (none)\n'
-        session.logger.info(report_str)
 
 
 def _set_chiral_labels(session, atoms, flag):
@@ -205,32 +189,6 @@ def unchiral(session, structures=None):
         ca = sx.get_chiral_annotator(structure, create=False)
         if ca is not None:
             session.models.close([ca])
-
-def register_chiral(logger):
-    from chimerax.core.commands import (
-        register, CmdDesc, BoolArg, ColorArg, EnumOf, Or, create_alias
-    )
-    from chimerax.atomic import StructuresArg, AtomsArg
-    desc = CmdDesc(
-        optional=[
-            ('atoms', AtomsArg),
-            ],
-        keyword=[
-            ('report', BoolArg),
-            ('label', BoolArg),
-            ('label_color', Or(EnumOf(['auto', 'fromAtoms']), ColorArg)),
-        ],
-        synopsis='Add chiral-centre validator markup to models, optionally report '
-            'current outliers, and/or toggle R/S configuration labels (label true|false)'
-    )
-    register('chiral', desc, chiral, logger=logger)
-    undesc = CmdDesc(
-        optional=[('structures', StructuresArg)],
-        synopsis='Close the chiral annotators for the given models (or all if no models given)'
-    )
-    register('chiral stop', undesc, unchiral, logger=logger)
-    create_alias('~chiral', 'chiral stop $*', logger=logger)
-
 
 def register_rota(logger):
     from chimerax.core.commands import (
@@ -1732,7 +1690,7 @@ def register_validate_commands(logger):
     register('isolde validate', desc_top, isolde_validate, logger=logger)
 
 
-_ANNOTATE_SUBCOMMANDS = ('ramachandran', 'rotamers')
+_ANNOTATE_SUBCOMMANDS = ('ramachandran', 'rotamers', 'chirals')
 
 
 def isolde_annotate(session, structures=None):
@@ -1750,8 +1708,8 @@ def isolde_annotate(session, structures=None):
 
 
 def register_annotate_commands(logger):
-    from chimerax.core.commands import register, CmdDesc, BoolArg
-    from chimerax.atomic import StructuresArg
+    from chimerax.core.commands import register, CmdDesc, BoolArg, ColorArg, EnumOf, Or
+    from chimerax.atomic import StructuresArg, AtomsArg
 
     desc_rama = CmdDesc(
         optional=[('structures', StructuresArg)],
@@ -1775,6 +1733,21 @@ def register_annotate_commands(logger):
         CmdDesc(optional=[('structures', StructuresArg)],
             synopsis='Hide rotamer-validation markup (all models if none given).'),
         unrota, logger=logger)
+
+    desc_chiral = CmdDesc(
+        optional=[('atoms', AtomsArg)],
+        keyword=[
+            ('label', BoolArg),
+            ('label_color', Or(EnumOf(['auto', 'fromAtoms']), ColorArg)),
+        ],
+        synopsis='Show live chiral-centre validation markup; optionally toggle R/S labels.',
+    )
+    register('isolde annotate chirals', desc_chiral,
+        isolde_annotate_chirals, logger=logger)
+    register('isolde annotate chirals stop',
+        CmdDesc(optional=[('structures', StructuresArg)],
+            synopsis='Hide chiral-centre validation markup (all models if none given).'),
+        unchiral, logger=logger)
 
     # Parent command: bare 'isolde annotate' (with or without a model spec)
     # raises a helpful "expected one of: ..." error (mirrors 'isolde validate').
