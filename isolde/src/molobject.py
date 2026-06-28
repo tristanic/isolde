@@ -3652,6 +3652,11 @@ class ChiralRestraintMgr(_RestraintMgr):
             'spring_constants': restraints.spring_constants,
             'cutoffs':  restraints.cutoffs,
             'enableds': restraints.enableds,
+            # Targets used to be immutable (so checkpointing them was pointless),
+            # but 'isolde chiralflip force' now flips a centre's target handedness
+            # at runtime via ChiralRestraint.flip_target(). Capture them so that
+            # change is reverted with everything else.
+            'targets':  restraints.targets,
         }
         return (self, checkpoint_data)
 
@@ -3661,10 +3666,22 @@ class ChiralRestraintMgr(_RestraintMgr):
         # of the saved ones.
         data = data.copy()
         atoms = data.pop('atoms', None)
+        # 'target' is a read-only c_property whose only runtime mutation is a sign
+        # flip (flip_target), so it can't go through the generic setattr restore -
+        # pop it here and restore it below by re-flipping centres whose handedness
+        # has since changed.
+        saved_targets = data.pop('targets', None)
         if atoms is not None:
             restraints = self.get_restraints_by_atoms(atoms)
             restraints.enableds=False
+            saved_restraints = data.get('restraints')
             _RestraintMgr.restore_checkpoint(self, data)
+            if saved_targets is not None and saved_restraints is not None:
+                import numpy
+                for r, cur, tgt in zip(
+                        saved_restraints, saved_restraints.targets, saved_targets):
+                    if numpy.sign(cur) != numpy.sign(tgt):
+                        r.flip_target()
 
 
 class ProperDihedralRestraintMgr(_RestraintMgr):
