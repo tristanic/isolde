@@ -75,7 +75,7 @@ def main():
     spec = atomic[0]['spec']
     _ok('model loaded: %s (%s atoms)' % (spec, atomic[0].get('n_atoms')))
 
-    rama = post('agent_invoke', name='isolde validate rama', args={'model': spec})['result']
+    rama = post('agent_invoke', name='isolde validate ramachandran', args={'model': spec})['result']
     _ok('rama: %d scorable, %d outliers' % (rama.get('n_scorable', -1), rama.get('n_outlier', -1)))
 
     clash = post('agent_invoke', name='isolde validate clashes', args={'model': spec})['result']

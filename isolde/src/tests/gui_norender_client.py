@@ -32,7 +32,7 @@ def main():
     inv = post('list_models')
     step('list_models', '%d models' % inv.get('count', -1))
     step('describe_model', 'chains=%s' % [c['chain_id'] for c in post('describe_model', model=SPEC).get('chains', [])])
-    step('validate rama', post('agent_invoke', name='isolde validate rama', args={'model': SPEC})['result'].get('n_outlier'))
+    step('validate ramachandran', post('agent_invoke', name='isolde validate ramachandran', args={'model': SPEC})['result'].get('n_outlier'))
     step('validate clashes', post('agent_invoke', name='isolde validate clashes', args={'model': SPEC})['result'].get('n_total'))
     mi = post('map_info', model=SPEC)
     step('map_info Rwork/Rfree', [ (x.get('rwork'), x.get('rfree')) for x in mi.get('crystallographic', []) ])

@@ -106,7 +106,7 @@ def run(session):
         _fail('agent_tools failed: %s %s' % (status, result))
     tools = result['tools']
     names = {t.get('command') for t in tools}
-    if 'isolde sim' not in names or 'isolde validate rama' not in names:
+    if 'isolde sim' not in names or 'isolde validate ramachandran' not in names:
         _fail('agent_tools manifest missing expected commands: %s' % sorted(names))
     print('PASS: agent_tools returned %d typed tools' % result['count'])
 

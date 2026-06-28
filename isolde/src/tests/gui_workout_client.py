@@ -94,7 +94,7 @@ def main():
     show('3x render', 'done (all no-op)')
 
     print('== final validation ==')
-    r = inv('isolde validate rama', model=SPEC).get('result', {})
+    r = inv('isolde validate ramachandran', model=SPEC).get('result', {})
     show('rama final', {k: r[k] for k in r if k.startswith('n_')})
 
     print('\nWORKOUT COMPLETE (%d failures). Now check the GUI: resize/drag/settle, dock/undock.' % nfail)

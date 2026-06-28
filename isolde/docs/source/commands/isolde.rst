@@ -258,12 +258,12 @@ per-bond ``items`` list. Each item carries the chain, both residues,
 the omega angle in degrees, the ``conformation`` (``cis`` or
 ``twisted``), and an ``is_proline`` flag for the C-terminal residue.
 
-.. _`validate rama`:
+.. _`validate ramachandran`:
 
-isolde validate rama
-~~~~~~~~~~~~~~~~~~~~
+isolde validate ramachandran
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Syntax: isolde validate rama [*model*]
+Syntax: isolde validate ramachandran [*model*]
 [**include** *outliers|allowed|all*] [**saveFile** *path*]
 [**log** *true|FALSE*] [**limit** *integer*]
 
@@ -282,7 +282,7 @@ outlier) and the Ramachandran ``case`` (``general``, ``Gly``,
 ``trans-Pro``, etc.).
 
 This is a pure validation command - to toggle ISOLDE's live 3D
-Ramachandran annotators see the existing ``rama`` command instead.
+Ramachandran annotators see ``isolde annotate ramachandran`` instead.
 
 .. _`validate rotamers`:
 
@@ -306,7 +306,7 @@ Returns a dictionary with summary counts (``n_rotameric``,
 ``items`` list giving the P-value ``score`` and ``classification``.
 
 This is a pure validation command - to toggle ISOLDE's live 3D
-rotamer annotators see the existing ``rota`` command instead.
+rotamer annotators see ``isolde annotate rotamers`` instead.
 
 .. _`validate clashes`:
 

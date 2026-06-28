@@ -83,13 +83,13 @@ def isolde_annotate_ramachandran(session, structures=None, show_favored=True):
 
 def rama(session, structures=None, show_favored=True, report=False):
     '''Deprecated alias for ``isolde annotate ramachandran`` (markup) and, with
-    ``report true``, ``isolde validate rama`` (text report). Slated for removal
+    ``report true``, ``isolde validate ramachandran`` (text report). Slated for removal
     in a future ChimeraX-ISOLDE release.'''
     from chimerax.core.commands import run
     session.logger.warning(
         "'rama' is deprecated and will be removed in a future ChimeraX-ISOLDE "
         "release. Use 'isolde annotate ramachandran' instead"
-        + (" (and 'isolde validate rama' for the text report)." if report else ".")
+        + (" (and 'isolde validate ramachandran' for the text report)." if report else ".")
     )
     spec = _structures_spec(session, structures)
     cmd = ('isolde annotate ramachandran ' + spec).strip()
@@ -97,7 +97,7 @@ def rama(session, structures=None, show_favored=True, report=False):
         cmd += ' showFavored false'
     run(session, cmd)
     if report:
-        run(session, ('isolde validate rama ' + spec).strip())
+        run(session, ('isolde validate ramachandran ' + spec).strip())
 
 
 def _rama_stop_deprecated(session, structures=None):
@@ -752,7 +752,7 @@ _LOG_TABLE_ROW_LIMIT = 500
 # Subcommand names exposed under ``isolde validate``. Used both for
 # registration order and to build the helpful error raised by the bare
 # ``isolde validate`` parent handler below.
-_VALIDATE_SUBCOMMANDS = ('peptidebonds', 'rama', 'rotamers', 'clashes', 'chirals')
+_VALIDATE_SUBCOMMANDS = ('peptidebonds', 'ramachandran', 'rotamers', 'clashes', 'chirals')
 
 
 def isolde_validate(session, model=None):
@@ -773,15 +773,17 @@ def isolde_validate(session, model=None):
     )
 
 
-def _full_list_hint(cmd_name, model_spec, total_count):
+def _full_list_hint(cmd_name, model_spec, total_count, log=False, save_file=None):
     '''
     Build a one-line hint pointing the caller at the ``log`` and
     ``saveFile`` keywords. Returned as a leading-space-prefixed string so
     callers can simply ``summary += _full_list_hint(...)`` without
     worrying about extra whitespace, and as the empty string when there
-    is nothing to list.
+    is nothing to list -- or when the full list has already been emitted
+    (``log`` is true, or ``saveFile`` was given), since the hint only makes
+    sense when just the summary was shown.
     '''
-    if total_count <= 0:
+    if total_count <= 0 or log or save_file is not None:
         return ''
     return (
         " Showing summary only; re-run as '{cmd} {spec} log true' to dump"
@@ -1225,11 +1227,9 @@ def isolde_validate_peptidebonds(session, model=None,
         )
     )
     summary += _full_list_hint(
-        'isolde validate peptidebonds', m.atomspec, data['n_iffy'])
-    if data['n_cis_nonpro'] > 0 or data['n_twisted'] > 0:
-        logger.warning(summary)
-    else:
-        logger.info(summary)
+        'isolde validate peptidebonds', m.atomspec, data['n_iffy'],
+        log=log, save_file=save_file)
+    logger.info(summary)
 
     if log:
         _dump_table_to_log(logger, summary, columns, rows)
@@ -1251,7 +1251,7 @@ def isolde_validate_peptidebonds(session, model=None,
     return result
 
 
-def isolde_validate_rama(session, model=None, include='outliers',
+def isolde_validate_ramachandran(session, model=None, include='outliers',
         save_file=None, log=False, limit=None):
     '''
     Report Ramachandran scoring for protein residues in ``model`` (or
@@ -1301,11 +1301,9 @@ def isolde_validate_rama(session, model=None, include='outliers',
         )
     )
     summary += _full_list_hint(
-        'isolde validate rama', m.atomspec, len(items))
-    if data['n_outlier'] > 0:
-        logger.warning(summary)
-    else:
-        logger.info(summary)
+        'isolde validate ramachandran', m.atomspec, len(items),
+        log=log, save_file=save_file)
+    logger.info(summary)
 
     if log:
         _dump_table_to_log(logger, summary, columns, rows)
@@ -1379,11 +1377,9 @@ def isolde_validate_rotamers(session, model=None, include='nonfavored',
         )
     )
     summary += _full_list_hint(
-        'isolde validate rotamers', m.atomspec, len(items))
-    if data['n_outlier'] > 0:
-        logger.warning(summary)
-    else:
-        logger.info(summary)
+        'isolde validate rotamers', m.atomspec, len(items),
+        log=log, save_file=save_file)
+    logger.info(summary)
 
     if log:
         _dump_table_to_log(logger, summary, columns, rows)
@@ -1474,11 +1470,9 @@ def isolde_validate_clashes(session, model=None,
         )
     )
     summary += _full_list_hint(
-        'isolde validate clashes', m.atomspec, n_total)
-    if n_severe > 0:
-        logger.warning(summary)
-    else:
-        logger.info(summary)
+        'isolde validate clashes', m.atomspec, n_total,
+        log=log, save_file=save_file)
+    logger.info(summary)
 
     if log:
         _dump_table_to_log(logger, summary, columns, rows)
@@ -1588,11 +1582,9 @@ def isolde_validate_chirals(session, model=None,
         )
     )
     summary += _full_list_hint(
-        'isolde validate chirals', m.atomspec, len(items))
-    if len(items) > 0:
-        logger.warning(summary)
-    else:
-        logger.info(summary)
+        'isolde validate chirals', m.atomspec, len(items),
+        log=log, save_file=save_file)
+    logger.info(summary)
 
     if log:
         _dump_table_to_log(logger, summary, columns, rows)
@@ -1647,8 +1639,8 @@ def register_validate_commands(logger):
         ],
         synopsis='Validation: report Ramachandran scoring with phi/psi/score.',
     )
-    register('isolde validate rama', desc_rama,
-        isolde_validate_rama, logger=logger)
+    register('isolde validate ramachandran', desc_rama,
+        isolde_validate_ramachandran, logger=logger)
 
     desc_rota = CmdDesc(
         optional=[('model', IsoldeStructureArg)],

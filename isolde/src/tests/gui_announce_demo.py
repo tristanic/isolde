@@ -104,7 +104,7 @@ def main():
     # 1. QUERY: validation -- should be SILENT in the GUI log.
     step('QUERY: validate ramachandran (read-only)',
          None,
-         lambda: post('agent_invoke', name='isolde validate rama', args={'model': spec}))
+         lambda: post('agent_invoke', name='isolde validate ramachandran', args={'model': spec}))
 
     # 2. MUTATING: start a simulation.
     step('MUTATING: start simulation',

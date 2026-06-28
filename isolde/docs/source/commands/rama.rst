@@ -7,7 +7,7 @@ Live Ramachandran validation
    :ref:`isolde annotate ramachandran <annotate ramachandran>` and will be removed
    in a future ChimeraX-ISOLDE release. ``rama`` still works but now prints a
    deprecation warning. Text reporting (the old ``report true`` option) now lives
-   in the ``isolde validate rama`` command.
+   in the ``isolde validate ramachandran`` command.
 
 The conformation of a protein backbone can be characterised at each residue by
 the combination of three torsion angles: *phi* (leading "into" the residue),

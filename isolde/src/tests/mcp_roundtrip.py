@@ -55,7 +55,7 @@ async def main():
             # --- the agentic perceive -> act -> verify loop, over MCP ---
             await call('isolde_list_models')
             await call('isolde_describe_model', model='#1.2')
-            await call('isolde_validate_rama', model='#1.2')        # command tool
+            await call('isolde_validate_ramachandran', model='#1.2')        # command tool
             await call('isolde_map_info', model='#1.2')             # Rwork/Rfree
             await call('isolde_render', width=400, height=300)      # -> image content
 

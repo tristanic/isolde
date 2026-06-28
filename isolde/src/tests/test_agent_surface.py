@@ -102,7 +102,7 @@ def run(session):
     print('PASS: ~negation commands sanitise to distinct MCP-valid names')
 
     # Show a few representative tool definitions for eyeballing.
-    for name in ('isolde sim', 'isolde validate rama', 'isolde stepto',
+    for name in ('isolde sim', 'isolde validate ramachandran', 'isolde stepto',
                  'isolde adjust bfactors'):
         rec = reg.get(name)
         if rec is None:

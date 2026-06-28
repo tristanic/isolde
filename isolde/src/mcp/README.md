@@ -40,7 +40,7 @@ server configuration (stdio transport).
 
 **1. One tool per agent-safe ISOLDE command** (currently ~40), auto-discovered at
 start-up from the REST manifest (the `agent_tools` method). Tool names are the
-underscore form of the command — e.g. `isolde_sim`, `isolde_validate_rama`,
+underscore form of the command — e.g. `isolde_sim`, `isolde_validate_ramachandran`,
 `isolde_restrain_torsions`, `isolde_pepflip`, `isolde_stepto` — and their input
 schemas are generated from each command's `CmdDesc` typing. **Exposing a command
 in ISOLDE makes it appear here with no change to this server** (capture is
