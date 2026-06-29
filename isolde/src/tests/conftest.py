@@ -42,7 +42,7 @@ def _regenerating():
 @pytest.fixture(scope='session')
 def session():
     '''The live ChimeraX session, injected by run_tests.py at startup.'''
-    from chimerax.isolde.tests import _runtime
+    import _runtime
     if _runtime.session is None:
         raise RuntimeError(
             'No ChimeraX session available. Run this suite via:\n'

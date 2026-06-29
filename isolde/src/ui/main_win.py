@@ -105,6 +105,15 @@ class IsoldeMainWin(MainToolWindow):
         l1.addWidget(QLabel('Experience level: ', parent=tw))
         from .ui_base import ExpertModeSelector
         elcb = self.expert_mode_combo_box = ExpertModeSelector(tw)
+        # Initialise from the persisted startup default (Favourites > Settings >
+        # ISOLDE). Changing the combo box during a session is transient and does
+        # not write back to the setting.
+        from .. import settings
+        level = getattr(settings.basic_settings, 'experience_level',
+            ExpertModeSelector.DEFAULT)
+        idx = elcb.findData(level)
+        if idx >= 0:
+            elcb.setCurrentIndex(idx)
         l1.addWidget(elcb)
 
         self._isolde_trigger_handlers.append(session.isolde.triggers.add_handler(self.isolde.SIMULATION_STARTED, self._sim_start_cb))

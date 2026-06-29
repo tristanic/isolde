@@ -1452,8 +1452,12 @@ class SimHandler:
         try:
             self._prepare_sim()
         except OpenMMException as e:
-            if self._params.platform=='CUDA':
-                self.session.logger.warning(f'Launching using CUDA failed with the below message. Falling back to using OpenCL.\n\n{str(e)}')
+            # The CUDA (NVIDIA) and HIP (AMD/ROCm) GPU platforms may be selected
+            # but not registered in this OpenMM build. Fall back to OpenCL, which
+            # runs on the same GPU hardware.
+            if self._params.platform in ('CUDA', 'HIP'):
+                failed_platform = self._params.platform
+                self.session.logger.warning(f'Launching using {failed_platform} failed with the below message. Falling back to using OpenCL.\n\n{str(e)}')
                 self._params.platform='OpenCL'
                 self._prepare_sim()
             else:

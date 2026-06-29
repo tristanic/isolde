@@ -19,7 +19,14 @@ import tempfile
 import numpy
 import pytest
 
-from chimerax.isolde.tests.conftest import FIXTURE_PDB, cx_path
+HERE = os.path.dirname(os.path.abspath(__file__))
+FIXTURE_PDB = os.path.join(HERE, '1pmx_1.pdb')
+
+
+def cx_path(path):
+    '''ChimeraX's command parser prefers forward slashes on Windows.'''
+    return path.replace('\\', '/')
+
 
 pytestmark = pytest.mark.integration
 

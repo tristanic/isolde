@@ -58,6 +58,15 @@ class _MyAPI(BundleAPI):
         if session.ui.is_gui:
             from .toolbar import ToolbarButtonMgr
             session._isolde_tb = ToolbarButtonMgr(session)
+            # Register the ISOLDE settings page. On a cold start the main window
+            # doesn't exist yet (it's built after bundle initialisation), so defer
+            # to the UI 'ready' trigger; if ISOLDE is (re)installed into an already-
+            # running session that trigger has already fired, so register now.
+            if session.ui.main_window is not None:
+                settings.register_settings_options(session)
+            else:
+                session.ui.triggers.add_handler('ready', lambda *args, ses=session:
+                    settings.register_settings_options(ses))
 
     @staticmethod
     def get_class(class_name):

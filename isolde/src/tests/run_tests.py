@@ -25,8 +25,14 @@ import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
 
-# Hand the live session to conftest's fixtures.
-from chimerax.isolde.tests import _runtime
+# Make this directory importable as a flat module path, so the test glue
+# (_runtime, conftest) resolves to THESE source files regardless of where the
+# installed ``chimerax.isolde`` package lives (it may be a separate copy).
+if here not in sys.path:
+    sys.path.insert(0, here)
+
+# Hand the live session to conftest's fixtures via the local _runtime module.
+import _runtime
 _runtime.session = session       # noqa: F821 -- provided by ChimeraX runscript
 
 args = list(sys.argv[1:])
