@@ -72,9 +72,9 @@ functionally interesting.
     This, on the other hand, is real.
 
     This non-proline *cis* bond is found in tissue transglutaminase (*TGM2*, see
-    PDB ID 2q3z), and is stabilised by a disulphide bond between directly
+    PDB ID 2q3z), and is stabilised by a disulfide bond between directly
     adjacent cysteine residues. It is part of a redox-switching mechanism: under
-    certain circumstances the disulphide is reduced by thioredoxin, allowing
+    certain circumstances the disulfide is reduced by thioredoxin, allowing
     the peptide bond to flip to *trans* and thereby shifting an inhibitory loop
     to activate the enzyme. It is also clearly resolved in the electron density.
 

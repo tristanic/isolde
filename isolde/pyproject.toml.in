@@ -1,7 +1,7 @@
 [build-system]
 requires = [
   "ChimeraX-BundleBuilder>=1.4.0",
-  "ChimeraX-Core >=1.12rc0, ==1.12.*",
+  "ChimeraX-Core >=1.13.0.dev0, ==1.13.*",
   "ChimeraX-Atomic ~=1.67",
   "ChimeraX-AtomicLibrary ~=14.4",
   "ChimeraX-Arrays ~=1.1.0",
@@ -19,10 +19,10 @@ description = "ISOLDE: Interactive Structure Optimisation by Local Direct Explor
 dynamic = ["classifiers", "requires-python", "version"]
 
 dependencies = [
-    "ChimeraX-Core >=1.12rc0, ==1.12.*",
-    "ChimeraX-Atomic ~=1.67.0",
+    "ChimeraX-Core >=1.13.0.dev0, ==1.13.*",
+    "ChimeraX-Atomic ~=1.67",
     "ChimeraX-AtomicLibrary ~=14.4.0",
-    "ChimeraX-Clipper ~=0.28.0",
+    "ChimeraX-Clipper >=0.28.dev0, ==0.28.*",
     "ChimeraX-Arrays ~=1.0" 
 ]
 
@@ -119,7 +119,6 @@ sources = [
 ]
 library-dirs = ["OPENMM_LIB_DIR"]
 include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_INCLUDE_DIR"]
-define-macros = ["_GLIBCXX_USE_CXX11_ABI=0"]
 
 [chimerax.extension._openmm_async.platform.linux]
 libraries = ["OpenMM"]
@@ -138,7 +137,6 @@ sources = [
 library-dirs = ["OPENMM_LIB_DIR"]
 include-dirs = ["src_cpp/deps/lbfgs/include","extern/pybind11/include", "OPENMM_INCLUDE_DIR"]
 include-modules = ["numpy"]
-define-macros = ["_GLIBCXX_USE_CXX11_ABI=0"]
 
 [chimerax.extension._openmm_force_ext.platform.linux]
 libraries = ["OpenMM"]

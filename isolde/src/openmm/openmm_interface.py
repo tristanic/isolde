@@ -470,6 +470,9 @@ class SimManager:
         '''
         from ..checkpoint import CheckPoint
         self._current_checkpoint = CheckPoint(self.isolde)
+        sh = self.sim_handler
+        if sh is not None:
+            sh._sim_steps_at_checkpoint = sh.sim_steps
 
     def revert_to_checkpoint(self):
         '''
@@ -1066,6 +1069,11 @@ class SimHandler:
         self._sim_running = False
         self._unstable = True
         self._unstable_counter = 0
+        # Monotonic count of integrator steps run since the sim started, plus the
+        # value captured at the last checkpoint. A cheap, authoritative
+        # "is it stepping / how far" signal (see the sim_steps property).
+        self._sim_steps = 0
+        self._sim_steps_at_checkpoint = 0
 
         atoms = self._atoms = sim_construct.all_atoms
         # Forcefield used in this simulation
@@ -1081,9 +1089,11 @@ class SimHandler:
         self.mdff_forces = {}
 
         logger = self.session.logger
-        # Overall simulation topology
-        template_dict = find_residue_templates(sim_construct.all_residues, ff, ligand_db=ligand_db, logger=session.logger)
-        top, residue_templates = create_openmm_topology(atoms, template_dict)
+        # Overall simulation topology + system. The build can recover once from
+        # stale isolde_template_name overrides that no longer match their
+        # residue (see _build_system_with_template_recovery).
+        top, system = self._build_system_with_template_recovery(
+            ff, atoms, sim_construct.all_residues, sim_params, ligand_db, logger)
         self.topology = top
 
 
@@ -1102,8 +1112,7 @@ class SimHandler:
         for name in trigger_names:
             t.add_trigger(name)
 
-        system = self._system = self._create_openmm_system(ff, top,
-            sim_params, residue_templates)
+        self._system = system
 
 
 
@@ -1230,12 +1239,65 @@ class SimHandler:
     def atoms(self):
         return self._atoms
 
-    def _create_openmm_system(self, forcefield, top, params, residue_templates):
+    def _build_system_with_template_recovery(self, ff, atoms, all_residues,
+            sim_params, ligand_db, logger):
+        '''
+        Build the OpenMM topology and system from ``all_residues``.
+
+        If the build fails because one or more residues carry an
+        ``isolde_template_name`` override that does not actually match the
+        residue (or names a template missing from the forcefield), clear those
+        overrides and rebuild **once**. Rebuilding from scratch — rather than
+        just re-running template matching — is important: ``find_residue_templates``
+        deliberately skips its cysteine / USER_ / ligand logic for residues that
+        already carry an override, so the residue only gets a fair shot at
+        automatic assignment after the override is gone. If the residue still
+        cannot be matched (or the failure was never override-related), the
+        UnparameterisedResiduesError propagates and the usual widget path fires.
+
+        Returns ``(topology, system)``.
+        '''
+        for attempt in (0, 1):
+            template_dict = find_residue_templates(all_residues, ff,
+                ligand_db=ligand_db, logger=logger,
+                clear_failed_overrides=True)
+            top, residue_templates = create_openmm_topology(atoms, template_dict)
+            try:
+                system = self._create_openmm_system(ff, top, sim_params,
+                    residue_templates, residues=all_residues)
+            except UnparameterisedResiduesError as e:
+                offenders = [r for r in (e.unmatched + e.ambiguous)
+                    if getattr(r, 'isolde_template_name', None) is not None]
+                if attempt == 0 and offenders:
+                    for r in offenders:
+                        logger.warning(
+                            'Residue {} was assigned template "{}" via its '
+                            'isolde_template_name override, but that template '
+                            'does not match the residue. Clearing the override '
+                            'and retrying with automatic template assignment.'
+                            .format(r, r.isolde_template_name))
+                        r.isolde_template_name = None
+                    continue
+                raise
+            return top, system
+
+    def _create_openmm_system(self, forcefield, top, params, residue_templates,
+            residues=None):
         residue_to_template, ambiguous, unassigned = forcefield.assignTemplates(
             top, ignoreExternalBonds=True, explicit_templates=residue_templates
         )
         if len(ambiguous) or len(unassigned):
-            raise RuntimeError('Unparameterised residue detected')
+            # Map the offending OpenMM topology residues back to their ChimeraX
+            # residues (OpenMM res.index is the order they were added in
+            # create_openmm_topology, which matches `residues`) so the caller
+            # can inspect/clear stale isolde_template_name overrides.
+            unmatched_cx = []
+            ambiguous_cx = []
+            if residues is not None:
+                unmatched_cx = [residues[r.index] for r in unassigned]
+                ambiguous_cx = [residues[r.index] for r in ambiguous]
+            raise UnparameterisedResiduesError(unmatched=unmatched_cx,
+                ambiguous=ambiguous_cx)
 
             # from chimerax.core.errors import UserError
             # err_text = ''
@@ -1469,6 +1531,8 @@ class SimHandler:
         self._sim_running = True
         self._startup = True
         self._startup_counter = 0
+        self._sim_steps = 0
+        self._sim_steps_at_checkpoint = 0
         from chimerax.core.models import REMOVE_MODELS
         self._model_deleted_handler = self.session.triggers.add_handler(REMOVE_MODELS, self._model_deleted_cb)
         self._minimize_and_go()
@@ -1570,6 +1634,10 @@ class SimHandler:
                 self.atoms.coords = th.coords
         except ValueError:
             self.stop(reason=self.REASON_COORD_LENGTH_MISMATCH)
+        # Count integrator steps completed this cycle (equilibration only;
+        # minimisation rounds are not fixed-step).
+        if th._last_mode == 'equil':
+            self._sim_steps += self._params.sim_steps_per_gui_update
         self.triggers.activate_trigger('coord update', None)
         if th.clashing:
             self._unstable = True
@@ -1635,6 +1703,20 @@ class SimHandler:
         Returns the :py:class:`OpenmmThreadHandler` object.
         '''
         return self._thread_handler
+
+    @property
+    def sim_steps(self):
+        '''
+        Total number of integrator (equilibration) steps run since the
+        simulation started. Monotonic; a cheap, authoritative signal that the
+        simulation is actually advancing (and by how much).
+        '''
+        return self._sim_steps
+
+    @property
+    def steps_since_checkpoint(self):
+        '''Integrator steps run since the last saved checkpoint.'''
+        return self._sim_steps - self._sim_steps_at_checkpoint
 
     def toggle_pause(self):
         '''Pause the simulation if currently running, or resume if paused'''
@@ -2400,7 +2482,8 @@ class SimHandler:
         # particles in this force, it needs a unique name so it doesn't
         # interfere with other instances of the same force.
         suffix = str(len(self.mdff_forces)+1)
-        f = CubicInterpMapForce(data, region_tf.matrix, suffix, units='angstroms')
+        f = CubicInterpMapForce(data, region_tf.matrix, suffix, units='angstroms',
+                                map_sigma=v.sigma)
         f.setForceGroup(MAP_FORCE_GROUP)
         self.all_forces.append(f)
         self._system.addForce(f)
@@ -2421,11 +2504,15 @@ class SimHandler:
             def data_changed_cb(reason, v=volume, r=region, checker=RfactorChecker(volume)):
                 if reason=='values changed' and checker.r_improved():
                     f.update_map_data(v.region_matrix(region=r))
+                    # Keep the sigma normalisation in lockstep with the data the
+                    # force actually samples (only swapped in when R-work improves).
+                    f.set_map_sigma(v.sigma)
                     self.force_update_needed()
         else:                
             def data_changed_cb(reason, v = volume, r = region):
                 if reason == 'values changed':
                     f.update_map_data(v.region_matrix(region=r))
+                    f.set_map_sigma(v.sigma)
                     self.force_update_needed()
         v.data.add_change_callback(data_changed_cb)
         def remove_change_cb(*_):
@@ -2511,27 +2598,27 @@ class SimHandler:
             f.update_transform(region_tf.matrix, context=context)
 
 
-    def set_mdff_scale_factor(self, volume, scale_factor):
+    def set_mdff_magnification_factor(self, volume, magnification_factor):
         '''
-        Adjust the dimensions of the mdff map in the simulation. This is
-        typically used to optimize the scaling in the course of a single
-        simulation. The final scale should be applied back to the original map,
-        so that in future simulations the scale factor is 1.0.
+        Adjust the dimensions (coordinate magnification) of the mdff map in the
+        simulation. This is typically used to optimize the scaling in the course of
+        a single simulation. The final magnification should be applied back to the
+        original map, so that in future simulations the factor is 1.0.
 
         Args:
             * volume:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force
-            * scale_factor:
-                - the new scale factor (dimensionless). Changing the scale
-                  factor by more than 1-2% in a single go is dangerous!
+            * magnification_factor:
+                - the new magnification factor (dimensionless). Changing it by
+                  more than 1-2% in a single go is dangerous!
         '''
         f = self.mdff_forces[volume]
         if self.sim_running:
             context = self.thread_handler.context
-            f.set_map_scale_factor(scale_factor, context=context)
+            f.set_map_magnification_factor(magnification_factor, context=context)
         else:
-            f.set_map_scale_factor(scale_factor)
+            f.set_map_magnification_factor(magnification_factor)
             self.context_reinit_needed()
 
     def update_mdff_atoms(self, mdff_atoms, volume):
@@ -2823,7 +2910,7 @@ class MapScaleOptimizer:
             v.data.set_origin(rc + scale*(o-rc))
             v.update_drawings()
             sh.update_mdff_transform(v)
-            # sh.set_mdff_scale_factor(v, scale)
+            # sh.set_mdff_magnification_factor(v, scale)
         atoms = self.sim_manager.sim_construct.all_atoms
         c = atoms.coords.mean(axis=0)
         oc = self._initial_model_center
@@ -3010,12 +3097,38 @@ def create_openmm_topology(atoms, residue_templates):
     return top, templates_out
 
 
-def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
+class UnparameterisedResiduesError(RuntimeError):
+    '''
+    Raised when one or more residues cannot be matched to a unique MD template.
+
+    Carries the offending ChimeraX residues (``unmatched`` and ``ambiguous``)
+    so the caller can decide how to recover (e.g. clearing a stale
+    ``isolde_template_name`` override and retrying). The default message starts
+    with "Unparameterised" so that the existing ``str(e).startswith(...)`` catch
+    in :meth:`Isolde.start_sim` still fires the Unparameterised Residues widget
+    when this propagates unhandled.
+    '''
+    def __init__(self, unmatched=None, ambiguous=None,
+            message='Unparameterised residue detected'):
+        super().__init__(message)
+        self.unmatched = list(unmatched) if unmatched else []
+        self.ambiguous = list(ambiguous) if ambiguous else []
+
+
+def find_residue_templates(residues, forcefield, ligand_db = None, logger=None,
+        clear_failed_overrides=False):
     '''
     Works out the template name applicable to cysteine residues (since OpenMM
     can't work this out for itself when ignoreExternalBonds is True), and
     looks up the template name for all known parameterised ligands from the
     CCD.
+
+    If ``clear_failed_overrides`` is True, a residue carrying an
+    ``isolde_template_name`` override that names a template *not present in the
+    forcefield* will have the override reset to ``None`` (rather than merely
+    ignored), so it cannot keep re-triggering the same failure. This must only
+    be set on the real simulation-build path; read-only callers (the preflight
+    command, the GUI display) leave it False so they never mutate the model.
     '''
     template_names = forcefield._templates.keys()
     import numpy
@@ -3025,8 +3138,13 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None):
         if tname is not None:
             if tname in template_names:
                 templates[i] = tname
+            elif clear_failed_overrides:
+                if logger is not None:
+                    logger.warning('Residue {} has a registered template name {}, but this is not present in the forcefield. Clearing the override and falling back to automatic template assignment.'.format(residues[i], tname))
+                residues[i].isolde_template_name = None
             else:
-                logger.warning('Residue {} has registered template name {}, but this is not present in the forcefield. Ignoring the registered template name.'.format(residues[i], tname))
+                if logger is not None:
+                    logger.warning('Residue {} has registered template name {}, but this is not present in the forcefield. Ignoring the registered template name.'.format(residues[i], tname))
     cys_indices = numpy.where(residues.names == 'CYS')[0]
     # remove any CYS residues that already have a registered template name
     cys_indices = set(cys_indices) - set(templates.keys())
@@ -3151,11 +3269,25 @@ def cys_type(residue):
                 if 'H1' in names:
                     return 'NCYX'
                 return 'CYX'
-            elif a.name == "CH3":
+            elif a.element.name == "C":
+                # SG bonded to any external carbon -- a thioether.
+                # Previously this branch only matched a partner atom
+                # literally named "CH3" (the ACEcyc head cap), which
+                # missed thioether bonds to any other external carbon
+                # (covalent-inhibitor warheads, post-translational
+                # modifications, designed bioconjugates, ...).  The
+                # CYScyc / CCYScyc templates only depend on SG having
+                # one external bond; the partner atom's name does not
+                # affect the internal charges, so the broadened match
+                # is safe.
                 if 'OXT' in names:
                     return 'CCYScyc'
-                else:
-                    return 'CYScyc'
+                if 'H1' in names:
+                    # No NCYScyc template ships in termods.xml yet, so
+                    # return CYM rather than silently mis-parameterise
+                    # an N-terminal Cys with an S--C external bond.
+                    return 'CYM'
+                return 'CYScyc'
             # Assume metal binding - will eventually need to do something better here
             return 'CYM'
         if a.name == 'HG':

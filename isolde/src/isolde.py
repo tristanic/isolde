@@ -800,16 +800,23 @@ class Isolde():
 
         with session.triggers.block_trigger('remove models'), session.triggers.block_trigger('add models'):
             if not getattr(m, 'isolde_initialized', False):
-                atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
-                if len(atoms_with_alt_locs):
-                    from .dialog import choice_warning
-                    result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
-                        'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
-                        'output model. In most cases it is best to remove them. Would you like to do so now?')
-                    if result:
-                        m.delete_alt_locs()
-                        atoms_with_alt_locs.occupancies = 1
-                        self.session.logger.info(f'Removed all altlocs in #{m.id_string} and reset associated occupancies to 1.')
+                # Skip the alt-loc popup if "isolde preflight altlocs" or
+                # "isolde clear altlocs" has already been run for this model:
+                # they set this flag once the situation has been acknowledged
+                # (or resolved), which lets agent-driven setup handle the
+                # question through a chat round-trip instead of a blocking
+                # GUI dialog.
+                if not getattr(m, '_isolde_altloc_check_done', False):
+                    atoms_with_alt_locs = m.atoms[m.atoms.num_alt_locs>0]
+                    if len(atoms_with_alt_locs):
+                        from .dialog import choice_warning
+                        result = choice_warning(f'This model contains {len(atoms_with_alt_locs)} atoms with alternate '
+                            'conformers. ISOLDE cannot currently see these, but they will be carried through to the '
+                            'output model. In most cases it is best to remove them. Would you like to do so now?')
+                        if result:
+                            from .atomic.util import clear_altlocs
+                            clear_altlocs(m, logger=self.session.logger)
+                    m._isolde_altloc_check_done = True
                 from .atomic.util import correct_pseudosymmetric_sidechain_atoms
                 correct_pseudosymmetric_sidechain_atoms(session, m.residues)
                 m.isolde_initialized = True
@@ -1165,14 +1172,23 @@ class Isolde():
         '''
         if not self.simulation_running:
             return
+        from chimerax.atomic import Atoms
         from . import session_extensions as sx
         tugm = sx.get_tuggable_atoms_mgr(self.selected_model, allow_hydrogens=self.sim_params.tug_hydrogens)
-        t_atom = tugm.get_tuggable(atom)
-        t_atom.target = target
+        t_atoms = tugm.get_tuggables(Atoms([atom]))
+        if not len(t_atoms):
+            return  # not tuggable (e.g. a hydrogen, or not mobile in the sim)
         if spring_constant is None:
             spring_constant = self.sim_params.mouse_tug_spring_constant
-        t_atom.spring_constant = spring_constant
-        t_atom.enabled = True
+        # mouse_tug_spring_constant is an OpenMM Quantity (value + units); the
+        # spring_constants array setter needs a plain float (kJ/mol/A^2), so strip
+        # units if present.
+        from openmm import unit
+        if unit.is_quantity(spring_constant):
+            spring_constant = spring_constant.value_in_unit(spring_constant.unit)
+        t_atoms.targets = [target]
+        t_atoms.spring_constants = [float(spring_constant)]
+        t_atoms.enableds = True
 
     def stop_tugging(self, atom_or_atoms):
         '''

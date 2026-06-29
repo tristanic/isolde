@@ -27,20 +27,23 @@ if not defined VCINSTALLDIR (
 set DISTUTILS_USE_SDK=1
 set MSSdk=1
 
-REM Default to the ChimeraX daily build; "release" selects the stable install.
-set CHIMERAX_EXE="C:\Program Files\ChimeraX-Daily\bin\ChimeraX-console.exe"
+REM ChimeraX launches go through run_chimerax.bat so each worktree/lane installs
+REM into its own isolated ChimeraX user directory (see run_chimerax.bat). The
+REM "release" token (stable vs daily install) is forwarded to it; "clean" and
+REM "app-install" are consumed here.
+set "RELEASE_TOK="
 set DO_CLEAN=
 set DO_INSTALL=
 for %%A in (%*) do (
-    if /i "%%A"=="release"     set CHIMERAX_EXE="C:\Program Files\ChimeraX\bin\ChimeraX-console.exe"
+    if /i "%%A"=="release"     set "RELEASE_TOK=release"
     if /i "%%A"=="clean"       set DO_CLEAN=1
     if /i "%%A"=="app-install" set DO_INSTALL=1
 )
 
 REM Regenerate pyproject.toml from pyproject.toml.in (substitutes OpenMM lib/include dirs).
-%CHIMERAX_EXE% --nogui --safemode --exit --script prep_toml.py
+call "%~dp0run_chimerax.bat" %RELEASE_TOK% --nogui --safemode --exit --script prep_toml.py
 
-if defined DO_CLEAN   %CHIMERAX_EXE% --nogui --safemode --exit --cmd "devel clean ."
-if defined DO_INSTALL %CHIMERAX_EXE% --nogui --safemode --exit --cmd "devel install ."
+if defined DO_CLEAN   call "%~dp0run_chimerax.bat" %RELEASE_TOK% --nogui --safemode --exit --cmd "devel clean ."
+if defined DO_INSTALL call "%~dp0run_chimerax.bat" %RELEASE_TOK% --nogui --safemode --exit --cmd "devel install ."
 
 endlocal

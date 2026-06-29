@@ -114,6 +114,147 @@ def isolde_status(session):
         'sim_fidelity_mode': fidelity,
     }
 
+def isolde_sim_status(session, energy_breakdown=False):
+    '''Report live simulation convergence signals without modifying anything.
+
+    Where ``isolde status`` reports static metadata, this reports the dynamic
+    signals an agent loop needs to decide when to stop: whether the integrator
+    is actually advancing (``sim_steps`` is a monotonic integrator-step counter;
+    increasing across polls is the authoritative, cheap stepping proof, and
+    ``steps_since_checkpoint`` gives progress), restraint-satisfaction, and
+    potential energy.
+
+    Energy caveat: ISOLDE simulations run on arbitrary atom subsets, so the
+    *absolute* potential energy is largely meaningless -- compare deltas/trends,
+    not absolute values. Pass ``energyBreakdown true`` for a per-force-group
+    decomposition (bonded/angle/dihedral/nonbonded/map/restraint), which is far
+    more informative (e.g. a high map term => poor fit to density). Energy is
+    read only when the integrator's worker thread is idle (thread-safe window).
+    '''
+    isolde = getattr(session, 'isolde', None)
+    if isolde is None:
+        return {'isolde_started': False, 'simulation_running': False}
+
+    running = bool(getattr(isolde, 'simulation_running', False))
+    sim_mgr = getattr(isolde, 'sim_manager', None)
+    sh = getattr(isolde, 'sim_handler', None)
+    th = getattr(sh, 'thread_handler', None) if sh is not None else None
+
+    out = {
+        'isolde_started': True,
+        'simulation_running': running,
+        'sim_manager_present': sim_mgr is not None,
+        'paused': bool(getattr(sh, 'pause', False)) if sh is not None else None,
+        'current_energy_kJ_mol': None,
+        'energy_note': ('combined core-force-group potential; absolute value is '
+                        'subset-dependent -- compare deltas, not absolutes'),
+        'energy_by_group_kJ_mol': None,
+        'sim_steps': getattr(sh, 'sim_steps', None) if sh is not None else None,
+        'steps_since_checkpoint': (getattr(sh, 'steps_since_checkpoint', None)
+                                   if sh is not None else None),
+        'restraints': None,
+    }
+    if th is not None:
+        # OpenMM contexts are not thread-safe: only read state when the worker
+        # thread is idle (thread_finished == the 'coord update' safe window), and
+        # we are on the UI thread (the next step can't fire until we return).
+        try:
+            if th.thread_finished():
+                out['current_energy_kJ_mol'] = _read_energy(th)
+                if energy_breakdown:
+                    out['energy_by_group_kJ_mol'] = _read_energy_breakdown(th)
+        except Exception:
+            pass
+    m = getattr(isolde, 'selected_model', None)
+    if m is not None:
+        out['restraints'] = _restraint_satisfaction_summary(session, m)
+        out['selected_model'] = m.id_string
+
+    session.logger.info(
+        'ISOLDE sim status: running={}, energy={} kJ/mol'.format(
+            running, out['current_energy_kJ_mol']))
+    return out
+
+
+def _read_energy(th, groups=None):
+    '''Combined potential energy (kJ/mol) over *groups* (default core forces).
+    Caller must ensure the worker thread is idle (th.thread_finished()).'''
+    from openmm import unit
+    from ..openmm.openmm_interface import CORE_FORCE_GROUPS
+    state = th.context.getState(getEnergy=True,
+                                groups=CORE_FORCE_GROUPS if groups is None else groups)
+    return float(state.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole))
+
+
+def _read_energy_breakdown(th):
+    '''Per-force-group potential energy. getState reports the combined energy of
+    the requested groups, so one call per group is required (done sparingly).'''
+    from ..openmm.openmm_interface import (
+        DEFAULT_FORCE_GROUP, BOND_FORCE_GROUP, ANGLE_FORCE_GROUP,
+        DIHEDRAL_FORCE_GROUP, NONBONDED_FORCE_GROUP, MAP_FORCE_GROUP,
+        RESTRAINT_FORCE_GROUP)
+    groups = {
+        'default': DEFAULT_FORCE_GROUP, 'bond': BOND_FORCE_GROUP,
+        'angle': ANGLE_FORCE_GROUP, 'dihedral': DIHEDRAL_FORCE_GROUP,
+        'nonbonded': NONBONDED_FORCE_GROUP, 'map': MAP_FORCE_GROUP,
+        'restraint': RESTRAINT_FORCE_GROUP,
+    }
+    out = {}
+    for name, g in groups.items():
+        try:
+            out[name] = _read_energy(th, groups={g})
+        except Exception:
+            out[name] = None
+    return out
+
+
+def _restraint_satisfaction_summary(session, model):
+    '''Count enabled vs unsatisfied restraints across the main restraint types,
+    as a coarse convergence/where-is-it-stuck signal for an agent.'''
+    from .. import session_extensions as sx
+    summary = {}
+
+    def _tally(label, mgr, getter='get_all_restraints_for_residues'):
+        try:
+            restraints = getattr(mgr, getter)(model.residues)
+            enabled = restraints[restraints.enableds]
+            n_enabled = len(enabled)
+            n_unsat = int(len(enabled[enabled.unsatisfieds])) if n_enabled else 0
+            summary[label] = {
+                'enabled': n_enabled,
+                'unsatisfied': n_unsat,
+                'satisfied_fraction': (1.0 - n_unsat / n_enabled) if n_enabled else None,
+            }
+        except Exception:
+            summary[label] = None
+
+    try:
+        _tally('proper_dihedral', sx.get_proper_dihedral_restraint_mgr(model, create=False))
+    except Exception:
+        summary['proper_dihedral'] = None
+    try:
+        adrm = sx.get_adaptive_dihedral_restraint_mgr(model, create=False)
+        if adrm is not None:
+            _tally('adaptive_dihedral', adrm)
+    except Exception:
+        summary['adaptive_dihedral'] = None
+    try:
+        drm = sx.get_distance_restraint_mgr(model, create=False)
+        if drm is not None:
+            restraints = drm.atomic_restraints if hasattr(drm, 'atomic_restraints') else None
+            if restraints is not None:
+                enabled = restraints[restraints.enableds]
+                n_enabled = len(enabled)
+                n_unsat = int(len(enabled[enabled.unsatisfieds])) if n_enabled else 0
+                summary['distance'] = {
+                    'enabled': n_enabled, 'unsatisfied': n_unsat,
+                    'satisfied_fraction': (1.0 - n_unsat / n_enabled) if n_enabled else None,
+                }
+    except Exception:
+        summary['distance'] = None
+    return summary
+
+
 def isolde_sim(session, cmd, atoms=None, discard_to=None):
     '''
     Start, stop or pause an interactive simulation.
@@ -184,7 +325,7 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         isolde.resume()
 
     elif cmd == 'checkpoint':
-        if not isolde.sim_running:
+        if not isolde.simulation_running:
             log.warning('Checkpointing is only available while a simulation is running!')
         isolde.checkpoint()
 
@@ -374,7 +515,86 @@ def isolde_jump(session, direction="next"):
     rs = get_stepper(m)
     rs.incr_chain(direction)
 
+
+def isolde_add_disulfides_auto(session, model=None):
+    '''
+    Create disulfide bonds for every pair of cysteines whose SG atoms are
+    close enough to be disulfide-bonded but currently lack an SG-SG bond
+    (the "possible" set from ``isolde preflight disulfides``).
+
+    Cysteines that cluster in groups of three or more are *not* bonded
+    automatically — those need manual triage and are reported as a warning.
+
+    Setting the per-model "checked" flag here also suppresses the auto-popup
+    that would otherwise fire on the next ``isolde select`` for the model.
+    '''
+    block_if_sim_running(session)
+    from ..validation.cmd import _resolve_model
+    m = _resolve_model(session, model)
+    log = session.logger
+    from ..atomic.building.build_utils import create_all_sensible_disulfides
+    possible, ambiguous = create_all_sensible_disulfides(m, logger=log)
+    if not possible:
+        log.info('ISOLDE: no new disulfide bonds to create.')
+    if ambiguous:
+        warn_str = (
+            'The following groups of cysteines are clustered too close to '
+            'automatically assign disulfide bonding and should be checked '
+            'manually:\n{}'
+        ).format('; '.join([
+            ', '.join(['{}{}{}'.format(c.chain_id, c.number, c.insertion_code)
+                       for c in residues])
+            for residues in ambiguous
+        ]))
+        log.warning(warn_str)
+    m._isolde_disulfide_check_done = True
+    return {
+        'model': m.atomspec,
+        'created': int(len(possible)),
+        'ambiguous': int(len(ambiguous)),
+    }
+
+
+def isolde_clear_altlocs(session, model=None):
+    '''
+    Drop all alternate conformations from ``model`` (or ISOLDE's currently
+    selected model) and reset the affected atoms' occupancies to 1.0. This
+    mirrors the action ISOLDE offers via the auto-popup the first time a
+    model with alt locs is selected.
+    '''
+    block_if_sim_running(session)
+    from ..validation.cmd import _resolve_model
+    m = _resolve_model(session, model)
+    log = session.logger
+    from ..atomic.util import clear_altlocs
+    n = clear_altlocs(m, logger=log)
+    if n == 0:
+        log.info('ISOLDE: model {} has no alternate conformations to clear.'
+            .format(m.atomspec))
+    m._isolde_altloc_check_done = True
+    return {
+        'model': m.atomspec,
+        'atoms_cleared': n,
+    }
+
+
 def register_isolde(logger):
+    '''
+    Register all ISOLDE commands.
+
+    The actual registration lives in :func:`_register_isolde_commands`; this
+    wrapper runs it inside :func:`capture_registrations`, which monkeypatches
+    ``chimerax.core.commands.register`` for the duration so every command --
+    here and in the ~12 external modules called below -- is also recorded into
+    the agent-surface command registry (see :mod:`.command_registry`). Capture
+    is automatic and stays current; exposure to agents remains opt-in.
+    '''
+    from .command_registry import capture_registrations
+    with capture_registrations():
+        _register_isolde_commands(logger)
+
+
+def _register_isolde_commands(logger):
     from chimerax.core.commands import (
         register, CmdDesc,
         AtomSpecArg, ModelArg,
@@ -426,6 +646,14 @@ def register_isolde(logger):
             synopsis="Report ISOLDE's current state (selected model, sim status, forcefield)"
         )
         register('isolde status', desc, isolde_status, logger=logger)
+
+    def register_isolde_sim_status():
+        desc = CmdDesc(
+            keyword=[('energy_breakdown', BoolArg)],
+            synopsis="Report live simulation convergence signals (energy, "
+                     "restraint-satisfaction, stepping state)"
+        )
+        register('isolde sim status', desc, isolde_sim_status, logger=logger)
 
     def register_isolde_report():
         desc = CmdDesc(
@@ -516,10 +744,31 @@ def register_isolde(logger):
         from .shorthand import register_isolde_shorthand_commands
         register('isolde shorthand', desc, register_isolde_shorthand_commands, logger=logger)
 
+    def register_isolde_add_disulfides_auto():
+        from .argspec import IsoldeStructureArg
+        desc = CmdDesc(
+            optional=[('model', IsoldeStructureArg)],
+            synopsis=('Create disulfide bonds for every cysteine pair within '
+                'disulfide-bonding distance that is not already bonded'),
+        )
+        register('isolde add disulfides auto', desc,
+            isolde_add_disulfides_auto, logger=logger)
+
+    def register_isolde_clear_altlocs():
+        from .argspec import IsoldeStructureArg
+        desc = CmdDesc(
+            optional=[('model', IsoldeStructureArg)],
+            synopsis=('Drop all alternate conformations from the model and '
+                'reset the affected atoms\' occupancies to 1.0'),
+        )
+        register('isolde clear altlocs', desc,
+            isolde_clear_altlocs, logger=logger)
+
     register_isolde_start()
     register_isolde_set()
     register_isolde_select()
     register_isolde_status()
+    register_isolde_sim_status()
     register_isolde_sim()
     register_isolde_report()
     register_isolde_ignore()
@@ -530,6 +779,8 @@ def register_isolde(logger):
     register_isolde_jump()
     register_isolde_change_b()
     register_isolde_shorthand()
+    register_isolde_add_disulfides_auto()
+    register_isolde_clear_altlocs()
     from chimerax.isolde.remote_control import register_remote_commands
     register_remote_commands(logger)
     from chimerax.isolde.restraints.cmd import register_isolde_restrain
@@ -550,5 +801,7 @@ def register_isolde(logger):
     register_isolde_benchmark(logger)
     from chimerax.isolde.validation.cmd import register_preflight_commands
     register_preflight_commands(logger)
+    from chimerax.isolde.validation.cmd import register_validate_commands
+    register_validate_commands(logger)
     from chimerax.isolde.refine.bfactor_refine import register_bfactor_refine_commands
     register_bfactor_refine_commands(logger)

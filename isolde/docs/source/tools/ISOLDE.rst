@@ -17,4 +17,5 @@ The ISOLDE GUI
    intro
    requirements
    gui/index
+   remote_control
    ../tutorials/isolde

@@ -118,6 +118,14 @@ geometry, fit-to-data) under the ISOLDE GUI's **Validate** tab. They never
 construct an OpenMM ``Context``, never raise on missing parameters, and
 never modify the model — safe to call at any time once a model is selected.
 
+The ``disulfides`` and ``altlocs`` preflights additionally *acknowledge* the
+situation they report: calling either one stamps a per-model flag that
+suppresses the corresponding one-time GUI popup (the "create disulfides?" and
+"remove alt locs?" dialogs that otherwise fire the first time a model is
+selected in ISOLDE). This lets an agent resolve the question through a chat
+round-trip — running the preflight, then the matching fix command if desired —
+instead of being blocked by a dialog.
+
 isolde preflight hydrogens
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -155,6 +163,155 @@ The *forcefield* keyword defaults to ISOLDE's currently configured
 forcefield (e.g. ``amber14``); pass it explicitly to preflight against a
 different one. *ignoreExternalBonds* defaults to ``true`` to match the
 behaviour of the GUI panel.
+
+isolde preflight disulfides
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde preflight disulfides [*model*]
+
+Report cysteine pairs in *model* (or ISOLDE's currently selected model) whose
+SG atoms are close enough to be disulfide-bonded. This is the same geometric
+check that fires the "create disulfides?" GUI popup the first time a model is
+selected in ISOLDE, using a 2.3 Angstrom SG-SG cutoff. It creates no bonds —
+pair it with :ref:`isolde add disulfides auto <add disulfides auto>` to act on
+the result.
+
+Returns a dictionary with three residue lists — ``current`` (pairs already
+disulfide-bonded), ``possible`` (unbonded pairs within the cutoff), and
+``ambiguous`` (clusters of three or more cysteines too close to assign
+automatically) — along with the matching ``n_current`` / ``n_possible`` /
+``n_ambiguous`` counts and a ``recommend_create`` flag. As noted above, calling
+this command suppresses the one-time GUI disulfide popup for the model.
+
+isolde preflight altlocs
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde preflight altlocs [*model*]
+
+Report whether *model* (or ISOLDE's currently selected model) contains atoms
+with alternate conformations. ISOLDE cannot see alt locs during a simulation
+but carries them through to the output, so in most refinement workflows they
+should be removed first. This is the situation behind the "remove alt locs?"
+GUI popup; it removes nothing — pair it with
+:ref:`isolde clear altlocs <clear altlocs>` to act on the result.
+
+Returns a dictionary with ``atoms_with_altlocs`` (the atom count), a
+``residues`` list of the affected residues, ``n_residues``, and a
+``recommend_clear`` flag. As noted above, calling this command suppresses the
+one-time GUI alt-loc popup for the model.
+
+.. _validate:
+
+isolde validate
+===============
+
+Read-only commands that run the same scoring/validators as the subpanels
+of ISOLDE's GUI **Validate** tab, returning structured results suitable
+for programmatic use (e.g. by an agent driving the MCP server) without
+opening the GUI. They never modify the model and never start a
+simulation. The unparametrised-residues panel is intentionally omitted
+here - that check is covered by :ref:`preflight` (``isolde preflight
+parameters``).
+
+Each subcommand returns a dictionary with summary counts plus a
+``items`` list, and shares three output keywords:
+
+- *log* (boolean, default ``false``) - dump the full per-item table to
+  the ChimeraX HTML log wrapped in ``<pre>...</pre>``, matching the
+  pattern used by the ChimeraX ``clashes`` and ``hbonds`` commands.
+- *saveFile* (path, default unset) - write the full table to disk.
+  Paths ending in ``.json`` get a structured JSON dump (the full
+  unclipped item list with the summary); any other extension gets a
+  plain UTF-8 text table.
+- *limit* (integer, default unset / 200 for ``clashes``) - cap the
+  ``items`` list returned inline so a giant structure doesn't blow up
+  the agent's context window. The ``saveFile`` output ignores this and
+  always contains the full list; the returned dict carries
+  ``truncated``, ``returned_count`` and ``total_count`` when clipped.
+
+isolde validate peptidebonds
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde validate peptidebonds [*model*]
+[**saveFile** *path*] [**log** *true|FALSE*] [**limit** *integer*]
+
+Report cis and twisted peptide bonds in *model* (or ISOLDE's currently
+selected model), using the same omega-dihedral classification that
+ISOLDE's "Peptide Bond Validation" panel applies
+(``CIS_PEPTIDE_BOND_CUTOFF`` and ``TWISTED_PEPTIDE_BOND_DELTA``,
+defaulting to 30 degrees each). Cis-prolines are valid and are reported
+separately from cis non-proline bonds.
+
+Returns a dictionary with summary counts (``n_residues``,
+``n_cis_nonpro``, ``n_cis_pro``, ``n_twisted``, ``n_iffy``) and a
+per-bond ``items`` list. Each item carries the chain, both residues,
+the omega angle in degrees, the ``conformation`` (``cis`` or
+``twisted``), and an ``is_proline`` flag for the C-terminal residue.
+
+isolde validate rama
+~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde validate rama [*model*]
+[**include** *outliers|allowed|all*] [**saveFile** *path*]
+[**log** *true|FALSE*] [**limit** *integer*]
+
+Report Ramachandran scoring for protein residues in *model* (or
+ISOLDE's currently selected model), using the same MolProbity contours
+and bin cutoffs as ISOLDE's Ramachandran plot. *include* selects which
+residues appear in the per-residue list: ``outliers`` (default),
+``allowed`` (outliers + allowed) or ``all`` (favored too). Summary
+counts always cover the full model regardless of *include*.
+
+Returns a dictionary with summary counts (``n_scorable``,
+``n_favored``, ``n_allowed``, ``n_outlier``) and a per-residue
+``items`` list giving the phi and psi angles in degrees, the
+MolProbity ``score``, the ``classification`` (favored / allowed /
+outlier) and the Ramachandran ``case`` (``general``, ``Gly``,
+``trans-Pro``, etc.).
+
+This is a pure validation command - to toggle ISOLDE's live 3D
+Ramachandran annotators see the existing ``rama`` command instead.
+
+isolde validate rotamers
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde validate rotamers [*model*]
+[**include** *outliers|nonfavored|all*] [**saveFile** *path*]
+[**log** *true|FALSE*] [**limit** *integer*]
+
+Report rotamer scoring for sidechain-bearing residues in *model* (or
+ISOLDE's currently selected model), using the same MolProbity contours
+and P-value cutoffs as ISOLDE's "Rotamer Validation" panel. *include*
+selects which residues appear in the per-residue list: ``nonfavored``
+(default; outliers + allowed), ``outliers`` or ``all``. Summary counts
+always cover all rotameric residues.
+
+Returns a dictionary with summary counts (``n_rotameric``,
+``n_favored``, ``n_allowed``, ``n_outlier``), the current
+``cutoff_allowed`` and ``cutoff_outlier`` P-values, and a per-residue
+``items`` list giving the P-value ``score`` and ``classification``.
+
+This is a pure validation command - to toggle ISOLDE's live 3D
+rotamer annotators see the existing ``rota`` command instead.
+
+isolde validate clashes
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Syntax: isolde validate clashes [*model*] [**saveFile** *path*]
+[**log** *true|FALSE*] [**limit** *integer*]
+
+Report steric clashes in *model* (or ISOLDE's currently selected
+model), using ISOLDE's ``unique_clashes`` wrapper around the ChimeraX
+``clashes`` machinery. Each clash carries both atoms, the van der
+Waals overlap in Angstroms, and a ``severity`` of either ``strict``
+(overlap above ``STRICT_CUTOFF``, default 0.4 A) or ``severe``
+(overlap above ``SEVERE_CUTOFF``, default 0.6 A).
+
+Returns a dictionary with summary counts (``n_total``, ``n_severe``,
+``n_strict``) and a per-clash ``items`` list sorted by descending
+overlap. *limit* defaults to 200 for this command since the inline
+list dwarfs the other validators on real-world structures; widen with
+*limit* or capture everything with *saveFile*.
 
 .. _sim:
 
@@ -395,6 +552,42 @@ bonding between elements. Use with caution: the current implementation is not
 aware of bond order nor of chirality, so attempting to replace (for example) a
 D-sugar with its L-enantiomer will simply rename the residue while retaining the
 D coordinates. This will be improved upon in a future release.
+
+.. _`add disulfides auto`:
+
+isolde add disulfides auto
+==========================
+
+Syntax: isolde add disulfides auto [*model*]
+
+Create disulfide bonds for every pair of cysteines in *model* (or ISOLDE's
+currently selected model) whose SG atoms are within 2.3 Angstroms of each other
+but not already bonded — the ``possible`` set reported by
+:ref:`isolde preflight disulfides <preflight>`. Clusters of three or more
+cysteines packed too close to assign unambiguously are left untouched and
+reported as a warning for manual triage. Cannot be run while a simulation is
+running.
+
+Returns a dictionary with the ``model`` spec, the number of bonds ``created``,
+and the number of ``ambiguous`` clusters skipped. Like the preflight command,
+this suppresses the one-time GUI disulfide popup for the model.
+
+.. _`clear altlocs`:
+
+isolde clear altlocs
+====================
+
+Syntax: isolde clear altlocs [*model*]
+
+Drop all alternate conformations from *model* (or ISOLDE's currently selected
+model) and reset the affected atoms' occupancies to 1.0, keeping the
+highest-occupancy conformer. This mirrors the action offered by the "remove alt
+locs?" popup and by :ref:`isolde preflight altlocs <preflight>`. Cannot be run
+while a simulation is running.
+
+Returns a dictionary with the ``model`` spec and ``atoms_cleared`` (the number
+of atoms that had alternate conformers). Like the preflight command, this
+suppresses the one-time GUI alt-loc popup for the model.
 
 .. _`adjust bfactors`:
 

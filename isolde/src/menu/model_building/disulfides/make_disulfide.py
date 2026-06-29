@@ -6,7 +6,7 @@
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2016-2019 Tristan Croll
 
-tooltip = ('Make a disulphide bond between two cysteine residues')
+tooltip = ('Make a disulfide bond between two cysteine residues')
 
 def run_script(session):
     from chimerax.atomic import selected_residues
@@ -17,6 +17,6 @@ def run_script(session):
         raise UserError('Please select two cysteine residues!')
     if sel[0] not in sel[1].neighbors:
         create_disulfide(*sel)
-        session.logger.info('Created disulphide bond between {}.'.format(
+        session.logger.info('Created disulfide bond between {}.'.format(
         ' and '.join(['{}{}{}'.format(c.chain_id, c.number, c.insertion_code) for c in sel])
         ))

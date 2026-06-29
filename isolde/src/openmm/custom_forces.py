@@ -104,7 +104,7 @@ class _Map_Force_Base(CustomCompoundBondForce):
     Base class for :class:`LinearInterpMapForce`,
     :class:`CubicInterpMapForce` and :class:`CubicInterpMapForce_Low_Memory`.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms', map_sigma = 1.0):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -136,16 +136,25 @@ class _Map_Force_Base(CustomCompoundBondForce):
         map_func = self._map_func = self._openmm_3D_function_from_volume(data)
 
         global_k_name = self._global_k_name = 'mdff_global_k_{}'.format(suffix)
-        scale_factor_name = self._map_scale_factor_name = 'mdff_scale_factor_{}'.format(suffix)
+        magnification_name = self._map_magnification_factor_name = \
+            'mdff_magnification_factor_{}'.format(suffix)
+        # Map-magnitude normalisation.  The energy is divided by this so the coupling
+        # constant is invariant to overall changes in map scale (e.g. when a live
+        # crystallographic map's sigma shifts as the mean B-factor changes).  Set to
+        # the map sigma at force creation and updated live (see set_map_sigma); the
+        # stored coupling constant is therefore a sigma-normalised weight.
+        map_sigma_name = self._map_sigma_name = 'mdff_map_sigma_{}'.format(suffix)
 
         energy_func = self._set_energy_function(suffix)
         self.setEnergyFunction(energy_func)
         #super().__init__(1, energy_func)
         self._map_potential_index = self.addTabulatedFunction(
             name = 'map_potential', function = map_func)
-        self._map_scale_factor_index = self.addGlobalParameter(
-            name=scale_factor_name, defaultValue=1.0
+        self._map_magnification_factor_index = self.addGlobalParameter(
+            name=magnification_name, defaultValue=1.0
         )
+        self._map_sigma_index = self.addGlobalParameter(
+            name=map_sigma_name, defaultValue=map_sigma)
         self._global_k_index = self.addGlobalParameter(
             name = global_k_name, defaultValue = 1.0)
         self._individual_k_index = self.addPerBondParameter(
@@ -159,8 +168,8 @@ class _Map_Force_Base(CustomCompoundBondForce):
         return self._global_k_name
 
     @property
-    def map_scale_factor_name(self):
-        return self._map_scale_factor_name
+    def map_magnification_factor_name(self):
+        return self._map_magnification_factor_name
 
     def _process_transform(self, tf, units):
         if type(tf) == Quantity:
@@ -211,8 +220,9 @@ class _Map_Force_Base(CustomCompoundBondForce):
 
     def set_global_k(self, k, context=None):
         '''
-        Set the global coupling constant, in units of
-        :math:`kJ mol^{-1} (\\text{map density unit})^{-1} nm^3`
+        Set the global coupling constant.  Because the energy is normalised by the
+        map sigma (see :func:`set_map_sigma`), this is a *sigma-normalised* weight:
+        the effective coupling is ``global_k / map_sigma`` per unit map density.
         '''
         if context is not None:
             context.setParameter(self._global_k_name, k)
@@ -220,15 +230,30 @@ class _Map_Force_Base(CustomCompoundBondForce):
             self.setGlobalParameterDefaultValue(self._global_k_index, k)
             self.update_needed = True
 
-    def set_map_scale_factor(self, scale_factor, context=None):
+    def set_map_magnification_factor(self, magnification_factor, context=None):
         '''
-        Re-scale the map dimensions. Value of scale_factor should typically be
-        very close to 1.0.
+        Re-scale the map *dimensions* (coordinate magnification, not magnitude).
+        Value should typically be very close to 1.0.
         '''
         if context is not None:
-            context.setParameter(self._map_scale_factor_name, scale_factor)
+            context.setParameter(self._map_magnification_factor_name, magnification_factor)
         else:
-            self.setGlobalParameterDefaultValue(self._map_scale_factor_index, scale_factor)
+            self.setGlobalParameterDefaultValue(
+                self._map_magnification_factor_index, magnification_factor)
+            self.update_needed = True
+
+    def set_map_sigma(self, map_sigma, context=None):
+        '''
+        Set the map-magnitude normalisation factor (the current map sigma) that the
+        energy is divided by.  Updating this in lockstep with the map data (see
+        :func:`update_map_data`) keeps the effective coupling invariant to overall
+        changes in map scale, e.g. as a live crystallographic map's sigma shifts
+        when the mean B-factor changes.
+        '''
+        if context is not None:
+            context.setParameter(self._map_sigma_name, map_sigma)
+        else:
+            self.setGlobalParameterDefaultValue(self._map_sigma_index, map_sigma)
             self.update_needed = True
 
     def update_transform(self, transform, context=None, units='angstroms'):
@@ -341,7 +366,7 @@ class CubicInterpMapForce_Old(_Map_Force_Base):
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with tricubic interpolation of values.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms', map_sigma = 1.0):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -367,7 +392,7 @@ class CubicInterpMapForce_Old(_Map_Force_Base):
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
-        super().__init__(data, xyz_to_ijk_transform, suffix, units=units)
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units, map_sigma=map_sigma)
 
     def _openmm_3D_function_from_volume(self, data):
         dim = data.shape[::-1]
@@ -377,7 +402,7 @@ class CubicInterpMapForce_Old(_Map_Force_Base):
     def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
-        scale_str = ') / mdff_scale_factor_{}'.format(suffix)
+        scale_str = ') / mdff_magnification_factor_{}'.format(suffix)
         tf_strings = ['i = (', 'j = (', 'k = (']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
@@ -399,7 +424,8 @@ class CubicInterpMapForce_Old(_Map_Force_Base):
 
         funcs = ';'.join(tf_strings)
         enabled_eqn = 'step(enabled-0.5)'
-        energy_str = '-{} * individual_k * map_potential(i,j,k)'.format(self._global_k_name)
+        energy_str = '-{} * individual_k * map_potential(i,j,k) / {}'.format(
+            self._global_k_name, self._map_sigma_name)
 
         final_func = 'select({}, {}, 0); {}'.format(enabled_eqn, energy_str, funcs)
         return final_func
@@ -408,7 +434,7 @@ class CubicInterpMapForce(_Map_Force_Base):
     '''
     Creates a MDFF potential from a 3D map of density values.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms', map_sigma = 1.0):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -434,12 +460,12 @@ class CubicInterpMapForce(_Map_Force_Base):
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
-        super().__init__(data, xyz_to_ijk_transform, suffix, units=units)
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units, map_sigma=map_sigma)
 
     def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
-        scale_str = ') / mdff_scale_factor_{}'.format(suffix)
+        scale_str = ') / mdff_magnification_factor_{}'.format(suffix)
         tf_strings = ['i = (', 'j = (', 'k = (']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
@@ -502,7 +528,8 @@ class CubicInterpMapForce(_Map_Force_Base):
             ))
         master_sum_str = '+'.join(sum_strings)
 
-        energy_str = '-{} * individual_k * ({})'.format(self._global_k_name, master_sum_str)
+        energy_str = '-{} * individual_k * ({}) / {}'.format(
+            self._global_k_name, master_sum_str, self._map_sigma_name)
 
         enabled_eqn = 'step(enabled-0.5)'
 
@@ -525,7 +552,7 @@ class LinearInterpMapForce(_Map_Force_Base):
     Converts a map of (i,j,k) data and a (x,y,z)->(i,j,k) transformation
     matrix to a potential energy field, with trilinear interpolation of values.
     '''
-    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms'):
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units = 'angstroms', map_sigma = 1.0):
         '''
         For a given atom at (x,y,z), the map potential will be defined
         as:
@@ -551,12 +578,12 @@ class LinearInterpMapForce(_Map_Force_Base):
                 - The units in which the transformation matrix is defined.
                   Either 'angstroms' or 'nanometers'
         '''
-        super().__init__(data, xyz_to_ijk_transform, suffix, units=units)
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units, map_sigma=map_sigma)
 
     def _set_energy_function(self, suffix):
         tf = self._transform
         # Transform xyz to ijk
-        scale_str = ') / mdff_scale_factor_{}'.format(suffix)
+        scale_str = ') / mdff_magnification_factor_{}'.format(suffix)
         tf_strings = ['i = (', 'j = (', 'k = (']
         entries = ('x1 * {}','y1 * {}','z1 * {}','{}')
         for i in range(3):
@@ -602,7 +629,8 @@ class LinearInterpMapForce(_Map_Force_Base):
                       v101* ni   *(1-nj)* nk    + v011*(1-ni)* nj   * nk    +\
                       v110* ni   * nj   *(1-nk) + v111* ni   * nj   * nk)'
 
-        energy_str = '-{} * individual_k * {}'.format(self._global_k_name, interp_str)
+        energy_str = '-{} * individual_k * ({}) / {}'.format(
+            self._global_k_name, interp_str, self._map_sigma_name)
 
         enabled_eqn = 'step(enabled-0.5)'
 

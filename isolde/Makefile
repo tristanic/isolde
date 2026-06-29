@@ -73,6 +73,15 @@ ifeq ($(OS),Linux)
 CHIMERAX_EXE = $(CHIMERAX_APP)
 endif
 
+# --- Per-lane test isolation -------------------------------------------------
+# Route every ChimeraX launch through run_chimerax.sh so each worktree/lane
+# installs into (and tests from) its own isolated ChimeraX user directory --
+# see run_chimerax.sh and tools/_isolated_chimerax.py. The CHIMERAX_APP block
+# above is retained for its side effects (e.g. MACOSX_DEPLOYMENT_TARGET); this
+# last assignment of CHIMERAX_EXE wins. On Windows use make_win.bat instead.
+REL_TOK = $(if $(RELEASE),release,)
+CHIMERAX_EXE = $(dir $(lastword $(MAKEFILE_LIST)))run_chimerax.sh $(REL_TOK)
+
 BUNDLE_BASE_NAME = $(subst ChimeraX-,,$(BUNDLE_NAME))
 SOURCE = src
 CPP_SOURCE = src_cpp
@@ -99,6 +108,9 @@ uninstall app-uninstall:	$(WHEEL)
 docs:
 	$(CHIMERAX_EXE) -m sphinx docs/source src/docs/user
 
+docs-clean:
+	$(CHIMERAX_EXE) --nogui --safemode --exit --script clean_docs.py
+
 test:
 	$(CHIMERAX_EXE)
 
@@ -109,4 +121,4 @@ clean:
 	$(CHIMERAX_EXE) --nogui --safemode --cmd "devel clean . ; exit"
 
 
-.PHONY: docs
+.PHONY: docs docs-clean
