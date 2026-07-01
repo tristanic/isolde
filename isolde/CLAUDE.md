@@ -16,8 +16,10 @@ All changes — Python or C++ — require a full wheel rebuild and ChimeraX rela
 
 **Windows:**
 ```bat
-make_win.bat release clean app-install
+make_win.bat clean app-install          # daily/nightly ChimeraX
+make_win.bat release clean app-install  # stable-release ChimeraX
 ```
+The `release` token selects which ChimeraX installation to target (stable vs. daily); omit it when building against the daily build.
 
 **Linux / macOS:**
 ```sh

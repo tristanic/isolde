@@ -327,7 +327,7 @@ class SimManager:
         uh = self._update_handlers = []
         try:
             sh = self.sim_handler = SimHandler(session, sim_params, sc,
-                isolde.forcefield_mgr)
+                isolde.param_provider)
         except Exception as e:
             self._sim_end_cb(None, None)
             # if isinstance(e, RuntimeError):
@@ -1032,7 +1032,7 @@ class SimHandler:
     '''
     REASON_COORD_LENGTH_MISMATCH = 'coord length mismatch'
     REASON_MODEL_DELETED = 'model deleted'
-    def __init__(self, session, sim_params, sim_construct, forcefield_mgr):
+    def __init__(self, session, sim_params, sim_construct, param_provider):
         '''
         Prepares the simulation topology parameters and construct, and
         initialises the necessary Force objects to handle restraints. Most
@@ -1054,9 +1054,9 @@ class SimHandler:
                 - a :py:class:`SimParams` instance
             * sim_construct:
                 - a :py:class:`SimConstruct` instance
-            * forcefield_mgr:
-                - a class that behaves as a
-                  {name: :py:class:`OpenMM::ForceField`} dict.
+            * param_provider:
+                - a :py:class:`~chimerax.isolde.openmm.param_provider.ParameterisationProvider`
+                  instance responsible for building the OpenMM topology and system.
 
         '''
         self.session = session
@@ -1076,11 +1076,6 @@ class SimHandler:
         self._sim_steps_at_checkpoint = 0
 
         atoms = self._atoms = sim_construct.all_atoms
-        # Forcefield used in this simulation
-#        from .forcefields import forcefields
-        ff = forcefield_mgr[sim_params.forcefield]
-        ligand_db = forcefield_mgr.ligand_db(sim_params.forcefield)
-#        ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
         # All custom forces in the simulation
         self.all_forces = []
@@ -1089,12 +1084,9 @@ class SimHandler:
         self.mdff_forces = {}
 
         logger = self.session.logger
-        # Overall simulation topology + system. The build can recover once from
-        # stale isolde_template_name overrides that no longer match their
-        # residue (see _build_system_with_template_recovery).
-        top, system = self._build_system_with_template_recovery(
-            ff, atoms, sim_construct.all_residues, sim_params, ligand_db, logger)
+        top, system = param_provider.build_system(sim_construct, sim_params, logger)
         self.topology = top
+        self._set_core_force_groups(system)
 
 
         self._temperature = sim_params.temperature
@@ -1238,93 +1230,6 @@ class SimHandler:
     @property
     def atoms(self):
         return self._atoms
-
-    def _build_system_with_template_recovery(self, ff, atoms, all_residues,
-            sim_params, ligand_db, logger):
-        '''
-        Build the OpenMM topology and system from ``all_residues``.
-
-        If the build fails because one or more residues carry an
-        ``isolde_template_name`` override that does not actually match the
-        residue (or names a template missing from the forcefield), clear those
-        overrides and rebuild **once**. Rebuilding from scratch — rather than
-        just re-running template matching — is important: ``find_residue_templates``
-        deliberately skips its cysteine / USER_ / ligand logic for residues that
-        already carry an override, so the residue only gets a fair shot at
-        automatic assignment after the override is gone. If the residue still
-        cannot be matched (or the failure was never override-related), the
-        UnparameterisedResiduesError propagates and the usual widget path fires.
-
-        Returns ``(topology, system)``.
-        '''
-        for attempt in (0, 1):
-            template_dict = find_residue_templates(all_residues, ff,
-                ligand_db=ligand_db, logger=logger,
-                clear_failed_overrides=True)
-            top, residue_templates = create_openmm_topology(atoms, template_dict)
-            try:
-                system = self._create_openmm_system(ff, top, sim_params,
-                    residue_templates, residues=all_residues)
-            except UnparameterisedResiduesError as e:
-                offenders = [r for r in (e.unmatched + e.ambiguous)
-                    if getattr(r, 'isolde_template_name', None) is not None]
-                if attempt == 0 and offenders:
-                    for r in offenders:
-                        logger.warning(
-                            'Residue {} was assigned template "{}" via its '
-                            'isolde_template_name override, but that template '
-                            'does not match the residue. Clearing the override '
-                            'and retrying with automatic template assignment.'
-                            .format(r, r.isolde_template_name))
-                        r.isolde_template_name = None
-                    continue
-                raise
-            return top, system
-
-    def _create_openmm_system(self, forcefield, top, params, residue_templates,
-            residues=None):
-        residue_to_template, ambiguous, unassigned = forcefield.assignTemplates(
-            top, ignoreExternalBonds=True, explicit_templates=residue_templates
-        )
-        if len(ambiguous) or len(unassigned):
-            # Map the offending OpenMM topology residues back to their ChimeraX
-            # residues (OpenMM res.index is the order they were added in
-            # create_openmm_topology, which matches `residues`) so the caller
-            # can inspect/clear stale isolde_template_name overrides.
-            unmatched_cx = []
-            ambiguous_cx = []
-            if residues is not None:
-                unmatched_cx = [residues[r.index] for r in unassigned]
-                ambiguous_cx = [residues[r.index] for r in ambiguous]
-            raise UnparameterisedResiduesError(unmatched=unmatched_cx,
-                ambiguous=ambiguous_cx)
-
-            # from chimerax.core.errors import UserError
-            # err_text = ''
-            # if len(ambiguous):
-            #     err_text += "The following residues match multiple topologies: \n"
-            #     for r, tlist in ambiguous.items():
-            #         err_text += "{}{}: ({})\n".format(r.name, r.index, ', '.join([info[0].name for info in tlist]))
-            # if len(unassigned):
-            #     err_text += "The following residues did not match any template: ({})".format(
-            #         ', '.join(['{}{}'.format(r.name, r.index) for r in unassigned])
-            #     )
-            # raise UserError(err_text)
-            #
-            # residue_templates = {r: t[0].name for r, t in residue_to_template.items()}
-
-        system_params = {
-            'nonbondedMethod':      params.nonbonded_cutoff_method,
-            'nonbondedCutoff':      params.nonbonded_cutoff_distance,
-            'constraints':          params.rigid_bonds,
-            'rigidWater':           params.rigid_water,
-            'removeCMMotion':       params.remove_c_of_m_motion,
-            'ignoreExternalBonds':  True,
-            'residueTemplates':     residue_templates,
-        }
-        sys = forcefield.createSystem(top, **system_params)
-        self._set_core_force_groups(sys)
-        return sys
 
     def _set_core_force_groups(self, system):
         from openmm.openmm import HarmonicBondForce, HarmonicAngleForce, PeriodicTorsionForce

@@ -187,7 +187,9 @@ class Isolde():
         sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr
-        ffmgr = self._ff_mgr = ForcefieldMgr(self.session)
+        from .openmm.param_provider import ForceFieldParameterisationProvider
+        ffmgr = ForcefieldMgr(self.session)
+        self._param_provider = ForceFieldParameterisationProvider(ffmgr)
 
         self._status = self.session.logger.status
 
@@ -340,8 +342,14 @@ class Isolde():
         return self.session.ui.is_gui
 
     @property
+    def param_provider(self):
+        '''The active :class:`~chimerax.isolde.openmm.param_provider.ParameterisationProvider`.'''
+        return self._param_provider
+
+    @property
     def forcefield_mgr(self):
-        return self._ff_mgr
+        '''Backward-compat shim: returns the :class:`ForcefieldMgr` inside the provider.'''
+        return self._param_provider.forcefield_mgr
 
 
 

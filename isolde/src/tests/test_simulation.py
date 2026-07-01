@@ -74,8 +74,10 @@ class SimTester:
         sim_params = self.params = sim_param_mgr.SimParams()
 
         from ..openmm.forcefields import ForcefieldMgr
+        from ..openmm.param_provider import ForceFieldParameterisationProvider
         forcefield_mgr = self.forcefield_mgr = ForcefieldMgr(session)
-        sim_handler = self.sim_handler = openmm_interface.SimHandler(session, sim_params, sim_construct, forcefield_mgr)
+        param_provider = ForceFieldParameterisationProvider(forcefield_mgr)
+        sim_handler = self.sim_handler = openmm_interface.SimHandler(session, sim_params, sim_construct, param_provider)
 
         sim_handler.initialize_restraint_forces()
 

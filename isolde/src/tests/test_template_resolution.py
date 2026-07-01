@@ -1,97 +1,120 @@
 # @Author: Tristan Croll
-# @Date:   19-Jun-2026
+# @Date:   30-Jun-2026
 # @Email:  tcroll@altoslabs.com
 # @Last modified by:   tcroll
-# @Last modified time: 19-Jun-2026
+# @Last modified time: 30-Jun-2026
 # @License: Free for non-commercial use (see license.pdf)
 # @Copyright: 2026 Tristan Croll
-
 '''
-Characterise ISOLDE's *current* forcefield-template resolution -- the path the
-future ML parameterisation backend will replace. Driven through the read-only
-``isolde preflight parameters`` dry-run, which resolves templates without ever
-building an OpenMM Context.
+Characterisation test for ISOLDE's forcefield-template resolution -- the path
+the future ML parameterisation backend will replace. Run inside ChimeraX:
+
+    run_chimerax.bat --nogui --exit --script src/tests/test_template_resolution.py
+
+Driven through the read-only ``isolde preflight parameters`` dry-run (resolves
+templates without building an OpenMM Context). Asserts the CURRENT behaviour for
+the bundled 1pmx fixture against captured baselines, so a future change that
+alters template assignment fails loudly. Prints PASS/FAIL lines and exits
+non-zero on failure so it can gate a build.
 '''
+import os
 
-import pytest
+FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '1pmx_1.pdb')
 
-pytestmark = pytest.mark.fast
-
-
-def _preflight(session, model):
-    from chimerax.isolde.validation.cmd import isolde_preflight_parameters
-    # forcefield=None -> ISOLDE's configured default (defaults.OPENMM_FORCEFIELD)
-    return isolde_preflight_parameters(session, model=model, forcefield=None)
-
-
-def _residue_key(chain_id, name, number):
-    return '/{} {} {}'.format(chain_id, name, number)
-
-
-def test_preflight_schema_and_counts(session, model, golden):
-    '''The dry-run dict's shape and per-class residue counts for the fixture.'''
-    result = _preflight(session, model)
-
-    for key in ('model', 'forcefield', 'n_total', 'n_matched', 'n_ambiguous',
-                'n_unmatched', 'ready_for_simulation', 'unmatched', 'ambiguous'):
-        assert key in result, 'preflight result lost key {!r}'.format(key)
-
-    assert isinstance(result['ready_for_simulation'], bool)
-    assert result['n_total'] == len(model.residues)
-    assert (result['n_matched'] + result['n_ambiguous'] + result['n_unmatched']
-            == result['n_total'])
-
-    golden('template_resolution_counts', {
-        'n_total': result['n_total'],
-        'n_matched': result['n_matched'],
-        'n_ambiguous': result['n_ambiguous'],
-        'n_unmatched': result['n_unmatched'],
-        'ready_for_simulation': result['ready_for_simulation'],
-    })
+# Baseline captured 2026-06 against amber14 + the bundled forcefield XMLs.
+EXPECTED_COUNTS = {
+    'n_total': 70, 'n_matched': 70, 'n_ambiguous': 0, 'n_unmatched': 0,
+    'ready_for_simulation': True,
+}
+# find_residue_templates only assigns explicit templates to the cysteines (all
+# disulfide-bonded -> CYX); standard residues are left to OpenMM's matcher.
+EXPECTED_TEMPLATE_MAP = {
+    '/A CYS 6': 'CYX', '/A CYS 18': 'CYX', '/A CYS 47': 'CYX',
+    '/A CYS 48': 'CYX', '/A CYS 52': 'CYX', '/A CYS 61': 'CYX',
+}
 
 
-def test_per_residue_template_map(session, model, golden):
-    '''The explicit residue->template assignment is the heart of current
-    parameterisation; pin it residue by residue.'''
-    from chimerax.atomic import Residues
-    from chimerax.isolde.validation.cmd import _get_forcefield
-    from chimerax.isolde.openmm.openmm_interface import find_residue_templates
-
-    ff, ligand_db, ff_name = _get_forcefield(session, None)
-    residues = Residues(sorted(model.residues,
-        key=lambda r: (r.chain_id, r.number, r.insertion_code)))
-    tdict = find_residue_templates(residues, ff, ligand_db=ligand_db,
-        logger=session.logger)
-
-    mapping = {}
-    for i, tname in tdict.items():
-        r = residues[i]
-        mapping[_residue_key(r.chain_id, r.name, r.number)] = tname
-    golden('template_resolution_map', mapping)
+def _fail(msg):
+    print('FAIL: %s' % msg)
+    raise SystemExit(1)
 
 
-def test_unmatched_residue_is_flagged(session, model):
-    '''Today OpenMM's template system is the safety net: an unrecognisable
-    residue is reported unmatched (the rewrite removes this net). Forcing a
-    heavy atom to boron guarantees no template can match by name or topology.'''
-    from chimerax.atomic import Element
+def run(session):
+    from chimerax.core.commands import run as run_cmd
+    m = run_cmd(session, 'open "%s"' % FIXTURE.replace('\\', '/'), log=False)[0]
+    try:
+        from chimerax.isolde.validation.cmd import isolde_preflight_parameters
 
-    target = None
-    for r in model.residues:
-        heavy = r.atoms[r.atoms.element_names != 'H']
-        if len(heavy):
-            target = (r, heavy[0])
-            break
-    assert target is not None, 'fixture has no heavy atoms?'
-    r, atom = target
-    atom.element = Element.get_element('B')
+        # --- preflight dict shape + per-class counts -----------------------
+        result = isolde_preflight_parameters(session, model=m, forcefield=None)
+        for key in ('model', 'forcefield', 'n_total', 'n_matched', 'n_ambiguous',
+                    'n_unmatched', 'ready_for_simulation', 'unmatched', 'ambiguous'):
+            if key not in result:
+                _fail('preflight result lost key %r' % key)
+        if (result['n_matched'] + result['n_ambiguous'] + result['n_unmatched']
+                != result['n_total']):
+            _fail('preflight counts do not sum to n_total: %r' % result)
+        for key, expect in EXPECTED_COUNTS.items():
+            if result[key] != expect:
+                _fail('preflight %s: expected %r, got %r' % (key, expect, result[key]))
+        print('PASS: preflight counts match baseline (%d residues, all matched)'
+              % result['n_total'])
 
-    result = _preflight(session, model)
-    assert result['ready_for_simulation'] is False
+        # --- explicit per-residue template assignment ----------------------
+        from chimerax.atomic import Residues
+        from chimerax.isolde.validation.cmd import _get_forcefield
+        from chimerax.isolde.openmm.openmm_interface import find_residue_templates
+        ff, ligand_db, ff_name = _get_forcefield(session, None)
+        residues = Residues(sorted(m.residues,
+            key=lambda r: (r.chain_id, r.number, r.insertion_code)))
+        tdict = find_residue_templates(residues, ff, ligand_db=ligand_db,
+            logger=session.logger)
+        mapping = {}
+        for i, tname in tdict.items():
+            r = residues[i]
+            mapping['/{} {} {}'.format(r.chain_id, r.name, r.number)] = tname
+        if mapping != EXPECTED_TEMPLATE_MAP:
+            _fail('template map changed.\n  expected %r\n  got      %r'
+                  % (EXPECTED_TEMPLATE_MAP, mapping))
+        print('PASS: per-residue template map matches baseline (%d explicit)'
+              % len(mapping))
 
-    hit = [u for u in result['unmatched']
-           if u['number'] == r.number and u['chain_id'] == r.chain_id]
-    assert hit, 'boron-mutated residue {} {}{} was not flagged unmatched'.format(
-        r.name, r.chain_id, r.number)
-    # The dry-run still offers actionable candidates keyed on the residue name.
-    assert isinstance(hit[0]['candidates_by_name'], list)
+        # --- unmatched-residue safety net ----------------------------------
+        # OpenMM's template system is the safety net today: an unrecognisable
+        # residue is flagged unmatched (the rewrite removes this net). Forcing a
+        # heavy atom to boron guarantees no template can match by name/topology.
+        from chimerax.atomic import Element
+        target = None
+        for r in m.residues:
+            heavy = r.atoms[r.atoms.element_names != 'H']
+            if len(heavy):
+                target = (r, heavy[0])
+                break
+        if target is None:
+            _fail('fixture has no heavy atoms?')
+        r, atom = target
+        atom.element = Element.get_element('B')
+        result = isolde_preflight_parameters(session, model=m, forcefield=None)
+        if result['ready_for_simulation'] is not False:
+            _fail('boron-mutated model still reported ready_for_simulation')
+        hit = [u for u in result['unmatched']
+               if u['number'] == r.number and u['chain_id'] == r.chain_id]
+        if not hit:
+            _fail('boron-mutated residue %s %s%d was not flagged unmatched'
+                  % (r.name, r.chain_id, r.number))
+        if not isinstance(hit[0]['candidates_by_name'], list):
+            _fail('unmatched residue lost its candidates_by_name list')
+        print('PASS: an unrecognisable residue is flagged unmatched with candidates')
+    finally:
+        session.models.close([m])
+
+    print('ALL PASS')
+
+
+# ChimeraX --script provides `session` in the module globals.
+try:
+    session  # noqa: F821
+except NameError:
+    session = None
+if session is not None:
+    run(session)
