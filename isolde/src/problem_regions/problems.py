@@ -1,4 +1,41 @@
 
+# Variance-normalised excess-stress (von Mises z-score) above which a live atom is
+# treated as a local-strain "problem". Follows the Problem Zones "Outliers only"
+# convention shared (approximately) across validation metrics: checked ~ Z=3,
+# unchecked ~ Z=2. Kept fairly permissive on purpose -- the downstream DBSCAN
+# min_points gate suppresses isolated flags, so the threshold need not pre-filter
+# hard. get_local_strain_problems picks between these on the outliers_only flag.
+STRAIN_Z_OUTLIER = 3.0      # "Outliers only" checked
+STRAIN_Z_NONFAVORED = 2.0   # "Outliers only" unchecked
+
+
+class StrainSite:
+    '''
+    Adapter presenting one live high-strain atom as a Problem-Zones "site"
+    (``.center`` + ``.atoms``), so physics-based local stress clusters alongside
+    the geometric/restraint problem types. One site per flagged atom -- including
+    hydrogens; the spatial clustering turns a knot of flagged atoms (a distorted
+    group + its H's + any clashing neighbour) into a single zone, while an isolated
+    flag falls into the DBSCAN noise remainder.
+    '''
+    def __init__(self, atom, z):
+        self._atom = atom
+        self.z = z
+
+    @property
+    def atom(self):
+        return self._atom
+
+    @property
+    def atoms(self):
+        from chimerax.atomic import Atoms
+        return Atoms([self._atom])
+
+    @property
+    def center(self):
+        return self._atom.coord
+
+
 class ProblemAggregator:
 
     def __init__(self, session):
@@ -15,6 +52,7 @@ class ProblemAggregator:
             'Protein backbone':                 self.get_protein_backbone_problems,
             'Clashes':                          self.get_clashes,
             'Chiral outliers':                  self.get_chiral_problems,
+            'Local strain':                     self.get_local_strain_problems,
         }
 
     from chimerax.isolde.molobject import (
@@ -32,7 +70,8 @@ class ProblemAggregator:
         'Protein sidechains': Rotamer,
         'Protein backbone': Rama,
         'Clashes': Clash,
-        'Chiral outliers': ChiralCenter
+        'Chiral outliers': ChiralCenter,
+        'Local strain': StrainSite,
     }
 
     _registered_names = {val:key for key, val in _registered_types.items()}
@@ -52,6 +91,35 @@ class ProblemAggregator:
     def registered_name(self, vtype):
         return self._registered_names[vtype]
     
+    @staticmethod
+    def _footprint_coords(site):
+        '''
+        The atomic footprint of a problem, used as its point set for spatial
+        clustering. Every registered problem object exposes ``.atoms`` (the
+        peptide unit for a Ramachandran outlier, the chi-dihedral sidechain for a
+        rotamer, the pair for a clash, the flagged atom(s) for a strain hit),
+        which gives DBSCAN a density that reflects the problem's real spatial
+        extent rather than a single centroid. Falls back to ``.center`` for any
+        exotic site lacking atoms.
+
+        Note ``.atoms`` is not uniform across types: validation objects return an
+        :class:`Atoms` collection, but the restraint objects return a plain tuple
+        of :class:`Atom`. Coerce to :class:`Atoms` (as ``cluster_atoms`` does) so
+        ``.coords`` is always available.
+        '''
+        import numpy
+        from chimerax.atomic import Atoms
+        atoms = getattr(site, 'atoms', None)
+        if atoms is not None:
+            if not isinstance(atoms, Atoms):
+                atoms = Atoms(atoms)
+            if len(atoms):
+                return numpy.asarray(atoms.coords, dtype=float).reshape(-1, 3)
+        center = getattr(site, 'center', None)
+        if center is None:
+            return None
+        return numpy.asarray(center, dtype=float).reshape(1, 3)
+
     def problem_zones(self, structure, restraint_types=None, validation_types=None, cutoff=3, min_points=6, validation_outliers_only=False):
         if restraint_types is None:
             restraint_types = self.registered_restraint_problem_types
@@ -68,22 +136,39 @@ class ProblemAggregator:
         for validation_type in validation_types:
             vm = self._validation_problem_getters.get(validation_type, None)
             if vm is None:
-                self.session.logger.warning(f'{restraint_type} is not a type registered for problem aggregation!')
+                self.session.logger.warning(f'{validation_type} is not a type registered for problem aggregation!')
             else:
                 sites.extend(vm(structure, outliers_only=validation_outliers_only))
-        coords = numpy.array([site.center for site in sites])
+        if not sites:
+            return [], []
+        # Densified clustering: each problem contributes its full atomic footprint
+        # (see _footprint_coords) rather than a single centroid, so heterogeneous
+        # problem types cluster on a common, spatially-honest density footing and a
+        # contact-scale cutoff yields zones that hug the actual trouble instead of
+        # ballooning. Points carry provenance back to their source problem.
+        point_coords = []
+        point_site = []
+        for si, site in enumerate(sites):
+            fp = self._footprint_coords(site)
+            if fp is None or len(fp) == 0:
+                continue
+            point_coords.append(fp)
+            point_site.extend([si] * len(fp))
+        if not point_coords:
+            return [], list(sites)
+        coords = numpy.concatenate(point_coords, axis=0)
+        point_site = numpy.array(point_site)
         from ..clustering import dbscan
         clusters, noise = dbscan(coords, cutoff, min_points)
-        from operator import itemgetter
+        # Map each spatial cluster of points back to the unique source problems it
+        # touches (a problem joins a zone if any of its footprint atoms fall in it).
         clustered_issues = []
+        clustered_site_ids = set()
         for c in clusters:
-            f = itemgetter(*c)
-            clustered_issues.append(f(sites))
-        if len(noise):
-            f = itemgetter(*noise)
-            remainder = f(sites)
-        else:
-            remainder = []
+            site_ids = numpy.unique(point_site[numpy.asarray(c, dtype=int)])
+            clustered_site_ids.update(int(i) for i in site_ids)
+            clustered_issues.append([sites[int(i)] for i in site_ids])
+        remainder = [sites[i] for i in range(len(sites)) if i not in clustered_site_ids]
         return clustered_issues, remainder
     
     def cluster_atoms(self, items):
@@ -163,6 +248,54 @@ class ProblemAggregator:
         from chimerax.isolde.validation.clashes import unique_clashes
         clashes = unique_clashes(structure.session, structure.atoms, severe_only=outliers_only)
         return clashes
+
+    @staticmethod
+    def get_local_strain_problems(structure, outliers_only=True, z_threshold=None):
+        '''
+        Physics-based local stress problems, available only while `structure` is
+        the model of a running ISOLDE simulation (the signal needs the live OpenMM
+        System + current, near-minimised coordinates). Reconstructs the per-atom
+        virial, subtracts the force-field frustration baseline, and flags atoms
+        whose variance-normalised excess stress (von Mises z-score) exceeds a
+        threshold. `outliers_only` picks the threshold per the Problem Zones
+        convention (checked -> STRAIN_Z_OUTLIER ~3, unchecked -> STRAIN_Z_NONFAVORED
+        ~2); pass `z_threshold` to override. Returns one StrainSite per flagged
+        atom (or [] when no matching simulation is running).
+
+        Coordinates are read from `all_atoms.coords` -- the snapshot ISOLDE
+        already pushes to the GUI each update -- rather than from the live
+        Context, so this is safe to call without pausing the (thread-stepped)
+        simulation.
+        '''
+        session = structure.session
+        isolde = getattr(session, 'isolde', None)
+        if isolde is None or not isolde.simulation_running:
+            return []
+        sm = isolde.sim_manager
+        sc = sm.sim_construct
+        if sc.model is not structure:
+            return []
+        sh = sm.sim_handler
+        system = getattr(sh, '_system', None)
+        atoms = sc.all_atoms
+        if system is None or len(atoms) != system.getNumParticles():
+            return []
+        import numpy
+        from chimerax.isolde.validation.local_virial import LocalVirialCalculator
+        from chimerax.isolde.validation.reference_stress import ReferenceStressLibrary
+        pos_nm = atoms.coords / 10.0  # Angstrom -> nm, in System-particle order
+        virial = LocalVirialCalculator(system).compute(pos_nm)['virial']
+        try:
+            lib = ReferenceStressLibrary()
+        except FileNotFoundError:
+            session.logger.warning('Local-strain problems: no reference stress '
+                'library found; skipping. (Rebuild ISOLDE or run the builder.)')
+            return []
+        z = lib.compute_excess(virial, atoms)['von_mises_z']
+        if z_threshold is None:
+            z_threshold = STRAIN_Z_OUTLIER if outliers_only else STRAIN_Z_NONFAVORED
+        flagged = numpy.where(numpy.nan_to_num(z, nan=-numpy.inf) > z_threshold)[0]
+        return [StrainSite(atoms[int(i)], float(z[int(i)])) for i in flagged]
 
     @staticmethod
     def get_chiral_problems(structure, outliers_only=True):

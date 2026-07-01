@@ -66,7 +66,7 @@ custom-init = true
 "src/" = ["**/*.json", "**/*.dat",
     "resources/**", "icons/**", "demo_data/**","dictionaries/**", "tests/**", "docs/**", "ui/**",
     "openmm/amberff/*.xml", "openmm/amberff/*.zip", "openmm/amberff/amap/**",
-    "validation/molprobity_data/*.data"]
+    "validation/molprobity_data/*.data", "validation/data/*.npz"]
 
 [chimerax.tool.ISOLDE]
 category = "General"

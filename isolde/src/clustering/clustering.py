@@ -39,10 +39,12 @@ def dbscan(points, epsilon=3, min_points=6):
     for cluster in clusters:
         close = [1]
         while len(close):
-            remaining = numpy.array(list(remainder))
+            if not remainder:  # no unassigned points left to absorb
+                break
+            remaining = numpy.array(list(remainder), dtype=int)
             rpoints = points[remaining]
             idx_map = {i: idx for i, idx in enumerate(remaining)}
-            cpoints = points[numpy.array(list(cluster))]
+            cpoints = points[numpy.array(list(cluster), dtype=int)]
             _, close = find_close_points(cpoints, rpoints, epsilon)
             if len(close):
                 ci = set([idx_map[i] for i in close])
@@ -50,6 +52,6 @@ def dbscan(points, epsilon=3, min_points=6):
                 remainder.difference_update(ci)
 
     clusters = list(sorted(clusters, key=lambda c: len(c), reverse=True))
-    clusters = [numpy.array(list(c)) for c in clusters]
-    noise = numpy.array(list(remainder))
+    clusters = [numpy.array(list(c), dtype=int) for c in clusters]
+    noise = numpy.array(list(remainder), dtype=int)
     return clusters, noise
