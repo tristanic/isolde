@@ -22,6 +22,8 @@ class GeneralTab(IsoldeTab):
         self.addWidget(SimFidelityPanel(session, isolde, parent, gui))
         from .nonbonded import NonBondedPanel
         self.addWidget(NonBondedPanel(session, isolde, parent, gui))
+        from .forcefield import ForceFieldPanel
+        self.addWidget(ForceFieldPanel(session, isolde, parent, gui))
         from .platform import ComputationalPlatformPanel
         self.addWidget(ComputationalPlatformPanel(session, isolde, parent, gui))
         from .mask_settings import MaskAndSpotlightSettingsPanel

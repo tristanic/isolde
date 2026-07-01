@@ -187,9 +187,9 @@ class Isolde():
         sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr
-        from .openmm.param_provider import ForceFieldParameterisationProvider
+        from .openmm.garnet_provider import GarnetParameterisationProvider
         ffmgr = ForcefieldMgr(self.session)
-        self._param_provider = ForceFieldParameterisationProvider(ffmgr)
+        self._param_provider = GarnetParameterisationProvider(ffmgr)
 
         self._status = self.session.logger.status
 
@@ -707,6 +707,8 @@ class Isolde():
     ####
 
     def _set_right_mouse_mode_tug_atom(self, *_):
+        if not self.gui_mode:
+            return
         from chimerax.core.commands import run
         run(self.session, 'ui mousemode right "isolde tug atom"', log=False)
 
@@ -1020,8 +1022,9 @@ class Isolde():
     def _sim_end_cb(self, trigger_name, reason):
         for d in self._haptic_devices:
             d.cleanup()
-        from chimerax.mouse_modes import TranslateMouseMode
-        self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
+        if self.gui_mode:
+            from chimerax.mouse_modes import TranslateMouseMode
+            self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         self.triggers.activate_trigger(self.SIMULATION_TERMINATED, reason)
         m = self.selected_model
         from .openmm.openmm_interface import SimHandler
@@ -1030,8 +1033,9 @@ class Isolde():
             self.session.logger.info('ISOLDE: model deleted during running simulation.')
             return
 
-        from chimerax.core.commands import run
-        run(self.session, f'clipper spot #{self.selected_model.id_string}', log=False)
+        if self.gui_mode:
+            from chimerax.core.commands import run
+            run(self.session, f'clipper spot #{self.selected_model.id_string}', log=False)
         from chimerax.clipper import get_map_mgr
         mmgr = get_map_mgr(m)
         if mmgr is not None:

@@ -522,7 +522,7 @@ class SimManager:
         uh = update_handlers
         mobile_res = sc.mobile_atoms.unique_residues
         amber_cmap = False
-        if self.sim_params.forcefield == 'amber14':
+        if self.sim_params.forcefield.startswith('amber14'):
             amber_cmap = True
         sh.initialize_restraint_forces(amber_cmap)
         if (amber_cmap):

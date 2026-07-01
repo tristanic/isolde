@@ -26,6 +26,16 @@ dependencies = [
     "ChimeraX-Arrays ~=1.0" 
 ]
 
+[project.optional-dependencies]
+# ML-based ligand parameterisation backends.  None of these are required for
+# standard AMBER14/CHARMM36 simulations; install whichever you want to use.
+garnet = [
+    "garnetff",
+    "torch",
+    "torch_geometric",
+    "igraph",
+]
+
 [tool.setuptools.dynamic]
 # Set the version in ISOLDE's top-level __init__.py
 version = { attr = "src.__version__"}
