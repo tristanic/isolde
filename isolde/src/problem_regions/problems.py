@@ -36,6 +36,32 @@ class StrainSite:
         return self._atom.coord
 
 
+class UnassessedResidueSite:
+    '''
+    A residue in the running simulation with NO local-strain reference -- i.e.
+    none of its atoms has a baseline entry (a novel ligand, a modified residue,
+    etc.). Surfaced as its own Problem-Zones category so that the strain tool's
+    *silence* on such a residue is not mistaken for "no problem": we simply have
+    no basis to judge it. Standard residues, including chain termini that carry a
+    few unbaselined atoms (OXT, terminal H), are NOT flagged -- they still have
+    assessed atoms.
+    '''
+    def __init__(self, residue):
+        self._residue = residue
+
+    @property
+    def residue(self):
+        return self._residue
+
+    @property
+    def atoms(self):
+        return self._residue.atoms
+
+    @property
+    def center(self):
+        return self._residue.atoms.coords.mean(axis=0)
+
+
 class ProblemAggregator:
 
     def __init__(self, session):
@@ -53,6 +79,7 @@ class ProblemAggregator:
             'Clashes':                          self.get_clashes,
             'Chiral outliers':                  self.get_chiral_problems,
             'Local strain':                     self.get_local_strain_problems,
+            'Unassessed (strain)':              self.get_unassessed_strain_problems,
         }
 
     from chimerax.isolde.molobject import (
@@ -72,6 +99,7 @@ class ProblemAggregator:
         'Clashes': Clash,
         'Chiral outliers': ChiralCenter,
         'Local strain': StrainSite,
+        'Unassessed (strain)': UnassessedResidueSite,
     }
 
     _registered_names = {val:key for key, val in _registered_types.items()}
@@ -296,6 +324,36 @@ class ProblemAggregator:
             z_threshold = STRAIN_Z_OUTLIER if outliers_only else STRAIN_Z_NONFAVORED
         flagged = numpy.where(numpy.nan_to_num(z, nan=-numpy.inf) > z_threshold)[0]
         return [StrainSite(atoms[int(i)], float(z[int(i)])) for i in flagged]
+
+    @staticmethod
+    def get_unassessed_strain_problems(structure, outliers_only=True):
+        '''
+        Residues in the running simulation for which the local-strain analysis has
+        no reference at all (a residue is "unassessed" only if *none* of its atoms
+        has a baseline entry -- novel ligands, modified residues). Emitted as its
+        own category so the strain tool's silence on them is visible rather than
+        read as "clean". Needs only the reference dictionary (no virial / coords),
+        but is gated on an active simulation so it tracks exactly the atoms the
+        Local strain stream would otherwise assess.
+        '''
+        session = structure.session
+        isolde = getattr(session, 'isolde', None)
+        if isolde is None or not isolde.simulation_running:
+            return []
+        sm = isolde.sim_manager
+        sc = sm.sim_construct
+        if sc.model is not structure:
+            return []
+        from chimerax.isolde.validation.reference_stress import ReferenceStressLibrary
+        try:
+            lib = ReferenceStressLibrary()
+        except FileNotFoundError:
+            return []
+        sites = []
+        for r in sc.all_atoms.unique_residues:
+            if not any(lib.has_baseline(r.name, a.name) for a in r.atoms):
+                sites.append(UnassessedResidueSite(r))
+        return sites
 
     @staticmethod
     def get_chiral_problems(structure, outliers_only=True):

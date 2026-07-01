@@ -134,8 +134,10 @@ class ReferenceStressLibrary:
                 This is the discriminating metric: it de-emphasises atoms that are
                 intrinsically high-variance (polar/charged tips) and highlights
                 atoms far outside their own type's normal spread.
+              assessed -- (N,) bool, True where a baseline existed for that atom.
             Atoms with no baseline entry (non-standard residues, novel ligands,
-            chain termini) get NaN; von_mises_z is also NaN where no scale exists.
+            chain termini) get NaN (and assessed=False); von_mises_z is also NaN
+            where no scale exists.
         '''
         n = len(atoms)
         if virial.shape[0] != n:
@@ -165,4 +167,9 @@ class ReferenceStressLibrary:
                 arr[has_baseline] = sub[key]
         measures['scale'] = scale
         measures['von_mises_z'] = measures['von_mises'] / scale
+        # Which atoms actually had a reference. Callers must distinguish "assessed
+        # and unremarkable" from "never assessed" (novel ligand / modified residue
+        # / terminal variant) -- a NaN z-score means the latter, and silence there
+        # must not be read as "no problem".
+        measures['assessed'] = has_baseline
         return measures
