@@ -50,29 +50,50 @@ class ForceFieldDialog(UI_Panel_Base):
         ml.addItem(DefaultSpacerItem())
 
     def _populate_combo_box(self):
-        from chimerax.isolde.openmm.param_provider import _garnet_available
+        from chimerax.isolde.openmm.param_provider import (
+            _garnet_available, _espaloma_available,
+            _openff_available, _mmff_available)
 
         sim_params = self.session.isolde.sim_params
         cb = self.combo_box
         cb.blockSignals(True)
         cb.clear()
 
-        # All backends in display order; ML items are always shown so users
-        # know the option exists even when dependencies are absent.
-        all_backends = ['amber14', 'amber14+garnet', 'charmm36']
-        garnet_installed = _garnet_available()
+        # All backends in display order; unavailable items are shown greyed-out
+        # so users know the option exists even when dependencies are absent.
+        all_backends = ['amber14', 'amber14+garnet', 'amber14+espaloma',
+                        'amber14+openff', 'amber14+mmff', 'charmm36']
+
+        _disabled = {
+            'amber14+garnet': (not _garnet_available(),
+                'GARNET is not installed.\n'
+                'To enable, run inside ChimeraX:\n'
+                '  pip install garnetff torch torch_geometric igraph\n'
+                'then restart ChimeraX.'),
+            'amber14+espaloma': (not _espaloma_available(),
+                'Espaloma is not installed.\n'
+                'Requires conda — see the ISOLDE docs.'),
+            'amber14+openff': (not _openff_available(),
+                'OpenFF Toolkit is not installed.\n'
+                'To enable, run inside ChimeraX:\n'
+                '  pip install openff-toolkit rdkit\n'
+                'then restart ChimeraX.'),
+            'amber14+mmff': (not _mmff_available(),
+                'RDKit is not installed.\n'
+                'To enable, run in an admin cmd:\n'
+                '  python.exe -m pip install rdkit\n'
+                'then restart ChimeraX.\n'
+                '(approximate — prefer amber14+garnet for production)'),
+        }
 
         for name in all_backends:
             cb.addItem(name)
-            if name == 'amber14+garnet' and not garnet_installed:
+            disabled_flag, tooltip = _disabled.get(name, (False, ''))
+            if disabled_flag:
                 model = cb.model()
                 item = model.item(cb.count() - 1)
                 item.setEnabled(False)
-                item.setToolTip(
-                    'GARNET is not installed.\n'
-                    'To enable, run inside ChimeraX:\n'
-                    '  pip install garnetff torch torch_geometric igraph\n'
-                    'then restart ChimeraX.')
+                item.setToolTip(tooltip)
 
         current = getattr(sim_params, 'forcefield', 'amber14')
         idx = cb.findText(current)
@@ -81,7 +102,11 @@ class ForceFieldDialog(UI_Panel_Base):
 
     def _combo_changed_cb(self, *_):
         chosen = self.combo_box.currentText()
-        from chimerax.isolde.openmm.param_provider import _garnet_available
-        if chosen == 'amber14+garnet' and not _garnet_available():
-            return
+        from chimerax.isolde.openmm.param_provider import (
+            _garnet_available, _espaloma_available,
+            _openff_available, _mmff_available)
+        if chosen == 'amber14+garnet'   and not _garnet_available():   return
+        if chosen == 'amber14+espaloma' and not _espaloma_available(): return
+        if chosen == 'amber14+openff'   and not _openff_available():   return
+        if chosen == 'amber14+mmff'     and not _mmff_available():     return
         self.session.isolde.sim_params.forcefield = chosen

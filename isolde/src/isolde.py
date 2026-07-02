@@ -187,9 +187,9 @@ class Isolde():
         sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr
-        from .openmm.garnet_provider import GarnetParameterisationProvider
+        from .openmm.param_provider import make_parameterisation_provider
         ffmgr = ForcefieldMgr(self.session)
-        self._param_provider = GarnetParameterisationProvider(ffmgr)
+        self._param_provider = make_parameterisation_provider(ffmgr)
 
         self._status = self.session.logger.status
 

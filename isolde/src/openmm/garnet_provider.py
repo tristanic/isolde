@@ -57,7 +57,7 @@ exceptions (the two custom forces exclude those pairs).  This is a known
 approximation accepted for model building.
 '''
 
-from .param_provider import ForceFieldParameterisationProvider
+from .param_provider import LigandBackedParameterisationProvider
 
 # Atomic numbers supported by GARNET and their internal index/name (from garnetff source).
 _ELEMENT_INDICES = {
@@ -474,7 +474,7 @@ def _garnet_system_to_ffxml(residue, system) -> str:
 # Provider
 # ---------------------------------------------------------------------------
 
-class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
+class GarnetParameterisationProvider(LigandBackedParameterisationProvider):
     '''
     Parameterisation provider that uses AMBER14 for standard residues and
     GARNET for ligands that have no existing template.
@@ -491,160 +491,22 @@ class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
     forcefield_mgr : ForcefieldMgr
     '''
 
-    def __init__(self, forcefield_mgr):
-        super().__init__(forcefield_mgr)
-        # Session-lifetime cache: {residue_name: {'xml': str, 'de': de_info_dict|None}}
-        self._template_cache = {}
+    @property
+    def backend_forcefield_key(self):
+        return 'amber14+garnet'
 
-    def build_system(self, sim_construct, sim_params, logger=None):
-        if sim_params.forcefield != 'amber14+garnet':
-            return super().build_system(sim_construct, sim_params, logger)
-        ff  = self._forcefield_mgr['amber14']
-        ldb = self._forcefield_mgr.ligand_db('amber14')
-        return self._build_with_garnet_fallback(
-            ff,
-            sim_construct.all_atoms,
-            sim_construct.all_residues,
-            sim_params,
-            ldb,
-            logger)
+    def _residue_is_eligible(self, residue):
+        if not super()._residue_is_eligible(residue):
+            return False
+        return not any(a.element.number not in _ELEMENT_INDICES
+                       for a in residue.atoms)
 
-    def _build_with_garnet_fallback(self, ff, atoms, all_residues,
-                                    sim_params, ligand_db, logger):
-        '''
-        3-attempt retry loop:
-          0 → stale-override recovery (same as parent)
-          1 → GARNET fill-in for unparameterised ligands
-          2 → propagate error
+    def _parameterise_one(self, residue, logger):
+        xml, de_info = self._garnet_parameterise_one(residue, logger)
+        return xml, {'de': de_info}
 
-        GARNET is used for *all* eligible non-polymer residues, not just
-        truly novel ones.  This is achieved by pre-registering USER_ templates
-        for every eligible PT_NONE residue before ``find_residue_templates``
-        runs.  Because ISOLDE's template matching checks USER_ templates first,
-        USER_GTP beats ``BRYCE_GTP`` in ``bryce_set.xml`` (etc.) automatically.
-
-        Residues that GARNET cannot handle (unsupported elements such as Fe/Zn,
-        or trivially small molecules like water and simple ions) are skipped
-        and fall through to standard AMBER14 matching.
-        '''
-        self._pre_parameterise_ligands(all_residues, ff, logger)
-        from chimerax.isolde.openmm.openmm_interface import (
-            find_residue_templates,
-            create_openmm_topology,
-            UnparameterisedResiduesError,
-        )
-        for attempt in (0, 1, 2):
-            template_dict = find_residue_templates(
-                all_residues, ff,
-                ligand_db=ligand_db,
-                logger=logger,
-                clear_failed_overrides=True)
-            top, residue_templates = create_openmm_topology(atoms, template_dict)
-            try:
-                system = self._create_system(
-                    ff, top, sim_params, residue_templates,
-                    residues=all_residues, atoms=atoms)
-            except UnparameterisedResiduesError as e:
-                stale = [r for r in (e.unmatched + e.ambiguous)
-                         if getattr(r, 'isolde_template_name', None) is not None]
-                if attempt == 0 and stale:
-                    for r in stale:
-                        if logger is not None:
-                            logger.warning(
-                                'Residue {} was assigned template "{}" via its '
-                                'isolde_template_name override, but that template '
-                                'does not match the residue. Clearing the override '
-                                'and retrying with automatic template assignment.'
-                                .format(r, r.isolde_template_name))
-                        r.isolde_template_name = None
-                    continue
-                if attempt == 1 and e.unmatched:
-                    self._parameterise_unmatched(e.unmatched, ff, logger)
-                    continue
-                raise
-            self._patch_garnet_vdw(system, top)
-            return top, system
-
-    def _pre_parameterise_ligands(self, all_residues, forcefield, logger):
-        '''
-        Proactively run GARNET on all eligible non-polymer residues and
-        register USER_ templates so they take precedence over any AMBER14
-        core XML template (e.g. ``BRYCE_GTP`` in ``bryce_set.xml``) during
-        the subsequent ``find_residue_templates`` call.
-
-        Also clears ``isolde_template_name`` on any residue whose cached name
-        does not begin with ``USER_``; otherwise a stale AMBER14 template name
-        would bypass the USER_ check entirely.
-
-        Eligibility criteria (either condition disqualifies a residue):
-
-        * Fewer than three heavy atoms — excludes water and simple ions whose
-          AMBER14 parameters are preferred (TIP3P, ion models).
-        * Contains an element unsupported by GARNET — silently skips rather
-          than raising an error, allowing AMBER14 to handle metal cofactors.
-        '''
-        import io
-        from chimerax.atomic import Residue
-
-        for r in all_residues:
-            if r.polymer_type != Residue.PT_NONE:
-                continue
-            heavy = [a for a in r.atoms if a.element.number != 1]
-            if len(heavy) < 3:
-                continue
-
-            # Skip residues containing elements GARNET does not support.
-            if any(a.element.number not in _ELEMENT_INDICES for a in r.atoms):
-                continue
-
-            name = r.name
-
-            # Clear any stale non-USER_ template override so find_residue_templates
-            # re-evaluates and finds the USER_ template we're about to register.
-            existing = getattr(r, 'isolde_template_name', None)
-            if existing is not None and not existing.startswith('USER_'):
-                r.isolde_template_name = None
-
-            if name not in self._template_cache:
-                try:
-                    if logger is not None:
-                        logger.status(f'GARNET: parameterising {name}...')
-                    xml, de_info = self._garnet_parameterise_one(r, logger)
-                    self._template_cache[name] = {'xml': xml, 'de': de_info}
-                    if logger is not None:
-                        logger.info(f'GARNET: parameterisation complete for {name}.')
-                except Exception as exc:
-                    if logger is not None:
-                        logger.warning(
-                            f'GARNET: could not parameterise {name} ({exc}); '
-                            f'falling back to AMBER14.')
-                    continue
-
-            forcefield.loadFile(
-                io.StringIO(self._template_cache[name]['xml']),
-                resname_prefix='USER_')
-
-    def _parameterise_unmatched(self, unmatched_residues, forcefield, logger):
-        '''
-        Run GARNET on each unmatched non-polymer residue and register the
-        resulting template under the USER_ prefix.
-        '''
-        import io
-        from chimerax.atomic import Residue
-        for r in unmatched_residues:
-            if r.polymer_type != Residue.PT_NONE:
-                continue
-            name = r.name
-            if name not in self._template_cache:
-                if logger is not None:
-                    logger.status(f'GARNET: parameterising {name}...')
-                xml, de_info = self._garnet_parameterise_one(r, logger)
-                self._template_cache[name] = {'xml': xml, 'de': de_info}
-                if logger is not None:
-                    logger.info(f'GARNET parameterisation complete for {name}.')
-            forcefield.loadFile(
-                io.StringIO(self._template_cache[name]['xml']),
-                resname_prefix='USER_')
+    def _patch_system(self, system, top):
+        self._patch_garnet_vdw(system, top)
 
     def _patch_garnet_vdw(self, system, top):
         '''

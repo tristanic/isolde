@@ -35,15 +35,51 @@ def _garnet_available() -> bool:
         return False
 
 
+def _espaloma_available() -> bool:
+    '''True when espaloma, rdkit, and openff-toolkit are all importable.'''
+    try:
+        import espaloma  # noqa: F401
+        from rdkit import Chem  # noqa: F401
+        from openff.toolkit import Molecule  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _openff_available() -> bool:
+    '''True when openff-toolkit and rdkit are importable.'''
+    try:
+        from openff.toolkit import ForceField, Molecule  # noqa: F401
+        from rdkit import Chem  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def _mmff_available() -> bool:
+    '''True when rdkit is importable (MMFF94 is bundled with rdkit).'''
+    try:
+        from rdkit.Chem import rdForceFieldHelpers  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 def available_parameterisation_backends() -> list:
     '''
     Return the list of backend names that can be passed to
-    ``sim_params.forcefield``.  Includes ``'amber14+garnet'`` only when the
-    required packages are installed.
+    ``sim_params.forcefield``.
     '''
-    backends = ['amber14', 'charmm36']
+    backends = ['amber14']
     if _garnet_available():
-        backends.insert(1, 'amber14+garnet')
+        backends.append('amber14+garnet')
+    if _espaloma_available():
+        backends.append('amber14+espaloma')
+    if _openff_available():
+        backends.append('amber14+openff')
+    if _mmff_available():
+        backends.append('amber14+mmff')
+    backends.append('charmm36')
     return backends
 
 
@@ -515,3 +551,225 @@ class ForceFieldParameterisationProvider(ParameterisationProvider):
             exec(script, locals())
 
         return sys
+
+
+# ---------------------------------------------------------------------------
+# Base class for AMBER14 + external-backend providers
+# ---------------------------------------------------------------------------
+
+class LigandBackedParameterisationProvider(ForceFieldParameterisationProvider):
+    '''
+    Base for providers that combine AMBER14 for standard residues with an
+    external backend (GARNET, Espaloma, OpenFF, …) for non-polymer ligands.
+
+    Subclasses must implement three hooks:
+
+    - :attr:`backend_forcefield_key` — the ``sim_params.forcefield`` string
+      this provider owns (e.g. ``'amber14+garnet'``).
+    - :meth:`_residue_is_eligible` — whether to send a residue to the
+      backend.  Default: any non-polymer residue with ≥ 3 heavy atoms.
+    - :meth:`_parameterise_one` — run the backend on one residue, returning
+      ``(ffxml_str, extra_dict)``.  *extra_dict* is merged into the cache
+      entry and made available to :meth:`_patch_system`.
+
+    Subclasses may override :meth:`_patch_system` (default: no-op) to
+    post-process the assembled system (e.g. replace LJ with a custom VdW).
+    '''
+
+    def __init__(self, forcefield_mgr):
+        super().__init__(forcefield_mgr)
+        # {resname: {'xml': str, **backend_extra}}
+        self._template_cache = {}
+
+    # -- abstract interface --
+
+    @property
+    def backend_forcefield_key(self):
+        raise NotImplementedError
+
+    def _residue_is_eligible(self, residue):
+        from chimerax.atomic import Residue
+        if residue.polymer_type != Residue.PT_NONE:
+            return False
+        heavy = [a for a in residue.atoms if a.element.number != 1]
+        return len(heavy) >= 3
+
+    def _parameterise_one(self, residue, logger):
+        raise NotImplementedError
+
+    def _patch_system(self, system, top):
+        pass
+
+    # -- routing --
+
+    def build_system(self, sim_construct, sim_params, logger=None):
+        if sim_params.forcefield != self.backend_forcefield_key:
+            return super().build_system(sim_construct, sim_params, logger)
+        ff  = self._forcefield_mgr['amber14']
+        ldb = self._forcefield_mgr.ligand_db('amber14')
+        return self._build_with_ligand_fallback(
+            ff, sim_construct.all_atoms, sim_construct.all_residues,
+            sim_params, ldb, logger)
+
+    # -- shared machinery --
+
+    def _build_with_ligand_fallback(self, ff, atoms, all_residues,
+                                    sim_params, ligand_db, logger):
+        '''
+        3-attempt retry loop.
+
+        0.  Stale ``isolde_template_name`` recovery.
+        1.  Backend fill-in for residues still unparameterised after
+            :meth:`_pre_parameterise_ligands`.
+        2.  Propagate error.
+        '''
+        self._pre_parameterise_ligands(all_residues, ff, logger)
+        from chimerax.isolde.openmm.openmm_interface import (
+            find_residue_templates,
+            create_openmm_topology,
+            UnparameterisedResiduesError,
+        )
+        for attempt in (0, 1, 2):
+            template_dict = find_residue_templates(
+                all_residues, ff,
+                ligand_db=ligand_db,
+                logger=logger,
+                clear_failed_overrides=True)
+            top, residue_templates = create_openmm_topology(atoms, template_dict)
+            try:
+                system = self._create_system(
+                    ff, top, sim_params, residue_templates,
+                    residues=all_residues, atoms=atoms)
+            except UnparameterisedResiduesError as e:
+                stale = [r for r in (e.unmatched + e.ambiguous)
+                         if getattr(r, 'isolde_template_name', None) is not None]
+                if attempt == 0 and stale:
+                    for r in stale:
+                        if logger is not None:
+                            logger.warning(
+                                'Residue {} was assigned template "{}" via its '
+                                'isolde_template_name override, but that template '
+                                'does not match the residue. Clearing the override '
+                                'and retrying with automatic template assignment.'
+                                .format(r, r.isolde_template_name))
+                        r.isolde_template_name = None
+                    continue
+                if attempt == 1 and e.unmatched:
+                    self._parameterise_unmatched(e.unmatched, ff, logger)
+                    continue
+                raise
+            self._patch_system(system, top)
+            return top, system
+
+    def _pre_parameterise_ligands(self, all_residues, forcefield, logger):
+        '''
+        Proactively parameterise all eligible non-polymer residues and register
+        their templates under the ``USER_`` prefix so they take precedence over
+        any AMBER14 core-XML template during the subsequent
+        ``find_residue_templates`` call.
+        '''
+        import io
+        backend = self.backend_forcefield_key.split('+')[1].upper()
+
+        for r in all_residues:
+            if not self._residue_is_eligible(r):
+                continue
+
+            name = r.name
+            existing = getattr(r, 'isolde_template_name', None)
+            if existing is not None and not existing.startswith('USER_'):
+                r.isolde_template_name = None
+
+            if name not in self._template_cache:
+                try:
+                    if logger is not None:
+                        logger.status(f'{backend}: parameterising {name}...')
+                    xml, extra = self._parameterise_one(r, logger)
+                    self._template_cache[name] = {'xml': xml, **extra}
+                    if logger is not None:
+                        logger.info(f'{backend}: parameterisation complete for {name}.')
+                except Exception as exc:
+                    if logger is not None:
+                        logger.warning(
+                            f'{backend}: could not parameterise {name} ({exc}); '
+                            f'falling back to AMBER14.')
+                    continue
+
+            forcefield.loadFile(
+                io.StringIO(self._template_cache[name]['xml']),
+                resname_prefix='USER_')
+
+    def _parameterise_unmatched(self, unmatched_residues, forcefield, logger):
+        '''
+        Parameterise still-unmatched non-polymer residues on the second retry.
+        '''
+        import io
+        from chimerax.atomic import Residue
+        backend = self.backend_forcefield_key.split('+')[1].upper()
+
+        for r in unmatched_residues:
+            if r.polymer_type != Residue.PT_NONE:
+                continue
+            name = r.name
+            if name not in self._template_cache:
+                if logger is not None:
+                    logger.status(f'{backend}: parameterising {name}...')
+                xml, extra = self._parameterise_one(r, logger)
+                self._template_cache[name] = {'xml': xml, **extra}
+                if logger is not None:
+                    logger.info(f'{backend}: parameterisation complete for {name}.')
+            forcefield.loadFile(
+                io.StringIO(self._template_cache[name]['xml']),
+                resname_prefix='USER_')
+
+
+# ---------------------------------------------------------------------------
+# Dispatcher — routes to whichever backend owns the current forcefield key
+# ---------------------------------------------------------------------------
+
+class _DispatchingProvider(ForceFieldParameterisationProvider):
+    '''
+    Routes each ``sim_params.forcefield`` value to the appropriate
+    :class:`LigandBackedParameterisationProvider`.  Created by
+    :func:`make_parameterisation_provider` when multiple backends are installed.
+    '''
+
+    def __init__(self, forcefield_mgr, backend_providers):
+        super().__init__(forcefield_mgr)
+        self._backends = {p.backend_forcefield_key: p
+                          for p in backend_providers}
+
+    def build_system(self, sim_construct, sim_params, logger=None):
+        backend = self._backends.get(sim_params.forcefield)
+        if backend is not None:
+            return backend.build_system(sim_construct, sim_params, logger)
+        return super().build_system(sim_construct, sim_params, logger)
+
+
+def make_parameterisation_provider(forcefield_mgr):
+    '''
+    Factory — returns the most capable parameterisation provider available.
+
+    * No ML backends installed → :class:`ForceFieldParameterisationProvider`.
+    * One ML backend installed → that backend's provider directly.
+    * Multiple ML backends installed → :class:`_DispatchingProvider`.
+    '''
+    backends = []
+    if _garnet_available():
+        from .garnet_provider import GarnetParameterisationProvider
+        backends.append(GarnetParameterisationProvider(forcefield_mgr))
+    if _espaloma_available():
+        from .espaloma_provider import EspalomaParameterisationProvider
+        backends.append(EspalomaParameterisationProvider(forcefield_mgr))
+    if _openff_available():
+        from .openff_provider import OpenFFParameterisationProvider
+        backends.append(OpenFFParameterisationProvider(forcefield_mgr))
+    if _mmff_available():
+        from .mmff_provider import MMFFParameterisationProvider
+        backends.append(MMFFParameterisationProvider(forcefield_mgr))
+
+    if not backends:
+        return ForceFieldParameterisationProvider(forcefield_mgr)
+    if len(backends) == 1:
+        return backends[0]
+    return _DispatchingProvider(forcefield_mgr, backends)
