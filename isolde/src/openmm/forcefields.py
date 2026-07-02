@@ -83,7 +83,13 @@ class ForcefieldMgr:
         for f in glob.glob(os.path.join(ff_dir, '*.pickle')):
             os.remove(f)
 
+    @staticmethod
+    def _base_ff_key(key):
+        '''Strip any "+backend" suffix (e.g. "amber14+garnet" → "amber14").'''
+        return key.split('+')[0]
+
     def __getitem__(self, key):
+        key = self._base_ff_key(key)
         ffd = self._ff_dict
         if key in ffd.keys():
             return ffd[key]
@@ -98,6 +104,7 @@ class ForcefieldMgr:
             return self.load_ff(key)
 
     def ligand_db(self, key):
+        key = self._base_ff_key(key)
         db = self._ligand_dict.get(key, None)
         if db is None:
             ligand_zip = _ligand_files[key]

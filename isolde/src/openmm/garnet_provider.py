@@ -30,14 +30,31 @@ Dependencies (install once inside ChimeraX):
 No openff.toolkit or RDKit is required — a self-contained shim topology is
 built directly from ChimeraX atom/bond data.
 
-VdW note
---------
-GARNET uses a double-exponential potential internally.  This provider extracts
-GARNET's per-atom sigma/epsilon values and registers them with a standard
-Lennard-Jones ``NonbondedForce`` so that protein-ligand cross-term mixing
-(Lorentz-Berthelot) works correctly through AMBER14.  The functional form
-differs from GARNET's native potential, but the approximation is adequate for
-interactive model building.
+VdW strategy
+------------
+GARNET uses a double-exponential (DE) potential internally.  This provider
+applies a three-tier VdW strategy that preserves GARNET's native DE physics for
+ligand–ligand interactions while keeping protein–ligand cross-terms as standard
+Lennard-Jones:
+
+* **Ligand–ligand:** DE — GARNET's native ``CustomNonbondedForce``, restricted
+  to the GARNET-atom set via ``addInteractionGroup``.
+* **Protein–ligand cross-terms:** LJ — Lorentz-Berthelot mixing using GARNET's
+  sigma/epsilon values in AMBER14's ``NonbondedForce``.  This is an
+  approximation; an exact DE cross-term requires protein DE parameters.
+* **Protein–protein:** LJ — AMBER14, unchanged.
+
+Implementation note: AMBER14's ``NonbondedForce`` already computes LJ for
+ligand–ligand pairs as a side-effect.  A second ``CustomNonbondedForce``
+(``_lj_correction``) restricted to the same ligand set subtracts that LJ, so
+the net ligand–ligand VdW is DE.  This double-force pattern makes the future
+"DE everywhere" upgrade straightforward: extend both the DE force and the
+correction to all atoms, replace AMBER14 types with DE types, and delete the
+correction once the cross-terms are also DE.
+
+1-4 intra-ligand VdW remains as AMBER-style 0.5 × LJ in the ``NonbondedForce``
+exceptions (the two custom forces exclude those pairs).  This is a known
+approximation accepted for model building.
 '''
 
 from .param_provider import ForceFieldParameterisationProvider
@@ -380,11 +397,13 @@ def _garnet_system_to_ffxml(residue, system) -> str:
     # --- AtomTypes ---
     at_el = ET.SubElement(root, 'AtomTypes')
     for i, cx_a in enumerate(cx_atoms):
-        ET.SubElement(at_el, 'Type',
-            name=type_names[i],
-            cls=type_names[i],
-            element=cx_a.element.name.capitalize(),
-            mass=str(cx_a.element.mass))
+        # 'class' is a Python reserved word; pass as a positional attrib dict.
+        ET.SubElement(at_el, 'Type', {
+            'name':    type_names[i],
+            'class':   type_names[i],
+            'element': cx_a.element.name.capitalize(),
+            'mass':    str(cx_a.element.mass),
+        })
 
     # --- Residue template ---
     res_el = ET.SubElement(ET.SubElement(root, 'Residues'), 'Residue', name=rname)
@@ -474,7 +493,7 @@ class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
 
     def __init__(self, forcefield_mgr):
         super().__init__(forcefield_mgr)
-        # Session-lifetime cache: {residue_name: xml_str}
+        # Session-lifetime cache: {residue_name: {'xml': str, 'de': de_info_dict|None}}
         self._template_cache = {}
 
     def build_system(self, sim_construct, sim_params, logger=None):
@@ -495,9 +514,20 @@ class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
         '''
         3-attempt retry loop:
           0 → stale-override recovery (same as parent)
-          1 → GARNET fill-in for genuinely unparameterised ligands
+          1 → GARNET fill-in for unparameterised ligands
           2 → propagate error
+
+        GARNET is used for *all* eligible non-polymer residues, not just
+        truly novel ones.  This is achieved by pre-registering USER_ templates
+        for every eligible PT_NONE residue before ``find_residue_templates``
+        runs.  Because ISOLDE's template matching checks USER_ templates first,
+        USER_GTP beats ``BRYCE_GTP`` in ``bryce_set.xml`` (etc.) automatically.
+
+        Residues that GARNET cannot handle (unsupported elements such as Fe/Zn,
+        or trivially small molecules like water and simple ions) are skipped
+        and fall through to standard AMBER14 matching.
         '''
+        self._pre_parameterise_ligands(all_residues, ff, logger)
         from chimerax.isolde.openmm.openmm_interface import (
             find_residue_templates,
             create_openmm_topology,
@@ -532,7 +562,67 @@ class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
                     self._parameterise_unmatched(e.unmatched, ff, logger)
                     continue
                 raise
+            self._patch_garnet_vdw(system, top)
             return top, system
+
+    def _pre_parameterise_ligands(self, all_residues, forcefield, logger):
+        '''
+        Proactively run GARNET on all eligible non-polymer residues and
+        register USER_ templates so they take precedence over any AMBER14
+        core XML template (e.g. ``BRYCE_GTP`` in ``bryce_set.xml``) during
+        the subsequent ``find_residue_templates`` call.
+
+        Also clears ``isolde_template_name`` on any residue whose cached name
+        does not begin with ``USER_``; otherwise a stale AMBER14 template name
+        would bypass the USER_ check entirely.
+
+        Eligibility criteria (either condition disqualifies a residue):
+
+        * Fewer than three heavy atoms — excludes water and simple ions whose
+          AMBER14 parameters are preferred (TIP3P, ion models).
+        * Contains an element unsupported by GARNET — silently skips rather
+          than raising an error, allowing AMBER14 to handle metal cofactors.
+        '''
+        import io
+        from chimerax.atomic import Residue
+
+        for r in all_residues:
+            if r.polymer_type != Residue.PT_NONE:
+                continue
+            heavy = [a for a in r.atoms if a.element.number != 1]
+            if len(heavy) < 3:
+                continue
+
+            # Skip residues containing elements GARNET does not support.
+            if any(a.element.number not in _ELEMENT_INDICES for a in r.atoms):
+                continue
+
+            name = r.name
+
+            # Clear any stale non-USER_ template override so find_residue_templates
+            # re-evaluates and finds the USER_ template we're about to register.
+            existing = getattr(r, 'isolde_template_name', None)
+            if existing is not None and not existing.startswith('USER_'):
+                r.isolde_template_name = None
+
+            if name not in self._template_cache:
+                try:
+                    if logger is not None:
+                        logger.status(f'GARNET: parameterising {name}...')
+                    xml, de_info = self._garnet_parameterise_one(r, logger)
+                    self._template_cache[name] = {'xml': xml, 'de': de_info}
+                    if logger is not None:
+                        logger.info(f'GARNET: parameterisation complete for {name}.')
+                except Exception as exc:
+                    if logger is not None:
+                        logger.warning(
+                            f'GARNET: could not parameterise {name} ({exc}); '
+                            f'falling back to AMBER14.')
+                    continue
+
+            forcefield.loadFile(
+                io.StringIO(self._template_cache[name]['xml']),
+                resname_prefix='USER_')
 
     def _parameterise_unmatched(self, unmatched_residues, forcefield, logger):
         '''
@@ -545,26 +635,176 @@ class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
             if r.polymer_type != Residue.PT_NONE:
                 continue
             name = r.name
-            if name in self._template_cache:
-                xml = self._template_cache[name]
-            else:
+            if name not in self._template_cache:
                 if logger is not None:
                     logger.status(f'GARNET: parameterising {name}...')
-                xml = self._garnet_parameterise_one(r, logger)
-                self._template_cache[name] = xml
+                xml, de_info = self._garnet_parameterise_one(r, logger)
+                self._template_cache[name] = {'xml': xml, 'de': de_info}
                 if logger is not None:
                     logger.info(f'GARNET parameterisation complete for {name}.')
-            forcefield.loadFile(io.StringIO(xml), resname_prefix='USER_')
+            forcefield.loadFile(
+                io.StringIO(self._template_cache[name]['xml']),
+                resname_prefix='USER_')
+
+    def _patch_garnet_vdw(self, system, top):
+        '''
+        Post-process *system* to replace the approximate LJ VdW for GARNET
+        atoms with GARNET's native double-exponential (DE) potential.
+
+        Two ``CustomNonbondedForce`` objects are added, both restricted to the
+        GARNET-atom set via ``addInteractionGroup``:
+
+        1. **DE force** — GARNET's original energy expression with GARNET's
+           per-particle parameters.  Adds the correct DE interaction.
+        2. **LJ-correction force** — subtracts the LJ contribution that
+           AMBER14's ``NonbondedForce`` already computed for the same pairs
+           (using GARNET's sigma/epsilon values and Lorentz-Berthelot mixing).
+
+        Net ligand–ligand VdW = LJ (NonbondedForce) − LJ (correction) + DE = DE.
+
+        Protein–ligand and protein–protein interactions are untouched.
+
+        1-4 intra-ligand pairs are excluded from both custom forces (they appear
+        as exceptions in the ``NonbondedForce`` with 0.5× LJ scaling, which is
+        left in place as an accepted approximation).
+
+        Design note for future DE-everywhere upgrade
+        --------------------------------------------
+        To extend DE to proteins:
+        1. Assign DE parameters to protein atoms in the DE force.
+        2. Extend the LJ-correction to protein–protein and protein–ligand groups.
+        3. Once the cross-term correction is also DE, delete the correction force.
+        '''
+        from openmm.openmm import NonbondedForce, CustomNonbondedForce
+        from openmm import unit as omm_unit
+
+        # --- Identify GARNET atoms and collect their DE parameters -----------
+
+        # de_map: global_atom_index → [p0, p1, ...] per-particle DE params
+        de_map = {}
+        de_info_ref = None  # DE expression/param_names (same for all GARNET residues)
+
+        for omm_res in top.residues():
+            entry = self._template_cache.get(omm_res.name)
+            if entry is None or entry.get('de') is None:
+                continue
+            de_info = entry['de']
+            if de_info_ref is None:
+                de_info_ref = de_info
+            atoms_list = list(omm_res.atoms())
+            per_atom = de_info['per_atom']
+            for local_idx, omm_atom in enumerate(atoms_list):
+                if local_idx < len(per_atom):
+                    de_map[omm_atom.index] = per_atom[local_idx]
+
+        if not de_map or de_info_ref is None:
+            return  # No GARNET atoms in this construct
+
+        garnet_set = set(de_map.keys())
+        garnet_list = sorted(garnet_set)
+        n_atoms = system.getNumParticles()
+        n_de_params = len(de_info_ref['param_names'])
+
+        # --- Find NonbondedForce ------------------------------------------
+
+        nb_force = None
+        for force in system.getForces():
+            if isinstance(force, NonbondedForce):
+                nb_force = force
+                break
+        if nb_force is None:
+            return
+
+        # --- Collect garnet-garnet pair exclusions from NonbondedForce ------
+        # All NonbondedForce exceptions where both particles are GARNET atoms
+        # (1-2/1-3 full exclusions and 1-4 scaled exceptions) become full
+        # exclusions in the CustomNonbondedForces, leaving 1-4 VdW solely in
+        # the NonbondedForce as AMBER-style 0.5 × LJ.
+        garnet_exclusions = []
+        for i in range(nb_force.getNumExceptions()):
+            p1, p2, _chq, _sig, _eps = nb_force.getExceptionParameters(i)
+            if p1 in garnet_set and p2 in garnet_set:
+                garnet_exclusions.append((p1, p2))
+
+        # --- Extract LJ sigma/epsilon for GARNET atoms from NonbondedForce --
+        # These are the approximate values written by _garnet_system_to_ffxml.
+        lj_sigma = {}
+        lj_epsilon = {}
+        for idx in garnet_list:
+            _q, sig, eps = nb_force.getParticleParameters(idx)
+            lj_sigma[idx] = sig.value_in_unit(omm_unit.nanometer)
+            lj_epsilon[idx] = eps.value_in_unit(omm_unit.kilojoule_per_mole)
+
+        # Dummy per-particle params for non-GARNET atoms in both custom forces.
+        # These atoms are outside the interaction group and are never evaluated;
+        # the values chosen here are physically inert.
+        dummy_de = [0.3] + [0.0] * (n_de_params - 1)
+
+        # --- 1. DE CustomNonbondedForce (ligand-ligand) ----------------------
+
+        de_force = CustomNonbondedForce(de_info_ref['expression'])
+        for pname in de_info_ref['param_names']:
+            de_force.addPerParticleParameter(pname)
+        for gname, gval in de_info_ref.get('global_params', {}).items():
+            de_force.addGlobalParameter(gname, gval)
+        de_force.setNonbondedMethod(CustomNonbondedForce.NoCutoff)
+
+        for i in range(n_atoms):
+            de_force.addParticle(de_map[i] if i in de_map else dummy_de)
+
+        de_force.addInteractionGroup(garnet_list, garnet_list)
+        for p1, p2 in garnet_exclusions:
+            de_force.addExclusion(p1, p2)
+
+        system.addForce(de_force)
+
+        # --- 2. LJ-correction CustomNonbondedForce (ligand-ligand, negate) --
+        # Cancels the LJ NonbondedForce computed for GARNET-GARNET pairs so
+        # that net ligand-ligand VdW = DE only.
+        lj_corr_expr = (
+            '-4*eps_ij*((sig_ij/r)^12-(sig_ij/r)^6);'
+            'sig_ij=0.5*(sig1+sig2);'
+            'eps_ij=sqrt(eps1*eps2)'
+        )
+        corr_force = CustomNonbondedForce(lj_corr_expr)
+        corr_force.addPerParticleParameter('sig')
+        corr_force.addPerParticleParameter('eps')
+        corr_force.setNonbondedMethod(CustomNonbondedForce.NoCutoff)
+
+        for i in range(n_atoms):
+            if i in garnet_set:
+                corr_force.addParticle([lj_sigma[i], lj_epsilon[i]])
+            else:
+                corr_force.addParticle([0.3, 0.0])
+
+        corr_force.addInteractionGroup(garnet_list, garnet_list)
+        for p1, p2 in garnet_exclusions:
+            corr_force.addExclusion(p1, p2)
+
+        system.addForce(corr_force)
 
     def _garnet_parameterise_one(self, residue, logger):
         '''
-        Build shim topology → GARNET inference → ISOLDE-compatible XML string.
+        Build shim topology → GARNET inference → ISOLDE-compatible XML string
+        plus GARNET's native DE force metadata.
 
         The shim topology exposes the interface garnetff expects without
         requiring openff.toolkit or RDKit.
+
+        Returns
+        -------
+        xml : str
+            ForceField XML template.
+        de_info : dict or None
+            ``{'expression': str, 'param_names': list[str],
+               'global_params': dict[str, float], 'per_atom': list[list[float]]}``
+            where ``per_atom[i]`` are the per-particle parameters for GARNET atom
+            ``i`` in the DE force.  ``None`` if GARNET produced no
+            ``CustomNonbondedForce`` (unexpected but safe to handle).
         '''
         from garnetff import garnet
         from openmm.app import NoCutoff
+        from openmm.openmm import CustomNonbondedForce as CNBForce
 
         topology = _GarnetTopology(residue)
         system, _top_omm = garnet.topology_to_openmm_system(
@@ -572,4 +812,25 @@ class GarnetParameterisationProvider(ForceFieldParameterisationProvider):
             nonbondedMethod=NoCutoff,
             constraints=None)
 
-        return _garnet_system_to_ffxml(residue, system)
+        # Extract DE CustomNonbondedForce metadata before converting to XML.
+        de_info = None
+        for force in system.getForces():
+            if isinstance(force, CNBForce):
+                n_pp = force.getNumPerParticleParameters()
+                n_gp = force.getNumGlobalParameters()
+                de_info = {
+                    'expression':   force.getEnergyFunction(),
+                    'param_names':  [force.getPerParticleParameterName(i)
+                                     for i in range(n_pp)],
+                    'global_params': {
+                        force.getGlobalParameterName(i):
+                        force.getGlobalParameterDefaultValue(i)
+                        for i in range(n_gp)
+                    },
+                    'per_atom': [list(force.getParticleParameters(i))
+                                 for i in range(force.getNumParticles())],
+                }
+                break
+
+        xml = _garnet_system_to_ffxml(residue, system)
+        return xml, de_info
