@@ -27,11 +27,11 @@ from abc import ABC, abstractmethod
 
 
 def _garnet_available() -> bool:
-    '''True when garnetff is importable.'''
+    '''True when garnetff is importable without error.'''
     try:
         import garnetff  # noqa: F401
         return True
-    except ImportError:
+    except Exception:
         return False
 
 
@@ -42,7 +42,7 @@ def _espaloma_available() -> bool:
         from rdkit import Chem  # noqa: F401
         from openff.toolkit import Molecule  # noqa: F401
         return True
-    except ImportError:
+    except Exception:
         return False
 
 
@@ -52,7 +52,7 @@ def _openff_available() -> bool:
         from openff.toolkit import ForceField, Molecule  # noqa: F401
         from rdkit import Chem  # noqa: F401
         return True
-    except ImportError:
+    except Exception:
         return False
 
 
@@ -61,7 +61,25 @@ def _mmff_available() -> bool:
     try:
         from rdkit.Chem import rdForceFieldHelpers  # noqa: F401
         return True
-    except ImportError:
+    except Exception:
+        return False
+
+
+def _espaloma_charge_available() -> bool:
+    '''True when espaloma-charge and rdkit are both importable without error.
+
+    DGL (a dependency of espaloma-charge) ships version-specific graphbolt
+    DLLs; importing dgl raises FileNotFoundError if no DLL matches the
+    installed PyTorch version.  Catching Exception rather than ImportError
+    ensures that mismatch is treated as "not available" rather than a crash.
+    '''
+    try:
+        from .espaloma_charge_provider import _ensure_dgl_importable
+        _ensure_dgl_importable()
+        import espaloma_charge  # noqa: F401
+        from rdkit.Chem import rdForceFieldHelpers  # noqa: F401
+        return True
+    except Exception:
         return False
 
 
@@ -75,6 +93,8 @@ def available_parameterisation_backends() -> list:
         backends.append('amber14+garnet')
     if _espaloma_available():
         backends.append('amber14+espaloma')
+    if _espaloma_charge_available():
+        backends.append('amber14+espaloma-charge')
     if _openff_available():
         backends.append('amber14+openff')
     if _mmff_available():
@@ -761,6 +781,9 @@ def make_parameterisation_provider(forcefield_mgr):
     if _espaloma_available():
         from .espaloma_provider import EspalomaParameterisationProvider
         backends.append(EspalomaParameterisationProvider(forcefield_mgr))
+    if _espaloma_charge_available():
+        from .espaloma_charge_provider import EspalomaChargeParameterisationProvider
+        backends.append(EspalomaChargeParameterisationProvider(forcefield_mgr))
     if _openff_available():
         from .openff_provider import OpenFFParameterisationProvider
         backends.append(OpenFFParameterisationProvider(forcefield_mgr))

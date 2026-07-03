@@ -51,7 +51,7 @@ class ForceFieldDialog(UI_Panel_Base):
 
     def _populate_combo_box(self):
         from chimerax.isolde.openmm.param_provider import (
-            _garnet_available, _espaloma_available,
+            _garnet_available, _espaloma_available, _espaloma_charge_available,
             _openff_available, _mmff_available)
 
         sim_params = self.session.isolde.sim_params
@@ -62,7 +62,8 @@ class ForceFieldDialog(UI_Panel_Base):
         # All backends in display order; unavailable items are shown greyed-out
         # so users know the option exists even when dependencies are absent.
         all_backends = ['amber14', 'amber14+garnet', 'amber14+espaloma',
-                        'amber14+openff', 'amber14+mmff', 'charmm36']
+                        'amber14+espaloma-charge', 'amber14+openff',
+                        'amber14+mmff', 'charmm36']
 
         _disabled = {
             'amber14+garnet': (not _garnet_available(),
@@ -73,6 +74,12 @@ class ForceFieldDialog(UI_Panel_Base):
             'amber14+espaloma': (not _espaloma_available(),
                 'Espaloma is not installed.\n'
                 'Requires conda — see the ISOLDE docs.'),
+            'amber14+espaloma-charge': (not _espaloma_charge_available(),
+                'espaloma-charge is not installed.\n'
+                'GNN charges (AM1-BCC quality) + MMFF94 bonded terms.\n'
+                'To enable, run in an admin cmd:\n'
+                '  python.exe -m pip install espaloma-charge dgl\n'
+                'then restart ChimeraX.'),
             'amber14+openff': (not _openff_available(),
                 'OpenFF Toolkit is not installed.\n'
                 'To enable, run inside ChimeraX:\n'
@@ -103,10 +110,11 @@ class ForceFieldDialog(UI_Panel_Base):
     def _combo_changed_cb(self, *_):
         chosen = self.combo_box.currentText()
         from chimerax.isolde.openmm.param_provider import (
-            _garnet_available, _espaloma_available,
+            _garnet_available, _espaloma_available, _espaloma_charge_available,
             _openff_available, _mmff_available)
-        if chosen == 'amber14+garnet'   and not _garnet_available():   return
-        if chosen == 'amber14+espaloma' and not _espaloma_available(): return
-        if chosen == 'amber14+openff'   and not _openff_available():   return
-        if chosen == 'amber14+mmff'     and not _mmff_available():     return
+        if chosen == 'amber14+garnet'          and not _garnet_available():          return
+        if chosen == 'amber14+espaloma'        and not _espaloma_available():        return
+        if chosen == 'amber14+espaloma-charge' and not _espaloma_charge_available(): return
+        if chosen == 'amber14+openff'          and not _openff_available():          return
+        if chosen == 'amber14+mmff'            and not _mmff_available():            return
         self.session.isolde.sim_params.forcefield = chosen

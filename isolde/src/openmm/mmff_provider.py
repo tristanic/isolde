@@ -25,6 +25,14 @@ _KCAL_TO_KJ  = 4.184          # 1 kcal/mol = 4.184 kJ/mol
 _ANG_TO_NM   = 0.1            # 1 Å = 0.1 nm
 _DEG_TO_RAD  = math.pi / 180.0
 
+# RDKit's MMFFMolProperties returns the *raw* MMFF94 force constants: bond kb in
+# md/Å (millidyne/Å) and angle ka in md·Å/rad², NOT kcal/mol.  MMFF defines the
+# harmonic energy as E = (kb/2)·143.9325·Δr² (and the analogous angle form), so
+# this constant converts the raw force constant into kcal·mol⁻¹ per (Å² or rad²)
+# before the usual kcal→kJ / Å→nm conversions.  Omitting it makes every bond and
+# angle ~144x too weak.  (Torsion V1/V2/V3 are already in kcal/mol — no factor.)
+_MDYNE_A_TO_KCAL = 143.9325
+
 # Per-element LJ parameters (sigma/nm, epsilon/kJ·mol⁻¹) derived from GAFF2.
 # Used for protein–ligand cross-term mixing via Lorentz-Berthelot rules.
 _ELEMENT_LJ = {
@@ -137,16 +145,18 @@ def _mmff_system_to_ffxml(residue, mol) -> str:
             type=type_names[i], sigma=str(sigma[i]), epsilon=str(epsilon[i]))
 
     # ---- HarmonicBondForce --------------------------------------------------
-    # MMFF94: E = (kb/2)*Δr^2  with kb in kcal/mol/Å²
-    # OpenMM: E = (k/2)*Δr^2  with k in kJ/mol/nm²
+    # GetMMFFBondStretchParams -> (bondType, kb, r0); kb in md/Å, r0 in Å.
+    # MMFF94: E = (143.9325*kb/2)*Δr²  (kcal/mol, Δr in Å)
+    # OpenMM: E = (k/2)*Δr²  with k in kJ/mol/nm²
     bf_el = None
     for bond in mol.GetBonds():
         i, j = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-        bp = rdForceFieldHelpers.MMFFGetBondStretchParams(mol, props, i, j)
+        bp = props.GetMMFFBondStretchParams(mol, i, j)
         if bp is None:
             continue
-        k_kJ_nm2 = bp[0] * _KCAL_TO_KJ / (_ANG_TO_NM ** 2)
-        r0_nm    = bp[1] * _ANG_TO_NM
+        kb, r0 = bp[1], bp[2]
+        k_kJ_nm2 = kb * _MDYNE_A_TO_KCAL * _KCAL_TO_KJ / (_ANG_TO_NM ** 2)
+        r0_nm    = r0 * _ANG_TO_NM
         if bf_el is None:
             bf_el = ET.SubElement(root, 'HarmonicBondForce')
         ET.SubElement(bf_el, 'Bond',
@@ -154,8 +164,10 @@ def _mmff_system_to_ffxml(residue, mol) -> str:
             length=str(r0_nm), k=str(k_kJ_nm2))
 
     # ---- HarmonicAngleForce -------------------------------------------------
-    # MMFF94 returns ka in kcal/mol/rad² and theta0 in degrees.
-    # OpenMM: E = (k/2)*Δθ^2 with k in kJ/mol/rad², θ in rad.
+    # GetMMFFAngleBendParams -> (angleType, ka, theta0); ka in md·Å/rad²,
+    # theta0 in degrees.  MMFF's harmonic term reduces to
+    # E = (143.9325*ka/2)*Δθ_rad² (kcal/mol), so the same md->kcal constant
+    # applies.  OpenMM: E = (k/2)*Δθ² with k in kJ/mol/rad², θ in rad.
     af_el = None
     for j in range(n_atoms):
         nbrs = [b.GetOtherAtomIdx(j)
@@ -164,11 +176,12 @@ def _mmff_system_to_ffxml(residue, mol) -> str:
             i = nbrs[ia]
             for ib in range(ia + 1, len(nbrs)):
                 k = nbrs[ib]
-                ap = rdForceFieldHelpers.MMFFGetAngleBendParams(mol, props, i, j, k)
+                ap = props.GetMMFFAngleBendParams(mol, i, j, k)
                 if ap is None:
                     continue
-                ka_kJ  = ap[0] * _KCAL_TO_KJ
-                th0_rad = ap[1] * _DEG_TO_RAD
+                ka, theta0 = ap[1], ap[2]
+                ka_kJ   = ka * _MDYNE_A_TO_KCAL * _KCAL_TO_KJ
+                th0_rad = theta0 * _DEG_TO_RAD
                 if af_el is None:
                     af_el = ET.SubElement(root, 'HarmonicAngleForce')
                 ET.SubElement(af_el, 'Angle',
@@ -198,14 +211,11 @@ def _mmff_system_to_ffxml(residue, mol) -> str:
                 if key in seen_torsions:
                     continue
                 seen_torsions.add(key)
-                tp = rdForceFieldHelpers.MMFFGetTorsionParams(mol, props, i, j, k, l)
+                tp = props.GetMMFFTorsionParams(mol, i, j, k, l)
                 if tp is None:
                     continue
-                # RDKit may return (v1, v2, v3) or (torsion_type, v1, v2, v3)
-                if len(tp) == 4:
-                    v1, v2, v3 = tp[1], tp[2], tp[3]
-                else:
-                    v1, v2, v3 = tp[0], tp[1], tp[2]
+                # GetMMFFTorsionParams -> (torsionType, V1, V2, V3); V in kcal/mol.
+                v1, v2, v3 = tp[1], tp[2], tp[3]
                 if tf_el is None:
                     tf_el = ET.SubElement(root, 'PeriodicTorsionForce')
                 for v, n_per, base_phase in ((v1, 1, 0.0),
