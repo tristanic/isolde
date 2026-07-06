@@ -100,8 +100,14 @@ class MapSettingsDialog(UI_Panel_Base):
         self.container = collapse_area
         mf = self.main_frame
         self._current_maps = []
-        ml = self.main_layout = DefaultHLayout()
+        ml = self.main_layout = DefaultVLayout()
         self._first_rebuild=True
+
+        # Compact row above the tree for dataset-level (whole map-set) controls.
+        # Empty by default; subclasses with such controls override populate_header.
+        self.header_layout = DefaultHLayout()
+        ml.addLayout(self.header_layout)
+        self.populate_header(self.header_layout)
 
         self.tree = tree = QTreeWidget(mf)
         ml.addWidget(tree)
@@ -143,6 +149,12 @@ class MapSettingsDialog(UI_Panel_Base):
         self._temporary_handlers = []
         self.rebuild_tree()
 
+    def populate_header(self, layout):
+        '''
+        Override in derived classes to add dataset-level (whole map-set) controls
+        to the compact row above the tree. Called once during __init__.
+        '''
+        pass
 
     def _rebuild_tree_if_necessary(self, trigger_name, data):
         from chimerax.core.models import MODEL_NAME_CHANGED, MODEL_ID_CHANGED
@@ -411,6 +423,85 @@ class MapSettingsDialog(UI_Panel_Base):
 
 class XmapSettingsDialogBase(MapSettingsDialog):
 
+    def __init__(self, *args, **kwargs):
+        # Dataset-wide oversampling control lives in the header row (a MapMgr-wide
+        # setting shared by every crystallographic map, so not a per-map column).
+        self._current_map_mgr = None
+        self._oversampling_spinbox = None
+        super().__init__(*args, **kwargs)
+
+    def populate_header(self, layout):
+        '''
+        Dataset-wide oversampling (Shannon) rate. It is a MapMgr-wide setting (one
+        value for the whole crystallographic dataset), so it lives here as a single
+        compact control above the tree rather than as a per-map column. Both the
+        live and precalculated crystallographic panels share this, and because they
+        share the one MapMgr, a change in either applies to both.
+        '''
+        from Qt.QtWidgets import QLabel
+        layout.addStretch()
+        lbl = QLabel('Grid oversampling:')
+        lbl.setToolTip('<span>Real-space grid oversampling (Shannon) rate for this '
+            'dataset. Higher is smoother but costs memory and time. Cannot be '
+            'changed while a simulation is running.</span>')
+        layout.addWidget(lbl)
+        sb = self._oversampling_spinbox = QDoubleSpinBox()
+        sb.setKeyboardTracking(False)
+        sb.setMinimumWidth(55)
+        sb.setMinimumHeight(20)
+        # Below 1.0 the grid undersamples the data; much above 5.0 the grid (and
+        # every re-FFT / mask) becomes punishingly heavy.
+        sb.setRange(1.0, 5.0)
+        sb.setSingleStep(0.5)
+        sb.setDecimals(2)
+        sb.setToolTip(lbl.toolTip())
+        sb.setEnabled(False)
+        def set_oversampling(value, box=sb):
+            mgr = self._current_map_mgr
+            if mgr is None or value == mgr.oversampling_rate:
+                return
+            from chimerax.core.errors import UserError
+            try:
+                mgr.set_oversampling_rate(value)
+            except UserError as e:
+                self.session.logger.warning(str(e))
+                with slot_disconnected(box.valueChanged, set_oversampling):
+                    box.setValue(mgr.oversampling_rate)
+        self._set_oversampling = set_oversampling
+        sb.valueChanged.connect(set_oversampling)
+        layout.addWidget(sb)
+        # Re-gridding would corrupt the fixed-size GPU density box, so grey the
+        # control out for the whole simulation (persistent handlers: the control
+        # itself survives tree rebuilds).
+        ith = self._isolde_trigger_handlers
+        ith.append(self.isolde.triggers.add_handler(self.isolde.SIMULATION_STARTED,
+            lambda *_: sb.setEnabled(False)))
+        ith.append(self.isolde.triggers.add_handler(self.isolde.SIMULATION_TERMINATED,
+            lambda *_: self._refresh_oversampling_control()))
+
+    def _refresh_oversampling_control(self):
+        sb = self._oversampling_spinbox
+        if sb is None:
+            return
+        # No model selected yet -> nothing to query (get_map_mgr(None) would raise).
+        model = self.isolde.selected_model
+        if model is None:
+            self._current_map_mgr = None
+            sb.setEnabled(False)
+            return
+        from chimerax.clipper import get_map_mgr
+        mgr = self._current_map_mgr = get_map_mgr(model)
+        if mgr is None or not hasattr(mgr, 'oversampling_rate'):
+            sb.setEnabled(False)
+            return
+        with slot_disconnected(sb.valueChanged, self._set_oversampling):
+            sb.setValue(mgr.oversampling_rate)
+        sb.setEnabled(not mgr.oversampling_change_blocked
+            and not self.isolde.simulation_running)
+
+    def rebuild_tree(self):
+        super().rebuild_tree()
+        self._refresh_oversampling_control()
 
     def init_tree_structure(self, mapsets):
         ret = {}
@@ -442,6 +533,7 @@ class XmapSettingsDialogBase(MapSettingsDialog):
         self.add_difference_map_checkbox(item, self.DIFF_COLUMN, map)
         self.add_mdff_checkbox(item, self.MDFF_COLUMN, map)
         self.add_weight_spinbox(item, self.WEIGHT_COLUMN, map)
+        return item
 
 
 
@@ -461,10 +553,13 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
     DIFF_COLUMN=    6
     MDFF_COLUMN=    7
     WEIGHT_COLUMN=  8
+    BSHARP_COLUMN=  9
 
     def __init__(self, *args, **kwargs):
         self._labels[self.LIVE_COLUMN] = "Live?"
         self._tooltips[self.LIVE_COLUMN] = '<span>Automatically recalculate structure factors when atom coords or properties change?</span>'
+        self._labels[self.BSHARP_COLUMN] = "Sharpen (B)"
+        self._tooltips[self.BSHARP_COLUMN] = '<span>Sharpening (positive) / smoothing (negative) B-factor applied to this map. Locked for the MDFF fitting map and difference maps.</span>'
         super().__init__(*args, **kwargs)
 
     def init_tree_structure(self, mapsets):
@@ -480,8 +575,49 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
             ms.setText(self.ID_COLUMN, mapset.id_string)
             self.add_live_recalc_checkbox(ms, self.LIVE_COLUMN, mapset)
             ret[mapset.name] = (ms, maps)
-        return ret            
+        return ret
 
+    def add_tree_entry(self, parent, map, strip_name_prefix=None):
+        item = super().add_tree_entry(parent, map, strip_name_prefix=strip_name_prefix)
+        self.add_bsharp_spinbox(item, self.BSHARP_COLUMN, map)
+        return item
+
+    def add_bsharp_spinbox(self, item, column, map):
+        if not hasattr(map, 'b_sharp'):
+            return
+        w = QWidget()
+        l = DefaultHLayout()
+        w.setLayout(l)
+        l.addStretch()
+        sb = QDoubleSpinBox()
+        sb.setKeyboardTracking(False)
+        sb.setMinimumWidth(50)
+        sb.setMinimumHeight(20)
+        sb.setRange(-500.0, 500.0)
+        sb.setSingleStep(10.0)
+        sb.setDecimals(1)
+        sb.setValue(map.b_sharp)
+        adjustable = getattr(map, 'bsharp_adjustable', not map.is_difference_map)
+        if not adjustable:
+            # Hard-locked: the MDFF fitting target or a difference map. Show the
+            # fixed value but refuse edits (Clipper's setter would raise anyway).
+            sb.setEnabled(False)
+            sb.setToolTip('<span>Sharpening B-factor is locked for this map '
+                '(MDFF fitting target or difference map).</span>')
+        else:
+            def set_bsharp(value, m=map, box=sb):
+                try:
+                    m.b_sharp = value
+                except RuntimeError as e:
+                    self.session.logger.warning(str(e))
+                    with slot_disconnected(box.valueChanged, set_bsharp):
+                        box.setValue(m.b_sharp)
+            # Sharpening a non-fitting map mid-sim is harmless (the MDFF fitting
+            # target is separately hard-locked), so this stays editable during a sim.
+            sb.valueChanged.connect(set_bsharp)
+        l.addWidget(sb)
+        l.addStretch()
+        self.tree.setItemWidget(item, column, w)
 
     def add_live_recalc_checkbox(self, item, column, mapset):
         w = QWidget()
