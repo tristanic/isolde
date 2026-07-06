@@ -805,3 +805,5 @@ def _register_isolde_commands(logger):
     register_validate_commands(logger)
     from chimerax.isolde.refine.bfactor_refine import register_bfactor_refine_commands
     register_bfactor_refine_commands(logger)
+    from chimerax.isolde.refine.rotafit import register_rotafit_command
+    register_rotafit_command(logger)
