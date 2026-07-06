@@ -1144,7 +1144,7 @@ class SimHandler:
         ''' Get/set the simulation temperature in Kelvin. '''
         if not self.sim_running:
             return self._temperature
-        t = self._simulation.integrator.getTemperature()
+        t = self._main_integrator.getTemperature()
         return t.value_in_unit(defaults.OPENMM_TEMPERATURE_UNIT)
 
     @temperature.setter
