@@ -150,6 +150,13 @@ class _Defaults:
         'SMOOTHING_ALPHA_MAX':          1.0,
         'SMOOTHING_ALPHA_MIN':          0.01,
 
+        ###
+        # User interface
+        ###
+        # Startup experience level: 0=Default, 1=Advanced, 2=Developer
+        # (matches ExpertModeSelector in ui/ui_base.py)
+        'EXPERIENCE_LEVEL':             0,
+
 
         ###
         # Constants specific to ChimeraX - lengths in Angstroms beyond this point!
