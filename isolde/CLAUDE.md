@@ -59,6 +59,20 @@ The build preprocesses `pyproject.toml.in` via `prep_toml.py` before invoking th
 
 There is one test file: `isolde/src/tests/test_simulation.py` (`SimTester` class). Tests are run manually inside ChimeraX — there is no pytest runner or CI pipeline. When making changes, load a structure in ChimeraX and exercise the affected feature interactively.
 
+**Do NOT try to test ISOLDE (or Clipper map setup) headless via `--nogui` or
+`--offscreen`.** It does not work and is not worth attempting:
+- `isolde start` explicitly refuses non-GUI mode (`cmd.py`: *"ISOLDE currently
+  requires ChimeraX to be in GUI mode"*), so `session.isolde` is never created.
+- Even constructing the map layer directly, Clipper's `SymmetryManager` enables
+  spotlight mode on model-add, which calls `camera.camera(session, 'ortho')` →
+  `view.render.opengl_context` is `None` with no live GL context (true for both
+  `--nogui` and `--offscreen` on this platform) → `AttributeError`. Map display,
+  contouring and surface upload all assume a real GL context too.
+
+Verification is **interactive in the GUI**. For scripted/agentic control of an
+*already-running* GUI ISOLDE, the MCP control surface is an option
+(`isolde/src/mcp/README.md`). Otherwise, ask the user to run the manual steps.
+
 ---
 
 ## Code style

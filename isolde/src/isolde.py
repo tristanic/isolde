@@ -591,7 +591,12 @@ class Isolde():
             exclude_free_reflections=True,
             fill_with_fcalc = True,
             exclude_missing_reflections=True,
-            display=False)
+            display=False,
+            # Lock the sharpening B-factor: this is the fixed MDFF fitting target,
+            # so "clipper bsharp" and the b_sharp setter must refuse to change it
+            # (a mid-sim re-sharpen would silently alter the fitting potential).
+            bsharp_adjustable=False,
+            bsharp_designated=False)
         return mdff_p
 
     @property
@@ -665,6 +670,12 @@ class Isolde():
                 if not len(mdff_ps):
                     mdff_ps = [self._add_mdff_potential_to_live_xmapset(xmapset)]
                 for mdff_p in mdff_ps:
+                    # Make sure the fitting map's sharpening B-factor stays locked.
+                    # Sessions saved by an older ISOLDE created it without the lock,
+                    # and Clipper restores bsharp_adjustable from the snapshot, so a
+                    # pre-lock map would come back adjustable unless we re-lock it here.
+                    if hasattr(mdff_p, 'bsharp_adjustable'):
+                        mdff_p.bsharp_adjustable = False
                     mdff_mgrs.append(get_mdff_mgr(model, mdff_p, create=True))
 
         for v in mgr.all_maps:
@@ -1012,6 +1023,17 @@ class Isolde():
         '''
         self.session.logger.status('')
         self._set_right_mouse_mode_tug_atom()
+        # Block runtime oversampling-rate changes for the lifetime of the sim: a
+        # re-grid would change the map array shapes and corrupt the fixed-size
+        # density box held on the GPU. Keep a handle to the exact manager we
+        # locked so the matching release in _sim_end_cb hits the same object even
+        # if the selected model changes or is deleted mid-sim.
+        self._oversampling_lock_mgr = None
+        from chimerax.clipper import get_map_mgr
+        mmgr = get_map_mgr(self.selected_model)
+        if mmgr is not None and hasattr(mmgr, 'block_oversampling_changes'):
+            mmgr.block_oversampling_changes('ISOLDE simulation')
+            self._oversampling_lock_mgr = mmgr
         self.triggers.activate_trigger(self.SIMULATION_STARTED, None)
         sh = self.sim_handler
         sh.triggers.add_handler('sim terminated', self._sim_end_cb)
@@ -1025,6 +1047,21 @@ class Isolde():
         if self.gui_mode:
             from chimerax.mouse_modes import TranslateMouseMode
             self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
+        # Release the oversampling-rate lock taken in _sim_start_cb *before* firing
+        # SIMULATION_TERMINATED, so listeners (e.g. the map-settings GUI, which
+        # re-enables its oversampling control on that trigger) see the lock already
+        # released. Symmetric with _sim_start_cb, which locks before SIMULATION_STARTED.
+        # Clearing the handle first makes a second _sim_end_cb call a no-op; the mgr
+        # is None on start-time failure paths (where _sim_start_cb never ran), so
+        # releasing is safe in every case.
+        mmgr = getattr(self, '_oversampling_lock_mgr', None)
+        if mmgr is not None:
+            self._oversampling_lock_mgr = None
+            if not getattr(mmgr, 'deleted', False):
+                try:
+                    mmgr.allow_oversampling_changes('ISOLDE simulation')
+                except Exception:
+                    pass
         self.triggers.activate_trigger(self.SIMULATION_TERMINATED, reason)
         m = self.selected_model
         from .openmm.openmm_interface import SimHandler
