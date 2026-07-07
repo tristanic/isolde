@@ -33,6 +33,15 @@ def register_template_name_attr(session):
     Residue.register_attr(session, 'isolde_template_name',
         'isolde', attr_type=str, can_return_none=True)
 
+def register_amber_type_cache_attrs(session):
+    from chimerax.atomic import Atom, Residue
+    Atom.register_attr(session, 'isolde_amber_type',
+        'isolde', attr_type=str, can_return_none=True)
+    Atom.register_attr(session, 'isolde_amber_params',
+        'isolde', attr_type=str, can_return_none=True)
+    Residue.register_attr(session, 'isolde_amber_cache_key',
+        'isolde', attr_type=str, can_return_none=True)
+
 
 __version__ = "1.13.dev0"
 
@@ -51,6 +60,7 @@ class _MyAPI(BundleAPI):
         register_domain_cluster_attr(session)
         register_model_isolde_init_attr(session)
         register_template_name_attr(session)
+        register_amber_type_cache_attrs(session)
         from . import settings
         settings.basic_settings = settings._IsoldeBasicSettings(session, 'isolde')
         settings.color_settings = settings._IsoldeColorSettings(session, 'isolde')
@@ -58,6 +68,15 @@ class _MyAPI(BundleAPI):
         if session.ui.is_gui:
             from .toolbar import ToolbarButtonMgr
             session._isolde_tb = ToolbarButtonMgr(session)
+            # Register the ISOLDE settings page. On a cold start the main window
+            # doesn't exist yet (it's built after bundle initialisation), so defer
+            # to the UI 'ready' trigger; if ISOLDE is (re)installed into an already-
+            # running session that trigger has already fired, so register now.
+            if session.ui.main_window is not None:
+                settings.register_settings_options(session)
+            else:
+                session.ui.triggers.add_handler('ready', lambda *args, ses=session:
+                    settings.register_settings_options(ses))
 
     @staticmethod
     def get_class(class_name):

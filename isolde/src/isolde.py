@@ -187,7 +187,9 @@ class Isolde():
         sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._sim_param_changed_cb)
 
         from .openmm.forcefields import ForcefieldMgr
-        ffmgr = self._ff_mgr = ForcefieldMgr(self.session)
+        from .openmm.param_provider import make_parameterisation_provider
+        ffmgr = ForcefieldMgr(self.session)
+        self._param_provider = make_parameterisation_provider(ffmgr)
 
         self._status = self.session.logger.status
 
@@ -340,8 +342,14 @@ class Isolde():
         return self.session.ui.is_gui
 
     @property
+    def param_provider(self):
+        '''The active :class:`~chimerax.isolde.openmm.param_provider.ParameterisationProvider`.'''
+        return self._param_provider
+
+    @property
     def forcefield_mgr(self):
-        return self._ff_mgr
+        '''Backward-compat shim: returns the :class:`ForcefieldMgr` inside the provider.'''
+        return self._param_provider.forcefield_mgr
 
 
 
@@ -710,6 +718,8 @@ class Isolde():
     ####
 
     def _set_right_mouse_mode_tug_atom(self, *_):
+        if not self.gui_mode:
+            return
         from chimerax.core.commands import run
         run(self.session, 'ui mousemode right "isolde tug atom"', log=False)
 
@@ -1034,8 +1044,9 @@ class Isolde():
     def _sim_end_cb(self, trigger_name, reason):
         for d in self._haptic_devices:
             d.cleanup()
-        from chimerax.mouse_modes import TranslateMouseMode
-        self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
+        if self.gui_mode:
+            from chimerax.mouse_modes import TranslateMouseMode
+            self.session.ui.mouse_modes.bind_mouse_mode('right', [], TranslateMouseMode(self.session))
         # Release the oversampling-rate lock taken in _sim_start_cb *before* firing
         # SIMULATION_TERMINATED, so listeners (e.g. the map-settings GUI, which
         # re-enables its oversampling control on that trigger) see the lock already
@@ -1059,8 +1070,9 @@ class Isolde():
             self.session.logger.info('ISOLDE: model deleted during running simulation.')
             return
 
-        from chimerax.core.commands import run
-        run(self.session, f'clipper spot #{self.selected_model.id_string}', log=False)
+        if self.gui_mode:
+            from chimerax.core.commands import run
+            run(self.session, f'clipper spot #{self.selected_model.id_string}', log=False)
         from chimerax.clipper import get_map_mgr
         mmgr = get_map_mgr(m)
         if mmgr is not None:

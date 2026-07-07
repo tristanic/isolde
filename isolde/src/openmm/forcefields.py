@@ -83,7 +83,13 @@ class ForcefieldMgr:
         for f in glob.glob(os.path.join(ff_dir, '*.pickle')):
             os.remove(f)
 
+    @staticmethod
+    def _base_ff_key(key):
+        '''Strip any "+backend" suffix (e.g. "amber14+garnet" → "amber14").'''
+        return key.split('+')[0]
+
     def __getitem__(self, key):
+        key = self._base_ff_key(key)
         ffd = self._ff_dict
         if key in ffd.keys():
             return ffd[key]
@@ -98,6 +104,7 @@ class ForcefieldMgr:
             return self.load_ff(key)
 
     def ligand_db(self, key):
+        key = self._base_ff_key(key)
         db = self._ligand_dict.get(key, None)
         if db is None:
             ligand_zip = _ligand_files[key]
@@ -165,7 +172,7 @@ class ForcefieldMgr:
 from openmm.app import ForceField as _ForceField
 class ForceField(_ForceField):
     def assignTemplates(self, topology, ignoreExternalBonds=False,
-            explicit_templates={}):
+            explicit_templates={}, residues=None):
         '''
         Parameters
         ----------
@@ -178,6 +185,9 @@ class ForceField(_ForceField):
         explicit_templates: dict={}
             An optional {residue: template_name} dict specifying the templates to
             use for particular residues
+        residues: iterable of openmm `Residue`, optional
+            If given, restrict matching to just these topology residues (e.g. a
+            cache-miss subset) rather than every residue in the topology.
 
 
         Returns three items:
@@ -198,7 +208,7 @@ class ForceField(_ForceField):
         unmatched = []
 
         templateSignatures = self._templateSignatures
-        for res in topology.residues():
+        for res in (residues if residues is not None else topology.residues()):
             sig = _createResidueSignature([atom.element for atom in res.atoms()])
             explicit = explicit_templates.get(res, None)
             if explicit:
@@ -237,6 +247,10 @@ class ForceField(_ForceField):
             template.graph = self.template_graph(template)
         else:
             template.graph = None
+        # Bumped on every template registration (including runtime loadFile()
+        # calls) so cached per-atom AMBER types can detect when a new template
+        # might change matching for residues that were previously unambiguous.
+        self._isolde_template_generation = getattr(self, '_isolde_template_generation', 0) + 1
 
     @staticmethod
     def residue_graph(residue):
