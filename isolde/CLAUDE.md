@@ -57,7 +57,31 @@ The build preprocesses `pyproject.toml.in` via `prep_toml.py` before invoking th
 
 ## Testing
 
-There is one test file: `isolde/src/tests/test_simulation.py` (`SimTester` class). Tests are run manually inside ChimeraX — there is no pytest runner or CI pipeline. When making changes, load a structure in ChimeraX and exercise the affected feature interactively.
+There is no pytest runner or CI pipeline. Tests live in `isolde/src/tests/` and
+run inside ChimeraX. Two kinds:
+
+- **Self-running headless tests** follow a convention: a
+  `if session is not None: run(session)` footer (ChimeraX injects `session`
+  under `--script`), `run()` prints `ALL PASS` on success, and failures call a
+  `_fail()` helper that raises `SystemExit`. Run one directly:
+
+  ```bat
+  run_chimerax.bat --nogui --exit --script src/tests/test_mmff_parameterisation.py
+  ```
+
+  `run_tests.bat` (repo root) discovers every `src/tests/test_*.py`, runs each
+  self-running test headlessly, and reports pass/fail per file — it judges
+  success by the `ALL PASS` sentinel in the output (a `SystemExit` from a
+  ChimeraX `--script` does not reliably surface as a process exit code). Files
+  with no `ALL PASS` sentinel are skipped, not failed. Examples:
+  `test_mmff_parameterisation.py`, `test_atom_deletion_robustness.py`.
+
+- **Manual/interactive harness:** `test_simulation.py` (`SimTester` class) is
+  driven by hand inside a GUI ChimeraX session; it has no headless footer and is
+  skipped by `run_tests.bat`.
+
+When making changes, also load a structure in ChimeraX and exercise the affected
+feature interactively.
 
 **Do NOT try to test ISOLDE (or Clipper map setup) headless via `--nogui` or
 `--offscreen`.** It does not work and is not worth attempting:
@@ -107,6 +131,48 @@ Do **not** modify the following without an explicit instruction to do so. They c
 
 ---
 
+## Optional ML / small-molecule parameterisation backends
+
+ISOLDE can parameterise non-polymer ligands with several optional backends,
+selected via `sim_params.forcefield` and surfaced in the **General → Forcefield**
+panel: `amber14+garnet`, `amber14+espaloma`, `amber14+espaloma-charge`,
+`amber14+openff`, `amber14+mmff`. All are built on
+`param_provider.LigandBackedParameterisationProvider` (AMBER14 for standard
+residues, the backend for ligands); `make_parameterisation_provider()` picks the
+provider(s) whose dependencies import, and greys out the rest in the UI.
+
+**Availability probes must catch `Exception`, not just `ImportError`.** These
+backends pull in native-extension stacks (torch, DGL, rdkit's C++ core) that
+fail on version mismatch with `OSError`/`FileNotFoundError`/`RuntimeError` —
+none of which subclass `ImportError`. A probe that only catches `ImportError`
+will crash ISOLDE at startup instead of cleanly greying-out the backend. See the
+`_*_available()` helpers in `param_provider.py`.
+
+**Layered-failure signature of "pip ML lib vs. the host's pinned torch."** When
+integrating a pip-installed ML dependency against ChimeraX's own (newer) torch,
+expect failures to surface one layer at a time, each invisible until the prior
+one is cleared — so test *import*, then *runtime*, then the *specific code path*
+as separate gates:
+1. **Import of a native lib fails** (e.g. DGL's `graphbolt` has no build for the
+   installed torch) → widen availability probes to `Exception`; if the failing
+   subsystem is unused, bypass it (see `espaloma_charge_provider._ensure_dgl_importable`,
+   which stubs `dgl.graphbolt` in `sys.modules` so DGL's eager import chain is
+   satisfied without executing the broken subpackage).
+2. **A transitive dep's API was removed** (e.g. `torchdata.datapipes`, gone in
+   torchdata ≥ 0.10) → the eagerly-imported subpackage is the real problem;
+   bypass it rather than chasing the leaf import.
+3. **A serialization/policy change bites at runtime** (e.g. PyTorch ≥ 2.6
+   defaults `torch.load` to `weights_only=True`, rejecting pickled `nn.Module`
+   checkpoints) → a runtime-only failure that import-testing cannot catch, which
+   is exactly why per-stage smoke tests matter.
+
+**Charged ligands:** the rdkit-based providers infer bond orders from 3D
+geometry with `DetermineBondOrders(mol, charge=0)` — they assume a **neutral**
+ligand. Charged species (e.g. GTP at −8) fail bond perception and fall back to
+AMBER14. This is a known limitation, not a bug; the fallback is safe.
+
+---
+
 ## Live editing: atoms and residues are never stable
 
 The user can add or delete atoms/residues (and bonds) at essentially any point during an ISOLDE session — via ChimeraX's own editing commands, ISOLDE's model-building tools, or interactively mid-simulation. `Atom`/`Residue`/`Bond` objects are thin Python wrappers over C++ objects; deleting the underlying structure does not (by itself) stop a stale Python reference from existing. Dereferencing a deleted atomic object does not reliably raise a catchable Python exception — it can crash ChimeraX outright (null/dangling pointer read), which is far worse than an unhandled exception.
@@ -136,16 +202,26 @@ Guidance for any code (existing or new) that touches atomic objects:
 
 ## Change summaries
 
-When summarising a set of file changes at the end of a task, use a three-column table:
+When summarising a set of file changes at the end of a task, use a three-column table (the third column
+header is left blank):
 
-| File | Status | >5 |
+| File | Status |  |
 |---|---|---|
-| `src/foo.py` | New | ✓ |
-| `src/bar.py` | 1-line fix | |
+| `src/foo.py` | New | *** |
+| `src/qux.py` | Refactor | ** |
+| `src/baz.py` | Added guard clause | * |
+| `src/bar.py` | 1-line fix |  |
 
 - **File** — path relative to the working directory, as a markdown link.
 - **Status** — plain-English description of what changed (e.g. "New", "Boot provider swapped", "CMAP fix").
-- **>5** — contains a ✓ if more than 5 lines were substantively added or changed. Purely **moved** code counts as zero change regardless of line count.
+- **(third column, unlabelled)** — a magnitude marker for how big the change was. Let *N* be the number
+  of lines substantively added or changed in the file (purely **moved** code counts as zero regardless of
+  line count). Mark it with asterisks on a base-3 scale — i.e. **⌊log₃ N⌋ asterisks**:
+  - *N* < 3 → leave blank
+  - 3 ≤ *N* < 9 → `*`
+  - 9 ≤ *N* < 27 → `**`
+  - 27 ≤ *N* < 81 → `***`
+  - …and so on, adding one asterisk at each successive power of 3.
 
 ---
 
