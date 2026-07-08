@@ -7,8 +7,8 @@ REM
 REM A "self-contained" test follows the repo convention: it runs itself when
 REM ChimeraX injects `session` (the `if session is not None: run(session)`
 REM footer) and prints "ALL PASS" on success / calls _fail() (which raises
-REM SystemExit) otherwise. See test_mmff_parameterisation.py and
-REM test_atom_deletion_robustness.py for the pattern.
+REM SystemExit) otherwise. See test_session_roundtrip.py and
+REM test_cmd_surface.py for the pattern.
 REM
 REM Files without an "ALL PASS" sentinel are SKIPPED, not failed -- e.g.
 REM test_simulation.py is the interactive SimTester harness (CLAUDE.md: "run

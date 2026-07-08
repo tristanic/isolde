@@ -42,7 +42,7 @@ run inside ChimeraX. Two kinds:
   `_fail()` helper that raises `SystemExit`. Run one directly:
 
   ```bat
-  run_chimerax.bat --nogui --exit --script src/tests/test_mmff_parameterisation.py
+  run_chimerax.bat --nogui --exit --script src/tests/test_session_roundtrip.py
   ```
 
   `run_tests.bat` (repo root) discovers every `src/tests/test_*.py`, runs each
@@ -50,7 +50,7 @@ run inside ChimeraX. Two kinds:
   success by the `ALL PASS` sentinel in the output (a `SystemExit` from a
   ChimeraX `--script` does not reliably surface as a process exit code). Files
   with no `ALL PASS` sentinel are skipped, not failed. Examples:
-  `test_mmff_parameterisation.py`, `test_atom_deletion_robustness.py`.
+  `test_session_roundtrip.py`, `test_cmd_surface.py`.
 
 - **Manual/interactive harness:** `test_simulation.py` (`SimTester` class) is
   driven by hand inside a GUI ChimeraX session; it has no headless footer and is
