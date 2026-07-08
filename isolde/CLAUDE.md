@@ -33,7 +33,31 @@ The build preprocesses `pyproject.toml.in` via `prep_toml.py` before invoking th
 
 ## Testing
 
-There is one test file: `isolde/src/tests/test_simulation.py` (`SimTester` class). Tests are run manually inside ChimeraX — there is no pytest runner or CI pipeline. When making changes, load a structure in ChimeraX and exercise the affected feature interactively.
+There is no pytest runner or CI pipeline. Tests live in `isolde/src/tests/` and
+run inside ChimeraX. Two kinds:
+
+- **Self-running headless tests** follow a convention: a
+  `if session is not None: run(session)` footer (ChimeraX injects `session`
+  under `--script`), `run()` prints `ALL PASS` on success, and failures call a
+  `_fail()` helper that raises `SystemExit`. Run one directly:
+
+  ```bat
+  run_chimerax.bat --nogui --exit --script src/tests/test_mmff_parameterisation.py
+  ```
+
+  `run_tests.bat` (repo root) discovers every `src/tests/test_*.py`, runs each
+  self-running test headlessly, and reports pass/fail per file — it judges
+  success by the `ALL PASS` sentinel in the output (a `SystemExit` from a
+  ChimeraX `--script` does not reliably surface as a process exit code). Files
+  with no `ALL PASS` sentinel are skipped, not failed. Examples:
+  `test_mmff_parameterisation.py`, `test_atom_deletion_robustness.py`.
+
+- **Manual/interactive harness:** `test_simulation.py` (`SimTester` class) is
+  driven by hand inside a GUI ChimeraX session; it has no headless footer and is
+  skipped by `run_tests.bat`.
+
+When making changes, also load a structure in ChimeraX and exercise the affected
+feature interactively.
 
 **Do NOT try to test ISOLDE (or Clipper map setup) headless via `--nogui` or
 `--offscreen`.** It does not work and is not worth attempting:
