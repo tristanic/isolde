@@ -627,8 +627,8 @@ def restrain_atom_distances_to_template(session, template_residues, restrained_r
             common_names = list(ta_names.intersection(ra_names))
             template_as.extend([tr.find_atom(name) for name in common_names])
             restrained_as.extend([rr.find_atom(name) for name in common_names])
-            # template_as.append(tr.atoms[numpy.in1d(tr.atoms.names, common_names)])
-            # restrained_as.append(rr.atoms[numpy.in1d(rr.atoms.names, common_names)])
+            # template_as.append(tr.atoms[numpy.isin(tr.atoms.names, common_names)])
+            # restrained_as.append(rr.atoms[numpy.isin(rr.atoms.names, common_names)])
         from chimerax.atomic import Atoms
         template_as = Atoms(template_as)
         restrained_as = Atoms(restrained_as)
@@ -808,7 +808,7 @@ def release_ss_restraints(residues):
     for m in residues.unique_structures:
         s_residues = residues[m.residues.indices(residues)!=-1]
         drm = sx.get_distance_restraint_mgr(m)
-        backbone_atoms = s_residues.atoms[numpy.in1d(s_residues.atoms.names, ('N','CA','C','O'))]
+        backbone_atoms = s_residues.atoms[numpy.isin(s_residues.atoms.names, ('N','CA','C','O'))]
         drs = drm.atoms_restraints(backbone_atoms)
         drs.enableds=False
         pdrm = sx.get_proper_dihedral_restraint_mgr(m)
@@ -864,7 +864,7 @@ def restrain_secondary_structure(session, residues, target):
 
     # Release any existing restraints on the backbone atoms
     import numpy
-    backbone_atoms = residues.atoms[numpy.in1d(residues.atoms.names, ['N','CA','C','O'])]
+    backbone_atoms = residues.atoms[numpy.isin(residues.atoms.names, ['N','CA','C','O'])]
     existing_drs = dr_m.atoms_restraints(backbone_atoms)
     existing_drs.enableds=False
     from ..util import find_contiguous_fragments
@@ -946,8 +946,8 @@ def release_base_pair_restraints(residues):
     for s, residues in residues.by_structure:
         drm = sx.get_distance_restraint_mgr(s)
         for rnames, anames in bp_atoms.items():
-            sres = residues[numpy.in1d(residues.names, rnames)]
-            atoms = sres.atoms[numpy.in1d(sres.atoms.names, anames)]
+            sres = residues[numpy.isin(residues.names, rnames)]
+            atoms = sres.atoms[numpy.isin(sres.atoms.names, anames)]
             drs = drm.atoms_restraints(atoms)
             drs.enableds=False
 
@@ -1012,13 +1012,13 @@ def restrain_base_pairs(session, residues, dist_slop=0.0, angle_slop=0.0):
         for ref_name, target_names in pairs.items():
             ref_residues = residues[residues.names==ref_name]
             ref_atoms = ref_residues.atoms
-            ref_donors = ref_atoms[numpy.in1d(ref_atoms.names, donors[ref_name])]
-            ref_acceptors = ref_atoms[numpy.in1d(ref_atoms.names, acceptors[ref_name])]
+            ref_donors = ref_atoms[numpy.isin(ref_atoms.names, donors[ref_name])]
+            ref_acceptors = ref_atoms[numpy.isin(ref_atoms.names, acceptors[ref_name])]
             for tname in target_names:
                 target_residues = residues[residues.names==tname]
                 target_atoms = target_residues.atoms
-                target_donors = target_atoms[numpy.in1d(target_atoms.names, donors[tname])]
-                target_acceptors = target_atoms[numpy.in1d(target_atoms.names, acceptors[tname])]
+                target_donors = target_atoms[numpy.isin(target_atoms.names, donors[tname])]
+                target_acceptors = target_atoms[numpy.isin(target_atoms.names, acceptors[tname])]
                 hbonds = []
                 if len(ref_donors) and len(target_acceptors):
                     hbonds.extend(find_hbonds(session, [s], donors=ref_donors, acceptors=target_acceptors, dist_slop=dist_slop, angle_slop=angle_slop))

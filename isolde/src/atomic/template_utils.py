@@ -197,7 +197,7 @@ def find_maximal_isomorphous_fragment(residue, template, match_by='element',
     if limit_template_indices is not None:
         import numpy
         tatoms = [tatoms[i] for i in range(len(tatoms)) if i in limit_template_indices]
-        mask = numpy.in1d(template_indices, limit_template_indices)
+        mask = numpy.isin(template_indices, limit_template_indices)
         residue_indices = residue_indices[mask]
         template_indices = template_indices[mask]
 

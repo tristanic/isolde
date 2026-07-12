@@ -630,7 +630,7 @@ class ProperDihedralMgr(_DihedralMgr):
         amino_acid_resnames = dihedral_dict['aminoacids']
         r = residues
         # self._reserve(len(r))
-        aa_residues = r[numpy.in1d(r.names, amino_acid_resnames)]
+        aa_residues = r[numpy.isin(r.names, amino_acid_resnames)]
         f = c_function('proper_dihedral_mgr_get_dihedrals',
             args=(ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p,
                 ctypes.c_size_t, ctypes.c_bool),
@@ -3788,7 +3788,7 @@ class ProperDihedralRestraintMgr(_RestraintMgr):
     def restrain_sugar_amides(self, residues, reset=False):
         n_acetyl_glycans = ["A2G","NGA","NDG","NAG","BM3","BM7"]
         import numpy
-        residues = residues[numpy.in1d(residues.names, n_acetyl_glycans)]
+        residues = residues[numpy.isin(residues.names, n_acetyl_glycans)]
         if not len(residues):
             return
         from math import radians

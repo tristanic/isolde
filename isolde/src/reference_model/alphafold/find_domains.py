@@ -32,7 +32,7 @@ def cluster_into_domains(session, model, pae_matrix, pae_power=1, pae_cutoff=5, 
     clusters = community.greedy_modularity_communities(g, weight='weight', resolution=graph_resolution)
     residue_clusters = []
     for i, c in enumerate(clusters):
-        residues = model.residues[numpy.in1d(model.residues.numbers,[r+1 for r in c])]
+        residues = model.residues[numpy.isin(model.residues.numbers,[r+1 for r in c])]
         residue_clusters.append(residues)
         for r in residues:
             r.isolde_domain = i
@@ -94,7 +94,7 @@ def cluster_into_domains_igraph(session, model, pae_matrix, pae_power=1, pae_cut
     all_residues = model.residues
     for i, id in enumerate(sorted_member_ids):
         rindices = indices[membership==id]
-        residues = all_residues[numpy.in1d(all_residues.numbers-1, rindices)]
+        residues = all_residues[numpy.isin(all_residues.numbers-1, rindices)]
         residue_clusters.append(residues)
         for r in residues:
             r.isolde_domain = i

@@ -3228,7 +3228,7 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None,
     from chimerax.atomic import Element
     metals = [n.upper() for n in Element.names if Element.get_element(n).is_metal]
     atoms = residues.atoms
-    metal_atoms = atoms[numpy.in1d(atoms.names, metals)]
+    metal_atoms = atoms[numpy.isin(atoms.names, metals)]
     for a in metal_atoms:
         r = a.residue
         if len(r.atoms) != 1:

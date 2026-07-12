@@ -87,9 +87,9 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
     merged_residues = Residues(sorted(merged_residues,
         key=lambda r: (new_chain_id(r), new_residue_number(r), r.insertion_code)
         ))
-    new_residue_mask = numpy.in1d(merged_residues, residues)
+    new_residue_mask = numpy.isin(merged_residues, residues)
     new_residue_indices = numpy.argwhere(new_residue_mask).ravel()
-    existing_residue_mask = numpy.in1d(merged_residues, m.residues)
+    existing_residue_mask = numpy.isin(merged_residues, m.residues)
     existing_residue_indices = numpy.argwhere(existing_residue_mask).ravel()
 
     insertion_point_map = {}
@@ -107,7 +107,7 @@ def merge_fragment(target_model, residues, chain_id=None, renumber_from=None,
         cres = residues[residues.chain_ids==cid]
         new_residue_numbers = numpy.array([str(r.number-offset)+r.insertion_code for r in cres])
 
-        duplicate_flags = numpy.in1d(new_residue_numbers, existing_residue_numbers)
+        duplicate_flags = numpy.isin(new_residue_numbers, existing_residue_numbers)
         if numpy.any(duplicate_flags):
             dup_residues = cres[duplicate_flags]
             err_str = ('The requested merge could not be completed because the '

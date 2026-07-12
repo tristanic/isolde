@@ -36,7 +36,7 @@ def correct_pseudosymmetric_sidechain_atoms(session, residues):
     import numpy
     from collections import defaultdict
     flipped = defaultdict(lambda: 0)
-    for r in residues[numpy.in1d(residues.names, rings)]:
+    for r in residues[numpy.isin(residues.names, rings)]:
         if flip_if_necessary(r, ('CA','CB','CG',('CD1','CD2'))):
             flipped[r.structure] += 1
     for r in residues[residues.names=='ASP']:

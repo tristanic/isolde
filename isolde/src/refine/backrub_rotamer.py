@@ -95,17 +95,17 @@ class Backrub:
         self._next_pep_axis_center = (next_ca.coord + this_ca.coord)/2
 
         self._all_movable_atoms = res_atoms.merge(
-            prev_atoms[numpy.in1d(prev_atoms.names, ['C', 'O'])]
+            prev_atoms[numpy.isin(prev_atoms.names, ['C', 'O'])]
         ).merge(
-            next_atoms[numpy.in1d(next_atoms.names, ['N', 'H'])]
+            next_atoms[numpy.isin(next_atoms.names, ['N', 'H'])]
         )
 
-        self._prev_pep = res_atoms[numpy.in1d(res_atoms.names, ['N', 'H'])].merge(
-            prev_atoms[numpy.in1d(prev_atoms.names, ['C', 'O'])]
+        self._prev_pep = res_atoms[numpy.isin(res_atoms.names, ['N', 'H'])].merge(
+            prev_atoms[numpy.isin(prev_atoms.names, ['C', 'O'])]
         )
 
-        self._next_pep = res_atoms[numpy.in1d(res_atoms.names, ['C', 'O'])].merge(
-            next_atoms[numpy.in1d(next_atoms.names, ['N', 'H'])]
+        self._next_pep = res_atoms[numpy.isin(res_atoms.names, ['C', 'O'])].merge(
+            next_atoms[numpy.isin(next_atoms.names, ['N', 'H'])]
         )
 
     def _ensure_map_covers_residue(self, density_map, residue):
@@ -141,7 +141,7 @@ class Backrub:
         # First optimize the rotation about the principal axis to get the best
         # fit for CA and CB
         moving_atoms = self._all_movable_atoms
-        check_atoms = res_atoms[numpy.in1d(res_atoms.names, ['CA', 'CB'])]
+        check_atoms = res_atoms[numpy.isin(res_atoms.names, ['CA', 'CB'])]
         original_coords = moving_atoms.coords
         #self._rotate_and_check_fit([0], self.primary_axis, self._primary_axis_center, moving_atoms, original_coords, check_atoms)
         minimize_scalar(self._rotate_and_check_fit, bounds=[-20,20],
