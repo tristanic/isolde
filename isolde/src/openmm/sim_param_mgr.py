@@ -127,6 +127,8 @@ class SimParams(Param_Mgr):
         'nonbonded_softcore_c':                 (defaults.NONBONDED_SOFTCORE_C, None),
         'nonbonded_softcore_alpha':                 (defaults.NONBONDED_SOFTCORE_ALPHA, None),
 
+        'symmetry_aware':                       (defaults.SYMMETRY_AWARE, None),
+
         'rigid_bonds':                          (defaults.RIGID_BONDS, None),
         'rigid_water':                          (defaults.RIGID_WATER, None),
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),

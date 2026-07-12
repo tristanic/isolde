@@ -30,7 +30,7 @@ def isolde_start(session, show_splash=True):
     return session.isolde
 
 def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
-        gpu_device_index=None, sim_fidelity_mode=None):
+        gpu_device_index=None, sim_fidelity_mode=None, symmetry_aware=None):
     isolde=isolde_start(session)
     sp = isolde.sim_params
     if time_steps_per_gui_update is not None:
@@ -39,6 +39,11 @@ def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
         sp.temperature=temperature
     if gpu_device_index is not None:
         sp.device_index=gpu_device_index
+    if symmetry_aware is not None:
+        sp.symmetry_aware = symmetry_aware
+        state = 'on' if symmetry_aware else 'off'
+        session.logger.info(f'ISOLDE: crystallographic symmetry-aware simulation '
+            f'turned {state}. Takes effect at the next simulation start.')
     if sim_fidelity_mode is not None:
         from chimerax.isolde.openmm.sim_param_mgr import fidelity_modes
         mode_info = fidelity_modes[sim_fidelity_mode]
@@ -618,7 +623,8 @@ def _register_isolde_commands(logger):
                 ('time_steps_per_gui_update', IntArg),
                 ('temperature', FloatArg),
                 ('gpu_device_index', IntArg),
-                ('sim_fidelity_mode', EnumOf(fidelity_modes.keys()))
+                ('sim_fidelity_mode', EnumOf(fidelity_modes.keys())),
+                ('symmetry_aware', BoolArg),
             ],
             synopsis = 'Adjust ISOLDE simulation settings',
         )

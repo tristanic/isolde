@@ -1844,7 +1844,119 @@ class NonbondedSoftcoreExceptionForce(CustomBondForce):
         self.addPerBondParameter('sigma')
         self.addPerBondParameter('epsilon')
         self.update_needed = False
-        
+
+
+def symmetry_group_table(n, exclude_intra_operator=True):
+    '''
+    Build the row-major ``n*n`` weight table for the ``grouptable``
+    :py:class:`openmm.Discrete2DFunction` shared by the symmetry-aware nonbonded
+    and GBSA pairwise terms. Group 0 is the real asymmetric unit; groups
+    ``1..n-1`` are one-per-operator symmetry copies.
+
+    Entries are multiplicative weights on the pairwise energy that make each
+    *unique* crystallographic contact contribute exactly once while remaining
+    fully two-way (validated: ``scratchpad/symsite_double_count.py``):
+
+        * ``[0][0] = 1``            -- real atoms interact with each other.
+        * real<->copy = ``1/2``     -- an inter-molecular contact between two
+          asymmetric-unit atoms i, j is generated from *both* sides
+          (real_i<->copy_j AND real_j<->copy_i, which are the same physical
+          contact). Each is half-weighted so their sum, folded back onto the two
+          real parents, is 1x the contact -- not the 2x double-count that
+          otherwise collapses salt bridges across symmetry interfaces. The
+          self-image case (atom near its own symmetry axis) likewise becomes 1x.
+        * copy<->copy = ``0``       -- interactions between two symmetry copies
+          (any operators) are neighbour<->neighbour contacts that belong to
+          other cells' sums; folding them onto the ASU would over-count. Every
+          real contact is already captured by a real<->copy term.
+
+    ``exclude_intra_operator=False`` returns the naive all-ones table (every pair
+    full weight); it exists only to *demonstrate* the pathology the correct
+    weighting prevents -- the inter-molecular double-count and the explosive
+    same-operator clash between copies of bonded atoms.
+    '''
+    if not exclude_intra_operator:
+        return [1.0] * (n * n)
+
+    def val(i, j):
+        if i == 0 and j == 0:
+            return 1.0          # real <-> real
+        if i == 0 or j == 0:
+            return 0.5          # real <-> copy (each unique contact once, two-way)
+        return 0.0              # copy <-> copy (any operators): excluded
+    return [val(i, j) for j in range(n) for i in range(n)]
+
+
+class SymmetryAwareMixin:
+    '''
+    Turns *any* :py:class:`openmm.CustomNonbondedForce` subclass into a
+    crystallographic-symmetry-aware one, applied at the **class** level:
+
+        class SymmetryAwareNonbondedSoftcoreForce(
+                SymmetryAwareMixin, NonbondedSoftcoreForce):
+            pass
+
+    Every particle carries an integer ``symgroup`` per-particle parameter:
+
+        * ``0``      -- a real asymmetric-unit atom.
+        * ``1..M``   -- a symmetry copy, one contiguous id per crystallographic
+          operator actually present in the simulation.
+
+    The per-pair energy is multiplied by a 0/1 mask ``grouptable(symgroup1,
+    symgroup2)`` (an :py:class:`openmm.Discrete2DFunction`) whose entries are:
+
+        * ``[0][0] = 1``            -- real atoms interact with each other.
+        * ``[k][k] = 0`` (k > 0)    -- two copies produced by the *same*
+          operator do **not** interact. This is the single correctness rule
+          established empirically (see the project's symmetry-sim notes): it
+          both prevents the explosive clash between copies of bonded atoms and
+          stops each molecule's internal strain being counted twice (the copy
+          otherwise replicates the ASU's internal energy and folds it straight
+          back onto the parents).
+        * off-diagonal ``= 1``      -- real<->copy and *different*-operator
+          copy<->copy pairs are genuine crystal contacts and interact in full.
+          (The 2x force enhancement at self-inverse operators is correct
+          constrained-gradient physics and is deliberately left intact.)
+
+    Because the mask is a purely multiplicative factor it composes with any
+    pair potential without touching its functional form -- validated to
+    reproduce explicit copy-copy exceptions to machine precision for both
+    Lennard-Jones and a double-exponential (GARNET-style) potential.
+
+    The base class builds its own energy expression and per-particle
+    parameters in ``__init__``; this mixin runs *after* that (via ``super()``,
+    while the force is still particle-free), wraps the head of the expression
+    and appends the ``symgroup`` parameter + ``grouptable``. ``addParticle``
+    then takes the base parameters **plus** the group id as a trailing value.
+    '''
+    def __init__(self, *args, symmetry_ngroups=2, exclude_intra_operator=True,
+            **kwargs):
+        super().__init__(*args, **kwargs)
+        # Split the base expression on the first ';'. The head is the per-pair
+        # energy value; everything after it is the chain of intermediate
+        # definitions, which we preserve verbatim.
+        head, _, tail = self.getEnergyFunction().partition(';')
+        new_expr = (
+            f'symmetry_switch*({head});'
+            'symmetry_switch=grouptable(symgroup1,symgroup2)'
+            + ((';' + tail) if tail else '')
+        )
+        self.setEnergyFunction(new_expr)
+        self.addPerParticleParameter('symgroup')
+        n = int(symmetry_ngroups)
+        table = symmetry_group_table(n, exclude_intra_operator)
+        self.addTabulatedFunction('grouptable', Discrete2DFunction(n, n, table))
+
+
+class SymmetryAwareNonbondedSoftcoreForce(SymmetryAwareMixin,
+        NonbondedSoftcoreForce):
+    '''
+    Symmetry-aware form of :py:class:`NonbondedSoftcoreForce`. Constructed once
+    with ``symmetry_ngroups = 1 + (number of distinct operators present)``;
+    ``addParticle`` takes ``[charge, sigma, epsilon, symgroup]``. See
+    :py:class:`SymmetryAwareMixin`.
+    '''
+    pass
 
 
 
@@ -1995,4 +2107,133 @@ class SoftCoreGBSAGBnForce(customgbforces.GBSAGBnForce):
                 self.addEnergyTerm(f'-{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2 * (1/f-1/cutoff);'
                     "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
                 )
+
+
+class SymmetrySoftCoreGBSAGBnForce(SoftCoreGBSAGBnForce):
+    '''
+    Crystallographic-symmetry-aware form of :py:class:`SoftCoreGBSAGBnForce`
+    (GB-Neck2 implicit solvent, soft-core variant), implementing option (a') of
+    the symmetry-sim design.
+
+    Generalised-Born radii are a *collective* property (each particle's ``B`` is
+    an integral over every other particle), so implicit solvent cannot be split
+    into a separate "copies" force the way pairwise exclusions can -- every
+    particle, real or copy, must live in this one force. Symmetry-correctness is
+    achieved by masking only the terms that would otherwise double-count a
+    parent's own solvation once its copy folds force back onto it:
+
+        * **Descreening integral ``I`` -- left UNMASKED.** A copy self-descreens
+          through the normal collective integral, which (by rigid-transform
+          invariance) reproduces ``B_copy == B_parent`` to machine precision in
+          a complete environment. Real atoms are thereby correctly desolvated by
+          their symmetry neighbours, and no explicit Born-radius propagation is
+          needed. (Validated: ``scratchpad/gbsa_born_experiment.py``.)
+        * **Both single-particle self-energy terms (polar ``charge^2/B`` and the
+          nonpolar ACE surface area) -- masked to real atoms** via
+          ``step(0.5 - symgroup)``. A copy's self-energy equals its parent's, so
+          without this the parent's solvation would be counted twice.
+        * **The pairwise polar term -- masked same-operator** via
+          ``grouptable(symgroup1, symgroup2)`` (the identical 0/1 table used by
+          the nonbonded force: ``[0][0]=1``, ``[k][k]=0`` for ``k>0``, off-
+          diagonal ``1``). Real<->copy and cross-operator copy<->copy solvent
+          screening (genuine crystal-contact desolvation) is retained.
+
+    Before :func:`finalize`, the caller must set:
+
+        * ``self._symmetry_ngroups`` -- ``1 + (distinct operators present)``.
+        * ``self._symmetry_groups``  -- per-particle group id (0 = real, 1..M =
+          copy), in particle order and the same length as ``self.parameters``.
+    '''
+
+    def _addEnergyTerms(self):
+        self.addGlobalParameter('softcore_lambda',
+            self._softcore_params['softcore_lambda'])
+        self.addPerParticleParameter('charge')
+        self.addPerParticleParameter('or')        # Offset radius
+        self.addPerParticleParameter('sr')        # Scaled offset radius
+        self.addPerParticleParameter('radindex')
+        self.addPerParticleParameter('symgroup')  # 0 = real, 1..M = copy operator
+
+        n = len(self._uniqueRadii)
+        m0Table = self._createUniqueTable(customgbforces.m0)
+        d0Table = self._createUniqueTable(customgbforces.d0)
+        self.addTabulatedFunction("getd0", Discrete2DFunction(n, n, d0Table))
+        self.addTabulatedFunction("getm0", Discrete2DFunction(n, n, m0Table))
+
+        # Symmetry mask table, identical to the nonbonded force's.
+        ng = int(self._symmetry_ngroups)
+        gtable = symmetry_group_table(ng,
+            getattr(self, '_symmetry_exclude_intra', True))
+        self.addTabulatedFunction("grouptable", Discrete2DFunction(ng, ng, gtable))
+
+        a = self._softcore_params['softcore_a']
+
+        # Descreening integral: UNMASKED (option a'). Identical to the base
+        # SoftCoreGBSAGBnForce expression.
+        self.addComputedValue("I", f"softcore_lambda^{a} * (Ivdw+neckScale*Ineck);"
+                                   "Ineck=step(radius1+radius2+neckCut-r)*getm0(radindex1,radindex2)/(1+100*(r-getd0(radindex1,radindex2))^2+"
+                                   "0.3*1000000*(r-getd0(radindex1,radindex2))^6);"
+                                   "Ivdw=select(step(r+sr2-or1), 0.5*(1/L-1/U+0.25*(r-sr2^2/r)*(1/(U^2)-1/(L^2))+0.5*log(L/U)/r), 0);"
+                                   "U=r+sr2;"
+                                   "L=max(or1, D);"
+                                   "D=abs(r-sr2);"
+                                   "radius1=or1+offset; radius2=or2+offset;"
+                                   "neckScale=0.361825; neckCut=0.68; offset=0.009", self.ParticlePairNoExclusions)
+
+        # Born radius: a plain function of I, unmasked.
+        self.addComputedValue("B", "1/(1/or-tanh(1.09511284*psi-1.907992938*psi^2+2.50798245*psi^3)/radius);"
+                                  "psi=I*or; radius=or+offset; offset=0.009", self.SingleParticle)
+        self._createEnergyTerms(self.solventDielectric, self.soluteDielectric,
+            self.SA, self.cutoff, self.kappa, self.OFFSET)
+
+    def _createEnergyTerms(self, solventDielectric, soluteDielectric, SA, cutoff, kappa, offset):
+        from openmm.app.internal.customgbforces import CustomGBForce
+        params = (f'; solventDielectric={solventDielectric:.16g}'
+                  f'; soluteDielectric={soluteDielectric:.16g}'
+                  f'; kappa={kappa:.16g}; offset={offset:.16g}')
+        a = self._softcore_params['softcore_a']
+        if cutoff is not None:
+            params += f'; cutoff={cutoff:.16g}'
+        # Polar self-energy: real atoms only (a copy's is identical to its
+        # parent's and would be double-counted on fold-back).
+        if kappa > 0:
+            self.addEnergyTerm(f'step(0.5-symgroup) * softcore_lambda^{a} * -0.5*{ONE_ON_4_PI_EPS0}* (1/soluteDielectric-exp(-kappa*B)/solventDielectric)*charge^2/B' + params,
+                CustomGBForce.SingleParticle)
+        elif kappa < 0:
+            raise ValueError('kappa/ionic strength must be >= 0')
+        else:
+            self.addEnergyParameterDerivative(f'step(0.5-symgroup) * -0.5*{ONE_ON_4_PI_EPS0}* (1/soluteDielectric-1/solventDielectric)*charge^2/B' + params,
+                CustomGBForce.SingleParticle)
+        # Nonpolar ACE surface-area self-energy: also real atoms only.
+        if SA == 'ACE':
+            self.addEnergyTerm(f"step(0.5-symgroup) * softcore_lambda^{a} * 28.3919551* (radius+0.14)^2*(radius/B)^6; radius=or+offset"+params, CustomGBForce.SingleParticle)
+        elif SA is not None:
+            raise ValueError('Unknown surface area method: '+SA)
+        # Pairwise polar term: same-operator copy-copy masked out via grouptable.
+        if cutoff is None:
+            if kappa > 0:
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0} * (1/soluteDielectric - exp(-kappa*f)/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2/f;'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions)
+            else:
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2/f;'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions)
+        else:
+            if kappa > 0:
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0} *  (1/soluteDielectric - exp(-kappa*f)/solventDielectric) *softcore_lambda^({2*a}) *charge1*charge2* (1/f - 1/cutoff);'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
+                )
+            else:
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2 * (1/f-1/cutoff);'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
+                )
+
+    def _addParticles(self):
+        # Mirror the base GBSAGBnForce._addParticles, but append the per-particle
+        # symmetry group id after radindex (self.parameters rows are
+        # [charge, or, sr]; self._symmetry_groups is aligned to particle order).
+        from openmm import CustomGBForce
+        for i, p in enumerate(self.parameters):
+            radIndex = self._radiusToIndex[p[self.RADIUS_ARG_POSITION]]
+            CustomGBForce.addParticle(self,
+                p + [radIndex, float(self._symmetry_groups[i])])
 
