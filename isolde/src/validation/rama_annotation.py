@@ -76,6 +76,42 @@ class RamaAnnotator(Model):
         self.track_whole_model = True
         t = structure.triggers
         self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
+        # Draw both indicators on crystallographic symmetry ghosts too: the CA
+        # score balls, and the cis/twisted omega "cups" (a per-frame mesh).
+        from ..symmetry_markup import SymmetryGhostDrawing, GhostSpec
+        self._symmetry_ghost = SymmetryGhostDrawing(self, structure, [
+            GhostSpec('rama', self._rama_drawing, 'points',
+                      radius_fn=lambda: self.ca_radius),
+            GhostSpec('omega', self._omega_drawing, 'mesh'),
+        ])
+
+    def symmetry_markup_instances(self, spec_name, atoms):
+        '''
+        Ramachandran markup for the residues of the given (ghost-drawn) atoms:
+        'rama' returns the CA score balls (coords, colors); 'omega' returns the
+        cis/twisted peptide cup mesh (vertices, normals, triangles, colors). See
+        :class:`chimerax.isolde.symmetry_markup.SymmetryGhostDrawing`.
+        '''
+        ramas = self._mgr.get_ramas(atoms.unique_residues)
+        if not len(ramas):
+            return None
+        if spec_name == 'rama':
+            coords, colors, _sel = self._mgr._ca_positions_colors_and_selecteds(
+                ramas, self.hide_favored)
+            if not len(coords):
+                return None
+            return coords, colors
+        if spec_name == 'omega':
+            v, n, t, c = self._mgr._draw_cis_and_twisted_omegas(ramas)
+            if v is None or not len(v):
+                return None
+            return v, n, t, c
+        return None
+
+    def _refresh_symmetry_markup(self):
+        sg = getattr(self, '_symmetry_ghost', None)
+        if sg is not None:
+            sg.refresh()
 
     @property
     def ca_radius(self):
@@ -184,6 +220,9 @@ class RamaAnnotator(Model):
         return self._mgr.color_scale
 
     def delete(self):
+        sg = getattr(self, '_symmetry_ghost', None)
+        if sg is not None:
+            sg.delete()
         h = self._structure_change_handler
         if h is not None:
             self._atomic_structure.triggers.remove_handler(h)
@@ -235,6 +274,7 @@ class RamaAnnotator(Model):
         if not len(ramas):
             od.display = False
             rd.display = False
+            self._refresh_symmetry_markup()
             return DEREGISTER
         mgr = self._mgr
         #mgr.color_cas_by_rama_score(ramas, self.hide_favored)
@@ -260,6 +300,7 @@ class RamaAnnotator(Model):
             od.display = True
         else:
             od.display = False
+        self._refresh_symmetry_markup()
         return DEREGISTER
 
     def take_snapshot(self, session, flags):

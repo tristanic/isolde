@@ -87,7 +87,7 @@ def find_coordination_sites(model, residue_name, atom_name, coordinating=_defaul
     pairs = []
     for resname, atom_names in coordinating.items():
         crs = model.residues[model.residues.names==resname]
-        catoms = crs.atoms[numpy.in1d(crs.atoms.names, atom_names)]
+        catoms = crs.atoms[numpy.isin(crs.atoms.names, atom_names)]
         i1, i2, near1 = find_closest_points(catoms.coords, atoms.coords, cutoff)
         for i, ii in zip(i1, near1):
             pairs.append([catoms[i], atoms[ii]])

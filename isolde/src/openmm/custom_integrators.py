@@ -9,7 +9,16 @@ class VelocityChecker(CustomIntegrator):
     def __init__(self):
         super().__init__(0)
         self.addGlobalVariable('fast_count', 0.0)
-        self.addComputeSum('fast_count', f'step(sqrt(_x(v)^2+_y(v)^2+_z(v)^2)/({self.MAX_SPEED}*3)-1)')
+        # The (1-step(-m)) factor is a mass-based mask: it is 1 for real
+        # (mass>0) particles and 0 for any zero-mass particle. This makes it
+        # impossible *by construction* to count a virtual site (e.g. a
+        # crystallographic symmetry copy) or a fixed atom as "fast" - important
+        # because a virtual site slaved to a fast-moving parent inherits its
+        # speed and would otherwise trip the instability check spuriously. It
+        # keys on the intrinsic mass rather than any particle-ordering
+        # assumption, so it remains correct for any future virtual particles.
+        self.addComputeSum('fast_count',
+            f'(1-step(-m))*step(sqrt(_x(v)^2+_y(v)^2+_z(v)^2)/({self.MAX_SPEED}*3)-1)')
 
 class Smoother(CustomIntegrator):
     '''

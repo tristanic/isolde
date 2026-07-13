@@ -23,11 +23,16 @@
 
 using namespace isolde;
 
-OpenmmThreadHandler::OpenmmThreadHandler(OpenMM::Context* context)
+OpenmmThreadHandler::OpenmmThreadHandler(OpenMM::Context* context, size_t num_real_atoms)
     : _context(context)
 {
     _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Velocities);
     _natoms = _starting_state.getPositions().size();
+    // num_real_atoms==0 (or an out-of-range value) means "every particle is a
+    // real atom" - the original behaviour. Otherwise the trailing particles are
+    // OpenMM-only (symmetry-copy virtual sites) and are hidden from Python.
+    _num_real_atoms = (num_real_atoms == 0 || num_real_atoms > _natoms)
+        ? _natoms : num_real_atoms;
     _smoothed_coords.resize(_natoms);
     _atom_fixed.resize(_natoms);
     const auto& system = _context->getSystem();
@@ -132,7 +137,9 @@ void OpenmmThreadHandler::_minimize_threaded(const double &tolerance, int max_it
         // _thread_finished = false;
         _starting_state = _context->getState(OpenMM::State::Positions | OpenMM::State::Energy);
         _min_converged = false;
-        double tol = tolerance * _natoms;
+        // Scale the tolerance by the number of true degrees of freedom (real
+        // atoms), not the padded particle count that includes virtual sites.
+        double tol = tolerance * _num_real_atoms;
         // std::cout << "Initial energy: " << _starting_state.getPotentialEnergy() << " kJ/mol" << std::endl;
         auto result = isolde::LocalEnergyMinimizer::minimize(*_context, tol, max_iterations);
         if (result == isolde::LocalEnergyMinimizer::SUCCESS)
@@ -179,6 +186,7 @@ void OpenmmThreadHandler::_reinitialize_context_threaded()
         _context->reinitialize();
         _context->setPositions(current_state.getPositions());
         _context->setVelocities(current_state.getVelocities());
+        _context->computeVirtualSites();
         _thread_finished = true;
     } catch (...)
     {
@@ -190,11 +198,19 @@ void OpenmmThreadHandler::_reinitialize_context_threaded()
 std::vector<size_t> OpenmmThreadHandler::overly_fast_atoms(const std::vector<OpenMM::Vec3>& velocities) const
 {
     std::vector<size_t> fast_indices;
-    size_t i=0;
-    for (const auto &v: velocities) {
+    // Never flag virtual particles. Keying on isVirtualSite (rather than an
+    // index range) means this is correct for any virtual-particle layout, and
+    // guarantees the returned indices map to real ChimeraX atoms - so the
+    // natoms()-sized array built on the Python side can never overflow. Virtual
+    // sites carry no independent dynamics; a copy slaved to a fast parent would
+    // otherwise be reported as unstable in its own right.
+    const auto& system = _context->getSystem();
+    size_t n = std::min(velocities.size(), (size_t)system.getNumParticles());
+    for (size_t i=0; i<n; ++i) {
+        if (system.isVirtualSite(i)) continue;
+        const auto& v = velocities[i];
         if (sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]) > MAX_VELOCITY)
             fast_indices.push_back(i);
-        i++;
     }
     return fast_indices;
 }
@@ -203,56 +219,55 @@ std::vector<OpenMM::Vec3> OpenmmThreadHandler::get_coords_in_angstroms(const Ope
 {
     finalize_thread();
     const auto &coords_nm = state.getPositions();
-    std::vector<OpenMM::Vec3> coords_ang(_natoms);
-    auto from = coords_nm.begin();
-    auto to = coords_ang.begin();
-    for (; from != coords_nm.end(); from++, to++)
-    {
-        *to = *from * 10.0;
-    }
+    // Expose only the real-atom coordinates; virtual-site positions (which
+    // trail the real atoms) are recomputed by OpenMM and never sent to Python.
+    std::vector<OpenMM::Vec3> coords_ang(_num_real_atoms);
+    for (size_t i=0; i<_num_real_atoms; ++i)
+        coords_ang[i] = coords_nm[i] * 10.0;
     return coords_ang;
 }
 
 std::vector<OpenMM::Vec3> OpenmmThreadHandler::get_smoothed_coords_in_angstroms()
 {
     finalize_thread();
-    std::vector<OpenMM::Vec3> coords_ang(_natoms);
-    auto from = _smoothed_coords.begin();
-    auto to = coords_ang.begin();
-    for (; from != _smoothed_coords.end(); from++, to++)
-    {
-        *to = *from * 10.0;
-    }
+    std::vector<OpenMM::Vec3> coords_ang(_num_real_atoms);
+    for (size_t i=0; i<_num_real_atoms; ++i)
+        coords_ang[i] = _smoothed_coords[i] * 10.0;
     return coords_ang;
 }
 
 void OpenmmThreadHandler::set_coords_in_angstroms(const std::vector<OpenMM::Vec3>& coords_ang)
 {
     finalize_thread();
-    std::vector<OpenMM::Vec3> coords_nm(_natoms);
-    auto from = coords_ang.begin();
-    auto to = coords_nm.begin();
-    for (; from != coords_nm.end(); from++, to++)
-    {
-        for (size_t i=0; i<3; ++i) {
-            (*to)[i] = (*from)[i]/10.0;
-        }
-    }
+    // Start from the current full particle set so virtual-site slots stay
+    // populated, then overwrite the leading real-atom coordinates. Accept
+    // either a real-atom-length or a full-length input for robustness.
+    std::vector<OpenMM::Vec3> coords_nm =
+        _context->getState(OpenMM::State::Positions).getPositions();
+    size_t n = std::min(coords_ang.size(), coords_nm.size());
+    for (size_t idx=0; idx<n; ++idx)
+        for (size_t i=0; i<3; ++i)
+            coords_nm[idx][i] = coords_ang[idx][i]/10.0;
     _context->setPositions(coords_nm);
+    _context->computeVirtualSites();
     reset_smoothing();
 }
 
 void OpenmmThreadHandler::set_coords_in_angstroms(double *coords, size_t n)
 {
     finalize_thread();
-    if (n != natoms())
+    if (n != _num_real_atoms)
         throw std::logic_error("Number of input atoms does not match number in simulation!");
-    std::vector <OpenMM::Vec3> coords_nm(n);
-    for (auto &v: coords_nm) {
+    // Seed with the current positions so the virtual-site slots are valid, then
+    // overwrite the real atoms and let OpenMM recompute the symmetry copies.
+    std::vector<OpenMM::Vec3> coords_nm =
+        _context->getState(OpenMM::State::Positions).getPositions();
+    for (size_t idx=0; idx<n; ++idx) {
         for (size_t i=0; i<3; ++i)
-            v[i] = (*coords++)/10.0;
+            coords_nm[idx][i] = (*coords++)/10.0;
     }
     _context->setPositions(coords_nm);
+    _context->computeVirtualSites();
     reset_smoothing();
 }
 
@@ -317,13 +332,14 @@ PYBIND11_MODULE(_openmm_async, m) {
     m.doc() = "Manager for running and updating an OpenMM simulation in an asynchronous "
         "threaded manner.";
     py::class_<OTH>(m, "OpenmmThreadHandler")
-        .def(py::init([](uintptr_t context)
+        .def(py::init([](uintptr_t context, size_t num_real_atoms)
         {
             auto c = reinterpret_cast<OpenMM::Context*>(context);
-            OTH* th = new OTH(c);
+            OTH* th = new OTH(c, num_real_atoms);
             return std::unique_ptr<OTH>(th);
-        }))
+        }), py::arg("context"), py::arg("num_real_atoms")=0)
         .def_property_readonly("num_atoms", &OTH::natoms)
+        .def_property_readonly("num_particles", &OTH::num_particles)
         .def_property("smoothing_alpha", &OTH::smoothing_alpha, &OTH::set_smoothing_alpha)
         .def("step", &OTH::step_threaded)
         .def("minimize", &OTH::minimize_threaded)

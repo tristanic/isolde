@@ -142,7 +142,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     import numpy
     if prev_res:
         ref_res = prev_res
-        b_factor = prev_res.atoms[numpy.in1d(prev_res.atoms.names, ('N','CA','C','O','CB'))].bfactors.mean()+add_b_factor
+        b_factor = prev_res.atoms[numpy.isin(prev_res.atoms.names, ('N','CA','C','O','CB'))].bfactors.mean()+add_b_factor
         pri = model.residues.index(prev_res)
         if pri > 0 and pri < len(model.residues)-1:
             insertion_point = model.residues[pri+1]
@@ -159,7 +159,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
             oxt.delete()
     elif next_res:
         ref_res = next_res
-        b_factor = next_res.atoms[numpy.in1d(next_res.atoms.names, ('N','CA','C','O','CB'))].bfactors.mean()+add_b_factor
+        b_factor = next_res.atoms[numpy.isin(next_res.atoms.names, ('N','CA','C','O','CB'))].bfactors.mean()+add_b_factor
         insertion_point = next_res
         natom = next_res.find_atom('N')
         for n in natom.neighbors:
@@ -196,7 +196,7 @@ def add_amino_acid_residue(model, resname, prev_res=None, next_res=None,
     # delete extraneous atoms
     r = new_residue_from_template(model, tmpl, chain_id, [0,0,0], number,
             insert_code=insertion_code, b_factor=b_factor, precedes=insertion_point)
-    r.atoms[numpy.in1d(r.atoms.names, ['OXT', 'HXT', 'H2', 'H1', 'HN1', 'HN2'])].delete()
+    r.atoms[numpy.isin(r.atoms.names, ['OXT', 'HXT', 'H2', 'H1', 'HN1', 'HN2'])].delete()
 
     # Translate and rotate residue to (roughly) match the desired position
     if not next_res and not prev_res:

@@ -88,6 +88,13 @@ class _Defaults:
         'NONBONDED_SOFTCORE_B':       2,
         'NONBONDED_SOFTCORE_C':       6,
         'NONBONDED_SOFTCORE_ALPHA':   0.2,
+        # Crystallographic symmetry-aware simulation. SYMMETRY_AWARE gates the
+        # whole feature (also requires OpenMM >= 8.4 SymmetrySite + real crystal
+        # symmetry). OPT-IN (default off): off is bit-for-bit the original,
+        # symmetry-blind behaviour, which is preferable in some crystal-model
+        # scenarios (e.g. early molecular-replacement solutions badly entangled
+        # with their symmetry mates - untangle those before turning it on).
+        'SYMMETRY_AWARE':                   False,
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
@@ -149,6 +156,13 @@ class _Defaults:
         'SMOOTHING_ALPHA':              0.1,
         'SMOOTHING_ALPHA_MAX':          1.0,
         'SMOOTHING_ALPHA_MIN':          0.01,
+
+        ###
+        # User interface
+        ###
+        # Startup experience level: 0=Default, 1=Advanced, 2=Developer
+        # (matches ExpertModeSelector in ui/ui_base.py)
+        'EXPERIENCE_LEVEL':             0,
 
 
         ###

@@ -25,6 +25,23 @@ class NonbondedDialog(UI_Panel_Base):
             ' These can be very helpful in escaping from severe clashes, but invoke a 10-20% penalty in simulation rate.</span>')
         cbl.addWidget(cb)
         ml.addLayout(cbl)
+
+        scbl = DefaultHLayout()
+        scb = self._symmetry_aware_checkbox = QCheckBox('Symmetry-aware simulation')
+        scb.setChecked(isolde.sim_params.symmetry_aware)
+        scb.stateChanged.connect(self._symmetry_aware_checked_cb)
+        scb.setToolTip('<span>When enabled, crystallographic symmetry copies of the model '
+            'become live participants in the simulation: they exert and feel nonbonded and '
+            'map (MDFF) forces, and crystal contacts relax fully two-way. Leave off for '
+            'early/entangled molecular-replacement solutions until the packing is sorted out. '
+            'Requires crystallographic symmetry and a recent OpenMM (SymmetrySite support); '
+            'a no-op otherwise. Will take effect on next sim start.</span>')
+        scbl.addWidget(scb)
+        ml.addLayout(scbl)
+        # Two-way sync: reflect changes made via `isolde set symmetryAware ...`.
+        self._param_changed_handler = isolde.sim_params.triggers.add_handler(
+            isolde.sim_params.PARAMETER_CHANGED, self._parameter_changed_cb)
+
         sliders = self._sliders = []
         slider_layout = DefaultVLayout()
         for i, slider_class in enumerate((
@@ -53,8 +70,19 @@ class NonbondedDialog(UI_Panel_Base):
     
     def _use_softcore_potentials_checked_cb(self, checked):
         self.isolde.sim_params.use_softcore_nonbonded_potential = checked
-    
+
+    def _symmetry_aware_checked_cb(self, checked):
+        with self._param_changed_handler.blocked():
+            self.isolde.sim_params.symmetry_aware = bool(checked)
+
+    def _parameter_changed_cb(self, _, data):
+        key, val = data
+        if key == 'symmetry_aware':
+            with slot_disconnected(self._symmetry_aware_checkbox.stateChanged, self._symmetry_aware_checked_cb):
+                self._symmetry_aware_checkbox.setChecked(val)
+
     def cleanup(self):
+        self._param_changed_handler.remove()
         for slider in self._sliders:
             slider.cleanup()
         self._min_potential_indicator.cleanup()
