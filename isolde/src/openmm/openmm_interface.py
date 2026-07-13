@@ -1750,7 +1750,10 @@ class SimHandler:
             if not (0 <= fg <= 31):
                 raise ValueError('Force groups must be between 0 and 31 inclusive!')
             state = c.getState(getForces=True, groups=set([fg]))
-            forces = state.getForces(asNumpy=True)
+            # Restrict to real atoms: in a symmetry-aware sim the context also holds
+            # symmetry-copy virtual-site particles ([n_real, n_total)), whose indices
+            # would be meaningless to callers mapping back through self._atoms.
+            forces = state.getForces(asNumpy=True)[:len(self._atoms)]
             magnitudes = numpy.linalg.norm(forces, axis=1)
             excessive = numpy.argwhere(magnitudes > threshold)
             force_map[fg] = (excessive, magnitudes[excessive])
