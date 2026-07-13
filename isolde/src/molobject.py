@@ -1874,6 +1874,9 @@ class _RestraintMgr(Model):
         self._allow_hydrogens = mode.lower()
 
     def delete(self):
+        sg = getattr(self, '_symmetry_ghost', None)
+        if sg is not None:
+            sg.delete()
         cname = _as_snake_case(type(self).__name__)
         del_func = cname+'_delete'
         c_function(del_func, args=(ctypes.c_void_p,))(self._c_pointer)
@@ -1903,6 +1906,21 @@ class _RestraintMgr(Model):
     def update_graphics(self):
         ''' Should be overridden in derived classes. '''
         pass
+
+    # A SymmetryGhostDrawing (set by subclasses that draw markup) mirrors this
+    # manager's markup onto crystallographic symmetry ghosts. None => not drawn.
+    _symmetry_ghost = None
+
+    def _refresh_symmetry_markup(self):
+        '''
+        Redraw this manager's markup on the currently-displayed symmetry ghosts.
+        Call at the end of update_graphics (after the real drawings are updated);
+        also driven independently by Clipper's 'symmetry display changed' trigger.
+        A no-op if this manager has no SymmetryGhostDrawing.
+        '''
+        sg = self._symmetry_ghost
+        if sg is not None:
+            sg.refresh()
 
     def _session_save_info(self):
         '''
@@ -2236,6 +2254,30 @@ class PositionRestraintMgr(_RestraintMgr):
         self._restraint_update_handler = self.triggers.add_handler('changes', self._restraint_changes_cb)
         if auto_add_to_session:
             model.add([self])
+        # Mirror pins + restraint bonds onto crystallographic symmetry ghosts.
+        from .symmetry_markup import SymmetryGhostDrawing, GhostSpec
+        self._symmetry_ghost = SymmetryGhostDrawing(self, model, [
+            GhostSpec('pins', self._pin_drawing, 'points'),
+            GhostSpec('bonds', self._bond_drawing, 'transforms'),
+        ])
+
+    def symmetry_markup_instances(self, spec_name, atoms):
+        '''
+        Position-restraint markup for the given (ghost-drawn) atoms. Enabled
+        restraints only; parent-atom visibility is irrelevant (the ghost being
+        drawn is the sole criterion).
+        '''
+        rests = self.get_restraints(atoms)
+        if not len(rests):
+            return None
+        rests = rests[rests.enableds]
+        if not len(rests):
+            return None
+        if spec_name == 'pins':
+            return rests.targets, None
+        if spec_name == 'bonds':
+            return rests._bond_cylinder_transforms, None
+        return None
 
     def delete(self):
         self.model.triggers.remove_handler(self._model_update_handler)
@@ -2343,6 +2385,7 @@ class PositionRestraintMgr(_RestraintMgr):
         if n==0:
             pd.display = False
             bd.display = False
+            self._refresh_symmetry_markup()
             return
         pd.display = self._show_pd
         bd.display = self._show_bd
@@ -2350,6 +2393,7 @@ class PositionRestraintMgr(_RestraintMgr):
             self._update_bond_drawing(bd, visibles, n)
         if update_targets:
             self._update_pin_drawing(pd, visibles, n)
+        self._refresh_symmetry_markup()
 
     def _update_pin_drawing(self, pd, visibles, n):
         from chimerax.geometry import Places
@@ -2545,6 +2589,25 @@ class TuggableAtomsMgr(_RestraintMgr):
         # self._show_nearest_atoms = False
         # self._near_atoms_radius = 0.5
         model.add([self])
+        # Mirror tugging-force arrows onto crystallographic symmetry ghosts.
+        from .symmetry_markup import SymmetryGhostDrawing, GhostSpec
+        self._symmetry_ghost = SymmetryGhostDrawing(self, model,
+            [GhostSpec('arrows', self._arrow_drawing, 'transforms')])
+
+    def symmetry_markup_instances(self, spec_name, atoms):
+        '''
+        Tugging-force arrows for the given (ghost-drawn) atoms. Enabled tuggables
+        only; parent-atom visibility is irrelevant.
+        '''
+        if spec_name != 'arrows':
+            return None
+        tugs = self.get_tuggables(atoms)
+        if not len(tugs):
+            return None
+        tugs = tugs[tugs.enableds]
+        if not len(tugs):
+            return None
+        return tugs._bond_cylinder_transforms, None
 
     def delete(self):
         try:
@@ -2621,9 +2684,11 @@ class TuggableAtomsMgr(_RestraintMgr):
         n = len(visibles)
         if n==0:
             ad.display = False
+            self._refresh_symmetry_markup()
             return
         ad.display = True
         self._update_arrow_drawing(ad, visibles, n)
+        self._refresh_symmetry_markup()
 
     def _update_arrow_drawing(self, ad, visibles, n):
         from chimerax.geometry import Places

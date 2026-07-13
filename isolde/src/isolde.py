@@ -839,7 +839,10 @@ class Isolde():
             self.session.selection.clear()
             m.selected = True
 
-            # Load/create validation managers
+            # Load/create validation managers. Each manager draws its own
+            # crystallographic-symmetry ghost markup internally (see
+            # chimerax.isolde.symmetry_markup.SymmetryGhostDrawing), so no
+            # separate symmetry-markup model is needed here.
             from . import session_extensions as sx
             sx.get_rota_annotator(m)
             sx.get_rama_annotator(m)
