@@ -29,7 +29,16 @@ public:
     typedef std::chrono::duration<double, std::ratio<1,1000>> milliseconds;
     OpenmmThreadHandler() {}
     ~OpenmmThreadHandler() { if (_thread_running) _thread.join(); }
-    OpenmmThreadHandler(OpenMM::Context* context);
+    /*! Construct a handler for the given context.
+     *  num_real_atoms is the number of leading particles that correspond to
+     *  real ChimeraX atoms; any particles beyond this are OpenMM-only
+     *  (e.g. crystallographic symmetry copies represented as SymmetrySite
+     *  virtual sites) and are managed internally - their coordinates are never
+     *  exposed to or expected from Python. A value of 0 (the default) means
+     *  "all particles are real atoms", preserving the original behaviour for
+     *  simulations with no symmetry atoms.
+     */
+    OpenmmThreadHandler(OpenMM::Context* context, size_t num_real_atoms=0);
 
     OpenMM::CompoundIntegrator& integrator() { return static_cast<OpenMM::CompoundIntegrator&> (_context->getIntegrator());}
 
@@ -82,6 +91,7 @@ public:
         _context->reinitialize();
         _context->setPositions(current_state.getPositions());
         _context->setVelocities(current_state.getVelocities());
+        _context->computeVirtualSites();
     }
 
 
@@ -119,7 +129,10 @@ public:
     bool thread_running() const { return _thread_running; }
     bool unstable() const { return _unstable; }
     bool converged() const { return _min_converged; }
-    size_t natoms() const { return _natoms; }
+    //! Number of real (ChimeraX-backed) atoms - the count exposed to Python.
+    size_t natoms() const { return _num_real_atoms; }
+    //! Total number of particles in the System, including virtual sites.
+    size_t num_particles() const { return _natoms; }
     bool clash_detected() const { return _clash; }
 
     double smoothing_alpha() const { return _smoothing_alpha; }
@@ -135,7 +148,8 @@ private:
 
     std::thread _thread;
     std::exception_ptr _thread_except;
-    size_t _natoms;
+    size_t _natoms;          // total particles in the System (incl. virtual sites)
+    size_t _num_real_atoms;  // leading particles backed by real ChimeraX atoms
     bool _clash = false;
     bool _min_converged = false;
     bool _thread_running = false;

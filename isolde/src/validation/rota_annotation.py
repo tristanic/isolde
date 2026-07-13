@@ -75,8 +75,38 @@ class RotamerAnnotator(Model):
         t = structure.triggers
         self._structure_change_handler = t.add_handler('changes', self._update_graphics_if_needed)
 
+        # Draw the rotamer indicators on crystallographic symmetry ghosts too.
+        from ..symmetry_markup import SymmetryGhostDrawing, GhostSpec
+        self._symmetry_ghost = SymmetryGhostDrawing(self, structure,
+            [GhostSpec('rota', self._drawing, 'transforms')])
+
         self.update_graphics()
         self._update_needed = False
+
+    def symmetry_markup_instances(self, spec_name, atoms):
+        '''
+        Rotamer indicators for the residues of the given (ghost-drawn) atoms.
+        `visible_only=False` so a ghost is decorated whether or not its (real)
+        parent CA-CB bond is currently visible.
+        '''
+        if spec_name != 'rota':
+            return None
+        from ..geometry import bond_cylinder_placements, scale_transforms
+        rots_in = self._mgr.get_rotamers(atoms.unique_residues)
+        if not len(rots_in):
+            return None
+        rots, scales, colors = self._mgr.validate_scale_and_color_rotamers(
+            rots_in, max_scale=self._MAX_SCALE, non_favored_only=self._hide_favored,
+            visible_only=False)
+        if not len(rots):
+            return None
+        tf = scale_transforms(scales, bond_cylinder_placements(rots.ca_cb_bonds).array())
+        return tf, colors
+
+    def _refresh_symmetry_markup(self):
+        sg = getattr(self, '_symmetry_ghost', None)
+        if sg is not None:
+            sg.refresh()
 
     @property
     def display(self):
@@ -146,6 +176,9 @@ class RotamerAnnotator(Model):
             self.update_graphics()
 
     def delete(self):
+        sg = getattr(self, '_symmetry_ghost', None)
+        if sg is not None:
+            sg.delete()
         h = self._structure_change_handler
         if h is not None and self._atomic_structure is not None:
             self._atomic_structure.triggers.remove_handler(h)
@@ -194,6 +227,7 @@ class RotamerAnnotator(Model):
         d = self._drawing
         if not len(rots):
             d.display = False
+            self._refresh_symmetry_markup()
             return DEREGISTER
         d.display = True
         bonds = rots.ca_cb_bonds
@@ -202,6 +236,7 @@ class RotamerAnnotator(Model):
             transforms = Places(place_array=scale_transforms(scales, transforms.array()))
         d.positions = transforms
         d.colors = colors
+        self._refresh_symmetry_markup()
         return DEREGISTER
 
     def _rota_indicator(self):

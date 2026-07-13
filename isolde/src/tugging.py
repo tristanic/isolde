@@ -37,6 +37,14 @@ class TugAtomsMode(MouseMode):
         self._pull_vector = None
         self._xyz0 = None
         self._xy = None
+        # When a crystallographic symmetry ghost is tugged, this holds the
+        # operator (a Place) mapping the real atom to the picked ghost. The force
+        # is applied to the real atom's TuggableAtom with the pull vector rotated
+        # by the operator's inverse; None for an ordinary (real-atom) tug.
+        self._sym_place = None
+        # The structure's symmetry ghost model, resolved at pick time so
+        # _pick_exclude will allow ghosts to be picked.
+        self._pick_sym_model = None
         if spring_constant is None:
             from .constants import defaults
             spring_constant = defaults.MOUSE_TUG_SPRING_CONSTANT
@@ -92,6 +100,7 @@ class TugAtomsMode(MouseMode):
         if not flag:
             self._focal_atom = None
             self._picked_atom = None
+            self._sym_place = None
             if self._picked_tuggables is not None:
                 self._picked_tuggables.enableds = False
                 self._picked_tuggables = None
@@ -101,11 +110,20 @@ class TugAtomsMode(MouseMode):
             return True
 
         from chimerax.core.models import Model
+        # Also permit picking this structure's crystallographic symmetry ghosts
+        # (Clipper's AtomicSymmetryModel, a sibling under the SymmetryManager, not
+        # in the structure's own lineage), so a ghost can be tugged.
+        asm = self._pick_sym_model
         if isinstance(d, Model):
             if self.structure in d.all_models():
                 return False
+            if asm is not None and asm in d.all_models():
+                return False
             return True
-        if self.structure in d.drawing_lineage:
+        lineage = d.drawing_lineage
+        if self.structure in lineage:
+            return False
+        if asm is not None and asm in lineage:
             return False
         return True
 
@@ -113,6 +131,8 @@ class TugAtomsMode(MouseMode):
         MouseMode.mouse_down(self, event)
         x,y = event.position()
         self._xy = (x,y)
+        self._sym_place = None
+        self._pick_sym_model = self._current_symmetry_model()
         v = self.session.main_view
         if self.tug_mode == 'selection':
             pa = self.atoms[self.atoms.selecteds]
@@ -121,14 +141,73 @@ class TugAtomsMode(MouseMode):
             # from . import picking
             # pick = picking.pick_closest_to_line(self.session, x, y, self._atoms, 0.5, hydrogens=True)
             pick = v.picked_object(x, y, self._pick_exclude)
+            self._maybe_capture_symmetry(pick)
             pa = self._pick_atoms(pick)
 
         if pa is not None and len(pa):
             if self._start_tugging_atoms(pa):
                 try:
                     self._set_pull_direction(x, y)
-                except:
+                except Exception as e:
+                    self.session.logger.warning(
+                        'ISOLDE tug: failed to set pull direction: {}'.format(e))
                     self.tugging=False
+            elif self._sym_place is not None:
+                self.session.logger.info(
+                    'ISOLDE: that symmetry ghost has no tuggable atom.')
+        elif self._sym_place is not None:
+            self.session.logger.info(
+                'ISOLDE: that symmetry ghost cannot be tugged — its atom is not '
+                'part of the mobile (simulated) selection.')
+
+    def _current_symmetry_model(self):
+        '''The structure's Clipper AtomicSymmetryModel, or None.'''
+        try:
+            from chimerax.clipper.symmetry import get_symmetry_handler
+            sh = get_symmetry_handler(self.structure, create=False)
+        except Exception:
+            return None
+        if sh is None:
+            return None
+        try:
+            return sh.atomic_symmetry_model
+        except Exception:
+            return None
+
+    def _maybe_capture_symmetry(self, pick):
+        '''
+        If the pick is a symmetry ghost, record the operator (as a Place) so the
+        tug is applied to the real atom with the pull vector inverse-transformed.
+        '''
+        self._sym_place = None
+        try:
+            from chimerax.clipper.symmetry import PickedSymAtom, PickedSymBond
+        except ImportError:
+            return
+        atom = None
+        if isinstance(pick, PickedSymAtom):
+            atom = pick.atom
+        elif isinstance(pick, PickedSymBond):
+            atom = pick.bond.atoms[0]
+        if atom is None:
+            return
+        from chimerax.clipper.util import rtop_frac_as_place
+        self._sym_place = rtop_frac_as_place(pick.sym, atom.structure.parent.cell)
+
+    def _apply_sym(self, pull_vector):
+        '''Rotate a local-frame pull vector into the real atom's frame (Rᵀ·w).'''
+        P = self._sym_place
+        if P is None:
+            return pull_vector
+        return P.inverse(is_orthonormal=True).transform_vectors(pull_vector)
+
+    def _ghost_scene_coord(self, atom):
+        '''Scene coordinates of atom's symmetry ghost under the picked operator.'''
+        import numpy
+        P = self._sym_place
+        # Atom.coord is a tinyarray (no .reshape); make it a numpy (1,3).
+        local = numpy.array(atom.coord, dtype=numpy.float64).reshape(1, 3)
+        return (self.structure.scene_position * P).transform_points(local)[0]
 
     def _pick_atoms(self, pick):
         if pick is None:
@@ -212,7 +291,7 @@ class TugAtomsMode(MouseMode):
             return
         self._xy = x,y = event.position()
         ref_point = self._pull_reference_point()
-        pull_vector = self._offset_vector(x, y, ref_point)
+        pull_vector = self._apply_sym(self._offset_vector(x, y, ref_point))
         tugs = self._picked_tuggables
         tugs.targets = self._picked_atoms.coords + pull_vector
 
@@ -241,6 +320,9 @@ class TugAtomsMode(MouseMode):
                 self._reference_point += (new_atom_center - lc)
             self._last_picked_atom_center = new_atom_center
             ref_point = self._reference_point
+        elif self._sym_place is not None:
+            # Project against the ghost, where the user is actually dragging.
+            ref_point = self._ghost_scene_coord(self._focal_atom)
         else:
             ref_point = self._focal_atom.scene_coord
         return ref_point
@@ -250,9 +332,11 @@ class TugAtomsMode(MouseMode):
         if self.tug_mode == 'selection':
             ref_point = self._reference_point
             self._last_picked_atom_center = coords.mean(axis=0)
+        elif self._sym_place is not None:
+            ref_point = self._ghost_scene_coord(self._focal_atom)
         else:
             ref_point = self._focal_atom.scene_coord
-        pull_vector = self._offset_vector(x, y, ref_point)
+        pull_vector = self._apply_sym(self._offset_vector(x, y, ref_point))
         tugs = self._picked_tuggables
         tugs.targets = coords + pull_vector
 

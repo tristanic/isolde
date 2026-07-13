@@ -18,6 +18,8 @@ class _IsoldeBasicSettings(Settings):
         'trajectory_smoothing':             defaults.TRAJECTORY_SMOOTHING,
         'smoothing_alpha':                  defaults.SMOOTHING_ALPHA,
 
+        'experience_level':                 defaults.EXPERIENCE_LEVEL,
+
         'phenix_base_path':                 None,
     }
 
@@ -62,9 +64,21 @@ class _IsoldeAdvancedSettings(Settings):
     }
 
 def register_settings_options(session):
-    from chimerax.ui.options import (
-        ColorOption, BooleanOption, IntOption, FloatOption,
+    from chimerax.ui.options import SymbolicEnumOption
+    # Symbolic names mirror ExpertModeSelector (ui/ui_base.py): the option
+    # displays the labels but stores/returns the integer level (0/1/2).
+    opt = SymbolicEnumOption(
+        'Experience level',
+        basic_settings.experience_level,
+        None,                                   # no extra callback; persistence is automatic
+        values=(0, 1, 2),
+        labels=('Default', 'Advanced', 'Developer'),
+        attr_name='experience_level',
+        settings=basic_settings,
+        balloon='Experience level applied each time ISOLDE starts. Higher '
+                'levels reveal additional advanced and developer controls.',
     )
+    session.ui.main_window.add_settings_option('ISOLDE', opt)
 
 basic_settings = None # set during bundle initialisation
 color_settings = None # set during bundle initialisation

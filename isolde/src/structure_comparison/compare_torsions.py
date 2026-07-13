@@ -39,7 +39,7 @@ def sidechain_buried_score(residue):
     r = residue
     m = r.structure
     other_residues = m.residues.subtract(Residues([r]))
-    sidechain_atoms = r.atoms[numpy.logical_not(numpy.in1d(r.atoms.names, ['N', 'C', 'CA', 'O']))]
+    sidechain_atoms = r.atoms[numpy.logical_not(numpy.isin(r.atoms.names, ['N', 'C', 'CA', 'O']))]
     if not len(sidechain_atoms):
         return 0
     other_atoms = other_residues.atoms

@@ -125,10 +125,17 @@ def _push_now(sh, coords):
 
 
 def _sim_coords(sh):
-    '''Current simulation coordinates (Angstrom, construct/_atoms order).'''
+    '''Current simulation coordinates (Angstrom, construct/_atoms order).
+
+    Returns ONLY the real-atom rows. In a symmetry-aware simulation the OpenMM
+    System carries extra symmetry-copy virtual-site particles after the real atoms
+    ([0, n_real) real, [n_real, n_total) copies), so the raw context state is longer
+    than sh._atoms; everything in rotafit is keyed to sh._atoms, so slice to it.
+    (A no-op when symmetry is off: n_total == n_real.)'''
     from openmm import unit
     st = sh._simulation.context.getState(getPositions=True)
-    return st.getPositions(asNumpy=True).value_in_unit(unit.angstrom)
+    coords = st.getPositions(asNumpy=True).value_in_unit(unit.angstrom)
+    return coords[:len(sh._atoms)]
 
 
 def _score_groups():
