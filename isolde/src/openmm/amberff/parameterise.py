@@ -46,9 +46,40 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         import shutil
         shutil.copyfile(ante_out, f'{residue.name}.mol2')
 
-def parameterise_cmd(session, residues, override=False, net_charge=None, always_raise_errors=True):
+def parameterise_cmd(session, residues, override=False, net_charge=None,
+                     always_raise_errors=True, shell_radius=1):
     from chimerax.core.errors import UserError
-    unique_residue_types = [residues[residues.names==name][0] for name in residues.unique_names]
+    from chimerax.atomic import Residues
+    # Covalent residues (bonded to another residue) route to the covalent-unit
+    # pipeline; free ligands take the classic single-residue path below.
+    covalent = [r for r in residues if len(r.neighbors) != 0]
+    if covalent:
+        from .covalent import detect_covalent_unit, parameterise_covalent_unit
+        handled = set()
+        for r in covalent:
+            if r in handled:
+                continue
+            try:
+                unit = detect_covalent_unit(r)
+            except UserError as e:
+                if always_raise_errors:
+                    raise
+                session.logger.warning(str(e))
+                continue
+            handled.update(unit.residues)
+            try:
+                parameterise_covalent_unit(session, unit, shell_radius=shell_radius,
+                                           net_charge=net_charge)
+            except Exception as e:
+                if always_raise_errors:
+                    raise UserError(str(e))
+                session.logger.warning('Covalent parameterisation of %r failed: %s'
+                                       % (unit, e))
+
+    free = Residues([r for r in residues if len(r.neighbors) == 0])
+    if not len(free):
+        return
+    unique_residue_types = [free[free.names == name][0] for name in free.unique_names]
     for residue in unique_residue_types:
         if hasattr(session, 'isolde'):
             ff_name = session.isolde.sim_params.forcefield
@@ -63,7 +94,11 @@ def parameterise_cmd(session, residues, override=False, net_charge=None, always_
                         f'the {ff_name} forcefield. If you wish to replace that template, re-run this '
                         'command with override=True')
         try:
-            parameterise_ligand(session, residue, net_charge=net_charge)
+            # Free ligands now go through the RDKit pipeline (correct bond orders,
+            # order-based atom-name round-trip, self-contained collision-proof
+            # template) -- the same machinery as the covalent path.
+            from .covalent import parameterise_free_ligand
+            parameterise_free_ligand(session, residue, net_charge=net_charge)
         except Exception as e:
             if always_raise_errors:
                 raise UserError(str(e))
@@ -71,14 +106,6 @@ def parameterise_cmd(session, residues, override=False, net_charge=None, always_
                 session.logger.warning(f'Parameterisation of {residue.name} failed with the following message:')
                 session.logger.warning(str(e))
                 continue
-        session.logger.info(f'OpenMM ffXML file {residue.name} written to the current working directory.')
-        if hasattr(session, 'isolde'):
-            if len(templates):
-                forcefield._templates.pop(templates[0])
-            forcefield.loadFile(f'{residue.name}.xml', resname_prefix='USER_')
-            session.logger.info(f'New template added to forcefield as USER_{residue.name}. This ligand should '
-                'now work in all remaining simulations for this session. To use in '
-                'future sessions, load the ffXML file with ISOLDE\'s Load Residue MD Definition(s) button.')
 
 def register_isolde_param(logger):
     from chimerax.atomic import ResiduesArg
@@ -88,9 +115,12 @@ def register_isolde_param(logger):
         keyword=[
             ('override', BoolArg),
             ('net_charge', IntArg),
-            ('always_raise_errors', BoolArg)
+            ('always_raise_errors', BoolArg),
+            ('shell_radius', IntArg),
         ],
-        synopsis=('Parameterise ligand(s) for use in ISOLDE. Supports most organic species; '
-            'covalent bonds between residues are not supported. Hydrogens must be present and correct.')
+        synopsis=('Parameterise ligand(s) for use in ISOLDE. Supports most organic species. '
+            'Covalent ligands, residue-residue crosslinks and main-chain modifications are '
+            'built as a capped super-residue (select any residue of the unit). Hydrogens '
+            'must be present and correct.')
     )
     register('isolde parameterise', desc, parameterise_cmd, logger=logger)

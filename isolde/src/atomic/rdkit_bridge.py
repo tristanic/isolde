@@ -369,6 +369,29 @@ def rigid_fragments(mol):
     return out
 
 
+def mol_to_sdf(mol, conf_id=-1):
+    '''Serialise an RDKit ``mol`` (which MUST carry a 3D conformer) to an MDL
+    SDF/MOL block, ready to feed to ANTECHAMBER (``-fi sdf``).
+
+    We hand ANTECHAMBER SDF rather than MOL2 because RDKit writes SDF natively and
+    correctly -- bond orders straight from ``mol`` (kekulised), the 3D conformer
+    embedded -- which avoids hand-authoring SYBYL atom types. SDF carries no atom
+    names, but that is irrelevant here: the caller maps ANTECHAMBER's output back
+    to source atoms by atom **order** (ANTECHAMBER preserves it 1:1) via the
+    ``cxIdx`` map, then reattaches the real names. Kekule bond orders are what
+    ANTECHAMBER wants; no charges are written, so it computes AM1-BCC itself
+    (``-c bcc``).
+    '''
+    if mol is None or mol.GetNumConformers() == 0:
+        raise ValueError('mol_to_sdf requires a mol with a 3D conformer')
+    try:
+        return Chem.MolToMolBlock(mol, confId=conf_id, kekulize=True)
+    except Exception:
+        # A mol that only passed the relaxed sanitize may not kekulise; fall back
+        # to aromatic bond types (ANTECHAMBER still perceives from the geometry).
+        return Chem.MolToMolBlock(mol, confId=conf_id, kekulize=False)
+
+
 # ---------------------------------------------------------------------------
 # ChimeraX-side helpers (main thread only)
 # ---------------------------------------------------------------------------
@@ -750,6 +773,220 @@ def residue_to_rdkit(residue, template=None):
 
     # Fallback: perceive from geometry.
     return perceive_residue(session, residue)
+
+
+def _unit_chemistry_maps(residue):
+    '''Per-residue chemistry for a super-residue as
+    ``({atom_name: formal_charge}, {frozenset(name1, name2): rdkit BondType},
+    {aromatic atom_name, ...})``.
+
+    Sourced from :func:`residue_to_rdkit`, so it uses the CCD reference when one
+    matches by name and **otherwise perceives from geometry** -- we cannot assume
+    every ligand has a CCD exemplar. On total failure it returns empty maps and
+    the caller defaults bonds to single / charges to zero.'''
+    charge_by_name = {}
+    order_by_pair = {}
+    aromatic = set()
+    try:
+        mol, _amap = residue_to_rdkit(residue)
+    except Exception:
+        mol = None
+    if mol is None:
+        return charge_by_name, order_by_pair, aromatic
+    for a in mol.GetAtoms():
+        if not a.HasProp(NAME_PROP):
+            continue
+        nm = a.GetProp(NAME_PROP)
+        charge_by_name[nm] = a.GetFormalCharge()
+        if a.GetIsAromatic():
+            aromatic.add(nm)
+    for b in mol.GetBonds():
+        a1, a2 = b.GetBeginAtom(), b.GetEndAtom()
+        if a1.HasProp(NAME_PROP) and a2.HasProp(NAME_PROP):
+            order_by_pair[frozenset((a1.GetProp(NAME_PROP),
+                                     a2.GetProp(NAME_PROP)))] = b.GetBondType()
+    return charge_by_name, order_by_pair, aromatic
+
+
+def super_residue_to_rdkit(residues):
+    '''Build ONE RDKit molecule spanning a covalent unit -- a ligand plus the
+    standard residue(s) it is covalently bonded to -- with the wider chain
+    replaced by caps, ready to feed to ANTECHAMBER / AM1-BCC.
+
+    Every bond *among* the given residues is kept (including the covalent
+    ligand<->partner link). Every bond *out* of the set (to the rest of the model)
+    is replaced by a cap so the fragment has a sensible closed valence and a
+    physical local geometry for the semi-empirical charge calculation:
+
+    * a peptide backbone cut on a standard amino acid's ``N`` -> an **ACE**
+      (acetyl) cap; on its ``C`` -> an **NME** (N-methyl) cap;
+    * any other external bond -> a **methyl** cap.
+
+    Cap heavy atoms are placed at the coordinates of the real neighbour atoms they
+    stand in for (so the acetyl/N-methyl geometry comes straight from the chain).
+    Hydrogens are added last with coordinates (``AddHs(addCoords=True)``).
+
+    Heavy atoms of the unit carry a **globally unique** integer ``cxIdx`` (the key
+    used to map back to ChimeraX -- atom *names* collide across residues) plus
+    ``cxName``. Cap atoms and all hydrogens carry a ``CAP`` property and no
+    ``cxIdx``, so they drop out of the round-trip automatically.
+
+    Args:
+        residues: an ordered iterable of :class:`chimerax.atomic.Residue` forming
+            the covalent unit.
+
+    Returns:
+        ``(mol, cxidx_to_atom, info)`` where ``mol`` is an RDKit mol with
+        hydrogens and a 3D conformer (``None`` on failure), ``cxidx_to_atom`` maps
+        ``cxIdx`` -> ChimeraX ``Atom`` for the real unit atoms (heavy + modelled H;
+        cap atoms and cap hydrogens are excluded), and ``info``
+        is a dict with ``'status'`` ('ok'/'relaxed'/'failed'), ``'net_charge'``
+        (integer total formal charge of the capped fragment) and ``'caps'`` (a
+        list of cap descriptors).
+    '''
+    import numpy
+    from chimerax.atomic import Residue, Atoms
+
+    residues = list(residues)
+    # ALL atoms of the unit, heavy + modelled H. We keep the modelled hydrogens
+    # (rather than dropping and re-perceiving them) so the emitted template's atom
+    # graph matches the model residue EXACTLY -- OpenMM matches templates by element
+    # + connectivity incl. H count, so a single mis-perceived bond order (common on
+    # nitriles / hydrazones / heteroaromatics without a CCD entry) would otherwise
+    # change the H count and make the template fail to match. Bond orders (which do
+    # NOT affect matching) still come from the CCD/perception, for ANTECHAMBER only.
+    unit_atoms = [a for r in residues for a in r.atoms]
+    unit_heavy = [a for a in unit_atoms if a.element.number != 1]
+    unit_set = set(unit_atoms)
+    if not unit_heavy:
+        return None, {}, {'status': 'failed', 'net_charge': 0, 'caps': []}
+
+    chem_maps = {r: _unit_chemistry_maps(r) for r in residues}
+
+    rw = Chem.RWMol()
+    rd_of = {}                 # ChimeraX Atom -> rdkit index
+    cxidx_to_atom = {}         # global cxIdx -> ChimeraX Atom
+    coords = {}                # rdkit index -> (x, y, z)
+    for gi, atom in enumerate(unit_atoms):
+        a = Chem.Atom(_norm_element(atom.element.name))
+        if atom.element.number != 1:
+            charge_by_name, _order, aromatic = chem_maps[atom.residue]
+            fc = charge_by_name.get(atom.name, 0)
+            if fc:
+                a.SetFormalCharge(int(fc))
+            if atom.name in aromatic:
+                a.SetIsAromatic(True)
+        a.SetIntProp(INDEX_PROP, gi)
+        a.SetProp(NAME_PROP, atom.name)
+        idx = rw.AddAtom(a)
+        rd_of[atom] = idx
+        cxidx_to_atom[gi] = atom
+        coords[idx] = tuple(float(v) for v in atom.coord)
+
+    # Bonds among unit atoms. Heavy-heavy intra-residue orders come from the
+    # CCD/perceived chemistry; bonds to hydrogen and inter-residue links are single
+    # (peptide / glycosidic / thioether links are all single bonds).
+    for b in Atoms(unit_atoms).intra_bonds:
+        a1, a2 = b.atoms
+        i1, i2 = rd_of.get(a1), rd_of.get(a2)
+        if i1 is None or i2 is None:
+            continue
+        if (a1.element.number != 1 and a2.element.number != 1
+                and a1.residue is a2.residue):
+            _c, order_by_pair, _ar = chem_maps[a1.residue]
+            bond_type = order_by_pair.get(frozenset((a1.name, a2.name)),
+                                          Chem.BondType.SINGLE)
+        else:
+            bond_type = Chem.BondType.SINGLE
+        rw.AddBond(i1, i2, bond_type)
+        if bond_type == Chem.BondType.AROMATIC:
+            bd = rw.GetBondBetweenAtoms(i1, i2)
+            bd.SetIsAromatic(True)
+            rw.GetAtomWithIdx(i1).SetIsAromatic(True)
+            rw.GetAtomWithIdx(i2).SetIsAromatic(True)
+
+    caps_info = []
+    cap_indices = []
+
+    def _add_cap_atom(element, xyz):
+        a = Chem.Atom(_norm_element(element))
+        a.SetProp('CAP', '1')
+        idx = rw.AddAtom(a)
+        coords[idx] = tuple(float(v) for v in xyz)
+        cap_indices.append(idx)
+        return idx
+
+    def _neighbour_coord(atom, name, fallback):
+        for nb in atom.neighbors:
+            if nb.name == name:
+                return tuple(float(v) for v in nb.coord)
+        return fallback
+
+    # Cap every bond leaving the unit (heavy atoms only; H never bond out).
+    for u in unit_heavy:
+        ui = rd_of[u]
+        for n in u.neighbors:
+            if n.element.number == 1 or n in unit_set:
+                continue
+            u_xyz = numpy.array(coords[ui])
+            n_xyz = numpy.array([float(v) for v in n.coord])
+            is_amino = (u.residue.polymer_type == Residue.PT_AMINO)
+            if is_amino and u.name == 'N' and n.name == 'C':
+                # N-side peptide cut -> ACE (acetyl): carbonyl C at prev-C, =O at
+                # prev-O, methyl at prev-CA.
+                cC = _add_cap_atom('C', n_xyz)
+                o_xyz = _neighbour_coord(n, 'O', tuple(n_xyz + numpy.array([0.0, 1.2, 0.0])))
+                ca_xyz = _neighbour_coord(n, 'CA', tuple(n_xyz + (n_xyz - u_xyz)))
+                cO = _add_cap_atom('O', o_xyz)
+                cM = _add_cap_atom('C', ca_xyz)
+                rw.AddBond(ui, cC, Chem.BondType.SINGLE)
+                rw.AddBond(cC, cO, Chem.BondType.DOUBLE)
+                rw.AddBond(cC, cM, Chem.BondType.SINGLE)
+                caps_info.append({'kind': 'ACE', 'on': (u.residue.name, u.name)})
+            elif is_amino and u.name == 'C' and n.name == 'N':
+                # C-side peptide cut -> NME (N-methyl): amide N at next-N, methyl
+                # at next-CA.
+                cN = _add_cap_atom('N', n_xyz)
+                ca_xyz = _neighbour_coord(n, 'CA', tuple(n_xyz + (n_xyz - u_xyz)))
+                cM = _add_cap_atom('C', ca_xyz)
+                rw.AddBond(ui, cN, Chem.BondType.SINGLE)
+                rw.AddBond(cN, cM, Chem.BondType.SINGLE)
+                caps_info.append({'kind': 'NME', 'on': (u.residue.name, u.name)})
+            else:
+                # Generic cut -> methyl cap at the removed neighbour's position.
+                cM = _add_cap_atom('C', n_xyz)
+                rw.AddBond(ui, cM, Chem.BondType.SINGLE)
+                caps_info.append({'kind': 'CH3', 'on': (u.residue.name, u.name)})
+
+    # Attach a conformer, sanitise (perceives aromaticity from the Kekule orders),
+    # then add hydrogens with coordinates.
+    from rdkit.Geometry import Point3D
+    m = rw.GetMol()
+    conf = Chem.Conformer(m.GetNumAtoms())
+    for idx, xyz in coords.items():
+        conf.SetAtomPosition(idx, Point3D(*xyz))
+    conf.Set3D(True)
+    m.AddConformer(conf, assignId=True)
+
+    m, status = _sanitize_ladder(m, strip_hs=False)
+    if m is None:
+        return None, {}, {'status': 'failed', 'net_charge': 0, 'caps': caps_info}
+    # Hydrogen policy: if the model is protonated, keep its hydrogens exactly (add
+    # H only to the caps) so the emitted template matches the model residue's graph.
+    # Only if the model carries NO hydrogens at all do we protonate the whole thing
+    # (ISOLDE requires H before simulating, but this keeps the all-heavy input from
+    # producing a bare fragment for ANTECHAMBER).
+    unit_has_h = any(a.element.number == 1 for a in unit_atoms)
+    try:
+        if not unit_has_h:
+            m = Chem.AddHs(m, addCoords=True)
+        elif cap_indices:
+            m = Chem.AddHs(m, addCoords=True, onlyOnAtoms=cap_indices)
+    except Exception:
+        pass
+    net_charge = Chem.GetFormalCharge(m)
+    return m, cxidx_to_atom, {'status': status, 'net_charge': net_charge,
+                              'caps': caps_info}
 
 
 # ---------------------------------------------------------------------------
