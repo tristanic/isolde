@@ -61,6 +61,9 @@ RDLogger.DisableLog('rdApp.*')
 #: Identity properties carried on RDKit atoms (survive RemoveHs/AddHs/sanitize).
 NAME_PROP = 'cxName'
 INDEX_PROP = 'cxIdx'
+#: Parent-atom index carried on a capped charge-fragment's real atoms (see
+#: :func:`build_capped_fragment`); cap atoms do not carry it.
+FRAGSRC_PROP = 'fragSrc'
 
 #: CCD ``value_order`` strings -> RDKit bond types. CCD encodes aromatic rings as
 #: Kekule single/double, so we trust the explicit order and let RDKit perceive
@@ -367,6 +370,199 @@ def rigid_fragments(mol):
         if names:
             out.append(names)
     return out
+
+
+#: A carbon eligible as a charge-fragmentation cut endpoint: neutral, sp3,
+#: non-aromatic, and non-terminal (>=2 heavy neighbours, so cutting it splits the
+#: molecule rather than lopping off a lone methyl).
+def _cuttable_carbon(a):
+    if a.GetAtomicNum() != 6 or a.GetIsAromatic() or a.GetFormalCharge() != 0:
+        return False
+    if a.GetHybridization() != Chem.HybridizationType.SP3:
+        return False
+    heavy_deg = sum(1 for nb in a.GetNeighbors() if nb.GetAtomicNum() != 1)
+    return heavy_deg >= 2
+
+
+def _is_polarish(a):
+    '''True for an atom whose local electronics we must NOT split across a charge
+    fragment: any heteroatom, any formal charge, aromatic, or bearing a non-single
+    bond (a carbonyl/alkene carbon). Hydrogens are transparent.'''
+    if a.GetAtomicNum() == 1:
+        return False
+    if a.GetAtomicNum() != 6 or a.GetFormalCharge() != 0 or a.GetIsAromatic():
+        return True
+    return any(b.GetBondType() != Chem.BondType.SINGLE for b in a.GetBonds())
+
+
+def safe_cut_bonds(mol, buffer=2):
+    '''Bond indices where the molecule may be cut for divide-and-conquer AM1-BCC
+    charging without materially perturbing the charges: an acyclic single C-C bond
+    between two :func:`_cuttable_carbon`\\ s, both of which are more than ``buffer``
+    bonds from any "polarish" atom (:func:`_is_polarish`). This isolates cuts to
+    saturated alkyl linkers and keeps every functional group's electronics intact
+    within one fragment.'''
+    # Multi-source BFS: graph distance from every polarish atom.
+    dist = {a.GetIdx(): 0 for a in mol.GetAtoms() if _is_polarish(a)}
+    frontier, d = list(dist), 0
+    while frontier:
+        d += 1
+        nxt = []
+        for i in frontier:
+            for nb in mol.GetAtomWithIdx(i).GetNeighbors():
+                j = nb.GetIdx()
+                if j not in dist:
+                    dist[j] = d
+                    nxt.append(j)
+        frontier = nxt
+    BIG = mol.GetNumAtoms() + 1
+
+    def far(i):
+        return dist.get(i, BIG) > buffer
+
+    out = []
+    for b in mol.GetBonds():
+        if b.GetBondType() != Chem.BondType.SINGLE or b.IsInRing():
+            continue
+        a1, a2 = b.GetBeginAtom(), b.GetEndAtom()
+        if not (_cuttable_carbon(a1) and _cuttable_carbon(a2)):
+            continue
+        if far(a1.GetIdx()) and far(a2.GetIdx()):
+            out.append(b.GetIdx())
+    return out
+
+
+def charge_partition(mol, max_heavy=30, buffer=2):
+    '''Partition ``mol`` into fragments of at most ~``max_heavy`` heavy atoms for
+    divide-and-conquer charging, cutting ONLY at :func:`safe_cut_bonds`. Returns a
+    list of sets of parent-atom indices (each set is one fragment, hydrogens
+    included). A single-element list means "do not fragment" (nothing safe to cut,
+    or the whole molecule already fits).
+
+    Strategy: cut every safe bond, then greedily merge neighbouring pieces back up
+    while the merged heavy-atom count stays within ``max_heavy`` -- minimising the
+    number of fragments (hence caps and error). **A piece that contains any
+    "polarish" atom (aromatic/heteroatom/charged/multiply-bonded) is treated as an
+    irreducible core and is never merged into**, so a cheap alkyl tail can never be
+    glued back onto the expensive conjugated core it was cut from; only pure-alkyl
+    pieces merge with each other. A core piece larger than ``max_heavy`` (a big rigid
+    ring system with no internal safe cut) is left as-is.
+    '''
+    n = mol.GetNumAtoms()
+    heavy_total = sum(1 for a in mol.GetAtoms() if a.GetAtomicNum() != 1)
+    if heavy_total <= max_heavy:
+        return [set(range(n))]
+    safe = safe_cut_bonds(mol, buffer=buffer)
+    if not safe:
+        return [set(range(n))]
+    frags = Chem.GetMolFrags(Chem.FragmentOnBonds(mol, safe, addDummies=False))
+    atom2frag = {}
+    size = []
+    core_like = []
+    for fi, grp in enumerate(frags):
+        for a in grp:
+            atom2frag[a] = fi
+        size.append(sum(1 for a in grp if mol.GetAtomWithIdx(a).GetAtomicNum() != 1))
+        core_like.append(any(_is_polarish(mol.GetAtomWithIdx(a)) for a in grp))
+    parent = list(range(len(frags)))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    edges = []
+    for bidx in safe:
+        b = mol.GetBondWithIdx(bidx)
+        u, v = atom2frag[b.GetBeginAtomIdx()], atom2frag[b.GetEndAtomIdx()]
+        if u != v:
+            edges.append((u, v))
+    merged = True
+    while merged:
+        merged = False
+        for (u, v) in edges:
+            ru, rv = find(u), find(v)
+            if ru == rv:
+                continue
+            # Never merge into/onto a core piece: keep the expensive conjugated core
+            # minimal and stop it re-absorbing the cheap alkyl tail it was cut from.
+            if core_like[ru] or core_like[rv]:
+                continue
+            if size[ru] + size[rv] <= max_heavy:
+                parent[ru] = rv
+                size[rv] += size[ru]
+                merged = True
+    groups = {}
+    for fi, grp in enumerate(frags):
+        groups.setdefault(find(fi), set()).update(grp)
+    return list(groups.values())
+
+
+def build_capped_fragment(mol, atom_indices):
+    '''Build a standalone, capped RDKit fragment of ``mol`` covering ``atom_indices``
+    (from :func:`charge_partition`), ready to feed to ANTECHAMBER for local AM1-BCC
+    charging. Every kept (real) atom carries the ``fragSrc`` prop = its parent index,
+    so charges map straight back; every bond severed by the cut is replaced by a
+    **methyl carbon at the removed neighbour's coordinate** (single bond, tagged
+    ``CAP``, no ``fragSrc``) so the cut carbon still sees a carbon neighbour -- the
+    true local environment of an alkyl chain, minimising the charge perturbation.
+    Hydrogens follow the same policy as :func:`super_residue_to_rdkit` (kept if the
+    fragment is already protonated; added to caps only). Returns the mol, or ``None``
+    if it will not sanitise.'''
+    from rdkit.Geometry import Point3D
+    keep = set(atom_indices)
+    conf_in = mol.GetConformer()
+    rw = Chem.RWMol()
+    old2new, coords = {}, {}
+    for i in sorted(keep):
+        a_in = mol.GetAtomWithIdx(i)
+        a = Chem.Atom(a_in.GetAtomicNum())
+        a.SetFormalCharge(a_in.GetFormalCharge())
+        if a_in.GetIsAromatic():
+            a.SetIsAromatic(True)
+        a.SetIntProp(FRAGSRC_PROP, i)
+        ni = rw.AddAtom(a)
+        old2new[i] = ni
+        p = conf_in.GetAtomPosition(i)
+        coords[ni] = (p.x, p.y, p.z)
+    for b in mol.GetBonds():
+        i, j = b.GetBeginAtomIdx(), b.GetEndAtomIdx()
+        if i in keep and j in keep:
+            rw.AddBond(old2new[i], old2new[j], b.GetBondType())
+            if b.GetIsAromatic():
+                rw.GetBondBetweenAtoms(old2new[i], old2new[j]).SetIsAromatic(True)
+    cap_indices = []
+    for i in keep:
+        for nb in mol.GetAtomWithIdx(i).GetNeighbors():
+            j = nb.GetIdx()
+            if j in keep or nb.GetAtomicNum() == 1:
+                continue
+            cap = Chem.Atom(6)
+            cap.SetProp('CAP', '1')
+            ci = rw.AddAtom(cap)
+            p = conf_in.GetAtomPosition(j)
+            coords[ci] = (p.x, p.y, p.z)
+            rw.AddBond(old2new[i], ci, Chem.BondType.SINGLE)
+            cap_indices.append(ci)
+    m = rw.GetMol()
+    conf = Chem.Conformer(m.GetNumAtoms())
+    for idx, xyz in coords.items():
+        conf.SetAtomPosition(idx, Point3D(*xyz))
+    conf.Set3D(True)
+    m.AddConformer(conf, assignId=True)
+    m, status = _sanitize_ladder(m, strip_hs=False)
+    if m is None:
+        return None
+    frag_has_h = any(mol.GetAtomWithIdx(i).GetAtomicNum() == 1 for i in keep)
+    try:
+        if not frag_has_h:
+            m = Chem.AddHs(m, addCoords=True)
+        elif cap_indices:
+            m = Chem.AddHs(m, addCoords=True, onlyOnAtoms=cap_indices)
+    except Exception:
+        pass
+    return m
 
 
 def mol_to_sdf(mol, conf_id=-1):
@@ -717,6 +913,95 @@ def template_to_rdkit(session, resname):
     return mol_from_ccd(atoms, bonds, name=resname, coords=coords)
 
 
+def _resolve_base_templates(session, strings):
+    '''Resolve user-supplied ``baseTemplates`` strings to reference RDKit mols with
+    explicit chemistry, ONCE. Each string is tried as a CCD id / ChemComp-registered
+    template first (:func:`template_to_rdkit`), then as a SMILES
+    (``Chem.MolFromSmiles``). Unresolvable strings are warned about and skipped.
+    Returns a list of reference mols (empty if ``strings`` is falsy).'''
+    if not strings:
+        return []
+    mols = []
+    for s in strings:
+        s = str(s).strip()
+        if not s:
+            continue
+        ref, kind = None, None
+        try:
+            m, _status = template_to_rdkit(session, s)
+        except Exception:
+            m = None
+        if m is not None:
+            ref, kind = m, 'CCD/registered template'
+        else:
+            try:
+                sm = Chem.MolFromSmiles(s)
+            except Exception:
+                sm = None
+            if sm is not None:
+                ref, kind = sm, 'SMILES'
+        if ref is None:
+            session.logger.warning(
+                'baseTemplate %r could not be resolved as a CCD id, a registered '
+                'template, or a SMILES string; ignoring it.' % s)
+            continue
+        session.logger.info('baseTemplate %r resolved as %s (%d heavy atoms).'
+            % (s, kind, sum(1 for a in ref.GetAtoms() if a.GetAtomicNum() != 1)))
+        mols.append(ref)
+    return mols
+
+
+def apply_base_templates(frag_mol, ref_mols, min_match=3):
+    '''Transfer trusted chemistry from reference exemplars onto a perceived fragment.
+
+    For each reference mol, find a connectivity (bond-order-agnostic) MCS
+    correspondence to ``frag_mol`` (:func:`fmcs_index_correspondence`) and copy the
+    reference's **formal charges** (the load-bearing quantity -- it sets the net
+    charge) plus bond orders and aromatic flags onto the matched fragment atoms/bonds.
+    Matches smaller than ``min_match`` heavy atoms are ignored (spurious MCS), and
+    atoms already set by an earlier (processed-first) exemplar are not overwritten, so
+    several partial exemplars can each patch a region. Only bond types / formal
+    charges / aromatic flags are mutated -- atoms are never rebuilt -- so the
+    ``cxName``/``cxIdx`` identity props survive. Returns the (re-sanitised) mol.'''
+    if not ref_mols:
+        return frag_mol
+    covered = set()
+    changed = False
+    for ref in ref_mols:
+        try:
+            pairs = fmcs_index_correspondence(frag_mol, ref, match_bond_order=False)
+        except Exception:
+            pairs = []
+        heavy_pairs = [(fi, ri) for (fi, ri) in pairs
+                       if frag_mol.GetAtomWithIdx(fi).GetAtomicNum() != 1]
+        if len(heavy_pairs) < min_match:
+            continue
+        r2f = {ri: fi for (fi, ri) in pairs}
+        fresh = [(fi, ri) for (fi, ri) in pairs if fi not in covered]
+        if not fresh:
+            continue
+        for fi, ri in fresh:
+            fa, ra = frag_mol.GetAtomWithIdx(fi), ref.GetAtomWithIdx(ri)
+            fa.SetFormalCharge(ra.GetFormalCharge())
+            fa.SetIsAromatic(ra.GetIsAromatic())
+            covered.add(fi)
+        for rb_bond in ref.GetBonds():
+            fi1 = r2f.get(rb_bond.GetBeginAtomIdx())
+            fi2 = r2f.get(rb_bond.GetEndAtomIdx())
+            if fi1 is None or fi2 is None:
+                continue
+            fb = frag_mol.GetBondBetweenAtoms(fi1, fi2)
+            if fb is None:
+                continue
+            fb.SetBondType(rb_bond.GetBondType())
+            fb.SetIsAromatic(rb_bond.GetIsAromatic())
+        changed = True
+    if not changed:
+        return frag_mol
+    m2, _status = _sanitize_ladder(frag_mol, strip_hs=False)
+    return m2 if m2 is not None else frag_mol
+
+
 def residue_to_rdkit(residue, template=None):
     '''Return an RDKit molecule for ``residue`` with stereochemistry from its
     coordinates and a ``cxName`` property per atom.
@@ -775,7 +1060,7 @@ def residue_to_rdkit(residue, template=None):
     return perceive_residue(session, residue)
 
 
-def _unit_chemistry_maps(residue):
+def _unit_chemistry_maps(residue, base_template_mols=None):
     '''Per-residue chemistry for a super-residue as
     ``({atom_name: formal_charge}, {frozenset(name1, name2): rdkit BondType},
     {aromatic atom_name, ...})``.
@@ -783,7 +1068,11 @@ def _unit_chemistry_maps(residue):
     Sourced from :func:`residue_to_rdkit`, so it uses the CCD reference when one
     matches by name and **otherwise perceives from geometry** -- we cannot assume
     every ligand has a CCD exemplar. On total failure it returns empty maps and
-    the caller defaults bonds to single / charges to zero.'''
+    the caller defaults bonds to single / charges to zero.
+
+    ``base_template_mols`` (resolved reference exemplars) override the CCD/perceived
+    chemistry wherever they MCS-match the residue (:func:`apply_base_templates`) -- a
+    standard residue simply won't match a ligand exemplar and is left untouched.'''
     charge_by_name = {}
     order_by_pair = {}
     aromatic = set()
@@ -793,6 +1082,11 @@ def _unit_chemistry_maps(residue):
         mol = None
     if mol is None:
         return charge_by_name, order_by_pair, aromatic
+    if base_template_mols:
+        try:
+            mol = apply_base_templates(mol, base_template_mols)
+        except Exception:
+            pass
     for a in mol.GetAtoms():
         if not a.HasProp(NAME_PROP):
             continue
@@ -808,7 +1102,8 @@ def _unit_chemistry_maps(residue):
     return charge_by_name, order_by_pair, aromatic
 
 
-def super_residue_to_rdkit(residues):
+def super_residue_to_rdkit(residues, exclude=None, neutralize_excluded_donors=False,
+                           base_templates=None):
     '''Build ONE RDKit molecule spanning a covalent unit -- a ligand plus the
     standard residue(s) it is covalently bonded to -- with the wider chain
     replaced by caps, ready to feed to ANTECHAMBER / AM1-BCC.
@@ -825,6 +1120,24 @@ def super_residue_to_rdkit(residues):
     Cap heavy atoms are placed at the coordinates of the real neighbour atoms they
     stand in for (so the acetyl/N-methyl geometry comes straight from the chain).
     Hydrogens are added last with coordinates (``AddHs(addCoords=True)``).
+
+    ``exclude`` (a set/iterable of ChimeraX ``Atom``\\ s) are treated as ABSENT: they
+    are left out of the molecule entirely and a bond from a unit atom to an excluded
+    atom is **not capped** (the unit atom keeps its modelled valence/protonation).
+    This is how a coordinated metal is removed before ANTECHAMBER -- GAFF2 has no
+    metal type, so the organic framework is typed metal-free and the metal is
+    spliced back afterwards. Do NOT rely on this to trim ordinary chain atoms; those
+    should be capped (pass them as unit boundaries, not exclusions).
+
+    ``neutralize_excluded_donors`` (metal path only): a donor atom that the metal
+    had deprotonated (bonded to an excluded atom AND carrying a negative CCD formal
+    charge -- e.g. a chlorin pyrrole N or a Cys thiolate) is instead built NEUTRAL
+    and PROTONATED, so AM1-BCC runs on a well-behaved neutral free base rather than a
+    bare, uncompensated macrocyclic multi-anion (which makes sqm slow/unstable). The
+    added H atoms are tagged ``CAP`` (dropped from the template like any cap), and
+    ``info['neutralized']`` records ``(donor_rd_idx, [added_H_rd_idx...], orig_fc)``
+    so the caller can fold the H charge back and re-impose ``orig_fc`` -- restoring
+    the deprotonated coordinating state while conserving total charge.
 
     Heavy atoms of the unit carry a **globally unique** integer ``cxIdx`` (the key
     used to map back to ChimeraX -- atom *names* collide across residues) plus
@@ -848,6 +1161,7 @@ def super_residue_to_rdkit(residues):
     from chimerax.atomic import Residue, Atoms
 
     residues = list(residues)
+    exclude = set(exclude) if exclude else set()
     # ALL atoms of the unit, heavy + modelled H. We keep the modelled hydrogens
     # (rather than dropping and re-perceiving them) so the emitted template's atom
     # graph matches the model residue EXACTLY -- OpenMM matches templates by element
@@ -855,23 +1169,37 @@ def super_residue_to_rdkit(residues):
     # nitriles / hydrazones / heteroaromatics without a CCD entry) would otherwise
     # change the H count and make the template fail to match. Bond orders (which do
     # NOT affect matching) still come from the CCD/perception, for ANTECHAMBER only.
-    unit_atoms = [a for r in residues for a in r.atoms]
+    unit_atoms = [a for r in residues for a in r.atoms if a not in exclude]
     unit_heavy = [a for a in unit_atoms if a.element.number != 1]
     unit_set = set(unit_atoms)
     if not unit_heavy:
         return None, {}, {'status': 'failed', 'net_charge': 0, 'caps': []}
 
-    chem_maps = {r: _unit_chemistry_maps(r) for r in residues}
+    # Resolve any user-supplied chemistry exemplars ONCE (CCD id / registered
+    # template / SMILES -> reference mols), then let them override the CCD/perceived
+    # chemistry per residue wherever they match.
+    base_template_mols = []
+    if base_templates:
+        base_template_mols = _resolve_base_templates(residues[0].structure.session,
+                                                     base_templates)
+    chem_maps = {r: _unit_chemistry_maps(r, base_template_mols) for r in residues}
 
     rw = Chem.RWMol()
     rd_of = {}                 # ChimeraX Atom -> rdkit index
     cxidx_to_atom = {}         # global cxIdx -> ChimeraX Atom
     coords = {}                # rdkit index -> (x, y, z)
+    neutralized = []           # (ChimeraX donor atom, original negative fc)
     for gi, atom in enumerate(unit_atoms):
         a = Chem.Atom(_norm_element(atom.element.name))
         if atom.element.number != 1:
             charge_by_name, _order, aromatic = chem_maps[atom.residue]
             fc = charge_by_name.get(atom.name, 0)
+            # Metal-deprotonated donor: build neutral + protonate (below) so sqm sees
+            # a normal molecule; the deprotonation is restored by the caller.
+            if (neutralize_excluded_donors and fc < 0
+                    and any(nb in exclude for nb in atom.neighbors)):
+                neutralized.append((atom, int(fc)))
+                fc = 0
             if fc:
                 a.SetFormalCharge(int(fc))
             if atom.name in aromatic:
@@ -928,6 +1256,8 @@ def super_residue_to_rdkit(residues):
         for n in u.neighbors:
             if n.element.number == 1 or n in unit_set:
                 continue
+            if n in exclude:
+                continue        # coordinated metal (spliced back later): leave open
             u_xyz = numpy.array(coords[ui])
             n_xyz = numpy.array([float(v) for v in n.coord])
             is_amino = (u.residue.polymer_type == Residue.PT_AMINO)
@@ -977,16 +1307,31 @@ def super_residue_to_rdkit(residues):
     # (ISOLDE requires H before simulating, but this keeps the all-heavy input from
     # producing a bare fragment for ANTECHAMBER).
     unit_has_h = any(a.element.number == 1 for a in unit_atoms)
+    # Neutralised metal donors must also be protonated for the charge calc, even when
+    # the rest of the model is already protonated (they were deprotonated in situ).
+    neutral_rd = [rd_of[a] for (a, _fc) in neutralized]
     try:
         if not unit_has_h:
             m = Chem.AddHs(m, addCoords=True)
-        elif cap_indices:
-            m = Chem.AddHs(m, addCoords=True, onlyOnAtoms=cap_indices)
+        else:
+            only = list(cap_indices) + neutral_rd
+            if only:
+                m = Chem.AddHs(m, addCoords=True, onlyOnAtoms=only)
     except Exception:
         pass
+    # Record the added donor-H atoms (tag CAP so they drop from the template) so the
+    # caller can fold their charge back and re-impose the donor's original -ve charge.
+    neutralized_info = []
+    for (atom, fc) in neutralized:
+        di = rd_of[atom]
+        h_idxs = [nb.GetIdx() for nb in m.GetAtomWithIdx(di).GetNeighbors()
+                  if nb.GetAtomicNum() == 1]
+        for hi in h_idxs:
+            m.GetAtomWithIdx(hi).SetProp('CAP', '1')
+        neutralized_info.append((di, h_idxs, fc))
     net_charge = Chem.GetFormalCharge(m)
     return m, cxidx_to_atom, {'status': status, 'net_charge': net_charge,
-                              'caps': caps_info}
+                              'caps': caps_info, 'neutralized': neutralized_info}
 
 
 # ---------------------------------------------------------------------------

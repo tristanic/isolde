@@ -47,9 +47,45 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         shutil.copyfile(ante_out, f'{residue.name}.mol2')
 
 def parameterise_cmd(session, residues, override=False, net_charge=None,
-                     always_raise_errors=True, shell_radius=1):
+                     always_raise_errors=True, shell_radius=1, base_templates=None):
     from chimerax.core.errors import UserError
     from chimerax.atomic import Residues
+
+    # Metal-involved residues (a residue that contains, or is bonded to, a metal
+    # atom) route to the bonded metal-site pipeline first -- GAFF2 cannot type a
+    # metal, so these must not fall through to the covalent/free organic paths.
+    def _metal_involved(r):
+        if any(a.element.is_metal for a in r.atoms):
+            return True
+        return any(nb.element.is_metal for a in r.atoms for nb in a.neighbors)
+    metal_seeds = [r for r in residues if _metal_involved(r)]
+    handled_metal = set()
+    if metal_seeds:
+        from .covalent import detect_metal_site, parameterise_metal_site
+        for r in metal_seeds:
+            if r in handled_metal:
+                continue
+            try:
+                site = detect_metal_site(r)
+            except UserError as e:
+                if always_raise_errors:
+                    raise
+                session.logger.warning(str(e))
+                continue
+            handled_metal.update(site.residues)
+            try:
+                parameterise_metal_site(session, site, shell_radius=shell_radius,
+                                        net_charge=net_charge,
+                                        base_templates=base_templates)
+            except Exception as e:
+                if always_raise_errors:
+                    raise UserError(str(e))
+                session.logger.warning('Metal-site parameterisation of %r failed: %s'
+                                       % (site, e))
+        residues = Residues([r for r in residues if r not in handled_metal])
+        if not len(residues):
+            return
+
     # Covalent residues (bonded to another residue) route to the covalent-unit
     # pipeline; free ligands take the classic single-residue path below.
     covalent = [r for r in residues if len(r.neighbors) != 0]
@@ -69,7 +105,8 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
             handled.update(unit.residues)
             try:
                 parameterise_covalent_unit(session, unit, shell_radius=shell_radius,
-                                           net_charge=net_charge)
+                                           net_charge=net_charge,
+                                           base_templates=base_templates)
             except Exception as e:
                 if always_raise_errors:
                     raise UserError(str(e))
@@ -98,7 +135,8 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
             # order-based atom-name round-trip, self-contained collision-proof
             # template) -- the same machinery as the covalent path.
             from .covalent import parameterise_free_ligand
-            parameterise_free_ligand(session, residue, net_charge=net_charge)
+            parameterise_free_ligand(session, residue, net_charge=net_charge,
+                                     base_templates=base_templates)
         except Exception as e:
             if always_raise_errors:
                 raise UserError(str(e))
@@ -109,7 +147,8 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
 
 def register_isolde_param(logger):
     from chimerax.atomic import ResiduesArg
-    from chimerax.core.commands import CmdDesc, BoolArg, IntArg, register 
+    from chimerax.core.commands import (CmdDesc, BoolArg, IntArg, StringArg, ListOf,
+                                        register)
     desc = CmdDesc(
         required=[('residues', ResiduesArg)],
         keyword=[
@@ -117,10 +156,15 @@ def register_isolde_param(logger):
             ('net_charge', IntArg),
             ('always_raise_errors', BoolArg),
             ('shell_radius', IntArg),
+            ('base_templates', ListOf(StringArg)),
         ],
         synopsis=('Parameterise ligand(s) for use in ISOLDE. Supports most organic species. '
             'Covalent ligands, residue-residue crosslinks and main-chain modifications are '
-            'built as a capped super-residue (select any residue of the unit). Hydrogens '
-            'must be present and correct.')
+            'built as a capped super-residue (select any residue of the unit). Metal sites '
+            '(hemes, Zn/Mg/Mn/Ca/... coordination) are built as a bonded metal template with '
+            'soft empirical coordination terms (select the metalloligand or metal). Hydrogens '
+            'must be present and correct. baseTemplates takes a list of CCD ids, registered '
+            'template names and/or SMILES strings whose chemistry is matched onto the '
+            'ligand to fix bond orders/charges when perception is unreliable.')
     )
     register('isolde parameterise', desc, parameterise_cmd, logger=logger)

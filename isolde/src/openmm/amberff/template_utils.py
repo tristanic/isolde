@@ -36,6 +36,11 @@ def template_name_to_ccd_name(template_name):
         else:
             description = glycam_prefix_to_description.get(res_name[0], None)
         return ccd_name, description
+    if template_name.startswith('MMET'):
+        # Metal-site metalloligand template (MMET_<ccd>): the residue name IS a CCD id
+        # (e.g. MMET_HEC -> HEC), so the rebuild can fetch the CCD coordinate template
+        # and place the metal from its ideal coordinates.
+        return template_name.split('_')[1], None
     if template_name.startswith('MC'):
         return template_name.split('_')[1], None
     if template_name.startswith('USER'):

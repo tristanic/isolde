@@ -527,8 +527,37 @@ def _parse_gaff2(gaff2_xml):
     return info
 
 
+def macrocycle_atom_indices(mol, seed_indices):
+    '''Return the set of RDKit atom indices forming the metal-coordinating
+    macrocyclic ring system: the connected component of *ring* atoms reachable
+    from ``seed_indices`` (the metal donors) through bonds between ring atoms.
+
+    Ring membership (``atom.IsInRing()``) is the selector because it captures the
+    whole conjugated core -- for a heme that is all four pyrrole nitrogens, the
+    pyrrole carbons AND the four meso carbons (which RDKit does not flag aromatic
+    but does place in the 16-membered macrocyclic ring) -- while cleanly excluding
+    every non-ring substituent (methyls, propionates, vinyls). Seeding from the
+    donors restricts the result to the ring system that actually coordinates the
+    metal, so an unrelated aromatic ring elsewhere in a large ligand is untouched.
+    '''
+    ring_atoms = set(a.GetIdx() for a in mol.GetAtoms() if a.IsInRing())
+    seen = set(i for i in seed_indices if i in ring_atoms)
+    stack = list(seen)
+    component = set()
+    while stack:
+        i = stack.pop()
+        component.add(i)
+        for nb in mol.GetAtomWithIdx(i).GetNeighbors():
+            j = nb.GetIdx()
+            if j in ring_atoms and j not in seen:
+                seen.add(j)
+                stack.append(j)
+    return component
+
+
 def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
-                      gaff2_xml, gaff_equivalent=None, lookup_seam=None):
+                      gaff2_xml, gaff_equivalent=None, lookup_seam=None,
+                      metal_terms=None):
     '''Emit a SELF-CONTAINED OpenMM ffXML for a covalent unit.
 
     Every atom that carries a GAFF type is given a UNIQUE, per-unit **prefixed**
@@ -554,10 +583,21 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
         frcmod_file: -a Y frcmod from run_antechamber; None emits templates only.
         lookup_seam: reserved for curated seam overrides (currently unused with the
             prefixed-type scheme).
+        metal_terms: optional metal-coordination splice (from
+            ``covalent._build_metal_terms``). When given, the metal atom(s) are added
+            to their residue templates with a unique prefixed ion type + bundled
+            Lennard-Jones, the metal-donor bonds and donor-metal-donor angles are
+            emitted with the supplied (soft, empirical) values, and per-donor charge
+            deltas are applied. These terms carry explicit types/values -- they do
+            NOT go through the GAFF-analogy frcmod lookup or the zero-parameter guard
+            (which cover only the organic framework).
     '''
     import xml.etree.ElementTree as ET
     if gaff_equivalent is None:
         from .boundary_params import gaff_equivalent as gaff_equivalent
+    if mol is None:                     # bare-ion metal site: no organic framework
+        from rdkit import Chem as _Chem
+        mol = _Chem.Mol()
 
     gaff_info = _parse_gaff2(gaff2_xml)
     params = _frcmod_openmm_params(frcmod_file) if frcmod_file else \
@@ -580,27 +620,121 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
             if spec['is_gaff']:
                 prefixed[spec['etype']] = spec['gaff_type']
 
+    # --- metal coordination splice (bonded metal-site templates) -------------
+    # Resolve donor references (residue, atom_name) to their emitted type, apply
+    # the per-donor charge deltas, and pre-build the metal atoms / bonds / angles to
+    # append alongside the organic emission. All values are explicit (no analogy).
+    mt = metal_terms or {}
+    spec_by_rn = {}
+    for r, d in per_res.items():
+        for spec in d['atoms']:
+            spec_by_rn[(r, spec['name'])] = spec
+    for dd in mt.get('donor_deltas', []):
+        s = spec_by_rn.get((dd['residue'], dd['name']))
+        if s is not None:
+            s['charge'] += dd['delta']
+    metal_atypes = mt.get('atom_types', [])
+    metal_lj = mt.get('lj', [])
+    metals_by_res = {}
+    for md in mt.get('metals', []):
+        metals_by_res.setdefault(md['residue'], []).append(md)
+    metal_etype = {(md['residue'], md['name']): md['etype'] for md in mt.get('metals', [])}
+    # Bridging inorganic core atoms of a polynuclear cluster (mu-sulfides/oxides). Like
+    # metals, they are emitted explicitly (atom + unique type + LJ) into their residue,
+    # and registered in metal_etype so _cetype resolves the cluster bonds/angles/Urey-
+    # Bradley terms that reference them.
+    core_by_res = {}
+    for cd in mt.get('core', []):
+        core_by_res.setdefault(cd['residue'], []).append(cd)
+        metal_etype[(cd['residue'], cd['name'])] = cd['etype']
+    # ff14SB types for donors in coordinating STANDARD residues (His etc.), which are
+    # not emitted as templates -- their coordination terms are keyed by these types.
+    donor_types = mt.get('donor_types', {})
+    # Residues we actually emit a template for (metalloligand + metal-ion residues);
+    # standard coordinating residues keep their normal ISOLDE templates and get no
+    # <ExternalBond> here (matched with ignoreExternalBonds=True).
+    emitted_residues = set(per_res) | set(metals_by_res) | set(core_by_res)
+
+    def _cetype(ref):
+        r, nm = ref
+        if (r, nm) in metal_etype:
+            return metal_etype[(r, nm)]
+        s = spec_by_rn.get((r, nm))
+        if s is not None:
+            return s['etype']
+        return donor_types.get((r, nm))     # standard coordinating donor -> ff14SB type
+
+    metal_intra_bonds = {}      # residue -> [(name1, name2)] metal-donor, same residue
+    metal_ext = {}              # residue -> set(atom names needing <ExternalBond>)
+    coord_bond_out = {}         # frozenset(etype pair) -> (e1, e2, length, k)
+    for cb in mt.get('coord_bonds', []):
+        (rm, nm), (rd, nd) = cb['metal'], cb['donor']
+        if rm is rd:
+            metal_intra_bonds.setdefault(rm, []).append((nm, nd))
+        else:
+            if rm in emitted_residues:
+                metal_ext.setdefault(rm, set()).add(nm)
+            if rd in emitted_residues:
+                metal_ext.setdefault(rd, set()).add(nd)
+        e1, e2 = _cetype(cb['metal']), _cetype(cb['donor'])
+        if e1 and e2:
+            coord_bond_out[frozenset((e1, e2))] = (e1, e2, cb['length'], cb['k'])
+    coord_angle_out = {}        # (e1,e2,e3) -> (e1, e2, e3, angle, k)
+    for ca in mt.get('coord_angles', []):
+        e1, e2, e3 = _cetype(ca['a']), _cetype(ca['metal']), _cetype(ca['c'])
+        if not (e1 and e2 and e3):
+            continue
+        key = (e1, e2, e3) if e1 <= e3 else (e3, e2, e1)
+        coord_angle_out[key] = (key[0], key[1], key[2], ca['angle'], ca['k'])
+
+    # Residues to emit: the organic ones plus any metal/core-only residue (a pure ion or
+    # cluster residue contributes no organic atoms, so it is absent from per_res).
+    metal_core_residues = set(metals_by_res) | set(core_by_res)
+    emit_residues = list(per_res.keys()) + [r for r in metal_core_residues
+                                            if r not in per_res]
+
     root = ET.Element('ForceField')
 
-    if prefixed:
+    if prefixed or metal_atypes:
         at_el = ET.SubElement(root, 'AtomTypes')
         for etype, g in sorted(prefixed.items()):
             gi = gaff_info.get(g, {})
             ET.SubElement(at_el, 'Type', {'name': etype, 'class': etype,
                 'element': gi.get('element') or 'C', 'mass': gi.get('mass') or '0.0'})
+        # Metal + core types. Dedupe by name (each atom is uniquely typed, but guard
+        # against any accidental repeat -- OpenMM rejects a duplicate <Type>).
+        seen_types = set()
+        for mat in metal_atypes:
+            if mat['name'] in seen_types:
+                continue
+            seen_types.add(mat['name'])
+            ET.SubElement(at_el, 'Type', {'name': mat['name'], 'class': mat['name'],
+                'element': mat['element'], 'mass': mat['mass']})
 
     residues_el = ET.SubElement(root, 'Residues')
-    for r, d in per_res.items():
+    for r in emit_residues:
         rel = ET.SubElement(residues_el, 'Residue', {'name': template_names[r]})
-        for spec in d['atoms']:
-            ET.SubElement(rel, 'Atom', {'name': spec['name'], 'type': spec['etype'],
-                                        'charge': '%.5f' % spec['charge']})
-        for (n1, n2) in d['bonds']:
+        d = per_res.get(r)
+        if d is not None:
+            for spec in d['atoms']:
+                ET.SubElement(rel, 'Atom', {'name': spec['name'], 'type': spec['etype'],
+                                            'charge': '%.5f' % spec['charge']})
+            for (n1, n2) in d['bonds']:
+                ET.SubElement(rel, 'Bond', {'atomName1': n1, 'atomName2': n2})
+        for md in metals_by_res.get(r, []):
+            ET.SubElement(rel, 'Atom', {'name': md['name'], 'type': md['etype'],
+                                        'charge': '%.5f' % md['charge']})
+        for cd in core_by_res.get(r, []):
+            ET.SubElement(rel, 'Atom', {'name': cd['name'], 'type': cd['etype'],
+                                        'charge': '%.5f' % cd['charge']})
+        for (n1, n2) in metal_intra_bonds.get(r, []):
             ET.SubElement(rel, 'Bond', {'atomName1': n1, 'atomName2': n2})
-        for nm in sorted(d['external']):
+        ext = set(d['external']) if d is not None else set()
+        ext |= metal_ext.get(r, set())
+        for nm in sorted(ext):
             ET.SubElement(rel, 'ExternalBond', {'atomName': nm})
 
-    if prefixed:
+    if prefixed or metal_lj:
         # Charge is supplied per-atom in the templates via the base force field's
         # UseAttributeFromResidue; here we only add the LJ for the prefixed types.
         nb_el = ET.SubElement(root, 'NonbondedForce',
@@ -613,6 +747,15 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
             if gi.get('sigma') is not None:
                 ET.SubElement(nb_el, 'Atom', {'type': etype, 'sigma': gi['sigma'],
                                               'epsilon': gi['epsilon']})
+        # Metal ion + inorganic-core LJ (sigma/epsilon from the bundled ion set /
+        # CORE_ATOM_LJ). Charge comes per-residue from the template. Dedupe by type.
+        seen_lj = set()
+        for mlj in metal_lj:
+            if mlj['type'] in seen_lj:
+                continue
+            seen_lj.add(mlj['type'])
+            ET.SubElement(nb_el, 'Atom', {'type': mlj['type'], 'sigma': mlj['sigma'],
+                                          'epsilon': mlj['epsilon']})
 
     def _emit(specs):
         # Emit a term iff it touches a prefixed (GAFF) atom; all-ff14SB terms are
@@ -711,6 +854,23 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
                 if terms:
                     proper_out[key] = (e, terms)
 
+    # --- metal-coordinating macrocycle: stiffen its planar impropers -----------
+    # A porphyrin/chlorin/corrin ring core coordinating the metal is nearly planar,
+    # but GAFF's aromatic out-of-plane impropers are weak (~1.1 kcal/mol) and the
+    # large ring visibly puckers. Select the macrocycle as the connected component
+    # of ring atoms containing the ligand metal donors (ring membership cleanly
+    # excludes every non-ring substituent -- methyls, propionates, vinyls -- whose
+    # impropers GAFF already handles), and scale up only those impropers below.
+    macrocycle_idx = set()
+    improper_scale = 1.0
+    if mt.get('donor_deltas'):
+        from .metal_params import MACROCYCLE_IMPROPER_SCALE
+        improper_scale = MACROCYCLE_IMPROPER_SCALE
+        seeds = [spec_by_rn[(dd['residue'], dd['name'])]['rd']
+                 for dd in mt['donor_deltas']
+                 if (dd['residue'], dd['name']) in spec_by_rn]
+        macrocycle_idx = macrocycle_atom_indices(mol, seeds)
+
     # --- impropers (centre with 3 neighbours; emitted OpenMM central-FIRST) ---
     improper_out = {}
     for c_atom in mol.GetAtoms():
@@ -725,6 +885,13 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
         if not res:
             continue
         (a1, a2, a3, a4), terms = res
+        # Stiffen the planar impropers of the metal-coordinating macrocycle. Build a
+        # fresh, scaled term list (never mutate the shared frcmod cache from
+        # _lookup_improper). GAFF impropers are all planarity terms (phase pi), so no
+        # phase guard is needed.
+        boosted = c_atom.GetIdx() in macrocycle_idx
+        if boosted:
+            terms = [(per, phase, k * improper_scale) for (per, phase, k) in terms]
         # Map the frcmod peripheral slots (a1,a2,a4) to neighbour etypes, keeping
         # wildcards as '' -- then promote the centre to first (OpenMM convention).
         remaining = list(nspecs)
@@ -740,17 +907,29 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
             else:
                 slots.append('')
         key = (cs['etype'], tuple(sorted(slots)))
-        if key not in improper_out:
-            improper_out[key] = ((cs['etype'], slots[0], slots[1], slots[2]), terms)
+        prev = improper_out.get(key)
+        # First entry wins, but a macrocycle (boosted) centre supersedes a stored
+        # non-boosted one of the same emitted type (they cannot both be emitted --
+        # OpenMM would see duplicate type patterns). Macrocycle GAFF types are
+        # distinct from substituent types, so in practice this rarely fires.
+        if prev is None or (boosted and not prev[2]):
+            improper_out[key] = ((cs['etype'], slots[0], slots[1], slots[2]),
+                                 terms, boosted)
 
-    if bond_out:
+    if bond_out or coord_bond_out:
         hb = ET.SubElement(root, 'HarmonicBondForce')
         for (e1, e2, length, k) in bond_out.values():
             ET.SubElement(hb, 'Bond', {'type1': e1, 'type2': e2,
                                        'length': '%.6f' % length, 'k': '%.4f' % k})
-    if angle_out:
+        for (e1, e2, length, k) in coord_bond_out.values():
+            ET.SubElement(hb, 'Bond', {'type1': e1, 'type2': e2,
+                                       'length': '%.6f' % length, 'k': '%.4f' % k})
+    if angle_out or coord_angle_out:
         ha = ET.SubElement(root, 'HarmonicAngleForce')
         for (e1, e2, e3, ang, k) in angle_out.values():
+            ET.SubElement(ha, 'Angle', {'type1': e1, 'type2': e2, 'type3': e3,
+                                        'angle': '%.6f' % ang, 'k': '%.4f' % k})
+        for (e1, e2, e3, ang, k) in coord_angle_out.values():
             ET.SubElement(ha, 'Angle', {'type1': e1, 'type2': e2, 'type3': e3,
                                         'angle': '%.6f' % ang, 'k': '%.4f' % k})
     if proper_out or improper_out:
@@ -762,13 +941,28 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
                 attrs['phase%d' % n] = '%.6f' % phase
                 attrs['k%d' % n] = '%.4f' % k
             ET.SubElement(pt, 'Proper', attrs)
-        for (e, terms) in improper_out.values():
+        for (e, terms, _boost) in improper_out.values():
             attrs = {'type1': e[0], 'type2': e[1], 'type3': e[2], 'type4': e[3]}
             for n, (per, phase, k) in enumerate(terms, start=1):
                 attrs['periodicity%d' % n] = str(per)
                 attrs['phase%d' % n] = '%.6f' % phase
                 attrs['k%d' % n] = '%.4f' % k
             ET.SubElement(pt, 'Improper', attrs)
+
+    # Urey-Bradley 1-3 terms hold a polynuclear cluster's cage (the metal...metal /
+    # bridge...bridge second-neighbour distances). Keyed by the angle triple, as the
+    # shipped iron_sulfur.xml does; unique per-atom types => one entry per triple.
+    ub = mt.get('urey_bradley', [])
+    if ub:
+        ub_el = ET.SubElement(root, 'AmoebaUreyBradleyForce')
+        seen_ub = set()
+        for (t1, t2, t3, d, k) in ub:
+            key = (t1, t2, t3)
+            if key in seen_ub:
+                continue
+            seen_ub.add(key)
+            ET.SubElement(ub_el, 'UreyBradley', {'type1': t1, 'type2': t2, 'type3': t3,
+                                                 'd': '%.6f' % d, 'k': '%.4f' % k})
 
     try:
         ET.indent(root, space='  ')   # human-readable multi-line layout (Py>=3.9)

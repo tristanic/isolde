@@ -3647,6 +3647,19 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None,
             for i in indices:
                 templates[i] = user_name
 
+    # Metal-site metalloligand templates are name-matched to ALL copies (a
+    # metalloligand type is the same across instances, unlike a per-instance covalent
+    # MCOV_ modification). Mirrors the USER_ pre-pass above.
+    for name in numpy.unique(residues.names):
+        if name == 'HOH':
+            continue
+        mmet_name = 'MMET_{}'.format(name)
+        if mmet_name in template_names:
+            indices = numpy.where(residues.names == name)[0]
+            indices = set(indices) - set(templates.keys())
+            for i in indices:
+                templates[i] = mmet_name
+
     # filter out residues that already have templates assigned
     filter = numpy.ones(len(residues), dtype=bool)
     filter[list(templates.keys())] = False

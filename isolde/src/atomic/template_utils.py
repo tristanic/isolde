@@ -483,10 +483,18 @@ def fix_residue_from_template(residue, template, rename_atoms_only=False,
     # optimising the torsion about each rotatable bond that moves them. The block
     # placement above fixes each fragment's internal geometry but leaves the
     # inter-fragment torsions at whatever the template happened to have.
-    if optimise_torsions and len(template_extra):
+    #
+    # Only freshly-built *heavy* atoms may trigger a torsion rotation. Hydrogens
+    # are unconditionally stripped and rebuilt above, so if they counted as
+    # "freshly built" then -- because virtually every heavy atom carries an H --
+    # both sides of nearly every rotatable bond would look built, and the
+    # optimiser would swing intact heavy-atom arms (e.g. a heme propionate) into
+    # a new geometry. Existing geometry must not move unless a genuinely new heavy
+    # atom needs accommodating; when only hydrogens were rebuilt, do nothing.
+    built_heavy = set(a.name for a in template_extra if a.element.number != 1)
+    if optimise_torsions and built_heavy:
         try:
-            _optimise_pendant_torsions(
-                residue, template, set(a.name for a in template_extra))
+            _optimise_pendant_torsions(residue, template, built_heavy)
         except Exception as e:
             session.logger.info(
                 f'Pendant-torsion optimisation skipped for {residue.name}: {e}')
