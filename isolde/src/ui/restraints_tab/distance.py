@@ -60,7 +60,8 @@ class DistanceRestraintsDialog(UI_Panel_Base):
         kl.addWidget(QLabel("<html><head/><body><p>kJ mol<span style=\" vertical-align:super;\">-1</span> Å<span style=\" vertical-align:super;\">-2</span></p></body></html>"))
         sp = self.isolde.sim_params
         from chimerax.isolde.isolde import CHIMERAX_SPRING_UNIT
-        ksb.setValue(sp.distance_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT))
+        k = sp.distance_restraint_spring_constant.value_in_unit(CHIMERAX_SPRING_UNIT)
+        ksb.setValue(float(k))
         ksb.valueChanged.connect(self._k_spin_box_changed_cb)
         self._isolde_trigger_handlers.append(sp.triggers.add_handler(sp.PARAMETER_CHANGED, self._param_changed_cb))
         tb.addWidget(kw)
@@ -130,7 +131,7 @@ class DistanceRestraintsDialog(UI_Panel_Base):
         if len(sel) != 2:
             return
         from chimerax.geometry import distance
-        self.distance_spin_box.setValue(distance(*sel.coords))
+        self.distance_spin_box.setValue(float(distance(*sel.coords)))
 
     def _k_spin_box_changed_cb(self, val):
         from chimerax.isolde.isolde import CHIMERAX_SPRING_UNIT, OPENMM_SPRING_UNIT
@@ -144,7 +145,7 @@ class DistanceRestraintsDialog(UI_Panel_Base):
             with slot_disconnected(self.spring_constant_spin_box.valueChanged, self._k_spin_box_changed_cb):
                 from chimerax.isolde.isolde import CHIMERAX_SPRING_UNIT
                 val = val.value_in_unit(CHIMERAX_SPRING_UNIT)
-                self.spring_constant_spin_box.setValue(val)
+                self.spring_constant_spin_box.setValue(float(val))
 
     def _selection_changed_cb(self, *_):
         sel = self.isolde.selected_atoms

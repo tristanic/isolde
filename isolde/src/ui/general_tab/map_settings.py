@@ -220,7 +220,7 @@ class MapSettingsDialog(UI_Panel_Base):
         w.setLayout(l)
         l.addStretch()
         cb = QCheckBox()
-        cb.setChecked(map.display)
+        cb.setChecked(bool(map.display))
         def set_display(flag):
             map.display = flag
         cb.toggled.connect(set_display)
@@ -231,7 +231,7 @@ class MapSettingsDialog(UI_Panel_Base):
             if map.deleted:
                 return
             with slot_disconnected(cb.toggled, set_display):
-                cb.setChecked(map.display)
+                cb.setChecked(bool(map.display))
         th.append(self.session.triggers.add_handler(MODEL_DISPLAY_CHANGED, display_changed_cb))
         l.addWidget(cb)
         l.addStretch()
@@ -301,7 +301,7 @@ class MapSettingsDialog(UI_Panel_Base):
         l.addStretch()
         cb = QCheckBox(w)
         l.addWidget(cb)
-        cb.setChecked(map.is_difference_map)
+        cb.setChecked(bool(map.is_difference_map))
         l.addStretch()
         def dcb_checked_cb(checked, i=item, v=map):
             v.is_difference_map = checked
@@ -320,7 +320,7 @@ class MapSettingsDialog(UI_Panel_Base):
             cb.setToolTip('This map is not suitable for MDFF')
         else:
             cb = QCheckBox()
-            cb.setChecked(mgr.enabled)
+            cb.setChecked(bool(mgr.enabled))
             cb.setToolTip('<span>Allow this map to "pull" on atoms (cannot be set during simulations)</span>')
             def enable_mdff(flag, m=mgr):
                 m.enabled=flag
@@ -350,7 +350,7 @@ class MapSettingsDialog(UI_Panel_Base):
         sb = MapWeightSpinBox()
         # global_k is now the sigma-normalised weight (the MDFF energy divides by the
         # map sigma), so it is displayed/stored directly — no × / ÷ sigma here.
-        sb.setValue(mgr.global_k)
+        sb.setValue(float(mgr.global_k))
         def set_weight(value, m=mgr):
             mgr.global_k = value
         sb.valueChanged.connect(set_weight)
@@ -466,7 +466,7 @@ class XmapSettingsDialogBase(MapSettingsDialog):
             except UserError as e:
                 self.session.logger.warning(str(e))
                 with slot_disconnected(box.valueChanged, set_oversampling):
-                    box.setValue(mgr.oversampling_rate)
+                    box.setValue(float(mgr.oversampling_rate))
         self._set_oversampling = set_oversampling
         sb.valueChanged.connect(set_oversampling)
         layout.addWidget(sb)
@@ -495,7 +495,7 @@ class XmapSettingsDialogBase(MapSettingsDialog):
             sb.setEnabled(False)
             return
         with slot_disconnected(sb.valueChanged, self._set_oversampling):
-            sb.setValue(mgr.oversampling_rate)
+            sb.setValue(float(mgr.oversampling_rate))
         sb.setEnabled(not mgr.oversampling_change_blocked
             and not self.isolde.simulation_running)
 
@@ -596,7 +596,7 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
         sb.setRange(-500.0, 500.0)
         sb.setSingleStep(10.0)
         sb.setDecimals(1)
-        sb.setValue(map.b_sharp)
+        sb.setValue(float(map.b_sharp))
         adjustable = getattr(map, 'bsharp_adjustable', not map.is_difference_map)
         if not adjustable:
             # Hard-locked: the MDFF fitting target or a difference map. Show the
@@ -611,7 +611,7 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
                 except RuntimeError as e:
                     self.session.logger.warning(str(e))
                     with slot_disconnected(box.valueChanged, set_bsharp):
-                        box.setValue(m.b_sharp)
+                        box.setValue(float(m.b_sharp))
             # Sharpening a non-fitting map mid-sim is harmless (the MDFF fitting
             # target is separately hard-locked), so this stays editable during a sim.
             sb.valueChanged.connect(set_bsharp)
@@ -626,7 +626,7 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
         l.addStretch()
         cb = QCheckBox(w)
         l.addWidget(cb)
-        cb.setChecked(mapset.live_update)
+        cb.setChecked(bool(mapset.live_update))
         l.addStretch()
         def toggled_cb(state, ms=mapset):
             ms.live_update = state
@@ -634,7 +634,7 @@ class XmapLiveSettingsDialog(XmapSettingsDialogBase):
         th = self._temporary_handlers
         def map_recalc_changed_cb(trigger_name, flag, b = cb):
             with slot_disconnected(b.toggled, toggled_cb):
-                b.setChecked(flag)
+                b.setChecked(bool(flag))
         th.append(mapset.triggers.add_handler('live recalc changed', map_recalc_changed_cb))
         self.tree.setItemWidget(item, column, w)
 
@@ -659,7 +659,7 @@ class XmapStaticSettingsDialog(XmapSettingsDialogBase):
             cb.setToolTip('This map is not suitable for MDFF')
         else:
             cb = QCheckBox()
-            cb.setChecked(mgr.enabled)
+            cb.setChecked(bool(mgr.enabled))
             cb.setToolTip('<span>Allow this map to "pull" on atoms (cannot be set during simulations)</span>')
             def enable_mdff(flag, m=mgr):
                 if flag and not self.dont_ask_again:
