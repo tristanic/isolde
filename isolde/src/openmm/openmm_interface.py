@@ -2897,8 +2897,12 @@ class SimHandler:
 
     def add_mdff_atom(self, mdff_atom, volume):
         '''
-        Add a singl MDFF atom proxy to the force associated with the given
-        volume. Automatically calls :func:`context_reinit_needed`
+        Add a single MDFF atom proxy to the force associated with the given
+        volume. Delegates to :func:`add_mdff_atoms` (wrapping the proxy in a
+        one-element collection over the same underlying object) so the
+        symmetry-aware term construction and the ``sim_index`` write-back are
+        handled by one code path. Automatically calls
+        :func:`context_reinit_needed`.
 
         Args:
             * mdff_atom:
@@ -2907,12 +2911,8 @@ class SimHandler:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
         '''
-        f = self.mdff_forces[volume]
-        all_atoms = self._atoms
-        index = all_atoms.index(mdff_atom.atom)
-        mdff_atom.sim_index = f.addParticle(index,
-            (mdff_atom.coupling_constant, float(mdff_atom.enabled)))
-        self.context_reinit_needed()
+        from ..molarray import MDFFAtoms
+        self.add_mdff_atoms(MDFFAtoms([mdff_atom]), volume)
 
         ##
         # During simulation
@@ -3033,9 +3033,10 @@ class SimHandler:
 
     def update_mdff_atom(self, mdff_atom, volume):
         '''
-        Update the simulation to reflect the new parameters (individual
-        coupling constants, enabled/disabled states) for the given MDFF atom
-        proxy.
+        Update the simulation to reflect the new parameters (individual coupling
+        constant, enabled/disabled state) for the given MDFF atom proxy. Delegates
+        to :func:`update_mdff_atoms` (one-element collection) so the
+        symmetry-aware term handling lives in a single path.
 
         Args:
             * mdff_atom:
@@ -3044,27 +3045,8 @@ class SimHandler:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
         '''
-        f = self.mdff_forces[volume]
-        shell = getattr(self._sim_construct, 'symmetry_shell', None)
-        if shell is None:
-            f.update_atom(mdff_atom.sim_index,
-                mdff_atom.coupling_constant, mdff_atom.enabled)
-            return
-        # Symmetry sim: update all of the atom's terms (identity + transformed).
-        d = self._mdff_symmetry_term_indices.get(volume)
-        if not d:
-            return
-        i = int(self._atoms.index(mdff_atom.atom))
-        terms = d.get(i) if i >= 0 else None
-        n = self._mdff_n_sym_covered[i] if i >= 0 else 0
-        if not terms or n == 0:
-            return
-        scaled = float(mdff_atom.coupling_constant) / n
-        e = float(mdff_atom.enabled)
-        fis = numpy.array([t[0] for t in terms], dtype=numpy.int32)
-        tfs = numpy.array([t[1] for t in terms], dtype=numpy.float64)
-        f.update_atoms(fis, numpy.full(len(fis), scaled, dtype=numpy.float64),
-            numpy.full(len(fis), e, dtype=numpy.float64), transforms=tfs)
+        from ..molarray import MDFFAtoms
+        self.update_mdff_atoms(MDFFAtoms([mdff_atom]), volume)
 
 
     def set_fixed_atoms(self, fixed_atoms):
