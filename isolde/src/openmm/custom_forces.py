@@ -543,6 +543,100 @@ class CubicInterpMapForce(_Map_Force_Base):
         return Discrete3DFunction(*dim, data_1d)
 
 
+class SymmetryAwareCubicInterpMapForce(CubicInterpMapForce):
+    '''
+    A :class:`CubicInterpMapForce` in which each term (bond) carries its own
+    orthogonal-space transform ``[R | t]`` (R dimensionless, t in nanometres),
+    so the map is sampled at ``xs = R.x + t`` rather than at the atom's own
+    position ``x``. With the identity transform ``[I | 0]`` this reproduces the
+    base force exactly (to machine precision).
+
+    This lets a *real* atom feel the map through a crystallographic symmetry
+    operator: a term with ``S = [R | t]`` samples the density at the atom's ghost
+    position ``S.x``, and because ``CustomCompoundBondForce`` differentiates the
+    whole (nested) energy expression, the force on the real atom is
+    ``R^T . grad(map)`` -- exactly the ``SymmetrySite`` fold-back, computed
+    directly on the parent. The map force therefore never needs terms on the copy
+    (virtual-site) particles, and correctly handles atoms that enter the map only
+    under symmetry (they simply get no identity term).
+
+    Per-bond parameter layout (must match the packing in :func:`add_atoms` /
+    :func:`update_atoms`): ``[individual_k, enabled, R (row-major 9), t (3)]``.
+    '''
+    # Order MUST match the packing in add_atoms/update_atoms (cols 2..13).
+    _TRANSFORM_PARAMS = ('mdff_r00', 'mdff_r01', 'mdff_r02',
+                         'mdff_r10', 'mdff_r11', 'mdff_r12',
+                         'mdff_r20', 'mdff_r21', 'mdff_r22',
+                         'mdff_t0', 'mdff_t1', 'mdff_t2')
+    N_PER_BOND_PARAMS = 14
+    # Identity transform (R = I, t = 0) as the 12 flattened columns.
+    IDENTITY_TRANSFORM = numpy.array(
+        [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0],
+        dtype=numpy.float64)
+
+    def __init__(self, data, xyz_to_ijk_transform, suffix, units='angstroms',
+            map_sigma=1.0):
+        super().__init__(data, xyz_to_ijk_transform, suffix, units=units,
+            map_sigma=map_sigma)
+        # individual_k (col 0) and enabled (col 1) were added by the base;
+        # append the 12 transform parameters (cols 2..13). The energy string
+        # (built in the base __init__ via our overridden _set_energy_function)
+        # references these by name; OpenMM only resolves them at context
+        # creation, so adding them here -- after setEnergyFunction -- is fine.
+        for name in self._TRANSFORM_PARAMS:
+            self.addPerBondParameter(name)
+        assert self.getNumPerBondParameters() == self.N_PER_BOND_PARAMS, \
+            'SymmetryAwareCubicInterpMapForce per-bond parameter count mismatch'
+
+    def _set_energy_function(self, suffix):
+        # Start from the base cubic-interpolation energy, then redirect the
+        # sampled coordinate from the atom position (x1,y1,z1) to the transformed
+        # position (xs,ys,zs). x1/y1/z1 appear ONLY in the i/j/k transform strings
+        # (via the 'x1 * {}' entries); every other token (ci1, min_i, sc_i1,
+        # map_potential(...), ...) contains no 'x1'/'y1'/'z1' substring, so the
+        # scoped rename is safe.
+        import re
+        base = super()._set_energy_function(suffix)
+        base = re.sub(r'([xyz])1', r'\1s', base)
+        transform = (
+            'xs = mdff_r00*x1 + mdff_r01*y1 + mdff_r02*z1 + mdff_t0;'
+            'ys = mdff_r10*x1 + mdff_r11*y1 + mdff_r12*z1 + mdff_t1;'
+            'zs = mdff_r20*x1 + mdff_r21*y1 + mdff_r22*z1 + mdff_t2')
+        return base + ';' + transform
+
+    def add_atoms(self, indices, ks, enableds, transforms=None):
+        '''
+        Add a set of terms. ``transforms`` is an ``(n, 12)`` float array of
+        flattened ``[R | t_nm]`` operators (row-major R then t in nanometres), or
+        ``None`` for all-identity (plain non-symmetry terms).
+        '''
+        n = len(indices)
+        params = numpy.empty((n, self.N_PER_BOND_PARAMS), numpy.float64)
+        params[:, 0] = ks
+        params[:, 1] = enableds
+        if transforms is None:
+            params[:, 2:] = self.IDENTITY_TRANSFORM
+        else:
+            params[:, 2:] = transforms
+        return _openmm_force_ext.customcompoundbondforce_add_bonds(
+            int(self.this), indices, params)
+
+    def update_atoms(self, indices, ks, enableds, transforms):
+        '''
+        Update terms in place. The C++ helper overwrites *all* per-bond
+        parameters, so the (fixed) per-term transforms must be re-supplied
+        (``(n, 12)`` array, same layout as :func:`add_atoms`).
+        '''
+        n = len(indices)
+        params = numpy.empty((n, self.N_PER_BOND_PARAMS), numpy.float64)
+        params[:, 0] = ks
+        params[:, 1] = enableds
+        params[:, 2:] = transforms
+        _openmm_force_ext.customcompoundbondforce_update_bond_parameters(
+            int(self.this), indices, params)
+        self.update_needed = True
+
+
 class LinearInterpMapForce(_Map_Force_Base):
     '''
     NOTE: This class is deprecated, since there is no conceivable situation in which
@@ -1971,12 +2065,20 @@ class NonbondedSoftcoreExceptionForce(CustomBondForce):
         self.update_needed = False
 
 
-def symmetry_group_table(n, exclude_intra_operator=True):
+def symmetry_group_table(n, exclude_intra_operator=True, weights=None):
     '''
     Build the row-major ``n*n`` weight table for the ``grouptable``
     :py:class:`openmm.Discrete2DFunction` shared by the symmetry-aware nonbonded
     and GBSA pairwise terms. Group 0 is the real asymmetric unit; groups
     ``1..n-1`` are one-per-operator symmetry copies.
+
+    If ``weights`` is given (a precomputed flattened ``n*n`` table from
+    :func:`chimerax.isolde.openmm.symmetry_sim.symmetry_group_weight_table`), it is
+    returned verbatim. That operator-set-aware table is the correct one: the fixed
+    copy<->copy = 0 below is only valid when the whole construct is simulated, and
+    silently drops cross-operator copy<->copy contacts in local simulations at
+    multi-way interfaces. The fixed-weight branch here is kept as a fallback / for
+    the ``exclude_intra_operator=False`` demonstration hook.
 
     Entries are multiplicative weights on the pairwise energy that make each
     *unique* crystallographic contact contribute exactly once while remaining
@@ -2000,6 +2102,12 @@ def symmetry_group_table(n, exclude_intra_operator=True):
     weighting prevents -- the inter-molecular double-count and the explosive
     same-operator clash between copies of bonded atoms.
     '''
+    if weights is not None:
+        if len(weights) != n * n:
+            raise ValueError(
+                'symmetry group weight table has {} entries, expected {}'.format(
+                    len(weights), n * n))
+        return list(weights)
     if not exclude_intra_operator:
         return [1.0] * (n * n)
 
@@ -2055,7 +2163,7 @@ class SymmetryAwareMixin:
     then takes the base parameters **plus** the group id as a trailing value.
     '''
     def __init__(self, *args, symmetry_ngroups=2, exclude_intra_operator=True,
-            **kwargs):
+            symmetry_group_weights=None, **kwargs):
         super().__init__(*args, **kwargs)
         # Split the base expression on the first ';'. The head is the per-pair
         # energy value; everything after it is the chain of intermediate
@@ -2069,7 +2177,10 @@ class SymmetryAwareMixin:
         self.setEnergyFunction(new_expr)
         self.addPerParticleParameter('symgroup')
         n = int(symmetry_ngroups)
-        table = symmetry_group_table(n, exclude_intra_operator)
+        # symmetry_group_weights (if given) is the operator-set-aware table; else
+        # fall back to the fixed-weight scheme.
+        table = symmetry_group_table(n, exclude_intra_operator,
+            weights=symmetry_group_weights)
         self.addTabulatedFunction('grouptable', Discrete2DFunction(n, n, table))
 
 
@@ -2288,7 +2399,8 @@ class SymmetrySoftCoreGBSAGBnForce(SoftCoreGBSAGBnForce):
         # Symmetry mask table, identical to the nonbonded force's.
         ng = int(self._symmetry_ngroups)
         gtable = symmetry_group_table(ng,
-            getattr(self, '_symmetry_exclude_intra', True))
+            getattr(self, '_symmetry_exclude_intra', True),
+            weights=getattr(self, '_symmetry_group_table', None))
         self.addTabulatedFunction("grouptable", Discrete2DFunction(ng, ng, gtable))
 
         a = self._softcore_params['softcore_a']
