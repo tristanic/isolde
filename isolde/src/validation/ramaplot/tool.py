@@ -292,7 +292,7 @@ class RamaMainWin(MainToolWindow):
             self._show_or_hide_model_markup(show)
         from Qt.QtCore import QSignalBlocker
         with QSignalBlocker(self._show_markup_action):
-            self._show_markup_action.setChecked(show)
+            self._show_markup_action.setChecked(bool(show))
         
     def _show_or_hide_model_markup(self, show):
         if self.current_model is not None:
@@ -319,7 +319,7 @@ class RamaMainWin(MainToolWindow):
         else:
             from Qt.QtCore import QSignalBlocker
             with QSignalBlocker(self._show_markup_action):
-                self._show_markup_action.setChecked(self.show_markup)
+                self._show_markup_action.setChecked(bool(self.show_markup))
             self.model_select_button.setText(f'#{structure.id_string}')
             residues = structure.residues
             ch = getattr(self, '_model_changes_handler', None)

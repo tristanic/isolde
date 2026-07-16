@@ -147,7 +147,7 @@ class TemperatureSpinBox(QDoubleSpinBox):
         from openmm import unit
         val = val.value_in_unit(unit.kelvin)
         with slot_disconnected(self.valueChanged, self._value_changed_cb):
-            self.setValue(val)
+            self.setValue(float(val))
     
     def cleanup(self):
         self._param_changed_handler.remove()
@@ -180,7 +180,7 @@ QSlider::handle:horizontal:hover {{
         ml = self.main_layout = DefaultHLayout()
         ml.addWidget(QLabel('Trajectory smoothing: ', parent=self))
         scb = self.enable_smoothing_checkbox = QCheckBox(parent=self)
-        scb.setChecked(isolde.sim_params.trajectory_smoothing)
+        scb.setChecked(bool(isolde.sim_params.trajectory_smoothing))
         scb.toggled.connect(self._smoothing_checkbox_cb)
         ml.addWidget(scb)
         ssl = self.slider = QSlider(Qt.Orientation.Horizontal, parent=self)
@@ -214,7 +214,7 @@ QSlider::handle:horizontal:hover {{
         param, val = data
         if param == 'trajectory_smoothing':
             with slot_disconnected(self.enable_smoothing_checkbox, self._smoothing_checkbox_cb):
-                self.enable_smoothing_checkbox.setChecked(val)
+                self.enable_smoothing_checkbox.setChecked(bool(val))
         elif param == 'smoothing_alpha':
             with slot_disconnected(self.slider, self._value_changed_cb):
                 from chimerax.isolde.constants import defaults
