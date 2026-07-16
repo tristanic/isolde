@@ -107,6 +107,37 @@ CORE_ATOM_LJ = {
     'O': (0.2959921901925, 0.87864),       # ff14SB O2-like
 }
 
+#: Idealised cluster geometry as reference atom COORDINATES (Angstrom, arbitrary frame),
+#: taken from geostd's monomer entries -- which carry a real high-quality structure's
+#: coordinates, not a computed idealisation. Keyed by CCD id -> {atom_name: (x, y, z)}.
+#: The cluster-internal bond lengths, angles and Urey-Bradley 1-3 distances are computed
+#: from these, NOT from the modelled coordinates (often badly distorted at low
+#: resolution) and NOT from the CCD 'ideal' coordinates (geometrically unreliable for
+#: metal clusters -- F3S comes out with ~83/147 deg S-Fe-S angles instead of ~104/113).
+#: The model's cluster is mapped onto these coordinates by GRAPH ISOMORPHISM (element +
+#: connectivity), NOT by atom name -- cluster atom labels (which sulfur is "S1") are
+#: permuted between structures. Extend as more clusters are validated; an uncurated
+#: cluster falls back to the highest-resolution PDB instance
+#: (covalent._rcsb_cluster_coords), then to the modelled geometry.
+CLUSTER_IDEAL_COORDS = {
+    'F3S': {
+        'FE1': (-36.7440, -10.7330, 10.6830), 'FE3': (-36.9320, -8.7940, 12.5680),
+        'FE4': (-34.8430, -10.5140, 12.5870), 'S1': (-34.7520, -8.3090, 13.0650),
+        'S2': (-37.0670, -11.0590, 12.9440), 'S3': (-34.4830, -11.0280, 10.4120),
+        'S4': (-37.3730, -8.6100, 10.3930),
+    },
+    'SF4': {
+        'FE1': (16.2190, -0.9470, 41.5710), 'FE2': (14.9120, 1.3570, 42.1980),
+        'FE3': (17.2470, 0.7470, 43.4250), 'FE4': (14.9620, -0.7040, 43.9540),
+        'S1': (15.3010, 1.5110, 44.4140), 'S2': (17.0770, -1.5320, 43.5500),
+        'S3': (13.9710, -0.7190, 41.9620), 'S4': (16.9920, 1.1960, 41.2660),
+    },
+    'FES': {
+        'FE1': (-0.0125, 0.2368, -1.3376), 'FE2': (0.0125, -0.0778, 1.3376),
+        'S1': (1.6915, -0.2992, -0.0603), 'S2': (-1.6915, 0.4582, 0.0603),
+    },
+}
+
 #: Curated metal-donor ``(equilibrium bond length nm, target stretch frequency
 #: cm^-1)``, keyed by ``(metal, donor)`` -- or ``(metal, donor, 'axial')`` for a
 #: weaker axial/dative bond where that distinction matters. Both element symbols are
@@ -194,7 +225,7 @@ _COORD_DONOR_TYPE = {
     ('HID', 'ND1'): 'NB', ('HID', 'NE2'): 'NB',
     ('HIE', 'ND1'): 'NB', ('HIE', 'NE2'): 'NB',
     ('HIP', 'ND1'): 'NB', ('HIP', 'NE2'): 'NB',
-    ('CYS', 'SG'): 'S', ('CYM', 'SG'): 'S', ('CYX', 'SG'): 'S',
+    ('CYS', 'SG'): 'SH', ('CYM', 'SG'): 'SH', ('CYX', 'SG'): 'S',
     ('MET', 'SD'): 'S',
     ('ASP', 'OD1'): 'O2', ('ASP', 'OD2'): 'O2',
     ('GLU', 'OE1'): 'O2', ('GLU', 'OE2'): 'O2',

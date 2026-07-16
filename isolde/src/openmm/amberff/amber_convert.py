@@ -734,6 +734,19 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
         for nm in sorted(ext):
             ET.SubElement(rel, 'ExternalBond', {'atomName': nm})
 
+    # Auxiliary standalone templates (re-templated coordinating cysteines, MC_CYF-style):
+    # explicit atom name/type/charge, applied per-instance via isolde_template_name. Their
+    # backbone atoms reference base ff14SB types; only their SG type is new (in metal_lj).
+    for aux in mt.get('aux_residues', []):
+        rel = ET.SubElement(residues_el, 'Residue', {'name': aux['name']})
+        for at in aux['atoms']:
+            ET.SubElement(rel, 'Atom', {'name': at['name'], 'type': at['type'],
+                                        'charge': '%.5f' % at['charge']})
+        for (n1, n2) in aux['bonds']:
+            ET.SubElement(rel, 'Bond', {'atomName1': n1, 'atomName2': n2})
+        for nm in aux['external']:
+            ET.SubElement(rel, 'ExternalBond', {'atomName': nm})
+
     if prefixed or metal_lj:
         # Charge is supplied per-atom in the templates via the base force field's
         # UseAttributeFromResidue; here we only add the LJ for the prefixed types.
@@ -916,20 +929,25 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
             improper_out[key] = ((cs['etype'], slots[0], slots[1], slots[2]),
                                  terms, boosted)
 
-    if bond_out or coord_bond_out:
+    # Pre-resolved bonded terms that touch a re-typed atom (the coordinating-Cys SG):
+    # explicit types + values, emitted verbatim. Dedupe by type signature.
+    extra_bonds = {frozenset((t1, t2)): (t1, t2, ln, k)
+                   for (t1, t2, ln, k) in mt.get('extra_bonds', [])}
+    extra_angles = {}
+    for (t1, t2, t3, ang, k) in mt.get('extra_angles', []):
+        key = (t1, t2, t3) if t1 <= t3 else (t3, t2, t1)
+        extra_angles[key] = (key[0], key[1], key[2], ang, k)
+
+    if bond_out or coord_bond_out or extra_bonds:
         hb = ET.SubElement(root, 'HarmonicBondForce')
-        for (e1, e2, length, k) in bond_out.values():
+        for (e1, e2, length, k) in list(bond_out.values()) \
+                + list(coord_bond_out.values()) + list(extra_bonds.values()):
             ET.SubElement(hb, 'Bond', {'type1': e1, 'type2': e2,
                                        'length': '%.6f' % length, 'k': '%.4f' % k})
-        for (e1, e2, length, k) in coord_bond_out.values():
-            ET.SubElement(hb, 'Bond', {'type1': e1, 'type2': e2,
-                                       'length': '%.6f' % length, 'k': '%.4f' % k})
-    if angle_out or coord_angle_out:
+    if angle_out or coord_angle_out or extra_angles:
         ha = ET.SubElement(root, 'HarmonicAngleForce')
-        for (e1, e2, e3, ang, k) in angle_out.values():
-            ET.SubElement(ha, 'Angle', {'type1': e1, 'type2': e2, 'type3': e3,
-                                        'angle': '%.6f' % ang, 'k': '%.4f' % k})
-        for (e1, e2, e3, ang, k) in coord_angle_out.values():
+        for (e1, e2, e3, ang, k) in list(angle_out.values()) \
+                + list(coord_angle_out.values()) + list(extra_angles.values()):
             ET.SubElement(ha, 'Angle', {'type1': e1, 'type2': e2, 'type3': e3,
                                         'angle': '%.6f' % ang, 'k': '%.4f' % k})
     if proper_out or improper_out:

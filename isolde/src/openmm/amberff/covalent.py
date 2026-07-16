@@ -1156,6 +1156,197 @@ def _distance_nm(a, b):
     return float(numpy.linalg.norm(d)) * 0.1
 
 
+_RCSB_CLUSTER_CACHE = {}
+
+
+def _parse_ligand_cif_coords(cif_text):
+    '''Parse the ``_atom_site`` loop of an RCSB ModelServer ligand CIF into
+    ``{atom_name: (x, y, z)}`` for the FIRST ligand instance (stop when an atom name
+    repeats -- a second copy). Returns ``{}`` if the loop can't be read.'''
+    lines = cif_text.splitlines()
+    i = 0
+    headers = data_start = None
+    while i < len(lines):
+        if lines[i].strip() == 'loop_':
+            hs, j = [], i + 1
+            while j < len(lines) and lines[j].strip().startswith('_'):
+                hs.append(lines[j].strip())
+                j += 1
+            if any(h.startswith('_atom_site.') for h in hs):
+                headers, data_start = hs, j
+                break
+            i = j
+        else:
+            i += 1
+    if not headers:
+        return {}
+    col = {h.split('.', 1)[1]: n for n, h in enumerate(headers)}
+    nc = col.get('label_atom_id', col.get('auth_atom_id'))
+    xc, yc, zc = col.get('Cartn_x'), col.get('Cartn_y'), col.get('Cartn_z')
+    if None in (nc, xc, yc, zc):
+        return {}
+    coords = {}
+    for k in range(data_start, len(lines)):
+        s = lines[k].strip()
+        if not s or s[0] in '#_' or s == 'loop_':
+            break
+        toks = s.split()
+        if len(toks) < len(headers):
+            continue
+        nm = toks[nc]
+        if nm in coords:              # second instance -> keep just the first
+            break
+        try:
+            coords[nm] = (float(toks[xc]), float(toks[yc]), float(toks[zc]))
+        except ValueError:
+            continue
+    return coords
+
+
+def _rcsb_cluster_coords(session, ccd_name):
+    '''Best-effort idealised-geometry FALLBACK for a cluster not in
+    :data:`metal_params.CLUSTER_IDEAL_COORDS`: fetch one instance's atom coordinates
+    from the HIGHEST-RESOLUTION PDB entry containing ``ccd_name`` (RCSB search API +
+    ModelServer). Returns ``{atom_name: (x, y, z)}`` in Angstrom, or ``{}`` on any
+    failure (offline, no entry, parse error) so the caller falls back to the modelled
+    geometry. Networked; cached per component.'''
+    if ccd_name in _RCSB_CLUSTER_CACHE:
+        return _RCSB_CLUSTER_CACHE[ccd_name]
+    coords = {}
+    try:
+        import json, urllib.request, urllib.parse
+        query = {
+            'query': {'type': 'terminal', 'service': 'text_chem', 'parameters': {
+                'attribute': 'rcsb_chem_comp_container_identifiers.comp_id',
+                'operator': 'exact_match', 'value': ccd_name}},
+            'return_type': 'entry',
+            'request_options': {
+                'sort': [{'sort_by': 'rcsb_entry_info.resolution_combined',
+                          'direction': 'asc'}],
+                'paginate': {'start': 0, 'rows': 1}}}
+        search = ('https://search.rcsb.org/rcsbsearch/v2/query?json='
+                  + urllib.parse.quote(json.dumps(query)))
+        with urllib.request.urlopen(search, timeout=15) as resp:
+            hits = json.load(resp).get('result_set', [])
+        if hits:
+            pdb_id = hits[0]['identifier']
+            lig = ('https://models.rcsb.org/v1/%s/ligand?auth_comp_id=%s&encoding=cif'
+                   % (pdb_id, urllib.parse.quote(ccd_name)))
+            with urllib.request.urlopen(lig, timeout=30) as resp:
+                coords = _parse_ligand_cif_coords(resp.read().decode('utf-8', 'replace'))
+            if coords:
+                session.logger.info(
+                    'Metal cluster %s: no curated geometry; using its highest-resolution '
+                    'PDB instance (%s) as the idealised reference.' % (ccd_name, pdb_id))
+    except Exception as e:
+        session.logger.info(
+            'RCSB geometry fallback for %s failed (%s); using the modelled geometry.'
+            % (ccd_name, e))
+        coords = {}
+    _RCSB_CLUSTER_CACHE[ccd_name] = coords
+    return coords
+
+
+def _exemplar_cluster_coords(reference_model, resname):
+    '''``{atom_name: (x, y, z)}`` for one instance of ``resname`` in a user-supplied
+    exemplar structure, or ``{}`` (no model / not present). Lets the user point at a
+    high-quality structure of their own to define a cluster's idealised geometry.'''
+    if reference_model is None:
+        return {}
+    for r in reference_model.residues:
+        if r.name == resname:
+            return {a.name: tuple(float(v) for v in a.coord) for a in r.atoms}
+    return {}
+
+
+def _cluster_reference_coord_map(session, metals, core_atoms, reference_model=None,
+                                 fetch_reference=False):
+    '''Map each model cluster atom to its IDEALISED reference coordinate by a graph
+    isomorphism between the model cluster (metals + bridging core, real bonds) and a
+    reference cluster. Matching is by element + connectivity, NOT atom name: cluster
+    atom labels (which sulfur is "S1") are permuted between structures, so a name lookup
+    would return the wrong (e.g. non-bonded) reference distance for a real bond.
+
+    Reference source, in priority order: (1) a **user exemplar** structure
+    (``reference_model``) if it contains the ligand; (2) the curated
+    :data:`metal_params.CLUSTER_IDEAL_COORDS`; (3) ONLY if ``fetch_reference`` is set,
+    the highest-resolution RCSB PDB instance (a network fetch -- opt-in, never
+    automatic). Returns ``{model_atom: numpy_xyz}`` (Angstrom) or ``{}`` if there is no
+    reference or no isomorphism (caller then falls back to the modelled geometry).'''
+    import numpy, re
+    cluster = list(metals) + list(core_atoms)
+    if not cluster:
+        return {}
+    resname = cluster[0].residue.name
+    from .metal_params import CLUSTER_IDEAL_COORDS
+    ref = _exemplar_cluster_coords(reference_model, resname) or None
+    if ref is None:
+        ref = CLUSTER_IDEAL_COORDS.get(resname)
+    if ref is None and fetch_reference:
+        ref = _rcsb_cluster_coords(session, resname)
+    if not ref:
+        return {}
+    ref_names = list(ref)
+    ref_xyz = {n: numpy.array(ref[n], dtype=float) for n in ref_names}
+
+    from chimerax.atomic import Element
+
+    def _elem(nm):                       # 'FE1' -> 'Fe', 'S2' -> 'S'
+        mo = re.match(r'[A-Za-z]+', nm)
+        return mo.group(0).title() if mo else nm
+    ref_elem = {n: _elem(n) for n in ref_names}
+
+    def _is_metal(sym):
+        try:
+            return Element.get_element(sym).is_metal
+        except Exception:
+            return False
+    ref_metal = {n: _is_metal(ref_elem[n]) for n in ref_names}
+    # Reference bonds mirror the model's: only metal<->donor pairs within ~2.8 A. This
+    # MUST exclude metal-metal contacts (e.g. geostd F3S Fe-Fe is 2.71 A, inside the
+    # cutoff) and donor-donor, which the model does not bond -- otherwise the reference
+    # graph's degrees won't match the model's and the isomorphism fails.
+    ref_adj = {n: set() for n in ref_names}
+    for i, a in enumerate(ref_names):
+        for b in ref_names[i + 1:]:
+            if ref_metal[a] == ref_metal[b]:
+                continue
+            if numpy.linalg.norm(ref_xyz[a] - ref_xyz[b]) < 2.8:
+                ref_adj[a].add(b)
+                ref_adj[b].add(a)
+    cluster_set = set(cluster)
+    model_adj = {a: set(nb for nb in a.neighbors
+                        if nb in cluster_set and nb.element.is_metal != a.element.is_metal)
+                 for a in cluster}
+
+    # Backtracking isomorphism model_atom -> ref_name (tiny graphs; most-connected first).
+    order = sorted(cluster, key=lambda a: -len(model_adj[a]))
+    mapping, used = {}, set()
+
+    def _bt(i):
+        if i == len(order):
+            return True
+        a = order[i]
+        for n in ref_names:
+            if (n in used or ref_elem[n] != a.element.name
+                    or len(ref_adj[n]) != len(model_adj[a])):
+                continue
+            if any(nb in mapping and mapping[nb] not in ref_adj[n]
+                   for nb in model_adj[a]):
+                continue
+            mapping[a] = n
+            used.add(n)
+            if _bt(i + 1):
+                return True
+            del mapping[a]
+            used.discard(n)
+        return False
+
+    if not _bt(0):
+        return {}
+    return {a: ref_xyz[mapping[a]] for a in cluster}
+
+
 def _cluster_core_atoms(site):
     '''Bridging inorganic *core* atoms of a polynuclear cluster: non-metal heavy atoms
     of the metalloligand whose heavy neighbours are ALL metals -- e.g. the mu-sulfides
@@ -1224,8 +1415,68 @@ def _ion_lj(forcefield, ion_template_name):
     return None
 
 
+def _amberff_path():
+    import os
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'amberff14SB.xml')
+
+
+def _read_amber_residue(amber_xml, resname):
+    '''Parse an ffXML residue template into ``{atoms:[{name,type,charge}], bonds:[(n1,n2)],
+    external:[names]}`` (or ``None`` if absent). Used to clone a base ff14SB residue when
+    re-templating a metal-coordinating cysteine (cf. iron_sulfur.xml's MC_CYF).'''
+    import xml.etree.ElementTree as ET
+    root = ET.parse(amber_xml).getroot()
+    for rel in root.findall('Residues/Residue'):
+        if rel.get('name') != resname:
+            continue
+        return {
+            'atoms': [{'name': a.get('name'), 'type': a.get('type'),
+                       'charge': float(a.get('charge', '0'))}
+                      for a in rel.findall('Atom')],
+            'bonds': [(b.get('atomName1'), b.get('atomName2'))
+                      for b in rel.findall('Bond')],
+            'external': [e.get('atomName') for e in rel.findall('ExternalBond')],
+        }
+    return None
+
+
+def _amber_type_lj(amber_xml, type_name):
+    '''``(sigma, epsilon)`` strings for an ffXML atom type's Lennard-Jones, or ``None``.'''
+    import xml.etree.ElementTree as ET
+    nb = ET.parse(amber_xml).getroot().find('NonbondedForce')
+    if nb is not None:
+        for a in nb.findall('Atom'):
+            if (a.get('type') or a.get('class')) == type_name:
+                return (a.get('sigma'), a.get('epsilon'))
+    return None
+
+
+def _amber_bonded_tables(amber_xml):
+    '''Read an ffXML's harmonic bond + angle parameter tables, keyed by atom TYPE:
+    ``bonds[frozenset(t1,t2)] = (length, k)`` and ``angles[(t1,t2,t3)] = (angle, k)``
+    (both orientations stored). Used to re-emit the ff14SB terms that touch a
+    re-typed cysteine SG (looked up under its base type, re-keyed to the new type).'''
+    import xml.etree.ElementTree as ET
+    root = ET.parse(amber_xml).getroot()
+    bonds = {}
+    hb = root.find('HarmonicBondForce')
+    if hb is not None:
+        for b in hb.findall('Bond'):
+            bonds[frozenset((b.get('type1'), b.get('type2')))] = (
+                float(b.get('length')), float(b.get('k')))
+    angles = {}
+    ha = root.find('HarmonicAngleForce')
+    if ha is not None:
+        for a in ha.findall('Angle'):
+            t = (a.get('type1'), a.get('type2'), a.get('type3'))
+            v = (float(a.get('angle')), float(a.get('k')))
+            angles[t] = v
+            angles[t[::-1]] = v
+    return bonds, angles
+
+
 def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
-                       core_atoms=None):
+                       core_atoms=None, reference_model=None, fetch_reference=False):
     '''Build the explicit metal-coordination emission for :func:`covalent_to_ffxml`
     (see its ``metal_terms`` argument): the metal atoms + their ion Lennard-Jones,
     the metal-donor bonds and donor-metal-donor angles (soft empirical values from
@@ -1241,7 +1492,7 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
     ``core_atoms`` (a polynuclear cluster's bridging sulfides/oxides, from
     :func:`_cluster_core_atoms`) switches on the CLUSTER path: every metal and core atom
     is uniquely typed, the metal-core bonds / all cluster angles (incl. metal-core-metal)
-    take the observed geometry, stiff ``AmoebaUreyBradleyForce`` 1-3 terms
+    take the IDEALISED (CCD) geometry, stiff ``AmoebaUreyBradleyForce`` 1-3 terms
     (``terms['urey_bradley']``) hold the cage, and the core atoms are emitted explicitly
     (``terms['core']``: name/etype/charge) with :data:`metal_params.CORE_ATOM_LJ`. Empty
     (mononuclear) -> the original curated, angle-snapped, soft-bond behaviour.'''
@@ -1261,13 +1512,84 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
     is_cluster = len(core_set) > 0
     terms = {'metals': [], 'core': [], 'atom_types': [], 'lj': [], 'coord_bonds': [],
              'coord_angles': [], 'donor_deltas': [], 'donor_types': {},
-             'urey_bradley': []}
+             'urey_bradley': [], 'aux_residues': [], 'cys_overrides': [],
+             'extra_bonds': [], 'extra_angles': []}
+
+    # Metal-coordinating deprotonated CYSTEINES (standard-residue S donor with no H) are
+    # RE-TEMPLATED, not left on the base Cys template: ff14SB types their SG as 'SH' and
+    # over-charges the thiolate, so the metal-SG bond wouldn't match and the charge would
+    # double-count. We clone CYM into a cluster-scoped template whose SG carries a unique
+    # type + a charge reduced by the metal's donation (cf. iron_sulfur.xml's MC_CYF). Set
+    # up the SG type name + a per-Cys charge-delta accumulator here; the template is built
+    # after the metal loop. His-type donors need none of this (their base 'NB' works).
+    def _is_retempl_thiolate(a):
+        return (a.residue not in nonstandard and a.element.name == 'S'
+                and not any(nb.element.number == 1 for nb in a.neighbors))
+    retempl = set(d for (mm, d) in site.coordination if _is_retempl_thiolate(d))
+    _stem = '_'.join(sorted({template_names[r].split('_', 1)[-1] for r in nonstandard})) \
+        or 'metal'
+    _sg_type = 'MMET_%s_SG' % _stem
+    _cys_tmpl = 'MMET_%s_CYS' % _stem
+    _cym = _read_amber_residue(_amberff_path(), 'CYM') if retempl else None
+    _base_sg_q = -0.8844
+    if _cym:
+        _base_sg_q = next((a['charge'] for a in _cym['atoms'] if a['name'] == 'SG'),
+                          _base_sg_q)
+    cys_sg_delta = {d: 0.0 for d in retempl}
 
     # Per-atom-unique emitted type for a cluster atom (metal / core). Atom names are
     # unique within a residue, so this never collides -- and for a mononuclear metal
     # named by its element it is identical to the old element-keyed type.
     def _etype(atom):
         return template_names[atom.residue] + '_' + atom.name
+
+    # Cluster-internal geometry is restrained to the IDEALISED (CCD) geometry, NOT the
+    # modelled coordinates: at low resolution the starting cluster is often terrible and
+    # freezing it would lock in garbage. Pull the ideal coordinates from each
+    # metalloligand's CCD component (offline, matched by atom name) and compute the
+    # internal bond lengths / angles / Urey-Bradley distances from those. Fall back to
+    # the modelled geometry only where a CCD ideal coordinate is missing (non-CCD
+    # cluster), warning once.
+    import numpy
+    _warned_no_ideal = [False]
+    # Idealised reference coordinate per MODEL cluster atom, resolved by graph
+    # isomorphism (element + connectivity), NOT by atom name -- cluster labels are
+    # permuted between the model and the reference.
+    _ideal_map = _cluster_reference_coord_map(
+        session, site.metals, core_set, reference_model=reference_model,
+        fetch_reference=fetch_reference)
+
+    def _ideal_coord(atom):
+        return _ideal_map.get(atom)
+
+    def _warn_ideal():
+        if not _warned_no_ideal[0]:
+            session.logger.warning(
+                'No curated idealised geometry for this metal cluster; restraining it to '
+                'the MODELLED geometry, which at low resolution may be poor. To use a '
+                'better reference, re-run "isolde parameterise" with referenceModel <a '
+                'high-resolution structure containing this ligand>, or fetchReference true '
+                'to pull the highest-resolution PDB instance from the web.')
+            _warned_no_ideal[0] = True
+
+    def ideal_dist_nm(a, b):
+        ca, cb = _ideal_coord(a), _ideal_coord(b)
+        if ca is None or cb is None:
+            _warn_ideal()
+            return _distance_nm(a, b)
+        return float(numpy.linalg.norm(ca - cb)) * 0.1
+
+    def ideal_angle(a, b, c):        # b is the vertex
+        import math
+        ca, cb, cc = _ideal_coord(a), _ideal_coord(b), _ideal_coord(c)
+        if ca is None or cb is None or cc is None:
+            _warn_ideal()
+            return _angle_radians(a, b, c)
+        va, vc = ca - cb, cc - cb
+        na, nc = numpy.linalg.norm(va), numpy.linalg.norm(vc)
+        if na == 0 or nc == 0:
+            return 0.0
+        return math.acos(max(-1.0, min(1.0, float(numpy.dot(va, vc) / (na * nc)))))
 
     # Core atoms are emitted here (not via the organic per_res); seed each with its
     # formal anion charge (bridging sulfide/oxide = -2) and add the metal-charge spread.
@@ -1280,9 +1602,10 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
         # comes from metal_params' per-element default (overridable there).
         ox = guess_ox_state(elem, None)
         donors = [d for (mm, d) in site.coordination if mm is m]
-        # Only ligand (non-standard) donors -- organic OR core -- carry a redistributed
-        # charge; standard coordinating residues keep their untouched ISOLDE templates.
-        lig_donors = [d for d in donors if d.residue in nonstandard]
+        # Charge is redistributed onto ligand (non-standard) donors -- organic OR core --
+        # AND onto re-templated cysteine thiolates (their SG carries the donation). Other
+        # standard coordinating residues (His etc.) keep their untouched ISOLDE templates.
+        lig_donors = [d for d in donors if d.residue in nonstandard or d in retempl]
         q_metal, delta = metal_charge_split(ox, len(lig_donors), keep_fraction)
         etype = _etype(m)
         ion_tmpl = _ion_template_for_element(elem, ox)
@@ -1310,13 +1633,30 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
                     'bond. Add it to metal_params.METAL_SITE_PARAMS.'
                     % (elem, d.element.name))
             r0, k = p
-            # Cluster-internal (metal-core) bonds freeze the observed distance so the
-            # rigid cluster keeps its own geometry; external/mononuclear use curated r0.
-            length = _distance_nm(m, d) if is_core else r0
+            # Cluster-internal (metal-core) bonds take the IDEALISED (CCD) distance so
+            # the cluster is pulled to its correct shape from a poor start; external /
+            # mononuclear bonds use the curated equilibrium r0.
+            length = ideal_dist_nm(m, d) if is_core else r0
             terms['coord_bonds'].append({'metal': (r, m.name),
                                          'donor': (d.residue, d.name),
                                          'length': length, 'k': k})
-            if d.residue in nonstandard:
+            if d in retempl:
+                # Re-templated cysteine thiolate: charge folds into the cloned template's
+                # SG; the metal-SG bond resolves to the cluster-scoped SG type.
+                cys_sg_delta[d] += delta
+                terms['donor_types'][(d.residue, d.name)] = _sg_type
+                # Coordination angle metal-SG-CB (vertex SG): re-typing SG dropped the
+                # ff14SB angle that would hold the Fe-S-C geometry, so emit it explicitly
+                # (pre-resolved types). CB is the SG's in-residue heavy neighbour.
+                cb = next((nb for nb in d.neighbors if nb.residue is d.residue
+                           and nb.element.number > 1), None)
+                if cb is not None and _cym:
+                    cb_type = next((a['type'] for a in _cym['atoms']
+                                    if a['name'] == cb.name), 'CT')
+                    terms['extra_angles'].append(
+                        (cb_type, _sg_type, etype,
+                         snap_angle(_angle_radians(cb, d, m)), angle_k()))
+            elif d.residue in nonstandard:
                 if is_core:
                     core_charge[d] += delta         # folded into the emitted core atom
                 else:
@@ -1329,20 +1669,24 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
                         'No ff14SB type known for coordinating donor %s/%s; cannot '
                         'build its metal bond.' % (d.residue.name, d.name))
                 terms['donor_types'][(d.residue, d.name)] = dt
-        # Angles at the metal vertex, over its donor pairs. Cluster: observed (cluster
-        # geometry is non-canonical); mononuclear: snapped to the ideal polyhedron.
+        # Angles at the metal vertex, over its donor pairs. A cluster-internal angle
+        # (both donors are core atoms with CCD ideal coords) takes the IDEALISED angle;
+        # any angle involving an external donor (its coord isn't in the metalloligand's
+        # CCD template) is snapped to the nearest canonical value, as for a mononuclear
+        # polyhedron.
         for d1, d2 in combinations(donors, 2):
-            th0 = _angle_radians(d1, m, d2) if is_cluster \
+            both_core = d1 in core_set and d2 in core_set
+            th0 = ideal_angle(d1, m, d2) if both_core \
                 else snap_angle(_angle_radians(d1, m, d2))
             terms['coord_angles'].append({'a': (d1.residue, d1.name),
                                           'metal': (r, m.name),
                                           'c': (d2.residue, d2.name),
                                           'angle': th0, 'k': angle_k()})
-            # Urey-Bradley across the metal for a core...core pair (the S...S term).
-            # Keyed by the full angle triple (i-vertex-k), as OpenMM's UB force expects.
-            if d1 in core_set and d2 in core_set:
+            # Urey-Bradley across the metal for a core...core pair (the S...S term),
+            # keyed by the full angle triple (i-vertex-k) as OpenMM's UB force expects.
+            if both_core:
                 terms['urey_bradley'].append((_etype(d1), _etype(m), _etype(d2),
-                                              _distance_nm(d1, d2), UREY_BRADLEY_K))
+                                              ideal_dist_nm(d1, d2), UREY_BRADLEY_K))
 
     # Core-vertex angles (metal-core-metal, e.g. Fe-S-Fe) + the metal...metal Urey-
     # Bradley across each bridge. Observed geometry; the vertex is the core atom.
@@ -1364,10 +1708,56 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
             terms['coord_angles'].append({'a': (m1.residue, m1.name),
                                           'metal': (c.residue, c.name),   # vertex = core
                                           'c': (m2.residue, m2.name),
-                                          'angle': _angle_radians(m1, c, m2),
+                                          'angle': ideal_angle(m1, c, m2),
                                           'k': angle_k()})
             terms['urey_bradley'].append((_etype(m1), _etype(c), _etype(m2),
-                                          _distance_nm(m1, m2), UREY_BRADLEY_K))
+                                          ideal_dist_nm(m1, m2), UREY_BRADLEY_K))
+
+    # Build the shared re-templated cysteine (MC_CYF-style): clone CYM, re-type SG to the
+    # cluster-scoped thiolate type + reduce its charge by the (averaged) metal donation,
+    # and give SG an ExternalBond (its metal is in another residue). Applied per instance
+    # via cys_overrides. His-type donors are untouched.
+    if retempl and _cym:
+        avg_delta = sum(cys_sg_delta.values()) / len(cys_sg_delta)
+        aux_atoms = []
+        for a in _cym['atoms']:
+            if a['name'] == 'SG':
+                aux_atoms.append({'name': 'SG', 'type': _sg_type,
+                                  'charge': _base_sg_q + avg_delta})
+            else:
+                aux_atoms.append(dict(a))     # backbone/CB keep their ff14SB type+charge
+        terms['aux_residues'].append({
+            'name': _cys_tmpl, 'atoms': aux_atoms, 'bonds': _cym['bonds'],
+            'external': list(_cym['external']) + ['SG']})
+        sglj = _amber_type_lj(_amberff_path(), 'SH') or ('0.35', '1.0')
+        terms['atom_types'].append({'name': _sg_type, 'element': 'S', 'mass': '32.06'})
+        terms['lj'].append({'type': _sg_type, 'sigma': sglj[0], 'epsilon': sglj[1]})
+        terms['cys_overrides'] = [(d.residue, _cys_tmpl) for d in retempl]
+
+        # Re-typing SG orphaned the ff14SB intra-residue bonded terms that touch it
+        # (CB-SG bond, X-CB-SG angles): the base force field defines them for SG's ORIGINAL
+        # type 'SH', which the new type no longer matches. Re-emit each with its ff14SB
+        # value, looked up under 'SH' and re-keyed to the cluster SG type (cf. MC_CYF's
+        # CT-SM bond and SM-CT-H1/CT angles).
+        _bond_tab, _angle_tab = _amber_bonded_tables(_amberff_path())
+        _btype = {a['name']: a['type'] for a in _cym['atoms']}   # base ff14SB types
+        _etype_cys = dict(_btype)
+        _etype_cys['SG'] = _sg_type                              # emitted types
+        _adj = {}
+        for (n1, n2) in _cym['bonds']:
+            _adj.setdefault(n1, []).append(n2)
+            _adj.setdefault(n2, []).append(n1)
+        for cb in _adj.get('SG', []):                           # CB-SG bond
+            bp = _bond_tab.get(frozenset((_btype[cb], 'SH')))
+            if bp:
+                terms['extra_bonds'].append((_etype_cys[cb], _sg_type, bp[0], bp[1]))
+            for x in _adj.get(cb, []):                          # X-CB-SG angles
+                if x == 'SG':
+                    continue
+                ap = _angle_tab.get((_btype[x], _btype[cb], 'SH'))
+                if ap:
+                    terms['extra_angles'].append(
+                        (_etype_cys[x], _etype_cys[cb], _sg_type, ap[0], ap[1]))
 
     # Clean up floating-point drift so the emitted cluster carries an exact integer net
     # charge (the split conserves the formal metal-oxidation + core-anion total).
@@ -1379,7 +1769,8 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
 
 
 def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
-                            metal_keep_fraction=0.5, base_templates=None):
+                            metal_keep_fraction=0.5, base_templates=None,
+                            reference_model=None, fetch_reference=False):
     '''Parameterise a metal coordination site end to end and load it into ISOLDE's
     live force field.
 
@@ -1476,7 +1867,9 @@ def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
         # metalloligand type is the same across instances (cf. the free-ligand USER_).
         template_names = {r: 'MMET_' + r.name for r in ligand_residues}
         metal_terms = _build_metal_terms(session, site, forcefield, template_names,
-                                         metal_keep_fraction, core_atoms=core_atoms)
+                                         metal_keep_fraction, core_atoms=core_atoms,
+                                         reference_model=reference_model,
+                                         fetch_reference=fetch_reference)
 
         stem = '_'.join(sorted({r.name for r in ligand_residues})) or 'metal'
         xml_path = os.path.join(os.getcwd(), '%s_metal.xml' % stem)
@@ -1486,7 +1879,14 @@ def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
 
         for tn in template_names.values():
             forcefield._templates.pop(tn, None)
+        # Re-templated coordinating cysteines (MC_CYF-style) are also freshly (re)loaded.
+        for (_cr, cys_tn) in metal_terms.get('cys_overrides', []):
+            forcefield._templates.pop(cys_tn, None)
         forcefield.loadFile(xml_path)
+        # Bind each ligating cysteine to its re-typed template PER INSTANCE (the model is
+        # full of ordinary cysteines, so this must NOT be name-matched).
+        for (cys_res, cys_tn) in metal_terms.get('cys_overrides', []):
+            cys_res.isolde_template_name = cys_tn
     finally:
         if ante is not None and ante.get('cleanup'):
             shutil.rmtree(ante['workdir'], ignore_errors=True)

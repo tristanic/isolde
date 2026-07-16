@@ -269,25 +269,28 @@ def run(session):
     finally:
         session.models.close([s])
 
-    # --- Part I: polynuclear cluster (Fe2S2) -- core handling + Urey-Bradley ----
-    # A synthetic [2Fe-2S] rhombus in ONE residue: 2 Fe + 2 mu-bridging S, each S bonded
-    # to both Fe. Exercises the CLUSTER path: bridging sulfides excluded from the organic
-    # build, per-atom-unique types, observed-geometry bonds/angles incl. Fe-S-Fe, stiff
-    # Urey-Bradley 1-3 terms, and an emitted template that BUILDS a system in OpenMM.
+    # --- Part I: polynuclear cluster (Fe2S2) -- core, Urey-Bradley, IDEALISED geometry ---
+    # A synthetic [2Fe-2S] named 'FES' (in CLUSTER_IDEAL_COORDS) but with DELIBERATELY
+    # DISTORTED coordinates. Exercises the CLUSTER path: bridging sulfides excluded from
+    # the organic build, per-atom-unique types, stiff Urey-Bradley 1-3 terms, and -- the
+    # key check -- that internal geometry is taken from the curated CCD-ideal reference,
+    # NOT the (distorted) modelled coordinates. Emitted template must build in OpenMM.
     sc = AtomicStructure(session, name='cluster-test', auto_style=False)
     try:
-        clu = sc.new_residue('CLU', 'A', 1)
-        cc = {'FE1': (0.0, 0.0, 0.0), 'FE2': (2.70, 0.0, 0.0),
-              'S1': (1.35, 1.55, 0.0), 'S2': (1.35, -1.55, 0.0)}
+        clu = sc.new_residue('FES', 'A', 1)          # in CLUSTER_IDEAL_COORDS (no network)
+        # Distorted rhombus: Fe-S ~3.1 A (blown up), far from the ideal ~2.2 A.
+        cc = {'FE1': (0.0, 0.0, 0.0), 'FE2': (4.30, 0.0, 0.0),
+              'S1': (2.15, 2.25, 0.0), 'S2': (2.15, -2.25, 0.0)}
         catoms = {}
         for nm, xyz in cc.items():
-            a = sc.new_atom(nm, nm[:2] if nm.startswith('FE') else 'S')
+            a = sc.new_atom(nm, 'Fe' if nm.startswith('FE') else 'S')
             a.coord = numpy.array(xyz)
             clu.add_atom(a)
             catoms[nm] = a
         for fe in ('FE1', 'FE2'):
             for s in ('S1', 'S2'):
                 sc.new_bond(catoms[fe], catoms[s])   # real coordination bonds
+        dist_input = numpy.linalg.norm(catoms['FE1'].coord - catoms['S1'].coord)  # ~3.1 A
 
         csite = cov.detect_metal_site(clu)
         if set(csite.metals) != {catoms['FE1'], catoms['FE2']}:
@@ -302,7 +305,7 @@ def run(session):
         if cmol is not None:
             _fail('a pure cluster should leave no organic framework (mol should be None)')
 
-        ctn = {clu: 'MMET_CLU'}
+        ctn = {clu: 'MMET_FES'}
         cmt = cov._build_metal_terms(session, csite, ff, ctn, 0.5, core_atoms=core)
         if len(cmt['core']) != 2 or len(cmt['metals']) != 2:
             _fail('expected 2 metals + 2 core, got %d/%d'
@@ -312,6 +315,12 @@ def run(session):
             _fail('cluster atoms must be UNIQUELY typed, got %s' % etypes)
         if not cmt['urey_bradley']:
             _fail('cluster produced no Urey-Bradley terms')
+        # KEY: internal Fe-S bonds must take the IDEALISED length (~0.22 nm), NOT the
+        # distorted modelled ~0.31 nm.
+        internal = [cb for cb in cmt['coord_bonds'] if cb['donor'][1] in ('S1', 'S2')]
+        if not internal or not all(0.21 < cb['length'] < 0.23 for cb in internal):
+            _fail('internal Fe-S bonds not idealised (input was %.2f A): %s'
+                  % (dist_input, [round(cb['length'] * 10, 3) for cb in internal]))
         # Both Fe-S-Fe (core vertex) and S-Fe-S (metal vertex) angles must be present.
         vfe = {ca['metal'][1] for ca in cmt['coord_angles']}
         if 'S1' not in vfe and 'S2' not in vfe:
@@ -347,7 +356,7 @@ def run(session):
             ff3.loadFile(cxml)
             top = Topology()
             ch = top.addChain()
-            tr = top.addResidue('MMET_CLU', ch)
+            tr = top.addResidue('MMET_FES', ch)
             ta = {nm: top.addAtom(nm, _El.getBySymbol('Fe' if nm.startswith('FE') else 'S'), tr)
                   for nm in cc}
             for fe in ('FE1', 'FE2'):
@@ -361,9 +370,98 @@ def run(session):
                       % (xml_bonds + len(ubs), xml_bonds, len(ubs), n_hb))
         finally:
             shutil.rmtree(cdir, ignore_errors=True)
-        print('PASS: Fe2S2 cluster -- core excluded, unique types, Urey-Bradley, builds in OpenMM')
+        print('PASS: Fe2S2 cluster -- core excluded, unique types, idealised geometry, '
+              'Urey-Bradley, builds in OpenMM')
     finally:
         session.models.close([sc])
+
+    # --- Part J: uncurated cluster geometry source is OPT-IN (no silent network) ------
+    # An uncurated cluster with no exemplar and fetch OFF must yield no reference map
+    # (-> modelled-geometry fallback, no network); a user exemplar supplies it.
+    su = AtomicStructure(session, name='uncurated', auto_style=False)
+    ex = AtomicStructure(session, name='exemplar', auto_style=False)
+    try:
+        def _mk(struct):
+            r = struct.new_residue('UNC', 'A', 1)   # not in CLUSTER_IDEAL_COORDS
+            cu = {'FE1': (0., 0., 0.), 'FE2': (2.7, 0., 0.),
+                  'S1': (1.35, 1.55, 0.), 'S2': (1.35, -1.55, 0.)}
+            at = {}
+            for nm, xyz in cu.items():
+                a = struct.new_atom(nm, 'Fe' if nm.startswith('FE') else 'S')
+                a.coord = numpy.array(xyz); r.add_atom(a); at[nm] = a
+            for fe in ('FE1', 'FE2'):
+                for s in ('S1', 'S2'):
+                    struct.new_bond(at[fe], at[s])
+            return r
+        ur = _mk(su)
+        _mk(ex)
+        usite = cov.detect_metal_site(ur)
+        ucore = cov._cluster_core_atoms(usite)
+        m_off = cov._cluster_reference_coord_map(session, usite.metals, ucore,
+                                                 reference_model=None, fetch_reference=False)
+        if m_off:
+            _fail('uncurated cluster returned a reference map without opt-in (should be '
+                  'empty -> modelled-geometry fallback): %d' % len(m_off))
+        m_ex = cov._cluster_reference_coord_map(session, usite.metals, ucore,
+                                                reference_model=ex, fetch_reference=False)
+        if len(m_ex) != 4:
+            _fail('user exemplar did not supply cluster geometry: %d' % len(m_ex))
+        print('PASS: uncurated cluster geometry is opt-in (exemplar / fetch), never silent')
+    finally:
+        session.models.close([su, ex])
+
+    # --- Part K: re-typed cysteine keeps its SG-touching bonded terms -----------------
+    # Re-typing SG to a cluster type orphans the ff14SB CB-SG bond + X-CB-SG angles (they
+    # were keyed by SG's base type 'SH'). Confirm (a) the ff14SB tables carry those terms,
+    # and (b) covalent_to_ffxml emits pre-resolved extra_bonds/extra_angles + the aux CYS
+    # template, so nothing through SG is left unrestrained.
+    amber_xml = os.path.join(amberdir, 'amberff14SB.xml')
+    bonds_tab, angles_tab = cov._amber_bonded_tables(amber_xml)
+    if frozenset(('CT', 'SH')) not in bonds_tab:
+        _fail('ff14SB CT-SH (Cys CB-SG) bond not found by _amber_bonded_tables')
+    if ('CX', 'CT', 'SH') not in angles_tab:
+        _fail('ff14SB CX-CT-SH (CA-CB-SG) angle not found by _amber_bonded_tables')
+    cym = cov._read_amber_residue(amber_xml, 'CYM')
+    if cym is None or not any(a['name'] == 'SG' for a in cym['atoms']):
+        _fail('could not read the CYM template for re-templating')
+
+    # Minimal metal_terms exercising the emission of a re-typed cysteine.
+    R = object()
+    mt = {'metals': [{'residue': R, 'name': 'FE', 'etype': 'MMET_X_FE', 'charge': 1.0}],
+          'core': [], 'atom_types': [{'name': 'MMET_X_FE', 'element': 'Fe', 'mass': '55.85'},
+                                     {'name': 'MMET_X_SG', 'element': 'S', 'mass': '32.06'}],
+          'lj': [{'type': 'MMET_X_FE', 'sigma': '0.2', 'epsilon': '0.01'},
+                 {'type': 'MMET_X_SG', 'sigma': '0.356', 'epsilon': '1.046'}],
+          'coord_bonds': [], 'coord_angles': [], 'donor_deltas': [], 'donor_types': {},
+          'urey_bradley': [],
+          'aux_residues': [{'name': 'MMET_X_CYS',
+                            'atoms': [{'name': 'CB', 'type': 'CT', 'charge': -0.24},
+                                      {'name': 'SG', 'type': 'MMET_X_SG', 'charge': -0.63}],
+                            'bonds': [('CB', 'SG')], 'external': ['SG']}],
+          'cys_overrides': [],
+          'extra_bonds': [('CT', 'MMET_X_SG', 0.181, 100000.0)],
+          'extra_angles': [('CX', 'CT', 'MMET_X_SG', 1.9, 400.0),
+                           ('CT', 'MMET_X_SG', 'MMET_X_FE', 1.9, 400.0)]}
+    kdir = tempfile.mkdtemp(prefix='isolde_cystest_')
+    try:
+        kxml = os.path.join(kdir, 'cys.xml')
+        ac.covalent_to_ffxml({}, {R: 'MMET_X'}, None, None, kxml,
+                             os.path.join(amberdir, 'gaff2.xml'), metal_terms=mt)
+        import xml.etree.ElementTree as ET
+        kroot = ET.parse(kxml).getroot()
+        if 'MMET_X_CYS' not in [r.get('name') for r in kroot.findall('Residues/Residue')]:
+            _fail('re-typed CYS aux template not emitted')
+        cbsg = [b for b in kroot.findall('HarmonicBondForce/Bond')
+                if set((b.get('type1'), b.get('type2'))) == {'CT', 'MMET_X_SG'}]
+        if not cbsg:
+            _fail('CB-SG bond (CT-MMET_X_SG) missing from emitted template')
+        sgang = [a for a in kroot.findall('HarmonicAngleForce/Angle')
+                 if 'MMET_X_SG' in (a.get('type1'), a.get('type2'), a.get('type3'))]
+        if len(sgang) < 2:
+            _fail('SG-touching angles missing from emitted template: %d' % len(sgang))
+    finally:
+        shutil.rmtree(kdir, ignore_errors=True)
+    print('PASS: re-typed cysteine SG keeps its bond + angles (nothing left unrestrained)')
 
     print('ALL PASS')
 

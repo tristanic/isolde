@@ -47,7 +47,8 @@ def parameterise_ligand(session, residue, net_charge=None, charge_method='am1-bc
         shutil.copyfile(ante_out, f'{residue.name}.mol2')
 
 def parameterise_cmd(session, residues, override=False, net_charge=None,
-                     always_raise_errors=True, shell_radius=1, base_templates=None):
+                     always_raise_errors=True, shell_radius=1, base_templates=None,
+                     reference_model=None, fetch_reference=False):
     from chimerax.core.errors import UserError
     from chimerax.atomic import Residues
 
@@ -76,7 +77,9 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
             try:
                 parameterise_metal_site(session, site, shell_radius=shell_radius,
                                         net_charge=net_charge,
-                                        base_templates=base_templates)
+                                        base_templates=base_templates,
+                                        reference_model=reference_model,
+                                        fetch_reference=fetch_reference)
             except Exception as e:
                 if always_raise_errors:
                     raise UserError(str(e))
@@ -146,7 +149,7 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
                 continue
 
 def register_isolde_param(logger):
-    from chimerax.atomic import ResiduesArg
+    from chimerax.atomic import ResiduesArg, AtomicStructureArg
     from chimerax.core.commands import (CmdDesc, BoolArg, IntArg, StringArg, ListOf,
                                         register)
     desc = CmdDesc(
@@ -157,6 +160,8 @@ def register_isolde_param(logger):
             ('always_raise_errors', BoolArg),
             ('shell_radius', IntArg),
             ('base_templates', ListOf(StringArg)),
+            ('reference_model', AtomicStructureArg),
+            ('fetch_reference', BoolArg),
         ],
         synopsis=('Parameterise ligand(s) for use in ISOLDE. Supports most organic species. '
             'Covalent ligands, residue-residue crosslinks and main-chain modifications are '
@@ -164,7 +169,11 @@ def register_isolde_param(logger):
             '(hemes, Zn/Mg/Mn/Ca/... coordination) are built as a bonded metal template with '
             'soft empirical coordination terms (select the metalloligand or metal). Hydrogens '
             'must be present and correct. baseTemplates takes a list of CCD ids, registered '
-            'template names and/or SMILES strings whose chemistry is matched onto the '
-            'ligand to fix bond orders/charges when perception is unreliable.')
+            'template names and/or SMILES strings whose chemistry is matched onto the ligand '
+            'to fix bond orders/charges when perception is unreliable. For a polynuclear '
+            'inorganic cluster whose idealised geometry is not built in, referenceModel takes '
+            'an open high-quality structure containing the same ligand to use as the geometry '
+            'exemplar; fetchReference true instead lets ISOLDE fetch the highest-resolution '
+            'PDB structure containing it (a network lookup, off by default).')
     )
     register('isolde parameterise', desc, parameterise_cmd, logger=logger)
