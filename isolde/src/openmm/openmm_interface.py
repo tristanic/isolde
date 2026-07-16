@@ -1303,11 +1303,16 @@ class SimHandler:
         # A Volume: LinearInterpMapForce dict covering all MDFF forces
         self.mdff_forces = {}
 
-        # For symmetry-aware MDFF (Phase 1C): per-volume mapping from a real
-        # atom's particle index to the map-force indices of its symmetry copies,
-        # so live coupling-constant edits can be mirrored (and /n_sym-scaled)
-        # onto the copies. Empty when the simulation has no symmetry atoms.
-        self._mdff_copy_force_indices = {}
+        # Symmetry-aware MDFF: per-volume ``{real-atom particle index:
+        # [(force_index, transform12), ...]}`` recording every map term of each
+        # real atom -- its identity term (own position) and one transformed term
+        # per crystallographic image -- so live coupling/enabled edits re-apply to
+        # all of them. Empty when the simulation has no symmetry atoms.
+        self._mdff_symmetry_term_indices = {}
+        # Covered multiplicity per real-atom particle index, set alongside the
+        # term map when symmetry MDFF terms are built (see
+        # _add_mdff_symmetry_terms). None until then.
+        self._mdff_n_sym_covered = None
 
         logger = self.session.logger
         # Overall simulation topology + system. The build can recover once from
@@ -2851,7 +2856,10 @@ class SimHandler:
         # Identity terms: covered MDFF atoms sample the map at their own position.
         for i, k, e in zip(indices, ks, enableds):
             i = int(i)
-            if not self_covered[i] or n_sym_cov[i] == 0:
+            # i < 0 (atom not in the construct) should not occur -- mdff_atoms are
+            # sourced from the mobile set -- but guard it so a stray -1 can't
+            # negative-index into self_covered / n_sym_cov and add a bogus term.
+            if i < 0 or not self_covered[i] or n_sym_cov[i] == 0:
                 continue
             add_i.append(i); add_k.append(float(k) / n_sym_cov[i])
             add_e.append(float(e)); add_tf.append(ident)
@@ -2871,7 +2879,7 @@ class SimHandler:
                 shell.symmats[c.symop_index]))
             owner.append(pidx); is_ident.append(False)
         sim_indices = numpy.full(len(indices), -1, dtype=numpy.int32)
-        d = self._mdff_copy_force_indices.setdefault(volume, {})
+        d = self._mdff_symmetry_term_indices.setdefault(volume, {})
         if add_i:
             fis = f.add_atoms(
                 numpy.array(add_i, dtype=numpy.int32),
@@ -2995,13 +3003,13 @@ class SimHandler:
         Re-apply a coupling/enabled edit to ALL of each changed atom's MDFF terms
         (its identity term and each transformed symmetry term), rescaled by the
         covered multiplicity. Keyed off the real-atom particle index in
-        :attr:`_mdff_copy_force_indices` (which stores ``(force_index, transform)``
+        :attr:`_mdff_symmetry_term_indices` (which stores ``(force_index, transform)``
         per term), so it correctly reaches parents whose self-term was dropped
         (they appear only via their transformed terms). The fixed per-term
         transform is re-supplied because the C++ update overwrites all per-bond
         parameters.
         '''
-        d = self._mdff_copy_force_indices.get(volume)
+        d = self._mdff_symmetry_term_indices.get(volume)
         if not d:
             return
         nsym = self._mdff_n_sym_covered
@@ -3043,7 +3051,7 @@ class SimHandler:
                 mdff_atom.coupling_constant, mdff_atom.enabled)
             return
         # Symmetry sim: update all of the atom's terms (identity + transformed).
-        d = self._mdff_copy_force_indices.get(volume)
+        d = self._mdff_symmetry_term_indices.get(volume)
         if not d:
             return
         i = int(self._atoms.index(mdff_atom.atom))
@@ -3227,12 +3235,10 @@ class SimHandler:
             'R':            numpy.array(copy_R, dtype=float),   # (ncopy, 3, 3)
             't_nm':         numpy.array(copy_t, dtype=float),   # (ncopy, 3)
         }
-        # Per-real-atom symmetry multiplicity (retained for reference / possible
-        # reuse). NB: the MDFF force no longer reads this - it computes its own
-        # covered multiplicity from the shell in _add_mdff_symmetry_terms, since
-        # MDFF terms are built (in _initialize_mdff) before the copies exist.
-        counts = numpy.bincount(parent_index, minlength=system.getNumParticles())
-        self._symmetry_nsym = 1 + counts
+        # NB: MDFF map coupling is handled entirely on the real atoms by the
+        # symmetry-aware map force (see _add_mdff_symmetry_terms, which computes
+        # its own covered multiplicity from the shell); the copies here carry only
+        # nonbonded + GBSA, so no per-atom map multiplicity is stored.
         self.session.logger.info(f'ISOLDE: added {len(shell.copies)} symmetry-'
             f'copy virtual site(s) spanning {len(op_to_group)} crystallographic '
             'operator(s) to the simulation.')
