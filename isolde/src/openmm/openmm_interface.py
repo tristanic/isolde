@@ -2881,7 +2881,20 @@ class SimHandler:
             else:
                 imgs = images_by_parent.get(i)
                 if not imgs:
-                    continue    # no covered representation -> no map term
+                    # Invariant: a symmetry shell only exists for crystallographic
+                    # data, whose map is defined throughout the cell, and the shell
+                    # is built whole-residue around the selection -- so every mobile
+                    # atom must have a covered representation (its own position in
+                    # the ROI, or a drawn image). None means the shell / map
+                    # coverage has a gap; fail loud rather than silently leave the
+                    # atom unrestrained by the map. (Should never fire.)
+                    a = all_atoms[i]
+                    raise RuntimeError(
+                        'Symmetry-aware MDFF: mobile atom {} has no covered map '
+                        'representation -- neither its own position nor any '
+                        'crystallographic image lies in the covered region. This '
+                        'indicates a gap in the symmetry shell / map coverage.'
+                        .format(a))
                 symop = min(imgs, key=lambda im: numpy.sum(
                     (im[1] - roi_centroid) ** 2))[0]
                 tf = _symmat_to_transform12(shell.symmats[symop])

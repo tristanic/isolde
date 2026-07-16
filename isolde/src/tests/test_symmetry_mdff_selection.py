@@ -11,14 +11,18 @@ Unit test for the symmetry-aware MDFF term-SELECTION logic
 map term at its full coupling constant, with the transform chosen as
 
   * identity, when the atom's own position is inside the covered map box, else
-  * the operator of its most-interior drawn image (nearest the ROI centroid),
-  * and no term at all when it has no covered representation.
+  * the operator of its most-interior drawn image (nearest the ROI centroid).
 
 Because every crystallographic representation of an atom folds the identical
 force back to it, one full-coupling term is exact -- there is no fractional
-``/n_sym`` splitting. This drives the real method with lightweight fakes (real
-atoms for coordinates/indexing; a recording fake force), so it needs no running
-simulation or GUI. Run inside ChimeraX:
+``/n_sym`` splitting. And because a symmetry shell only exists for
+crystallographic data (map defined throughout the cell) and is built
+whole-residue, every mobile atom must have a covered representation -- a mobile
+atom with none is a coverage/shell bug and must raise.
+
+Drives the real method with lightweight fakes (real atoms for
+coordinates/indexing; a recording fake force), so it needs no running simulation
+or GUI. Run inside ChimeraX:
 
     run_chimerax.bat --nogui --exit --script src/tests/test_symmetry_mdff_selection.py
 
@@ -50,92 +54,87 @@ class _RecordingForce:
         return numpy.arange(len(indices), dtype=numpy.int32)
 
 
+# Operators: 0 = identity (unused), 1 = small translation (image lands near the
+# ROI), 2 = large translation (image lands far). Shared by the scenarios.
+def _symmats():
+    s = numpy.zeros((3, 3, 4))
+    for k in range(3):
+        s[k, :3, :3] = numpy.eye(3)
+    s[1, :, 3] = (5.0, 0.0, 0.0)
+    s[2, :, 3] = (50.0, 0.0, 0.0)
+    return s
+
+
+def _run_selection(construct, coverage, copies):
+    '''Call the real _add_mdff_symmetry_terms with fakes; MDFF atoms = the whole
+    construct at full coupling 3.0. Returns (force, mdff_atoms, fake_handler).'''
+    from chimerax.isolde.openmm.openmm_interface import SimHandler
+    shell = SimpleNamespace(symmats=_symmats(), copies=copies)
+    sh = SimpleNamespace(
+        _atoms=construct,
+        _sim_construct=SimpleNamespace(mobile_atoms=construct,
+                                       symmetry_coverage_atoms=coverage),
+        _mdff_symmetry_term_indices={})
+    idx = construct.indices(construct)
+    ks = numpy.full(len(idx), 3.0)
+    enableds = numpy.ones(len(idx))
+    mdff_atoms = SimpleNamespace()
+    f = _RecordingForce()
+    SimHandler._add_mdff_symmetry_terms(sh, f, 'vol', shell, mdff_atoms,
+                                        idx, ks, enableds)
+    return f, mdff_atoms, sh
+
+
 def run(session):
     from chimerax.core.commands import run as run_cmd
-    from chimerax.isolde.openmm.openmm_interface import (
-        SimHandler, _symmat_to_transform12)
+    from chimerax.isolde.openmm.openmm_interface import _symmat_to_transform12
     from chimerax.isolde.openmm.custom_forces import SymmetryAwareCubicInterpMapForce
 
     m = run_cmd(session, 'open "%s"' % FIXTURE.replace('\\', '/'), log=False)[0]
     try:
-        all_atoms = m.atoms[:20]              # the "construct"
-        coverage = all_atoms[:12]             # region of interest (own pos covered)
-        # Atoms 12,13,14 are non-covered "distant parents" with drawn images;
-        # atoms 15-19 are non-covered with NO image (should get no term).
-        p12, p13, p14 = all_atoms[12], all_atoms[13], all_atoms[14]
-
-        # Operators: 0 = identity (unused here), 1 = small translation (image lands
-        # near the ROI), 2 = large translation (image lands far).
-        symmats = numpy.zeros((3, 3, 4))
-        for k in range(3):
-            symmats[k, :3, :3] = numpy.eye(3)
-        symmats[1, :, 3] = (5.0, 0.0, 0.0)
-        symmats[2, :, 3] = (50.0, 0.0, 0.0)
-
-        # p14 has TWO images (op 2 listed FIRST) so the test distinguishes
-        # "pick nearest ROI" from "pick first".
+        atoms = m.atoms
         Copy = lambda atom, op: SimpleNamespace(parent_atom=atom, symop_index=op)
-        shell = SimpleNamespace(
-            symmats=symmats,
-            copies=[Copy(p12, 1), Copy(p14, 2), Copy(p14, 1), Copy(p13, 1)])
 
-        sh = SimpleNamespace(
-            _atoms=all_atoms,
-            _sim_construct=SimpleNamespace(mobile_atoms=all_atoms,
-                                           symmetry_coverage_atoms=coverage),
-            _mdff_symmetry_term_indices={})
-
-        indices = all_atoms.indices(all_atoms)                 # 0..19
-        ks = numpy.full(len(all_atoms), 3.0)                   # full coupling
-        enableds = numpy.ones(len(all_atoms))
-        mdff_atoms = SimpleNamespace()
-        f = _RecordingForce()
-
-        SimHandler._add_mdff_symmetry_terms(
-            sh, f, 'vol', shell, mdff_atoms, indices, ks, enableds)
+        # === (A) normal: 12 covered ROI atoms + 3 distant parents, all with a
+        #         covered representation. p14 has TWO images (op 2 listed FIRST)
+        #         so we distinguish "pick nearest ROI" from "pick first". ===
+        construct = atoms[:15]
+        coverage = construct[:12]
+        p12, p13, p14 = construct[12], construct[13], construct[14]
+        copies = [Copy(p12, 1), Copy(p14, 2), Copy(p14, 1), Copy(p13, 1)]
+        f, mdff_atoms, sh = _run_selection(construct, coverage, copies)
 
         if len(f.calls) != 1:
             _fail('expected exactly one add_atoms call, got %d' % len(f.calls))
         call = f.calls[0]
         termed = list(call['indices'])
 
-        # --- one term per covered ROI atom + per represented parent, none else ---
-        expected = list(range(12)) + [12, 13, 14]     # 15..19 have no image
-        if sorted(termed) != sorted(expected):
-            _fail('termed atoms %r != expected %r' % (sorted(termed), expected))
+        if sorted(termed) != list(range(15)):
+            _fail('termed atoms %r != 0..14' % sorted(termed))
         if len(termed) != len(set(termed)):
             _fail('an atom received more than one term: %r' % termed)
-        print('PASS: exactly one term per covered atom / represented parent; '
-              'atoms with no covered representation get none')
+        print('PASS: exactly one term per atom (covered ROI + represented parent)')
 
-        # --- full coupling, never fractional ---
         if not numpy.allclose(call['ks'], 3.0):
             _fail('couplings are not full (3.0): %r' % call['ks'])
         print('PASS: every term carries the full coupling constant (no /n_sym split)')
 
-        # --- transform choice ---
         tf_by_atom = {int(i): call['transforms'][row]
                       for row, i in enumerate(termed)}
         ident = SymmetryAwareCubicInterpMapForce.IDENTITY_TRANSFORM
         for i in range(12):
             if not numpy.allclose(tf_by_atom[i], ident):
                 _fail('covered atom %d did not get the identity transform' % i)
-        near = _symmat_to_transform12(symmats[1])
+        near = _symmat_to_transform12(_symmats()[1])
         for i in (12, 13, 14):
             if not numpy.allclose(tf_by_atom[i], near):
                 _fail('parent %d did not get the nearest-image (op 1) transform' % i)
         print('PASS: covered atoms use identity; distant parents use their '
               'most-interior image operator (op 1, not the closer-listed op 2)')
 
-        # --- sim_indices: termed atoms get a real index, the rest -1 ---
         si = numpy.asarray(mdff_atoms.sim_indices)
-        for i in range(20):
-            if i in termed and si[i] < 0:
-                _fail('termed atom %d has sim_index -1' % i)
-            if i not in termed and si[i] != -1:
-                _fail('unrepresented atom %d has sim_index %d (should be -1)'
-                      % (i, si[i]))
-        # --- term map: one (force_index, transform) per termed atom ---
+        if (si < 0).any():
+            _fail('some represented atom has sim_index -1: %r' % list(si))
         d = sh._mdff_symmetry_term_indices['vol']
         if set(d) != set(termed):
             _fail('term map keys %r != termed atoms %r' % (sorted(d), sorted(termed)))
@@ -143,6 +142,24 @@ def run(session):
             if not (isinstance(entry, tuple) and len(entry) == 2):
                 _fail('term map entry for %d is not a single (fi, tf): %r' % (i, entry))
         print('PASS: sim_indices + term map record exactly one term per atom')
+
+        # === (B) invariant guard: a mobile atom that is neither covered nor has
+        #         any image must raise (should never happen in a correct
+        #         crystallographic sim). Atoms 12-14 keep their images; atom 15
+        #         is non-covered with no image. ===
+        construct = atoms[:16]
+        coverage = construct[:12]
+        copies = [Copy(construct[12], 1), Copy(construct[13], 1),
+                  Copy(construct[14], 1)]
+        raised = False
+        try:
+            _run_selection(construct, coverage, copies)
+        except RuntimeError:
+            raised = True
+        if not raised:
+            _fail('a mobile atom with no covered representation did not raise')
+        print('PASS: a mobile atom with no covered representation raises '
+              '(crystallographic invariant guard)')
 
         print('ALL PASS')
     finally:
