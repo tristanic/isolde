@@ -81,6 +81,55 @@ PIN_DISTANT_MULT = 10.0  # atoms FURTHER than PIN_NEAR_CUTOFF are pinned at PIN_
                          #   target, so any motion they make is pure ranking NOISE in the
                          #   core nonbonded term. Freeze them hard.
 
+# Per-group soft-core group ids used by rotafit (see _Softener). The target residue
+# goes in ENV_NB_GROUP's complement (group 1); everything else stays in group 0.
+ENV_NB_GROUP = 0
+TARGET_NB_GROUP = 1
+NB_GROUPS_MAX = 2        # env + the one target being settled at a time
+
+
+class _Softener:
+    '''The "soften the target against its surroundings" knob, with two backends.
+
+    PREFERRED (``use_groups=True``): per-group soft-core coupling. The target
+    residue is placed in its own nonbonded group and only its coupling to the rest
+    of the model (group 0) is softened; the environment keeps full-strength
+    interactions, so it holds its own shape WITHOUT position restraints. ``get`` /
+    ``set`` read/write the group-pair coupling ``(TARGET, ENV)``.
+
+    LEGACY (``use_groups=False``): the global ``softcore_lambda`` scalar softens
+    every pair, so the environment must be pinned separately (see
+    :func:`_pin_environment`). ``get`` / ``set`` read/write ``softcore_lambda``.
+
+    Everything else in rotafit talks only to this object, so the settle/polish/score
+    logic is identical in both modes -- only the knob differs.'''
+    def __init__(self, sh, use_groups):
+        self.sh = sh
+        self.use_groups = use_groups
+
+    def get(self):
+        if self.use_groups:
+            return self.sh.get_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP)
+        return self.sh.softcore_lambda
+
+    def set(self, value):
+        if value is None:
+            return
+        if self.use_groups:
+            self.sh.set_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP, value)
+        else:
+            self.sh.softcore_lambda = value
+
+    def assign_target(self, residue):
+        '''Put the target residue in its own group (no-op in legacy mode).'''
+        if self.use_groups:
+            self.sh.assign_nb_group(residue.atoms, TARGET_NB_GROUP)
+
+    def release_target(self, residue):
+        '''Return the target residue to the environment group (no-op in legacy mode).'''
+        if self.use_groups:
+            self.sh.assign_nb_group(residue.atoms, ENV_NB_GROUP)
+
 
 def _rotamer_poses(session, residue, base_res_coords):
     '''Enumerate the library rotamers as full residue-atom coordinate arrays
@@ -148,21 +197,22 @@ def _score_groups():
     return set(CORE_FORCE_GROUPS) | {MAP_FORCE_GROUP}
 
 
-def _score_energy(ctx, sh=None, score_lambda=0.0):
+def _score_energy(ctx, softener=None, score_lambda=0.0):
     '''Potential energy over the scoring force groups only (core FF + MDFF), in kJ/mol.
-    If ``score_lambda`` > 0 (and ``sh`` given), evaluate at that soft-core lambda -- a
-    softer wall means a smaller, less jitter-sensitive nonbonded term -- regardless of
-    the lambda the pose was settled at, then restore. A single-point re-evaluation, no
-    stepping.'''
+    If ``score_lambda`` > 0 (and a ``softener`` is given), evaluate at that softening
+    level -- a softer wall means a smaller, less jitter-sensitive nonbonded term --
+    regardless of the level the pose was settled at, then restore. In per-group mode
+    this softens only the target's coupling to its surroundings; in legacy mode it is
+    the global soft-core lambda. A single-point re-evaluation, no stepping.'''
     from openmm import unit
-    changed = bool(score_lambda) and sh is not None
+    changed = bool(score_lambda) and softener is not None
     if changed:
-        prev = sh.softcore_lambda
-        sh.softcore_lambda = score_lambda
+        prev = softener.get()
+        softener.set(score_lambda)
     e = ctx.getState(getEnergy=True, groups=_score_groups()).getPotentialEnergy(
         ).value_in_unit(unit.kilojoule_per_mole)
     if changed:
-        sh.softcore_lambda = prev
+        softener.set(prev)
     return e
 
 
@@ -284,9 +334,9 @@ def _restore_restraints(prs, saved):
     prs.enableds = enableds
 
 
-def _commit_best(sh, residue, results, base, polish_steps, polish_top, ramp_increments,
-                 saved_lambda, settle_lambda, eff_margin, outcomes, dlog, debug,
-                 minimize=False, score_lambda=0.0):
+def _commit_best(sh, softener, residue, results, base, polish_steps, polish_top,
+                 ramp_increments, saved_lambda, settle_lambda, eff_margin, outcomes,
+                 dlog, debug, minimize=False, score_lambda=0.0):
     '''Polish the top candidate(s) at full stiffness, re-rank, apply the do-no-harm
     margin against the current conformation, and commit the winner. Appends the
     per-residue outcome (change/keep) to ``outcomes``.'''
@@ -309,13 +359,13 @@ def _commit_best(sh, residue, results, base, polish_steps, polish_top, ramp_incr
         ridx = sh._atoms.indices(residue.atoms)
         polished = []
         for _e, pname, pcoords, pcur in polish_set:
-            pe, pc = _ramped_polish(sh, integrator, ctx, ridx, pcoords, pcoords[ridx],
-                                    polish_steps, settle_lambda, saved_lambda,
-                                    ramp_increments, minimize, score_lambda)
+            pe, pc = _ramped_polish(sh, softener, integrator, ctx, ridx, pcoords,
+                                    pcoords[ridx], polish_steps, settle_lambda,
+                                    saved_lambda, ramp_increments, minimize, score_lambda)
             polished.append((pe, pname, pc, pcur))
             if debug:                          # per-group breakdown to spot the culprit
                 dlog('    %-9s [%s]' % (pname, _breakdown_str(ctx)))
-        sh.softcore_lambda = settle_lambda     # back to soft for the next residue
+        softener.set(settle_lambda)            # back to soft for the next residue
         polished.sort(key=lambda t: t[0])
         candidates = polished
         plist = ', '.join('%s %.0f' % (n, e) for e, n, _c, _cur in polished)
@@ -385,16 +435,18 @@ def _settle_pose(sh, integrator, ctx, ridx, base, rcoords, steps, minimize=False
     return _score_energy(ctx), _sim_coords(sh)
 
 
-def _ramped_polish(sh, integrator, ctx, ridx, base, rcoords, total_steps,
+def _ramped_polish(sh, softener, integrator, ctx, ridx, base, rcoords, total_steps,
                    lambda_from, lambda_to, increments, minimize=False, score_lambda=0.0):
-    '''Polish a candidate by RAMPING the soft-core lambda from ``lambda_from`` up to
+    '''Polish a candidate by RAMPING the softening level from ``lambda_from`` up to
     ``lambda_to`` over ``increments`` stages instead of jumping straight to full
     stiffness. A sudden jump can jolt atoms sitting in a soft overlap that abruptly
     becomes a hard wall; ramping lets the system stiffen adiabatically and follow the
     potential down. ``total_steps`` is split across the stages, relaxing (minimise or
-    0 K step) at each. The final energy is read at ``score_lambda`` if set (else at
-    ``lambda_to``). Returns (score_energy_kJmol, settled_construct_coords).
-    ``increments==1`` reduces to a single settle at ``lambda_to`` (the old behaviour).'''
+    0 K step) at each. The softening is applied through ``softener`` (per-group coupling
+    of the target to its surroundings, or legacy global lambda). The final energy is
+    read at ``score_lambda`` if set (else at ``lambda_to``). Returns
+    (score_energy_kJmol, settled_construct_coords). ``increments==1`` reduces to a
+    single settle at ``lambda_to`` (the old behaviour).'''
     coords = base.copy()
     coords[ridx] = rcoords
     _push_now(sh, coords)                       # push once; stages continue from here
@@ -402,9 +454,9 @@ def _ramped_polish(sh, integrator, ctx, ridx, base, rcoords, total_steps,
     steps_per = max(1, int(round(total_steps / increments)))
     lambdas = np.linspace(lambda_from, lambda_to, increments + 1)[1:]  # end at lambda_to
     for lam in lambdas:
-        sh.softcore_lambda = float(lam)
+        softener.set(float(lam))
         _relax(sh, integrator, ctx, steps_per, minimize)
-    return _score_energy(ctx, sh, score_lambda), _sim_coords(sh)
+    return _score_energy(ctx, softener, score_lambda), _sim_coords(sh)
 
 
 def _settle_and_rank(isolde, residue, temperature, settle_steps, log, minimize=False):
@@ -474,7 +526,7 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
             settle_lambda=SETTLE_LAMBDA, pin_environment=True, pin_k=PIN_K,
             pin_near_cutoff=PIN_NEAR_CUTOFF, pin_distant_multiplier=PIN_DISTANT_MULT,
             minimize=True, score_lambda=0.0, allow_multiple=False,
-            apply=True, debug=False):
+            nb_groups=True, apply=True, debug=False):
     '''Automated rotamer fit: settle every viable library rotamer of the selected
     residue(s) in the simulation and commit the lowest-energy one. If no simulation is
     running, one is started around the target(s) using ISOLDE's standard sim-start
@@ -506,9 +558,29 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
     if not isolde.simulation_running:
         dlog('isolde rotafit: no simulation running - starting one around the '
              'target(s)...')
-        _start_sim_on(session, isolde, targets)
+        if nb_groups:
+            # Provision the per-group coupling table so the NEW sim is built with it
+            # (SimParams.nb_groups_max is read when the soft-core forces are built, at
+            # sim start). Restore it afterwards: the built sim keeps its groups; the
+            # parameter only affects future builds.
+            sp = isolde.sim_params
+            _saved_ng = getattr(sp, 'nb_groups_max', 1)
+            sp.nb_groups_max = max(NB_GROUPS_MAX, _saved_ng)
+            try:
+                _start_sim_on(session, isolde, targets)
+            finally:
+                sp.nb_groups_max = _saved_ng
+        else:
+            _start_sim_on(session, isolde, targets)
 
     sh = isolde.sim_handler
+    # Use per-group coupling only if requested AND actually available on this sim (it
+    # must have been built with it -- e.g. we just started it, or the running sim was).
+    use_groups = bool(nb_groups) and getattr(sh, 'nb_groups_enabled', False)
+    if nb_groups and not use_groups:
+        dlog('isolde rotafit: per-group coupling requested but the running simulation '
+             'was not built with it; falling back to global-lambda + environment '
+             'pinning. Restart the simulation via rotafit to enable per-group mode.')
     params = dict(temperature=temperature, settle_steps=settle_steps,
                   polish_steps=polish_steps, polish_top=polish_top,
                   ramp_increments=ramp_increments, accept_margin=accept_margin,
@@ -516,7 +588,7 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
                   pin_k=pin_k, pin_near_cutoff=pin_near_cutoff,
                   pin_distant_multiplier=pin_distant_multiplier,
                   minimize=minimize, score_lambda=score_lambda,
-                  apply=apply, debug=debug)
+                  use_groups=use_groups, apply=apply, debug=debug)
     if sh.pause:
         # Already paused => the sim thread is idle => safe to drive it now.
         _run_rotafit(session, isolde, targets, resume_after=False, **params)
@@ -551,7 +623,7 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
 def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_steps,
                  polish_top, ramp_increments, accept_margin, settle_lambda,
                  pin_environment, pin_k, pin_near_cutoff, pin_distant_multiplier,
-                 minimize, score_lambda, apply, debug, resume_after):
+                 minimize, score_lambda, apply, debug, use_groups, resume_after):
     '''Do the actual rotamer settling. MUST be called only when the sim thread is
     idle (paused and a 'sim paused' has fired), so main-thread access to
     _simulation is safe. Verbose per-rotamer logging is gated behind ``debug``; the
@@ -566,7 +638,13 @@ def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_ste
     from openmm import unit
     saved_temp = (st.value_in_unit(unit.kelvin) if hasattr(st, 'value_in_unit')
                   else float(st))
-    saved_lambda = sh.softcore_lambda          # None if no soft-core context param
+    softener = _Softener(sh, use_groups)
+    # Per-group mode: the target's coupling to its surroundings (full = 1.0), with the
+    # environment held by its own full-strength force field -- NO pinning. Legacy mode:
+    # the global soft-core lambda (None if the context has no such parameter).
+    saved_lambda = softener.get()
+    if use_groups:
+        dlog('isolde rotafit: per-group soft-core coupling (environment unpinned)')
     # Scale the do-no-harm margin by ISOLDE's MDFF coupling constant so it tracks the
     # map's energy scale (x-ray vs high-sigma cryo-EM) instead of being a fixed kJ/mol.
     gk = _sim_coupling_constant(isolde)
@@ -575,8 +653,11 @@ def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_ste
          % (gk, eff_margin))
     # Environment pinning: freeze the surrounding model with position restraints so a
     # low settle_lambda can free the target without deforming the shell.
+    # Environment pinning is the LEGACY mechanism (needed because a global soft-core
+    # lambda softens everything); per-group mode keeps the environment stiff via its
+    # own force field, so pinning is neither used nor set up.
     prm = mobile_atoms = None
-    if pin_environment:
+    if pin_environment and not use_groups:
         try:
             from chimerax.isolde import session_extensions as sx
             prm = sx.get_position_restraint_mgr(targets[0].structure, True)
@@ -587,10 +668,12 @@ def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_ste
     outcomes = []                              # (residue, kind, name) per target
     try:
         if saved_lambda is not None:
-            sh.softcore_lambda = settle_lambda  # soften the wall so a clashy seed
-                                                # relaxes instead of exploding
+            softener.set(settle_lambda)         # soften (target-vs-environment coupling
+                                                # in per-group mode; the global lambda in
+                                                # legacy) so a clashy seed relaxes
         for r in targets:
             pin = None
+            softener.assign_target(r)           # target -> its own nb group (no-op legacy)
             if prm is not None:
                 try:
                     cloud = _reachable_cloud(session, sh, r)
@@ -622,16 +705,17 @@ def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_ste
                     _push_now(sh, base)         # nothing committed -> restore
                     outcomes.append((r, 'noapply', None))
                     continue
-                _commit_best(sh, r, results, base, polish_steps, polish_top,
+                _commit_best(sh, softener, r, results, base, polish_steps, polish_top,
                              ramp_increments, saved_lambda, settle_lambda, eff_margin,
                              outcomes, dlog, debug, minimize, score_lambda)
             finally:
+                softener.release_target(r)     # target back to env group (no-op legacy)
                 if pin is not None:
                     _restore_restraints(pin[0], pin[1])
     finally:
         sh.temperature = saved_temp            # don't leave the sim at 0 K
         if saved_lambda is not None:
-            sh.softcore_lambda = saved_lambda  # restore full soft-core BEFORE resume
+            softener.set(saved_lambda)         # restore full coupling / soft-core lambda
         if resume_after:
             sh.pause = False                   # resume (we requested the pause)
     log(_summary_line(outcomes))
@@ -670,8 +754,8 @@ def register_rotafit_command(logger):
                  ('pin_environment', BoolArg), ('pin_k', FloatArg),
                  ('pin_near_cutoff', FloatArg), ('pin_distant_multiplier', FloatArg),
                  ('minimize', BoolArg), ('score_lambda', FloatArg),
-                 ('allow_multiple', BoolArg), ('apply', BoolArg),
-                 ('debug', BoolArg)],
+                 ('allow_multiple', BoolArg), ('nb_groups', BoolArg),
+                 ('apply', BoolArg), ('debug', BoolArg)],
         synopsis='Automated rotamer fit: settle each library rotamer in the running '
                  'simulation and commit the lowest-energy one'
     )
