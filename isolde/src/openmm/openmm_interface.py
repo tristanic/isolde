@@ -2026,7 +2026,7 @@ class SimHandler:
                 self._fire_sim_paused_trigger)
 
 
-    def push_coords_to_sim(self, coords=None):
+    def push_coords_to_sim(self, coords=None, immediate=False):
         '''
         Change the atomic coordinates within the simulation.
 
@@ -2035,6 +2035,14 @@ class SimHandler:
                 - an array of coordinates in Angstroms, or None. If None, the
                   current coordinates of the simulation construct in ChimeraX
                   will be used.
+            * immediate:
+                - by default, coordinates supplied while the simulation is paused
+                  are queued and applied on resume. If ``immediate`` is True and
+                  the sim is paused, they are instead flushed to the (thread-
+                  handler) simulation state right away, so they survive resume and
+                  are seen by the next ``step()``. Only meaningful while paused
+                  (the sim thread is then idle, so this is safe); ignored while
+                  running (coords are pushed on the next 'coord update' regardless).
         '''
         if not self._sim_running:
             raise TypeError('No simulation running!')
@@ -2042,7 +2050,10 @@ class SimHandler:
             coords = self._atoms.coords
         self._pending_coords = coords
         if self.pause:
-            self._coord_update_pending=True
+            if immediate:
+                self._push_coords_to_sim()
+            else:
+                self._coord_update_pending=True
         else:
             if self._coord_push_handler is None:
                 self._coord_push_handler = self.triggers.add_handler('coord update', self._push_coords_to_sim)

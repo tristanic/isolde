@@ -117,11 +117,9 @@ def _rotamer_poses(session, residue, base_res_coords):
 
 def _push_now(sh, coords):
     '''Push full-construct coords (Angstrom) into the running sim IMMEDIATELY while
-    paused. push_coords_to_sim() only *queues* the update when paused; the private
-    _push_coords_to_sim() flushes it to the canonical (thread-handler) state now, so
-    it survives resume and is seen by the next step().'''
-    sh.push_coords_to_sim(coords)
-    sh._push_coords_to_sim()
+    paused, so they survive resume and are seen by the next step(). Uses the public
+    push_coords_to_sim(immediate=True) rather than reaching for a private method.'''
+    sh.push_coords_to_sim(coords, immediate=True)
 
 
 def _sim_coords(sh):
