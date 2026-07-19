@@ -1303,15 +1303,11 @@ class SimHandler:
         self.mdff_forces = {}
 
         # Symmetry-aware MDFF: per-volume ``{real-atom particle index:
-        # [(force_index, transform12), ...]}`` recording every map term of each
-        # real atom -- its identity term (own position) and one transformed term
-        # per crystallographic image -- so live coupling/enabled edits re-apply to
-        # all of them. Empty when the simulation has no symmetry atoms.
+        # (force_index, transform12)}`` recording each real atom's single map term
+        # (identity if its own position is covered, else the operator of its
+        # most-interior drawn image) so live coupling/enabled edits can re-apply
+        # it. Empty when the simulation has no symmetry atoms.
         self._mdff_symmetry_term_indices = {}
-        # Covered multiplicity per real-atom particle index, set alongside the
-        # term map when symmetry MDFF terms are built (see
-        # _add_mdff_symmetry_terms). None until then.
-        self._mdff_n_sym_covered = None
 
         logger = self.session.logger
         # Overall simulation topology + system. The build can recover once from
@@ -3015,64 +3011,90 @@ class SimHandler:
         '''
         Symmetry-aware MDFF term creation (:class:`SymmetryAwareCubicInterpMapForce`).
 
-        Every term lives on a **real** atom and carries a per-bond operator; a
-        real atom feels the map through both its own position (identity term, only
-        where that position is inside the covered box) and each of its
-        crystallographic images (transformed terms sampling the ghost position
-        ``S.r``). All representations of an atom fold the identical force back to
-        it, so the coupling is split by the covered multiplicity
-        ``n_sym_covered = (self in ROI) + (# copies)`` and sums to ``k``. No terms
-        are placed on copy (virtual-site) particles. Records, per real-atom
-        particle index, the ``(force_index, transform12)`` of each of its terms so
-        live coupling/enabled edits can re-apply them.
+        Each real MDFF atom gets **exactly one** map term at its full coupling,
+        carrying a per-bond operator that places it inside the covered density
+        box. Because the crystallographic map is space-group symmetric, every
+        representation of an atom (its own position or any of its images) folds
+        the *identical* force ``k.grad(rho)`` back to the real atom -- so a single
+        representation at full ``k`` is exact, and there is no need to enumerate
+        all images and divide the coupling between them. The choice per atom:
+
+            * own position inside the box (the region of interest -- the common
+              case, and identical to an ordinary non-symmetry MDFF term):
+              identity transform, so ``[I|0]``;
+            * otherwise (a distant promoted parent whose own position is out of
+              box): the operator of whichever of its drawn images sits nearest the
+              region-of-interest centroid -- i.e. most interior, so it keeps the
+              most margin from the fixed box edges as the atom moves;
+            * no covered representation at all: no term (relies on nonbonded).
+
+        No terms are placed on copy (virtual-site) particles. Records, per
+        real-atom particle index, the ``(force_index, transform12)`` of its single
+        term so live coupling/enabled edits can re-apply it (the C++ update
+        overwrites all per-bond parameters, so the transform must be re-supplied).
         '''
         from chimerax.atomic import Atoms
         from .custom_forces import SymmetryAwareCubicInterpMapForce as _SA
         all_atoms = self._atoms
         n_real = len(all_atoms)
         # Which real atoms' OWN position is inside the covered map box (the region
-        # of interest; full mobile set for whole-model / plain sims).
+        # of interest; full mobile set for whole-model / plain sims), and the ROI
+        # centroid used to pick the most-interior image for the rest.
         cov = getattr(self._sim_construct, 'symmetry_coverage_atoms', None)
         if cov is None:
             cov = self._sim_construct.mobile_atoms
         self_covered = numpy.zeros(n_real, dtype=bool)
         ci = all_atoms.indices(cov)
         self_covered[ci[ci != -1]] = True
-        # Per-copy parent particle indices + covered multiplicity per real atom.
+        roi_coords = cov.coords
+        roi_centroid = (roi_coords.mean(axis=0) if len(roi_coords)
+            else numpy.zeros(3))
+        # For atoms whose own position is NOT covered, gather their drawn images
+        # as {parent particle index: [(symop_index, ghost_coord_A), ...]} so the
+        # most-interior one can be chosen. (Built only for non-covered parents;
+        # covered atoms just take the identity term.)
         copies = shell.copies
         parent_pidx = all_atoms.indices(Atoms([c.parent_atom for c in copies]))
-        counts = numpy.bincount(parent_pidx[parent_pidx != -1], minlength=n_real)
-        n_sym_cov = self_covered.astype(numpy.int64) + counts[:n_real]
-        # Unscaled (k, enabled) per MDFF real atom, for both term kinds.
-        kmap = {int(i): (float(k), float(e))
-            for i, k, e in zip(indices, ks, enableds)}
-        ident = _SA.IDENTITY_TRANSFORM
-        add_i, add_k, add_e, add_tf, owner, is_ident = [], [], [], [], [], []
-        # Identity terms: covered MDFF atoms sample the map at their own position.
-        for i, k, e in zip(indices, ks, enableds):
-            i = int(i)
-            # i < 0 (atom not in the construct) should not occur -- mdff_atoms are
-            # sourced from the mobile set -- but guard it so a stray -1 can't
-            # negative-index into self_covered / n_sym_cov and add a bogus term.
-            if i < 0 or not self_covered[i] or n_sym_cov[i] == 0:
-                continue
-            add_i.append(i); add_k.append(float(k) / n_sym_cov[i])
-            add_e.append(float(e)); add_tf.append(ident)
-            owner.append(i); is_ident.append(True)
-        # Transformed terms: one per shell copy whose parent is an MDFF atom,
-        # sampling the ghost position under that copy's operator.
+        images_by_parent = {}
         for c, pidx in zip(copies, parent_pidx):
             pidx = int(pidx)
-            if pidx < 0:
+            if pidx < 0 or self_covered[pidx]:
                 continue
-            ke = kmap.get(pidx)
-            if ke is None or n_sym_cov[pidx] == 0:
-                continue    # parent has no map coupling (e.g. H) -> no ghost term
-            k, e = ke
-            add_i.append(pidx); add_k.append(k / n_sym_cov[pidx])
-            add_e.append(e); add_tf.append(_symmat_to_transform12(
-                shell.symmats[c.symop_index]))
-            owner.append(pidx); is_ident.append(False)
+            m = numpy.asarray(shell.symmats[c.symop_index], dtype=numpy.float64)
+            ghost = m[:, :3] @ numpy.asarray(c.parent_atom.coord,
+                dtype=numpy.float64) + m[:, 3]
+            images_by_parent.setdefault(pidx, []).append((c.symop_index, ghost))
+
+        ident = _SA.IDENTITY_TRANSFORM
+        add_i, add_k, add_e, add_tf = [], [], [], []
+        for i, k, e in zip(indices, ks, enableds):
+            i = int(i)
+            if i < 0:
+                continue    # not in the construct (should not occur)
+            if self_covered[i]:
+                tf = ident
+            else:
+                imgs = images_by_parent.get(i)
+                if not imgs:
+                    # Invariant: a symmetry shell only exists for crystallographic
+                    # data, whose map is defined throughout the cell, and the shell
+                    # is built whole-residue around the selection -- so every mobile
+                    # atom must have a covered representation (its own position in
+                    # the ROI, or a drawn image). None means the shell / map
+                    # coverage has a gap; fail loud rather than silently leave the
+                    # atom unrestrained by the map. (Should never fire.)
+                    a = all_atoms[i]
+                    raise RuntimeError(
+                        'Symmetry-aware MDFF: mobile atom {} has no covered map '
+                        'representation -- neither its own position nor any '
+                        'crystallographic image lies in the covered region. This '
+                        'indicates a gap in the symmetry shell / map coverage.'
+                        .format(a))
+                symop = min(imgs, key=lambda im: numpy.sum(
+                    (im[1] - roi_centroid) ** 2))[0]
+                tf = _symmat_to_transform12(shell.symmats[symop])
+            add_i.append(i); add_k.append(float(k)); add_e.append(float(e))
+            add_tf.append(tf)
         sim_indices = numpy.full(len(indices), -1, dtype=numpy.int32)
         d = self._mdff_symmetry_term_indices.setdefault(volume, {})
         if add_i:
@@ -3082,13 +3104,10 @@ class SimHandler:
                 numpy.array(add_e, dtype=numpy.float64),
                 transforms=numpy.array(add_tf, dtype=numpy.float64))
             pos_in_indices = {int(a): p for p, a in enumerate(indices)}
-            for fi, own, tf, isid in zip(fis, owner, add_tf, is_ident):
-                d.setdefault(own, []).append((int(fi), tf))
-                if isid:
-                    sim_indices[pos_in_indices[own]] = int(fi)
+            for fi, own, tf in zip(fis, add_i, add_tf):
+                d[own] = (int(fi), tf)
+                sim_indices[pos_in_indices[own]] = int(fi)
         mdff_atoms.sim_indices = sim_indices
-        # Covered multiplicity, cached for the live-update path.
-        self._mdff_n_sym_covered = n_sym_cov
 
     def add_mdff_atom(self, mdff_atom, volume):
         '''
@@ -3195,30 +3214,27 @@ class SimHandler:
 
     def _update_mdff_symmetry_terms(self, f, volume, mdff_atoms):
         '''
-        Re-apply a coupling/enabled edit to ALL of each changed atom's MDFF terms
-        (its identity term and each transformed symmetry term), rescaled by the
-        covered multiplicity. Keyed off the real-atom particle index in
-        :attr:`_mdff_symmetry_term_indices` (which stores ``(force_index, transform)``
-        per term), so it correctly reaches parents whose self-term was dropped
-        (they appear only via their transformed terms). The fixed per-term
-        transform is re-supplied because the C++ update overwrites all per-bond
-        parameters.
+        Re-apply a coupling/enabled edit to each changed atom's single MDFF term.
+        Keyed off the real-atom particle index in
+        :attr:`_mdff_symmetry_term_indices` (which stores ``(force_index,
+        transform)`` per atom), so it reaches distant parents that are represented
+        only through a transformed term. The fixed per-term transform is
+        re-supplied because the C++ update overwrites all per-bond parameters.
         '''
         d = self._mdff_symmetry_term_indices.get(volume)
         if not d:
             return
-        nsym = self._mdff_n_sym_covered
         idx = self._atoms.indices(mdff_atoms.atoms)
         u_i, u_k, u_e, u_tf = [], [], [], []
         for i, k, e in zip(idx, mdff_atoms.coupling_constants,
                 mdff_atoms.enableds):
             i = int(i)
-            if i < 0 or nsym[i] == 0:
+            term = d.get(i)
+            if term is None:
                 continue
-            scaled = float(k) / nsym[i]
-            for fi, tf in d.get(i, ()):
-                u_i.append(fi); u_k.append(scaled)
-                u_e.append(float(e)); u_tf.append(tf)
+            fi, tf = term
+            u_i.append(fi); u_k.append(float(k))
+            u_e.append(float(e)); u_tf.append(tf)
         if u_i:
             f.update_atoms(
                 numpy.array(u_i, dtype=numpy.int32),
