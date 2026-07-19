@@ -1469,8 +1469,20 @@ class SimHandler:
     # ------------------------------------------------------------------
     @property
     def nb_groups_enabled(self):
-        '''Whether per-group soft-core coupling is active for this simulation.'''
-        return getattr(self, '_nb_softcore_force', None) is not None
+        '''Whether per-group soft-core coupling is *fully* available for this simulation.
+
+        Requires the nonbonded soft-core force to be group-aware AND -- if implicit
+        solvent is active -- the GB force to be group-aware too. Otherwise softening a
+        group would decouple its nonbonded interactions while leaving its GB solvation
+        untouched (an inconsistency). This is why a crystallographic-symmetry simulation
+        with GBSA currently reports False: the symmetry GB force is not yet group-aware
+        (that composition is a later step), so engines fall back to their legacy path.'''
+        if getattr(self, '_nb_softcore_force', None) is None:
+            return False
+        if getattr(self, '_gbsa_force', None) is not None and \
+                getattr(self, '_nb_gbsa_force', None) is None:
+            return False
+        return True
 
     def _nb_group_forces(self):
         forces = []

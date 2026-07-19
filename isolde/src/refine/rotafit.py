@@ -82,10 +82,11 @@ PIN_DISTANT_MULT = 10.0  # atoms FURTHER than PIN_NEAR_CUTOFF are pinned at PIN_
                          #   core nonbonded term. Freeze them hard.
 
 # Per-group soft-core group ids used by rotafit (see _Softener). The target residue
-# goes in ENV_NB_GROUP's complement (group 1); everything else stays in group 0.
+# goes in group 1; everything else stays in group 0. (The coupling table is provisioned
+# with more slots by default -- SimParams.nb_groups_max -- but rotafit only needs these
+# two, and settles one target at a time.)
 ENV_NB_GROUP = 0
 TARGET_NB_GROUP = 1
-NB_GROUPS_MAX = 2        # env + the one target being settled at a time
 
 
 class _Softener:
@@ -558,29 +559,18 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
     if not isolde.simulation_running:
         dlog('isolde rotafit: no simulation running - starting one around the '
              'target(s)...')
-        if nb_groups:
-            # Provision the per-group coupling table so the NEW sim is built with it
-            # (SimParams.nb_groups_max is read when the soft-core forces are built, at
-            # sim start). Restore it afterwards: the built sim keeps its groups; the
-            # parameter only affects future builds.
-            sp = isolde.sim_params
-            _saved_ng = getattr(sp, 'nb_groups_max', 1)
-            sp.nb_groups_max = max(NB_GROUPS_MAX, _saved_ng)
-            try:
-                _start_sim_on(session, isolde, targets)
-            finally:
-                sp.nb_groups_max = _saved_ng
-        else:
-            _start_sim_on(session, isolde, targets)
+        _start_sim_on(session, isolde, targets)
 
     sh = isolde.sim_handler
-    # Use per-group coupling only if requested AND actually available on this sim (it
-    # must have been built with it -- e.g. we just started it, or the running sim was).
+    # Use per-group coupling if requested AND available on this sim. It is available by
+    # default (SimParams.nb_groups_max defaults to 4, so every sim is built group-aware);
+    # it reports unavailable only if the user disabled it (nb_groups_max=1) or the sim
+    # can't fully support it (e.g. symmetry + GBSA -- see SimHandler.nb_groups_enabled),
+    # in which case we fall back to the legacy global-lambda + environment-pinning path.
     use_groups = bool(nb_groups) and getattr(sh, 'nb_groups_enabled', False)
     if nb_groups and not use_groups:
-        dlog('isolde rotafit: per-group coupling requested but the running simulation '
-             'was not built with it; falling back to global-lambda + environment '
-             'pinning. Restart the simulation via rotafit to enable per-group mode.')
+        dlog('isolde rotafit: per-group coupling unavailable for this simulation; '
+             'falling back to global-lambda + environment pinning.')
     params = dict(temperature=temperature, settle_steps=settle_steps,
                   polish_steps=polish_steps, polish_top=polish_top,
                   ramp_increments=ramp_increments, accept_margin=accept_margin,
