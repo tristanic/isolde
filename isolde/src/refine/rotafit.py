@@ -65,21 +65,6 @@ SETTLE_LAMBDA = 0.6      # soft-core lambda during the settle. ISOLDE's live def
                          #   before it relaxes. Softening the wall to ~0.6 lets clashy
                          #   seeds slide apart instead of exploding; lower than ~0.5
                          #   and real geometry starts to suffer. Restored after.
-PIN_K = 5000.0           # kJ/mol/nm^2: spring constant for the position restraints
-                         #   that pin the surrounding model during the settle (ISOLDE's
-                         #   own default position-restraint strength). Because softening
-                         #   the soft-core lambda softens EVERYTHING's nonbonded, pinning
-                         #   the environment lets us pull settle_lambda down harder to
-                         #   free a stuck target WITHOUT the shell deforming. Only the
-                         #   target residue is left free. Restraints are restored to
-                         #   their prior state afterward (no context reinit needed).
-PIN_NEAR_CUTOFF = 5.0    # Angstrom: environment atoms within this distance of the
-                         #   volume the residue + any rotamer can occupy are pinned at
-                         #   PIN_K (they may legitimately need to accommodate the target).
-PIN_DISTANT_MULT = 10.0  # atoms FURTHER than PIN_NEAR_CUTOFF are pinned at PIN_K x this
-                         #   (an order of magnitude stiffer): they can't accommodate the
-                         #   target, so any motion they make is pure ranking NOISE in the
-                         #   core nonbonded term. Freeze them hard.
 
 # Per-group soft-core group ids used by rotafit (see _Softener). The environment is
 # group 0; the target residue's real atoms are group 1; and -- so that the target's
@@ -93,58 +78,45 @@ TARGET_COPY_NB_GROUP = 2
 
 
 class _Softener:
-    '''The "soften the target against its surroundings" knob, with two backends.
+    '''The "soften the target against its surroundings" knob (per-group soft-core).
 
-    PREFERRED (``use_groups=True``): per-group soft-core coupling. The target's real
-    atoms go in group 1 and their symmetry copies in group 2, leaving the environment
-    (+ its copies) in group 0. Softened are all couplings that TOUCH the target -- vs
-    environment ``(1,0)``/``(2,0)`` and its crystal self-contact ``(1,2)``/``(2,2)`` --
-    while the target's genuine INTERNAL interactions ``(1,1)`` and the environment's
-    ``(0,0)`` are left FULL. So the target sidechain stays internally rigid and the
-    environment holds its shape WITHOUT position restraints, yet the target can still
-    slide through a clash against its own symmetry image (which would otherwise explode
-    to a NaN). ``get`` reads the representative ``(1,0)`` coupling.
+    The target's real atoms go in group 1 and their symmetry copies in group 2, leaving
+    the environment (+ its copies) in group 0. ``set(value)`` softens every coupling that
+    TOUCHES the target -- vs environment ``(1,0)``/``(2,0)`` and its crystal self-contact
+    ``(1,2)``/``(2,2)`` -- while leaving the target's genuine INTERNAL coupling ``(1,1)``
+    and the environment's ``(0,0)`` FULL. So the target sidechain stays internally rigid
+    and the environment holds its shape WITHOUT position restraints, yet the target can
+    slide through a clash against its own symmetry image (which would otherwise explode to
+    a NaN). ``get`` reads the representative ``(1,0)`` coupling.
 
-    LEGACY (``use_groups=False``): the global ``softcore_lambda`` scalar softens
-    every pair, so the environment must be pinned separately (see
-    :func:`_pin_environment`). ``get`` / ``set`` read/write ``softcore_lambda``.
-
-    Everything else in rotafit talks only to this object, so the settle/polish/score
-    logic is identical in both modes -- only the knob differs.'''
-    def __init__(self, sh, use_groups):
+    (This is the same composition as :meth:`SimHandler.soften_nb_selection`, but split so
+    the one-time group assignment (:meth:`assign_target`) is separate from the coupling
+    level (:meth:`set`), which the polish ramps repeatedly.)'''
+    def __init__(self, sh):
         self.sh = sh
-        self.use_groups = use_groups
 
     def get(self):
-        if self.use_groups:
-            return self.sh.get_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP)
-        return self.sh.softcore_lambda
+        return self.sh.get_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP)
 
     def set(self, value):
         if value is None:
             return
-        if self.use_groups:
-            # Soften every coupling touching the target -- vs environment and its own
-            # crystal image -- but NOT the target's internal (1,1) or the env's (0,0).
-            sh = self.sh
-            sh.set_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP, value)          # (1,0)
-            sh.set_nb_coupling(TARGET_COPY_NB_GROUP, ENV_NB_GROUP, value)     # (2,0)
-            sh.set_nb_coupling(TARGET_NB_GROUP, TARGET_COPY_NB_GROUP, value)  # (1,2)
-            sh.set_nb_coupling(TARGET_COPY_NB_GROUP, TARGET_COPY_NB_GROUP, value)  # (2,2)
-        else:
-            self.sh.softcore_lambda = value
+        # Soften every coupling touching the target -- vs environment and its own crystal
+        # image -- but NOT the target's internal (1,1) or the environment's (0,0).
+        sh = self.sh
+        sh.set_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP, value)              # (1,0)
+        sh.set_nb_coupling(TARGET_COPY_NB_GROUP, ENV_NB_GROUP, value)         # (2,0)
+        sh.set_nb_coupling(TARGET_NB_GROUP, TARGET_COPY_NB_GROUP, value)      # (1,2)
+        sh.set_nb_coupling(TARGET_COPY_NB_GROUP, TARGET_COPY_NB_GROUP, value)  # (2,2)
 
     def assign_target(self, residue):
-        '''Put the target's real atoms in group 1 and their symmetry copies in group 2
-        (no-op in legacy mode).'''
-        if self.use_groups:
-            self.sh.assign_nb_group(residue.atoms, TARGET_NB_GROUP,
-                                    copy_group_id=TARGET_COPY_NB_GROUP)
+        '''Target real atoms -> group 1, their symmetry copies -> group 2.'''
+        self.sh.assign_nb_group(residue.atoms, TARGET_NB_GROUP,
+                                copy_group_id=TARGET_COPY_NB_GROUP)
 
     def release_target(self, residue):
-        '''Return the target residue to the environment group (no-op in legacy mode).'''
-        if self.use_groups:
-            self.sh.assign_nb_group(residue.atoms, ENV_NB_GROUP)
+        '''Return the target (and its copies) to the environment group.'''
+        self.sh.assign_nb_group(residue.atoms, ENV_NB_GROUP)
 
 
 def _rotamer_poses(session, residue, base_res_coords):
@@ -267,22 +239,6 @@ def _breakdown_str(ctx):
     return ', '.join('%s %.0f' % (n, e) for n, e in _energy_breakdown(ctx))
 
 
-def _reachable_cloud(session, sh, residue):
-    '''Heavy-atom coordinate cloud spanning the residue's CURRENT position AND every
-    library-rotamer position -- the volume any candidate could occupy. Used to split the
-    environment into "near" atoms (that may need to accommodate the target -> softer pin)
-    and "distant" atoms (frozen hard). Returns an (N,3) array, or None if no rotamers.'''
-    base = _sim_coords(sh)
-    ridx = sh._atoms.indices(residue.atoms)
-    if np.any(ridx < 0):
-        return None
-    heavy = residue.atoms.element_names != 'H'
-    clouds = [base[ridx][heavy]]
-    for _name, pcoords in _rotamer_poses(session, residue, base[ridx]):
-        clouds.append(pcoords[heavy])
-    return np.vstack(clouds)
-
-
 def _sim_coupling_constant(isolde):
     '''Summed MDFF coupling constant (global_k) over the maps driving the running sim.
     This is ISOLDE's OWN map weight: sigma-normalised (the map force divides energy by
@@ -302,52 +258,6 @@ def _sim_coupling_constant(isolde):
         except Exception:
             pass
     return total
-
-
-def _pin_environment(prm, mobile_atoms, residue, spring_constant, near_ref_coords,
-                     near_cutoff, distant_multiplier):
-    '''Enable ISOLDE's always-present (default-disabled) position restraints on every
-    MOBILE HEAVY atom EXCEPT the target residue, anchored to their current positions, so
-    an aggressive soft-search lambda can't push the surrounding model around -- only the
-    target residue is left free to settle.
-
-    TWO-TIER stiffness: atoms within ``near_cutoff`` of ``near_ref_coords`` (the volume
-    the residue + any rotamer can reach) are pinned at ``spring_constant`` -- they may
-    legitimately need to give a little. Atoms further out are pinned at
-    ``spring_constant * distant_multiplier`` (an order of magnitude stiffer): they can't
-    accommodate the target, so their motion is only noise in the ranking energy.
-
-    Returns (prs, saved, n_near, n_far) where saved is the prior state for restoration,
-    or None if there is nothing to pin. Applied immediately while the sim is paused.'''
-    in_res = mobile_atoms.mask(residue.atoms)
-    heavy = mobile_atoms.element_names != 'H'
-    env = mobile_atoms[heavy & ~in_res]
-    if not len(env):
-        return None
-    prs = prm.get_restraints(env)
-    if not len(prs):
-        return None
-    saved = (prs.enableds.copy(), prs.targets.copy(), prs.spring_constants.copy())
-    coords = prs.atoms.coords
-    ks = np.full(len(prs), spring_constant * distant_multiplier)
-    if near_ref_coords is not None and len(near_ref_coords):
-        from chimerax.geometry import find_close_points
-        near_idx, _ = find_close_points(coords, near_ref_coords, near_cutoff)
-        ks[near_idx] = spring_constant
-    n_near = int(np.sum(ks == spring_constant))
-    prs.targets = coords                    # pin where they are right now
-    prs.spring_constants = ks
-    prs.enableds = True
-    return prs, saved, n_near, len(prs) - n_near
-
-
-def _restore_restraints(prs, saved):
-    '''Restore position restraints to their pre-pin state (targets/springs first, then
-    the enabled flags -- which for the environment is back to disabled by default).'''
-    enableds, targets, spring_constants = saved
-    prs.targets = targets
-    prs.spring_constants = spring_constants
-    prs.enableds = enableds
 
 
 def _commit_best(sh, softener, residue, results, base, polish_steps, polish_top,
@@ -539,10 +449,9 @@ def _settle_and_rank(isolde, residue, temperature, settle_steps, log, minimize=F
 def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
             polish_steps=POLISH_STEPS, polish_top=POLISH_TOP,
             ramp_increments=RAMP_INCREMENTS, accept_margin=ACCEPT_MARGIN,
-            settle_lambda=SETTLE_LAMBDA, pin_environment=True, pin_k=PIN_K,
-            pin_near_cutoff=PIN_NEAR_CUTOFF, pin_distant_multiplier=PIN_DISTANT_MULT,
+            settle_lambda=SETTLE_LAMBDA,
             minimize=True, score_lambda=0.0, allow_multiple=False,
-            nb_groups=True, apply=True, debug=False):
+            apply=True, debug=False):
     '''Automated rotamer fit: settle every viable library rotamer of the selected
     residue(s) in the simulation and commit the lowest-energy one. If no simulation is
     running, one is started around the target(s) using ISOLDE's standard sim-start
@@ -577,27 +486,26 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
         _start_sim_on(session, isolde, targets)
 
     sh = isolde.sim_handler
-    # Use per-group coupling if requested AND available on this sim. It is available by
-    # default (SimParams.nb_groups_max defaults to 4, so every sim is built group-aware);
-    # it reports unavailable only if the user disabled it (nb_groups_max=1) or the sim
-    # can't fully support it (e.g. symmetry + GBSA -- see SimHandler.nb_groups_enabled),
-    # in which case we fall back to the legacy global-lambda + environment-pinning path.
-    # Needs 3 group slots (env=0, target=1, target-copy=2 -- see _Softener); the
-    # SimParams.nb_groups_max default of 4 provides them.
-    use_groups = (bool(nb_groups) and getattr(sh, 'nb_groups_enabled', False)
-                  and getattr(sh, 'nb_groups_count', 1) >= 3)
-    if nb_groups and not use_groups:
-        dlog('isolde rotafit: per-group coupling unavailable for this simulation '
-             '(needs nb_groups_max >= 3 and a group-aware sim); falling back to '
-             'global-lambda + environment pinning.')
+    # rotafit drives per-group soft-core coupling (target soft against its surroundings
+    # -- including its own symmetry copies -- while the environment stays rigid without
+    # pinning). This needs >= 3 group slots (env=0, target=1, target-copy=2); every sim
+    # is built with them by default (SimParams.nb_groups_max defaults to 4), and it is
+    # fully available unless the user disabled it or the sim can't support it (see
+    # SimHandler.nb_groups_enabled).
+    if not (getattr(sh, 'nb_groups_enabled', False)
+            and getattr(sh, 'nb_groups_count', 1) >= 3):
+        raise UserError(
+            'isolde rotafit requires per-group soft-core coupling, which is not '
+            'available for this simulation. It needs the soft-core nonbonded potential '
+            'and SimParams.nb_groups_max >= 3 (the default is 4) set before the '
+            'simulation was started. Restart the simulation with the defaults, or '
+            'raise nb_groups_max, then retry.')
     params = dict(temperature=temperature, settle_steps=settle_steps,
                   polish_steps=polish_steps, polish_top=polish_top,
                   ramp_increments=ramp_increments, accept_margin=accept_margin,
-                  settle_lambda=settle_lambda, pin_environment=pin_environment,
-                  pin_k=pin_k, pin_near_cutoff=pin_near_cutoff,
-                  pin_distant_multiplier=pin_distant_multiplier,
+                  settle_lambda=settle_lambda,
                   minimize=minimize, score_lambda=score_lambda,
-                  use_groups=use_groups, apply=apply, debug=debug)
+                  apply=apply, debug=debug)
     if sh.pause:
         # Already paused => the sim thread is idle => safe to drive it now.
         _run_rotafit(session, isolde, targets, resume_after=False, **params)
@@ -631,8 +539,7 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
 
 def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_steps,
                  polish_top, ramp_increments, accept_margin, settle_lambda,
-                 pin_environment, pin_k, pin_near_cutoff, pin_distant_multiplier,
-                 minimize, score_lambda, apply, debug, use_groups, resume_after):
+                 minimize, score_lambda, apply, debug, resume_after):
     '''Do the actual rotamer settling. MUST be called only when the sim thread is
     idle (paused and a 'sim paused' has fired), so main-thread access to
     _simulation is safe. Verbose per-rotamer logging is gated behind ``debug``; the
@@ -647,54 +554,24 @@ def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_ste
     from openmm import unit
     saved_temp = (st.value_in_unit(unit.kelvin) if hasattr(st, 'value_in_unit')
                   else float(st))
-    softener = _Softener(sh, use_groups)
-    # Per-group mode: the target's coupling to its surroundings (full = 1.0), with the
-    # environment held by its own full-strength force field -- NO pinning. Legacy mode:
-    # the global soft-core lambda (None if the context has no such parameter).
+    softener = _Softener(sh)
+    # The target's current coupling to its surroundings (full = 1.0 initially); the
+    # environment is held by its own full-strength force field -- NO position pinning.
     saved_lambda = softener.get()
-    if use_groups:
-        dlog('isolde rotafit: per-group soft-core coupling (environment unpinned)')
+    dlog('isolde rotafit: per-group soft-core coupling (environment unpinned)')
     # Scale the do-no-harm margin by ISOLDE's MDFF coupling constant so it tracks the
     # map's energy scale (x-ray vs high-sigma cryo-EM) instead of being a fixed kJ/mol.
     gk = _sim_coupling_constant(isolde)
     eff_margin = accept_margin * gk if gk > 0 else accept_margin
     dlog('isolde rotafit: MDFF coupling global_k=%.3g -> do-no-harm margin %.2f kJ/mol'
          % (gk, eff_margin))
-    # Environment pinning: freeze the surrounding model with position restraints so a
-    # low settle_lambda can free the target without deforming the shell.
-    # Environment pinning is the LEGACY mechanism (needed because a global soft-core
-    # lambda softens everything); per-group mode keeps the environment stiff via its
-    # own force field, so pinning is neither used nor set up.
-    prm = mobile_atoms = None
-    if pin_environment and not use_groups:
-        try:
-            from chimerax.isolde import session_extensions as sx
-            prm = sx.get_position_restraint_mgr(targets[0].structure, True)
-            mobile_atoms = isolde.sim_manager.sim_construct.mobile_atoms
-        except Exception as e:
-            dlog('  (environment pinning unavailable: %s)' % e)
-            prm = None
     outcomes = []                              # (residue, kind, name) per target
     try:
-        if saved_lambda is not None:
-            softener.set(settle_lambda)         # soften (target-vs-environment coupling
-                                                # in per-group mode; the global lambda in
-                                                # legacy) so a clashy seed relaxes
+        softener.set(settle_lambda)            # soften the target against its surroundings
+                                               # (incl. its symmetry copies) so a clashy
+                                               # seed relaxes; the environment stays rigid
         for r in targets:
-            pin = None
-            softener.assign_target(r)           # target -> its own nb group (no-op legacy)
-            if prm is not None:
-                try:
-                    cloud = _reachable_cloud(session, sh, r)
-                    pin = _pin_environment(prm, mobile_atoms, r, pin_k, cloud,
-                                           pin_near_cutoff, pin_distant_multiplier)
-                    if pin is not None:
-                        dlog('  pinned environment: %d near @ k=%g, %d distant @ k=%g '
-                             'kJ/mol/nm^2' % (pin[2], pin_k, pin[3],
-                                              pin_k * pin_distant_multiplier))
-                except Exception as e:
-                    dlog('  (could not pin environment: %s)' % e)
-                    pin = None
+            softener.assign_target(r)          # target -> group 1, its copies -> group 2
             try:
                 try:
                     results, base = _settle_and_rank(isolde, r, temperature,
@@ -718,13 +595,10 @@ def _run_rotafit(session, isolde, targets, temperature, settle_steps, polish_ste
                              ramp_increments, saved_lambda, settle_lambda, eff_margin,
                              outcomes, dlog, debug, minimize, score_lambda)
             finally:
-                softener.release_target(r)     # target back to env group (no-op legacy)
-                if pin is not None:
-                    _restore_restraints(pin[0], pin[1])
+                softener.release_target(r)     # target (and its copies) back to group 0
     finally:
         sh.temperature = saved_temp            # don't leave the sim at 0 K
-        if saved_lambda is not None:
-            softener.set(saved_lambda)         # restore full coupling / soft-core lambda
+        softener.set(saved_lambda)             # restore full coupling before resume
         if resume_after:
             sh.pause = False                   # resume (we requested the pause)
     log(_summary_line(outcomes))
@@ -760,10 +634,8 @@ def register_rotafit_command(logger):
                  ('polish_steps', IntArg), ('polish_top', IntArg),
                  ('ramp_increments', IntArg),
                  ('accept_margin', FloatArg), ('settle_lambda', FloatArg),
-                 ('pin_environment', BoolArg), ('pin_k', FloatArg),
-                 ('pin_near_cutoff', FloatArg), ('pin_distant_multiplier', FloatArg),
                  ('minimize', BoolArg), ('score_lambda', FloatArg),
-                 ('allow_multiple', BoolArg), ('nb_groups', BoolArg),
+                 ('allow_multiple', BoolArg),
                  ('apply', BoolArg), ('debug', BoolArg)],
         synopsis='Automated rotamer fit: settle each library rotamer in the running '
                  'simulation and commit the lowest-energy one'
