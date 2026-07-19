@@ -126,6 +126,7 @@ class SimParams(Param_Mgr):
         'nonbonded_softcore_b':                 (defaults.NONBONDED_SOFTCORE_B, None),
         'nonbonded_softcore_c':                 (defaults.NONBONDED_SOFTCORE_C, None),
         'nonbonded_softcore_alpha':                 (defaults.NONBONDED_SOFTCORE_ALPHA, None),
+        'nb_groups_max':                        (defaults.NB_GROUPS_MAX, None),
 
         'symmetry_aware':                       (defaults.SYMMETRY_AWARE, None),
 

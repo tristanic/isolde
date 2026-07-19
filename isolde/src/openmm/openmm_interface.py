@@ -1454,33 +1454,20 @@ class SimHandler:
     # ------------------------------------------------------------------
     # Per-group soft-core nonbonded coupling (transient; see the
     # softcore-nb-groups design). Consumed by fitting/docking engines, NOT
-    # exposed to users. Usage: call enable_nb_groups() BEFORE the simulation is
-    # built (before `isolde sim start`); then assign_nb_group() / set_nb_coupling()
-    # freely while it runs. Edits go through the standard force_update_needed()
-    # path (applied immediately when paused, on the next frame when running) with
-    # no context reinitialisation. Every atom starts in group 0 with an all-ones
-    # coupling table, so an enabled-but-unused simulation is physically identical
-    # to a plain one.
+    # exposed to users.
+    #
+    # To ENABLE: an engine sets ``sim_params.nb_groups_max = N`` (e.g. 8) BEFORE
+    # starting the simulation (the coupling table is sized when the soft-core
+    # forces are built, during sim start, so it cannot be provisioned afterwards).
+    # It should reset it to 1 when done, since the parameter persists on the
+    # session. With nb_groups_max == 1 the feature is off and a simulation is
+    # bit-for-bit the plain soft-core potential.
+    #
+    # Then, while the sim runs, use assign_nb_group() / set_nb_coupling() below:
+    # every atom starts in group 0 with an all-ones coupling table, and edits go
+    # through the standard force_update_needed() path (applied immediately when
+    # paused, on the next frame when running) with no context reinitialisation.
     # ------------------------------------------------------------------
-    def enable_nb_groups(self, max_groups=8):
-        '''
-        Provision per-group soft-core nonbonded coupling for this simulation,
-        sizing the coupling table to ``max_groups`` (default 8). Must be called
-        before the soft-core forces are built (before the sim is started).
-        No-op (with a warning) if the soft-core potential is disabled or the
-        forces are already built.
-        '''
-        if not self._params.use_softcore_nonbonded_potential:
-            self.session.logger.warning('ISOLDE: per-group soft-core coupling '
-                'requires the soft-core nonbonded potential; ignoring '
-                'enable_nb_groups().')
-            return
-        if getattr(self, '_nb_softcore_force', None) is not None:
-            self.session.logger.warning('ISOLDE: enable_nb_groups() must be called '
-                'before the simulation is built; ignoring.')
-            return
-        self._nb_groups_max = int(max_groups)
-
     @property
     def nb_groups_enabled(self):
         '''Whether per-group soft-core coupling is active for this simulation.'''
@@ -1673,12 +1660,12 @@ class SimHandler:
         #  * crystallographic symmetry (symgroup + grouptable mask), if copies are
         #    present -- SymmetryAwareMixin; and
         #  * per-group soft-core coupling (nb_group + nb_coupling_table lambda),
-        #    if an engine called enable_nb_groups() before the sim was built.
+        #    if an engine set sim_params.nb_groups_max > 1 before the sim was built.
         # The nb-group force is the base for the symmetry-aware one, so any
         # combination composes. Each active layer appends a trailing per-particle
         # group id, base (nb_group) before mixin (symgroup).
         groups = getattr(self, '_symmetry_particle_groups', None)
-        nb_max = int(getattr(self, '_nb_groups_max', 1) or 1)
+        nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
         nb_on = nb_max > 1
         n_particles = system.getNumParticles()
         if nb_on:
@@ -3377,7 +3364,7 @@ class SimHandler:
         # (see that class). Their charges are already set above (read from the
         # extended NonbondedForce); their (or, sr) are copied from their parent.
         groups = getattr(self, '_symmetry_particle_groups', None)
-        nb_max = int(getattr(self, '_nb_groups_max', 1) or 1)
+        nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
         # Per-group soft-core GB only applies with the soft-core potential.
         nb_on = nb_max > 1 and params.use_softcore_nonbonded_potential
         from .custom_forces import (GBSAForce, SoftCoreGBSAGBnForce,

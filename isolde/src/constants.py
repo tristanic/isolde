@@ -88,6 +88,12 @@ class _Defaults:
         'NONBONDED_SOFTCORE_B':       2,
         'NONBONDED_SOFTCORE_C':       6,
         'NONBONDED_SOFTCORE_ALPHA':   0.2,
+        # Per-group soft-core nonbonded coupling. Number of group slots to
+        # provision in the coupling table when the soft-core forces are built.
+        # 1 (default) = feature off, bit-for-bit the plain soft-core potential.
+        # A fitting/docking engine raises this (e.g. to 8) BEFORE starting a
+        # simulation, then uses SimHandler.assign_nb_group / set_nb_coupling.
+        'NB_GROUPS_MAX':              1,
         # Crystallographic symmetry-aware simulation. SYMMETRY_AWARE gates the
         # whole feature (also requires OpenMM >= 8.4 SymmetrySite + real crystal
         # symmetry). OPT-IN (default off): off is bit-for-bit the original,
