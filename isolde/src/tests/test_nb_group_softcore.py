@@ -114,6 +114,24 @@ def run(session=None):
     f2.set_coupling(1, 1, 0.2, context=ctx2)
     _check(_energy(ctx2) < e_full, "softening (1,1) softens the internal pair")
 
+    # rotafit copy-shadow scheme: with the target's copies in group 2, softening the
+    # crystal self-contact (1,2) must NOT touch the target's INTERNAL (1,1) pair, but
+    # must soften a (1,2) pair. This is what keeps the sidechain internally rigid while
+    # its contact with its own symmetry image is softened.
+    f_int = NBGroupNonbondedSoftcoreForce(nb_lambda=LAMBDA, n_nb_groups=3)
+    f_int.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    ctx_int = _make_context(f_int, [[0.0, SIG, EPS, 1.0], [0.0, SIG, EPS, 1.0]])  # both grp 1
+    e_int = _energy(ctx_int)
+    f_int.set_coupling(1, 2, 0.2, context=ctx_int)
+    _check(abs(_energy(ctx_int) - e_int) < TOL,
+           "softening (1,2) leaves the (1,1) internal pair FULL")
+    f_x = NBGroupNonbondedSoftcoreForce(nb_lambda=LAMBDA, n_nb_groups=3)
+    f_x.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    ctx_x = _make_context(f_x, [[0.0, SIG, EPS, 1.0], [0.0, SIG, EPS, 2.0]])       # grp 1,2
+    e_x = _energy(ctx_x)
+    f_x.set_coupling(1, 2, 0.2, context=ctx_x)
+    _check(_energy(ctx_x) < e_x, "softening (1,2) softens a (1,2) self-contact pair")
+
     # ================= GB implicit-solvent per-group (plan A7) ==============
     from openmm import app
     from chimerax.isolde.openmm.custom_forces import (

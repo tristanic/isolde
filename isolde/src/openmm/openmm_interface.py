@@ -1484,6 +1484,15 @@ class SimHandler:
             return False
         return True
 
+    @property
+    def nb_groups_count(self):
+        '''Number of group slots provisioned in the coupling table (1 if disabled).
+
+        Group ids passed to assign_nb_group / set_nb_coupling must be < this. It is
+        SimParams.nb_groups_max, captured when the soft-core forces were built.'''
+        f = getattr(self, '_nb_softcore_force', None)
+        return int(getattr(f, '_n_nb_groups', 1)) if f is not None else 1
+
     def _nb_group_forces(self):
         forces = []
         f = getattr(self, '_nb_softcore_force', None)
@@ -1494,45 +1503,50 @@ class SimHandler:
             forces.append(g)
         return forces
 
-    def assign_nb_group(self, atoms, group_id):
+    def assign_nb_group(self, atoms, group_id, copy_group_id=None):
         '''
         Put ``atoms`` (a ChimeraX Atoms) into nonbonded group ``group_id``
         (0 <= group_id < nb_groups_max). Applied live to every group-aware force via
         per-particle parameter updates (no reinitialisation). Atoms outside the
         simulation construct are ignored.
 
-        In a crystallographic-symmetry simulation each atom's group is also applied to
-        its symmetry copies: a copy must share its parent's group, or its coupling to
-        other groups would be computed from the wrong group.
+        In a crystallographic-symmetry simulation each atom's symmetry copies are also
+        assigned: to ``copy_group_id`` if given, else to ``group_id`` (a copy must be
+        grouped, or its coupling to other groups would be computed from the wrong
+        group). Use a distinct ``copy_group_id`` to treat an atom's crystal self-contact
+        (real<->copy) differently from its internal interactions (real<->real) -- e.g.
+        to soften the former while keeping the latter full.
         '''
         forces = self._nb_group_forces()
         if not forces:
             raise RuntimeError('per-group soft-core coupling is not enabled for this '
                 'simulation')
+        if copy_group_id is None:
+            copy_group_id = group_id
         indices = self._atoms.indices(atoms)
         indices = [int(i) for i in indices if i != -1]
-        changed = list(indices)
-        # Propagate to symmetry copies. Copies occupy particle indices [n_real, n_total);
+        # (particle index, group) assignments: real atoms, then their symmetry copies.
+        # Copies occupy particle indices [n_real, n_total);
         # _symmetry_copies['parent_index'][c] is the real-particle index of copy c.
+        assignments = [(i, group_id) for i in indices]
         copies = getattr(self, '_symmetry_copies', None)
         if copies is not None:
             n_real = len(self._atoms)
             target = set(indices)
             for c, p in enumerate(copies['parent_index']):
                 if int(p) in target:
-                    changed.append(n_real + c)
-        gid = float(group_id)
-        pg = getattr(self, '_nb_particle_groups', None)
-        if pg is not None:
-            for i in changed:
-                pg[i] = group_id
+                    assignments.append((n_real + c, copy_group_id))
         for f in forces:
             gi = f._nb_group_index
-            for i in changed:
+            for i, g in assignments:
                 params = list(f.getParticleParameters(i))
-                params[gi] = gid
+                params[gi] = float(g)
                 f.setParticleParameters(i, params)
             f.update_needed = True
+        pg = getattr(self, '_nb_particle_groups', None)
+        if pg is not None:
+            for i, g in assignments:
+                pg[i] = g
         self.force_update_needed()
 
     def set_nb_coupling(self, group_a, group_b, lam):

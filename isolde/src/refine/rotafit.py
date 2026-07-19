@@ -81,22 +81,29 @@ PIN_DISTANT_MULT = 10.0  # atoms FURTHER than PIN_NEAR_CUTOFF are pinned at PIN_
                          #   target, so any motion they make is pure ranking NOISE in the
                          #   core nonbonded term. Freeze them hard.
 
-# Per-group soft-core group ids used by rotafit (see _Softener). The target residue
-# goes in group 1; everything else stays in group 0. (The coupling table is provisioned
-# with more slots by default -- SimParams.nb_groups_max -- but rotafit only needs these
-# two, and settles one target at a time.)
+# Per-group soft-core group ids used by rotafit (see _Softener). The environment is
+# group 0; the target residue's real atoms are group 1; and -- so that the target's
+# genuine internal (real<->real) interactions can stay rigid while its crystal
+# self-contact with its own symmetry copies is softened -- the target's SYMMETRY COPIES
+# go in a distinct group 2. Needs >= 3 provisioned slots (SimParams.nb_groups_max
+# defaults to 4). In a non-symmetry sim group 2 is simply empty.
 ENV_NB_GROUP = 0
 TARGET_NB_GROUP = 1
+TARGET_COPY_NB_GROUP = 2
 
 
 class _Softener:
     '''The "soften the target against its surroundings" knob, with two backends.
 
-    PREFERRED (``use_groups=True``): per-group soft-core coupling. The target
-    residue is placed in its own nonbonded group and only its coupling to the rest
-    of the model (group 0) is softened; the environment keeps full-strength
-    interactions, so it holds its own shape WITHOUT position restraints. ``get`` /
-    ``set`` read/write the group-pair coupling ``(TARGET, ENV)``.
+    PREFERRED (``use_groups=True``): per-group soft-core coupling. The target's real
+    atoms go in group 1 and their symmetry copies in group 2, leaving the environment
+    (+ its copies) in group 0. Softened are all couplings that TOUCH the target -- vs
+    environment ``(1,0)``/``(2,0)`` and its crystal self-contact ``(1,2)``/``(2,2)`` --
+    while the target's genuine INTERNAL interactions ``(1,1)`` and the environment's
+    ``(0,0)`` are left FULL. So the target sidechain stays internally rigid and the
+    environment holds its shape WITHOUT position restraints, yet the target can still
+    slide through a clash against its own symmetry image (which would otherwise explode
+    to a NaN). ``get`` reads the representative ``(1,0)`` coupling.
 
     LEGACY (``use_groups=False``): the global ``softcore_lambda`` scalar softens
     every pair, so the environment must be pinned separately (see
@@ -117,14 +124,22 @@ class _Softener:
         if value is None:
             return
         if self.use_groups:
-            self.sh.set_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP, value)
+            # Soften every coupling touching the target -- vs environment and its own
+            # crystal image -- but NOT the target's internal (1,1) or the env's (0,0).
+            sh = self.sh
+            sh.set_nb_coupling(TARGET_NB_GROUP, ENV_NB_GROUP, value)          # (1,0)
+            sh.set_nb_coupling(TARGET_COPY_NB_GROUP, ENV_NB_GROUP, value)     # (2,0)
+            sh.set_nb_coupling(TARGET_NB_GROUP, TARGET_COPY_NB_GROUP, value)  # (1,2)
+            sh.set_nb_coupling(TARGET_COPY_NB_GROUP, TARGET_COPY_NB_GROUP, value)  # (2,2)
         else:
             self.sh.softcore_lambda = value
 
     def assign_target(self, residue):
-        '''Put the target residue in its own group (no-op in legacy mode).'''
+        '''Put the target's real atoms in group 1 and their symmetry copies in group 2
+        (no-op in legacy mode).'''
         if self.use_groups:
-            self.sh.assign_nb_group(residue.atoms, TARGET_NB_GROUP)
+            self.sh.assign_nb_group(residue.atoms, TARGET_NB_GROUP,
+                                    copy_group_id=TARGET_COPY_NB_GROUP)
 
     def release_target(self, residue):
         '''Return the target residue to the environment group (no-op in legacy mode).'''
@@ -567,10 +582,14 @@ def rotafit(session, residues=None, temperature=0.0, settle_steps=SETTLE_STEPS,
     # it reports unavailable only if the user disabled it (nb_groups_max=1) or the sim
     # can't fully support it (e.g. symmetry + GBSA -- see SimHandler.nb_groups_enabled),
     # in which case we fall back to the legacy global-lambda + environment-pinning path.
-    use_groups = bool(nb_groups) and getattr(sh, 'nb_groups_enabled', False)
+    # Needs 3 group slots (env=0, target=1, target-copy=2 -- see _Softener); the
+    # SimParams.nb_groups_max default of 4 provides them.
+    use_groups = (bool(nb_groups) and getattr(sh, 'nb_groups_enabled', False)
+                  and getattr(sh, 'nb_groups_count', 1) >= 3)
     if nb_groups and not use_groups:
-        dlog('isolde rotafit: per-group coupling unavailable for this simulation; '
-             'falling back to global-lambda + environment pinning.')
+        dlog('isolde rotafit: per-group coupling unavailable for this simulation '
+             '(needs nb_groups_max >= 3 and a group-aware sim); falling back to '
+             'global-lambda + environment pinning.')
     params = dict(temperature=temperature, settle_steps=settle_steps,
                   polish_steps=polish_steps, polish_top=polish_top,
                   ramp_increments=ramp_increments, accept_margin=accept_margin,
