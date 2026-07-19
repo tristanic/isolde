@@ -58,10 +58,11 @@ Per target residue, inside the **running, paused** simulation:
    (see §3.7). Leave the simulation running so the live MDFF trajectory refines further and
    the user can `isolde sim revert` to the checkpoint taken at the start.
 
-Settling uses a **hybrid** relax (`minimize=True`, now the default): step the integrator at
-0 K first (dynamics has momentum to seat the pose in the local density well), then
-`minimizeEnergy()` to converge deterministically (kills the run-to-run jitter that makes
-the ranking energy noisy). See §3.6.
+Settling is **0 K damped dynamics** (`minimize=False`, the default): stepping the integrator at
+0 K seats the pose in the local density well, and at `T = 0` the Langevin random force vanishes
+so the descent is deterministic — it damps toward the minimum on its own. `minimizeEnergy()` is
+available (`minimize true`) but off by default; it is the dominant cost and adds little once the
+score is localised (§4, §3.6). See §3.6.
 
 ---
 
@@ -120,15 +121,19 @@ distance / chiral / …), pose-independent **noise** for this decision. Rank on
 MDFF), never group 6. `getState(getEnergy=True, groups=set_of_ints)` accepts a set. Force
 groups are defined at the top of openmm_interface.py.
 
-### 3.6 Settling: `minimize` under-seats; use the hybrid
+### 3.6 Settling: 0 K damped dynamics, no minimiser (default)
 A pure `minimizeEnergy()` from a freshly chi-rotated pose is a **local 0 K quench with no
 momentum**: it converges to the *nearest* minimum, which under the gentle cryo-EM map
 (`global_k ~ 0.34`) is often **off-density** — it can't ride the small barrier into the
-density well. Dynamics *can* (momentum). So the hybrid: **step first (dynamics seats the
-pose in the density well), then minimise (converges deterministically to *that* seated
-minimum).** This gives clean, noise-free ranking energies *and* density-seated geometry.
-Pure-dynamics (`minimize=False`) seats well but its stopping point is jittery (bad for
-ranking); pure-minimise is clean but off-density (bad geometry). Chain them.
+density well. **0 K dynamics can** (momentum), and because the Langevin random force is zero at
+`T = 0` it is *deterministic damped descent* — the friction settles it toward the minimum over
+the step window, so its stopping point is stable enough to rank (especially now the score is
+localised, §4, so there is no environment jitter to amplify). The original design *chained* a
+minimise after the dynamics for the last bit of convergence, but once scoring was localised and
+the commit decided by a robust multi-atom difference-density margin, that minimise stopped
+changing any decision — so `minimize` now defaults **off** (it was the dominant cost; see §4).
+If a pose ever seats short, add 0 K steps (cheap) rather than the minimiser; `minimize true`
+remains as an escape hatch for rescuing genuinely high-energy states.
 
 ### 3.7 Committing: graft the target onto the original environment
 The settled/polished poses are **whole-construct snapshots** whose *environment* was
@@ -177,13 +182,71 @@ flag and `any(t[3] for t in ...)` / `next((t for t in ... if t[3]), None)`.
 
 ## 4. Scoring philosophy
 
-- Rank on **core FF + MDFF** (§3.5); the map influence is ISOLDE's own coupling — there is
-  **no separate map weight to invent**. This was a temptation worth resisting: the sim-based
-  scorer already inherits the tuned, sigma-normalised coupling.
-- The score is a **whole-construct** energy, but the *signal* is one residue. The dominant
-  risk is that environment jitter (mostly in the O(N²) nonbonded term) swamps the tiny
-  per-residue signal. Mitigations in place: the environment stays rigid at full coupling
-  (§3.8), and the deterministic minimise (§3.6) removes stochastic jitter.
+**The whole-construct energy is the wrong ruler (learned the hard way).** The original score
+was the whole-construct core-FF + MDFF energy (§3.5). That failed on obvious cases: on 3io0
+Thr89, a *strained, worse-fitting* rotamer beat the correct one by ~420 kJ/mol, of which
+**−524 was pure environment nonbonded jitter** — the O(N²) env–env term settling into a
+slightly different local minimum from pose to pose, swamping the ~100 kJ/mol per-residue
+signal (which actually favoured the correct answer). The environment being rigid-*coupled*
+(§3.8) does **not** save you: a full-strength environment still *moves* under each pose's
+minimise, and its summed energy is a noisy whole-construct quantity. The fix is to stop
+scoring the environment at all — score **atom-local** quantities of the target only.
+
+**`score_mode` (default `local+diff`).** Three rulers, selectable per call:
+- **`local`** — rank by the target residue's **own MDFF map energy**, isolated by the
+  *difference method* (`_target_map_energy`): read the map-group energy, disable the target's
+  per-atom map terms, re-read, subtract. The (identical) environment map contribution cancels
+  exactly, leaving only the target's density fit. Immune to the env nonbonded noise entirely.
+  Fixes the Thr89 class. But on a **model-biased** crystallographic map it can still prefer a
+  *peak-parking* rotamer: the 2mFo-DFc map is phase-biased toward the current model, so a wrong
+  rotamer that parks atoms on already-modelled density can out-score the correct one (the Ile114
+  failure — wrong `tp` beats correct `pt` on summed 2Fo-Fc).
+- **`local+diff`** (default) — `local` primary, but among candidates **tied on the main map**
+  (within `DENSITY_TIE_BAND × global_k` of the best `map_local`) the tie is broken by the
+  **mFo-DFc difference-density score** (`_LocalScorer.diff_score`): the sigma-normalised sum of
+  the *difference* map sampled at the target's heavy atoms. The difference map marks density the
+  current model fails to explain (positive — where the correct atoms belong) and mismodelled
+  density (negative), so it defeats model bias **without recomputing structure factors** per
+  candidate. Do-no-harm here is data-driven: `current` is displaced only if a band-mate explains
+  ≥ `DIFF_MARGIN` σ more difference density. Used **only** as a tiebreaker (and its do-no-harm),
+  never as an MDFF driver — which preserves the reason difference density is disabled as a force
+  (too noisy to integrate against). The band gate is what makes the noisy signal safe: a pose
+  only reaches the tiebreak if the trustworthy main map already ranks it competitive. Degrades
+  to `local` when there is no difference map (cryo-EM / apo).
+- **`classic`** — the legacy whole-construct energy, kept for A/B comparison. Don't use it to
+  fit; it is the behaviour the above replaces.
+- The map influence is still ISOLDE's own sigma-normalised coupling — **no separate map weight
+  to invent** (§3.9 do-no-harm scaling unchanged; `local`/`local+diff` apply it to `map_local`).
+
+**Settle is 0 K dynamics only (no minimiser) by default.** `minimize` defaults **off**: at
+`T = 0` the Langevin random force vanishes, so 0 K "dynamics" is deterministic *damped descent*
+that settles toward the minimum on its own. `minimizeEnergy()` only decisively helps when
+rescuing a genuinely high-energy state into stable dynamics — which the soft-λ settle already
+does (clashy seeds slide apart at λ ≈ 0.6). Dropping it removed the dominant cost; if seating is
+ever short, *more 0 K steps* are far cheaper than a minimise (and `minimize true` remains as an
+escape hatch). The search phase is dynamics-only regardless (it only nominates the density
+tie-band; the polish does the honest ranking).
+
+**Cost discipline (the scorer computes only what ranks).** Each pose evaluates just the signals
+the active `score_mode` consumes — `map_local` always, `diff_score` in `local+diff`. Everything
+else (`whole`, `map_whole`, the map-force coherence, the pre-settle "approach" signals) is
+computed **only under `debug`**, for the side-by-side log. The polish minimises once (final λ)
+rather than per ramp-increment, and in `local+diff` polishes only the *difference-density
+contenders* in the band (a band member the tiebreak can't pick is never minimised). Together
+these took the Ile114 fit from ~10 s to < 1 s.
+
+**Ile114-class placement diagnostic.** `_LocalScorer.target_map_force` reports the per-atom map
+force on the target as **(rms, coherence)** — high coherence = the sidechain is being coherently
+tugged into a nearby lobe (a "cooperative gradient"); ~0 rms = stranded on the flat map. It's a
+`debug`-only diagnostic (not a ranking term): for the crystallographic model-bias case the
+difference-density tiebreak resolved it, so the seeding/anneal fix this signal was meant to
+guide is not currently needed.
+
+**Debug output.** With `debug true`, every candidate prints its signals side-by-side
+(`_metrics_str`: `map_local | diff | map_whole | whole`, plus the pre-settle `approach` block
+for the search set), for both the soft search set and the polished set, and each phase logs a
+`timing:` line — so the discriminating term and the cost are both visible at a glance.
+
 - Soft (search) and stiff (polish) rankings can disagree; polish + re-rank at full stiffness
   is the honest call, and the ramp avoids the jolt.
 
