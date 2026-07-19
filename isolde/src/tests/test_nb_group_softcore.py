@@ -1,0 +1,168 @@
+# Headless unit test for per-group soft-core nonbonded coupling (Phase 1).
+#
+# Runs on the OpenMM Reference platform; no GUI, no map, no ISOLDE simulation.
+# Mirrors tests/test_symmetry_mdff_force.py: build tiny Systems, compare
+# single-point energies, assert to ~machine precision. Validates:
+#   (a) NBGroupNonbondedSoftcoreForce(n_nb_groups=1) == plain NonbondedSoftcoreForce
+#       (byte-for-byte degradation) and the symmetry force rebased onto it is
+#       unchanged in its symmetry-degenerate configuration;
+#   (b) per-group pair_lambda energies for group pairs (0,0)/(1,0)/(1,1);
+#   (c) THE LINCHPIN: set_coupling + updateParametersInContext changes the live
+#       energy with no reinitialisation, and setParticleParameters changes group
+#       membership live.
+
+import numpy as np
+import openmm as mm
+from openmm import unit
+
+from chimerax.isolde.openmm.custom_forces import (
+    NonbondedSoftcoreForce, NBGroupNonbondedSoftcoreForce,
+    SymmetryAwareNonbondedSoftcoreForce,
+)
+
+SIG, EPS = 0.30, 0.60          # nm, kJ/mol
+R_REP = 0.24                   # nm; r/sigma = 0.8 -> repulsive regime
+LAMBDA = 0.95                  # global ceiling
+TOL = 1e-9
+
+_failures = []
+def _check(cond, msg):
+    if cond:
+        print("  ok:", msg)
+    else:
+        print("  FAIL:", msg)
+        _failures.append(msg)
+
+def _make_context(force, per_particle):
+    '''per_particle: list of param-lists, one per particle.'''
+    system = mm.System()
+    for _ in per_particle:
+        system.addParticle(12.0)
+    for p in per_particle:
+        force.addParticle(list(p))
+    system.addForce(force)
+    integ = mm.VerletIntegrator(1.0 * unit.femtosecond)
+    context = mm.Context(system, integ, mm.Platform.getPlatformByName("Reference"))
+    context.setPositions(np.array(
+        [[0.0, 0.0, 0.0], [R_REP, 0.0, 0.0]]) * unit.nanometer)
+    return context
+
+def _energy(context):
+    return context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(
+        unit.kilojoule_per_mole)
+
+def run(session=None):
+    # --- (a) parity: plain vs NBGroup(n_nb_groups=1) --------------------------
+    plain = NonbondedSoftcoreForce(nb_lambda=LAMBDA)
+    plain.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    e_plain = _energy(_make_context(plain, [[-0.5, SIG, EPS], [-0.5, SIG, EPS]]))
+
+    g1 = NBGroupNonbondedSoftcoreForce(nb_lambda=LAMBDA, n_nb_groups=1)
+    g1.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    e_g1 = _energy(_make_context(g1, [[-0.5, SIG, EPS], [-0.5, SIG, EPS]]))
+    _check(abs(e_plain - e_g1) < TOL,
+           f"NBGroup(n=1) parity with plain: {e_plain:.9f} vs {e_g1:.9f}")
+
+    # --- symmetry force rebased onto NBGroup: degenerate config == plain ------
+    sym = SymmetryAwareNonbondedSoftcoreForce(
+        symmetry_ngroups=1, n_nb_groups=1, nb_lambda=LAMBDA)
+    sym.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    # symmetry_ngroups=1 -> grouptable is 1x1 all-ones; symgroup=0 for both.
+    e_sym = _energy(_make_context(sym, [[-0.5, SIG, EPS, 0.0], [-0.5, SIG, EPS, 0.0]]))
+    _check(abs(e_plain - e_sym) < TOL,
+           f"SymmetryAware(sym=1,nb=1) parity with plain: {e_plain:.9f} vs {e_sym:.9f}")
+
+    # --- (b)+(c) grouped force, charge=0 -> pure LJ (monotonic in coupling) ---
+    n = 3
+    f = NBGroupNonbondedSoftcoreForce(nb_lambda=LAMBDA, n_nb_groups=n)
+    f.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    ctx = _make_context(f, [[0.0, SIG, EPS, 0.0], [0.0, SIG, EPS, 1.0]])  # groups 0,1
+
+    # reference: plain force, charge 0, same geometry -> full-coupling LJ
+    ref = NonbondedSoftcoreForce(nb_lambda=LAMBDA)
+    ref.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    e_ref = _energy(_make_context(ref, [[0.0, SIG, EPS], [0.0, SIG, EPS]]))
+
+    e_full = _energy(ctx)     # table all 1 -> (0,1) coupling 1 -> == full
+    _check(abs(e_full - e_ref) < TOL,
+           f"grouped, all-coupled == plain full: {e_full:.9f} vs {e_ref:.9f}")
+    _check(e_full > 0.0, f"repulsive regime gives positive clash energy ({e_full:.4f})")
+
+    # THE LINCHPIN: soften (0,1) live via set_coupling + updateParametersInContext
+    f.set_coupling(0, 1, 0.2, context=ctx)
+    e_soft = _energy(ctx)
+    _check(e_soft < e_full and e_soft > 0.0,
+           f"live set_coupling(0,1,0.2) softens clash: {e_soft:.4f} < {e_full:.4f}")
+
+    # restore live
+    f.set_coupling(0, 1, 1.0, context=ctx)
+    _check(abs(_energy(ctx) - e_full) < TOL, "live restore of coupling matches full")
+
+    # membership: soften (0,1), then move particle 1 into group 0 -> (0,0)=1 -> full
+    f.set_coupling(0, 1, 0.2, context=ctx)
+    _check(_energy(ctx) < e_full, "re-softened before membership change")
+    f.setParticleParameters(1, [0.0, SIG, EPS, 0.0])   # particle 1 -> group 0
+    f.updateParametersInContext(ctx)
+    _check(abs(_energy(ctx) - e_full) < TOL,
+           "live membership change (group 1->0) restores full coupling")
+
+    # internal coupling is independent: put both in group 1, soften only (1,1)
+    f2 = NBGroupNonbondedSoftcoreForce(nb_lambda=LAMBDA, n_nb_groups=n)
+    f2.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    ctx2 = _make_context(f2, [[0.0, SIG, EPS, 1.0], [0.0, SIG, EPS, 1.0]])  # both group 1
+    _check(abs(_energy(ctx2) - e_full) < TOL, "group (1,1) at coupling 1 == full")
+    f2.set_coupling(1, 1, 0.2, context=ctx2)
+    _check(_energy(ctx2) < e_full, "softening (1,1) softens the internal pair")
+
+    # ================= GB implicit-solvent per-group (plan A7) ==============
+    from openmm import app
+    from chimerax.isolde.openmm.custom_forces import (
+        SoftCoreGBSAGBnForce, NBGroupSoftCoreGBSAGBnForce)
+
+    def _gb_context(gbforce, charges, groups=None):
+        top = app.Topology()
+        ch = top.addChain(); res = top.addResidue('UNK', ch)
+        for i in range(len(charges)):
+            top.addAtom(f'C{i}', app.Element.getBySymbol('C'), res)
+        std = gbforce.getStandardParameters(top)          # (n, 2): (or, sr)
+        nch = len(charges)
+        pp = np.zeros((nch, 3)); pp[:, 0] = charges; pp[:, 1:] = std
+        if groups is not None:
+            gbforce._nb_groups = list(groups)
+        gbforce.addParticles(pp)
+        gbforce.finalize()
+        system = mm.System()
+        for _ in range(nch):
+            system.addParticle(12.0)
+        system.addForce(gbforce)
+        ctx = mm.Context(system, mm.VerletIntegrator(1.0 * unit.femtosecond),
+                         mm.Platform.getPlatformByName("Reference"))
+        ctx.setPositions(np.array([[0.0, 0.0, 0.0], [R_REP, 0.0, 0.0]]) * unit.nanometer)
+        return ctx
+
+    q = [-0.5, -0.5]
+    e_gb_plain = _energy(_gb_context(SoftCoreGBSAGBnForce(nb_lambda=LAMBDA), q))
+    e_gb1 = _energy(_gb_context(
+        NBGroupSoftCoreGBSAGBnForce(nb_lambda=LAMBDA, n_nb_groups=1), q))
+    _check(abs(e_gb_plain - e_gb1) < 1e-6,
+           f"GB NBGroup(n=1) parity with plain: {e_gb_plain:.6f} vs {e_gb1:.6f}")
+
+    gbn = NBGroupSoftCoreGBSAGBnForce(nb_lambda=LAMBDA, n_nb_groups=3)
+    ctxg = _gb_context(gbn, q, groups=[0, 1])
+    e_gb_full = _energy(ctxg)
+    _check(abs(e_gb_full - e_gb_plain) < 1e-6,
+           f"GB grouped, all-coupled == plain: {e_gb_full:.6f} vs {e_gb_plain:.6f}")
+    gbn.set_coupling(0, 1, 0.2, context=ctxg)          # linchpin on the GB force
+    e_gb_soft = _energy(ctxg)
+    _check(abs(e_gb_soft - e_gb_full) > 1e-6,
+           f"GB live set_coupling(0,1,0.2) changes energy: {e_gb_soft:.6f} vs {e_gb_full:.6f}")
+    gbn.set_coupling(0, 1, 1.0, context=ctxg)
+    _check(abs(_energy(ctxg) - e_gb_full) < 1e-6, "GB live restore of coupling matches full")
+
+    if _failures:
+        print(f"\n{len(_failures)} CHECK(S) FAILED")
+        raise SystemExit(1)
+    print("\nALL PASS")
+
+if 'session' in dict(globals()) and session is not None:
+    run(session)
