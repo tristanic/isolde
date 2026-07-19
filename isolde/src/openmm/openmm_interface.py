@@ -1451,6 +1451,97 @@ class SimHandler:
                 return
             f.set_lambda(val, self._context)
 
+    # ------------------------------------------------------------------
+    # Per-group soft-core nonbonded coupling (transient; see the
+    # softcore-nb-groups design). Consumed by fitting/docking engines, NOT
+    # exposed to users. Usage: call enable_nb_groups() BEFORE the simulation is
+    # built (before `isolde sim start`); then assign_nb_group() / set_nb_coupling()
+    # freely while it runs. Edits go through the standard force_update_needed()
+    # path (applied immediately when paused, on the next frame when running) with
+    # no context reinitialisation. Every atom starts in group 0 with an all-ones
+    # coupling table, so an enabled-but-unused simulation is physically identical
+    # to a plain one.
+    # ------------------------------------------------------------------
+    def enable_nb_groups(self, max_groups=8):
+        '''
+        Provision per-group soft-core nonbonded coupling for this simulation,
+        sizing the coupling table to ``max_groups`` (default 8). Must be called
+        before the soft-core forces are built (before the sim is started).
+        No-op (with a warning) if the soft-core potential is disabled or the
+        forces are already built.
+        '''
+        if not self._params.use_softcore_nonbonded_potential:
+            self.session.logger.warning('ISOLDE: per-group soft-core coupling '
+                'requires the soft-core nonbonded potential; ignoring '
+                'enable_nb_groups().')
+            return
+        if getattr(self, '_nb_softcore_force', None) is not None:
+            self.session.logger.warning('ISOLDE: enable_nb_groups() must be called '
+                'before the simulation is built; ignoring.')
+            return
+        self._nb_groups_max = int(max_groups)
+
+    @property
+    def nb_groups_enabled(self):
+        '''Whether per-group soft-core coupling is active for this simulation.'''
+        return getattr(self, '_nb_softcore_force', None) is not None
+
+    def _nb_group_forces(self):
+        forces = []
+        f = getattr(self, '_nb_softcore_force', None)
+        if f is not None:
+            forces.append(f)
+        g = getattr(self, '_nb_gbsa_force', None)
+        if g is not None:
+            forces.append(g)
+        return forces
+
+    def assign_nb_group(self, atoms, group_id):
+        '''
+        Put ``atoms`` (a ChimeraX Atoms) into nonbonded group ``group_id``
+        (0 <= group_id < max_groups). Applied live to every group-aware force via
+        per-particle parameter updates (no reinitialisation). Atoms outside the
+        simulation construct are ignored.
+        '''
+        forces = self._nb_group_forces()
+        if not forces:
+            raise RuntimeError('per-group soft-core coupling is not enabled for this '
+                'simulation (call enable_nb_groups() before starting it)')
+        indices = self._atoms.indices(atoms)
+        indices = [int(i) for i in indices if i != -1]
+        gid = float(group_id)
+        for f in forces:
+            gi = f._nb_group_index
+            for i in indices:
+                params = list(f.getParticleParameters(i))
+                params[gi] = gid
+                f.setParticleParameters(i, params)
+            f.update_needed = True
+        pg = getattr(self, '_nb_particle_groups', None)
+        if pg is not None:
+            for i in indices:
+                pg[i] = group_id
+        self.force_update_needed()
+
+    def set_nb_coupling(self, group_a, group_b, lam):
+        '''
+        Set the (symmetric) soft-core coupling between two nonbonded groups
+        (0 < lam <= 1) on every group-aware force, live.
+        '''
+        forces = self._nb_group_forces()
+        if not forces:
+            raise RuntimeError('per-group soft-core coupling is not enabled')
+        for f in forces:
+            f.set_coupling(group_a, group_b, lam)      # sets update_needed
+        self.force_update_needed()
+
+    def get_nb_coupling(self, group_a, group_b):
+        '''Current coupling between two nonbonded groups (1.0 if not enabled).'''
+        f = getattr(self, '_nb_softcore_force', None)
+        if f is None:
+            return 1.0
+        return f.get_coupling(group_a, group_b)
+
 
     @property
     def minimize(self):
@@ -1567,7 +1658,9 @@ class SimHandler:
         for i,f in enumerate(system.getForces()):
             if type(f) == NonbondedForce:
                 break
-        from .custom_forces import NonbondedSoftcoreForce, NonbondedSoftcoreExceptionForce
+        from .custom_forces import (NonbondedSoftcoreForce,
+            NonbondedSoftcoreExceptionForce, NBGroupNonbondedSoftcoreForce,
+            SymmetryAwareNonbondedSoftcoreForce)
         p = self._params
         param_dict = {
             'a': p.nonbonded_softcore_a,
@@ -1576,17 +1669,34 @@ class SimHandler:
             'nb_lambda': p.nonbonded_softcore_lambda_minimize,
             'alpha': p.nonbonded_softcore_alpha,
         }
-        # If crystallographic symmetry copies are present, use the symmetry-aware
-        # soft-core force: the same functional form wrapped in a per-particle
-        # group mask that suppresses same-operator copy-copy interactions (see
-        # SymmetryAwareMixin). Each particle then carries a trailing group id.
+        # Two orthogonal per-particle grouping layers may be active:
+        #  * crystallographic symmetry (symgroup + grouptable mask), if copies are
+        #    present -- SymmetryAwareMixin; and
+        #  * per-group soft-core coupling (nb_group + nb_coupling_table lambda),
+        #    if an engine called enable_nb_groups() before the sim was built.
+        # The nb-group force is the base for the symmetry-aware one, so any
+        # combination composes. Each active layer appends a trailing per-particle
+        # group id, base (nb_group) before mixin (symgroup).
         groups = getattr(self, '_symmetry_particle_groups', None)
+        nb_max = int(getattr(self, '_nb_groups_max', 1) or 1)
+        nb_on = nb_max > 1
+        n_particles = system.getNumParticles()
+        if nb_on:
+            # Every atom starts in group 0 (inert: coupling table is all-ones);
+            # the engine assigns groups and couplings live afterwards.
+            nb_groups = self._nb_particle_groups = numpy.zeros(n_particles, dtype=int)
+        else:
+            nb_groups = None
+            self._nb_particle_groups = None
+
         if groups is not None:
-            from .custom_forces import SymmetryAwareNonbondedSoftcoreForce
             sf = SymmetryAwareNonbondedSoftcoreForce(
                 symmetry_ngroups=self._symmetry_ngroups,
                 symmetry_group_weights=getattr(self, '_symmetry_group_table', None),
+                n_nb_groups=nb_max,
                 **param_dict)
+        elif nb_on:
+            sf = NBGroupNonbondedSoftcoreForce(n_nb_groups=nb_max, **param_dict)
         else:
             sf = NonbondedSoftcoreForce(**param_dict)
         sfb = NonbondedSoftcoreExceptionForce(**param_dict)
@@ -1595,13 +1705,14 @@ class SimHandler:
         sf.setNonbondedMethod(f.getNonbondedMethod())
         sf.setCutoffDistance(f.getCutoffDistance())
         sf.setSwitchingDistance(f.getSwitchingDistance())
-        for j in range(system.getNumParticles()):
+        for j in range(n_particles):
             charge, sigma, epsilon = f.getParticleParameters(j)
+            pp = [charge, sigma, epsilon]
+            if nb_on:
+                pp.append(float(nb_groups[j]))
             if groups is not None:
-                sf.addParticle([charge, sigma, epsilon, float(groups[j])])
-            else:
-                sf.addParticle([charge, sigma, epsilon])
-            #f.setParticleParameters(j, charge, sigma, 0)
+                pp.append(float(groups[j]))
+            sf.addParticle(pp)
         for j in range(f.getNumExceptions()):
             p1, p2, cp, sig, eps = f.getExceptionParameters(j)
             sf.addExclusion(p1, p2)
@@ -1610,6 +1721,9 @@ class SimHandler:
         system.addForce(sf)
         system.addForce(sfb)
         self.all_forces.extend((sf, sfb))
+        if nb_on:
+            # Handle for the group manager (nb_group membership + coupling table).
+            self._nb_softcore_force = sf
         self._softcore_nb_param_mgr = _SoftCoreNonbondedParamMgr(self, self._params)
 
 
@@ -3263,17 +3377,23 @@ class SimHandler:
         # (see that class). Their charges are already set above (read from the
         # extended NonbondedForce); their (or, sr) are copied from their parent.
         groups = getattr(self, '_symmetry_particle_groups', None)
+        nb_max = int(getattr(self, '_nb_groups_max', 1) or 1)
+        # Per-group soft-core GB only applies with the soft-core potential.
+        nb_on = nb_max > 1 and params.use_softcore_nonbonded_potential
         from .custom_forces import (GBSAForce, SoftCoreGBSAGBnForce,
-            SymmetrySoftCoreGBSAGBnForce)
+            NBGroupSoftCoreGBSAGBnForce, SymmetrySoftCoreGBSAGBnForce)
         if params.use_softcore_nonbonded_potential:
-            if groups is not None:
-                force_class = SymmetrySoftCoreGBSAGBnForce
-            else:
-                force_class = SoftCoreGBSAGBnForce
             gbsa_params['nb_lambda'] = params.nonbonded_softcore_lambda_minimize
+            if groups is not None:
+                # Symmetry GB (nb-group layer is inert here until Phase 5).
+                gbforce = SymmetrySoftCoreGBSAGBnForce(n_nb_groups=nb_max, **gbsa_params)
+            elif nb_on:
+                gbforce = NBGroupSoftCoreGBSAGBnForce(n_nb_groups=nb_max, **gbsa_params)
+            else:
+                gbforce = SoftCoreGBSAGBnForce(**gbsa_params)
         else:
-            force_class = GBSAForce
-        gbforce = self._gbsa_force = force_class(**gbsa_params)
+            gbforce = GBSAForce(**gbsa_params)
+        self._gbsa_force = gbforce
         std = gbforce.getStandardParameters(top)   # (n_real, 2): (or, sr)
         n_real = len(std)
         pparams[:n_real, 1:] = std
@@ -3284,6 +3404,11 @@ class SimHandler:
             gbforce._symmetry_ngroups = self._symmetry_ngroups
             gbforce._symmetry_groups = groups
             gbforce._symmetry_group_table = getattr(self, '_symmetry_group_table', None)
+        elif nb_on:
+            # Per-group soft-core GB (no symmetry): every atom starts in group 0;
+            # the group manager updates membership + couplings live afterwards.
+            gbforce._nb_groups = numpy.zeros(n, dtype=int)
+            self._nb_gbsa_force = gbforce
         gbforce.addParticles(pparams)
         gbforce.finalize()
         system.addForce(gbforce)

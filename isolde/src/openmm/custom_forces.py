@@ -2060,6 +2060,7 @@ class NBGroupNonbondedSoftcoreForce(NonbondedSoftcoreForce):
         self.addPerParticleParameter('sigma')
         self.addPerParticleParameter('epsilon')
         self.addPerParticleParameter('nb_group')
+        self._nb_group_index = 3       # position of nb_group in the per-particle list
         self._n_nb_groups = n
         self._nb_values = [1.0] * (n * n)      # identity: every pair fully coupled
         self._nb_coupling_table = Discrete2DFunction(n, n, list(self._nb_values))
@@ -2366,6 +2367,7 @@ class NBGroupSoftCoreGBSAGBnForce(SoftCoreGBSAGBnForce):
         self.addPerParticleParameter('sr')          # Scaled offset radius
         self.addPerParticleParameter('radindex')
         self.addPerParticleParameter('nb_group')
+        self._nb_group_index = 4       # position of nb_group in the per-particle list
 
         n = len(self._uniqueRadii)
         m0Table = self._createUniqueTable(customgbforces.m0)
