@@ -1280,7 +1280,6 @@ class SimHandler:
 
         self._thread_handler = None
 
-        self._paused = False
         self._sim_running = False
         self._unstable = True
         self._unstable_counter = 0
@@ -2140,7 +2139,11 @@ class SimHandler:
         '''
         if not self.sim_running:
             return
-        if self._paused:
+        # NB: the live pause state is self._pause (set by the `pause` property and
+        # the main loop). A long-standing typo read self._paused here, which
+        # __init__ set to False and nothing ever updated -- so paused parameter
+        # changes were never pushed until the next resume. Use the real flag.
+        if self._pause:
             self._update_forces_in_context_if_needed()
         else:
             self._force_update_pending = True
@@ -2169,7 +2172,7 @@ class SimHandler:
         '''
         if not self.sim_running:
             return
-        # if self._paused:
+        # if self._pause:
         #     self._reinitialize_context()
         else:
             self._context_reinit_pending = True
