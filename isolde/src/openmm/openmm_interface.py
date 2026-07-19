@@ -1553,6 +1553,13 @@ class SimHandler:
         '''
         Set the (symmetric) soft-core coupling between two nonbonded groups
         (0 < lam <= 1) on every group-aware force, live.
+
+        This is a low-level primitive: it sets ONE table cell. In a crystallographic-
+        symmetry simulation, softening a group's coupling to the environment does NOT
+        by itself soften that group's contact with its own symmetry copies (those live
+        in whatever group the copies were assigned to). To soften a selection against
+        everything correctly -- including its own crystal image -- use
+        :meth:`soften_nb_selection`, which composes the necessary cells.
         '''
         forces = self._nb_group_forces()
         if not forces:
@@ -1567,6 +1574,39 @@ class SimHandler:
         if f is None:
             return 1.0
         return f.get_coupling(group_a, group_b)
+
+    def soften_nb_selection(self, atoms, lam, exploring_group=1, copy_group=2):
+        '''
+        Soften ``atoms`` against the rest of the model to soft-core coupling ``lam``
+        (0 < lam <= 1), correctly and symmetry-aware: the selection is placed in
+        ``exploring_group`` and its symmetry copies in ``copy_group``, then EVERY
+        coupling that touches either group is softened to ``lam`` EXCEPT the exploring
+        group's own internal coupling ``(exploring_group, exploring_group)`` -- so the
+        selection stays internally rigid while its interactions with everything else,
+        *including its own symmetry copies* (the crystal self-contact), are softened.
+        Pass ``lam=1.0`` to restore full coupling; follow with
+        ``assign_nb_group(atoms, 0)`` to fully release the selection to the environment.
+
+        This is the reusable form of the pattern rotafit uses. It handles a SINGLE
+        exploring selection versus "everything else" (group 0 = the rest); for multiple
+        simultaneous exploring groups drive the couplings explicitly. Requires at least
+        3 provisioned group slots (``nb_groups_count``; the default nb_groups_max=4
+        provides them).
+        '''
+        if not self._nb_group_forces():
+            raise RuntimeError('per-group soft-core coupling is not enabled')
+        if self.nb_groups_count <= max(exploring_group, copy_group):
+            raise ValueError('soften_nb_selection needs more group slots than are '
+                'provisioned (nb_groups_max); it uses groups %d and %d.'
+                % (exploring_group, copy_group))
+        self.assign_nb_group(atoms, exploring_group, copy_group_id=copy_group)
+        g, gc = exploring_group, copy_group
+        # Soften every cell touching the exploring group or its copy shadow, except the
+        # exploring group's internal (g, g).
+        for other in range(self.nb_groups_count):
+            if other != g:
+                self.set_nb_coupling(g, other, lam)    # (g, env), (g, gc), (g, other...)
+            self.set_nb_coupling(gc, other, lam)       # (gc, *) incl (gc, gc)
 
 
     @property
