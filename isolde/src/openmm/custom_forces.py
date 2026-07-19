@@ -2501,12 +2501,25 @@ class SymmetrySoftCoreGBSAGBnForce(NBGroupSoftCoreGBSAGBnForce):
     '''
 
     def _addEnergyTerms(self):
+        # When per-group coupling is also active (n_nb_groups > 1) this force carries
+        # BOTH group masks: the symmetry mask (grouptable / step(0.5-symgroup)) and the
+        # per-group soft-core coupling (pair_lambda from nb_coupling_table). The
+        # softening variable ``lam`` is ``pair_lambda`` then, else the plain global
+        # ``softcore_lambda`` (byte-identical to the pure-symmetry force).
+        nb = self._n_nb_groups > 1
+        lam = 'pair_lambda' if nb else 'softcore_lambda'
+        # pair_lambda definition, appended (define-after-use) to the pairwise terms.
+        plam = (';pair_lambda=min(softcore_lambda, nb_coupling_table(nb_group1,nb_group2))'
+                if nb else '')
         self.addGlobalParameter('softcore_lambda',
             self._softcore_params['softcore_lambda'])
         self.addPerParticleParameter('charge')
         self.addPerParticleParameter('or')        # Offset radius
         self.addPerParticleParameter('sr')        # Scaled offset radius
         self.addPerParticleParameter('radindex')
+        if nb:
+            self.addPerParticleParameter('nb_group')
+            self._nb_group_index = 4              # position in the per-particle list
         self.addPerParticleParameter('symgroup')  # 0 = real, 1..M = copy operator
 
         n = len(self._uniqueRadii)
@@ -2521,12 +2534,18 @@ class SymmetrySoftCoreGBSAGBnForce(NBGroupSoftCoreGBSAGBnForce):
             getattr(self, '_symmetry_exclude_intra', True),
             weights=getattr(self, '_symmetry_group_table', None))
         self.addTabulatedFunction("grouptable", Discrete2DFunction(ng, ng, gtable))
+        if nb:
+            ngg = self._n_nb_groups
+            self._nb_values = [1.0] * (ngg * ngg)
+            self._nb_coupling_table = Discrete2DFunction(ngg, ngg, list(self._nb_values))
+            self.addTabulatedFunction("nb_coupling_table", self._nb_coupling_table)
 
         a = self._softcore_params['softcore_a']
 
-        # Descreening integral: UNMASKED (option a'). Identical to the base
-        # SoftCoreGBSAGBnForce expression.
-        self.addComputedValue("I", f"softcore_lambda^{a} * (Ivdw+neckScale*Ineck);"
+        # Descreening integral: UNMASKED by symmetry (option a'); scaled by lam, which
+        # is per-group pair_lambda when nb-groups are active (so a decoupled group is
+        # descreened proportionally), else the global softcore_lambda.
+        self.addComputedValue("I", f"{lam}^{a} * (Ivdw+neckScale*Ineck);"
                                    "Ineck=step(radius1+radius2+neckCut-r)*getm0(radindex1,radindex2)/(1+100*(r-getd0(radindex1,radindex2))^2+"
                                    "0.3*1000000*(r-getd0(radindex1,radindex2))^6);"
                                    "Ivdw=select(step(r+sr2-or1), 0.5*(1/L-1/U+0.25*(r-sr2^2/r)*(1/(U^2)-1/(L^2))+0.5*log(L/U)/r), 0);"
@@ -2534,7 +2553,8 @@ class SymmetrySoftCoreGBSAGBnForce(NBGroupSoftCoreGBSAGBnForce):
                                    "L=max(or1, D);"
                                    "D=abs(r-sr2);"
                                    "radius1=or1+offset; radius2=or2+offset;"
-                                   "neckScale=0.361825; neckCut=0.68; offset=0.009", self.ParticlePairNoExclusions)
+                                   "neckScale=0.361825; neckCut=0.68; offset=0.009" + plam,
+                                   self.ParticlePairNoExclusions)
 
         # Born radius: a plain function of I, unmasked.
         self.addComputedValue("B", "1/(1/or-tanh(1.09511284*psi-1.907992938*psi^2+2.50798245*psi^3)/radius);"
@@ -2550,8 +2570,14 @@ class SymmetrySoftCoreGBSAGBnForce(NBGroupSoftCoreGBSAGBnForce):
         a = self._softcore_params['softcore_a']
         if cutoff is not None:
             params += f'; cutoff={cutoff:.16g}'
-        # Polar self-energy: real atoms only (a copy's is identical to its
-        # parent's and would be double-counted on fold-back).
+        nb = self._n_nb_groups > 1
+        lam = 'pair_lambda' if nb else 'softcore_lambda'          # pairwise softening var
+        plam = (';pair_lambda=min(softcore_lambda, nb_coupling_table(nb_group1,nb_group2))'
+                if nb else '')
+        # Polar self-energy: real atoms only (a copy's is identical to its parent's and
+        # would be double-counted on fold-back). Self terms have NO group pair, so they
+        # stay on the global softcore_lambda even when per-group coupling is active --
+        # their group dependence flows through the (now group-weighted) Born radius B.
         if kappa > 0:
             self.addEnergyTerm(f'step(0.5-symgroup) * softcore_lambda^{a} * -0.5*{ONE_ON_4_PI_EPS0}* (1/soluteDielectric-exp(-kappa*B)/solventDielectric)*charge^2/B' + params,
                 CustomGBForce.SingleParticle)
@@ -2565,31 +2591,37 @@ class SymmetrySoftCoreGBSAGBnForce(NBGroupSoftCoreGBSAGBnForce):
             self.addEnergyTerm(f"step(0.5-symgroup) * softcore_lambda^{a} * 28.3919551* (radius+0.14)^2*(radius/B)^6; radius=or+offset"+params, CustomGBForce.SingleParticle)
         elif SA is not None:
             raise ValueError('Unknown surface area method: '+SA)
-        # Pairwise polar term: same-operator copy-copy masked out via grouptable.
+        # Pairwise polar term: same-operator copy-copy masked out via grouptable AND
+        # scaled by the per-group-pair coupling (lam = pair_lambda when active).
         if cutoff is None:
             if kappa > 0:
-                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0} * (1/soluteDielectric - exp(-kappa*f)/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2/f;'
-                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions)
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0} * (1/soluteDielectric - exp(-kappa*f)/solventDielectric) * {lam}^({2*a})*charge1*charge2/f;'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params+plam, CustomGBForce.ParticlePairNoExclusions)
             else:
-                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2/f;'
-                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions)
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * {lam}^({2*a})*charge1*charge2/f;'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params+plam, CustomGBForce.ParticlePairNoExclusions)
         else:
             if kappa > 0:
-                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0} *  (1/soluteDielectric - exp(-kappa*f)/solventDielectric) *softcore_lambda^({2*a}) *charge1*charge2* (1/f - 1/cutoff);'
-                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0} *  (1/soluteDielectric - exp(-kappa*f)/solventDielectric) *{lam}^({2*a}) *charge1*charge2* (1/f - 1/cutoff);'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params+plam, CustomGBForce.ParticlePairNoExclusions
                 )
             else:
-                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * softcore_lambda^({2*a})*charge1*charge2 * (1/f-1/cutoff);'
-                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params, CustomGBForce.ParticlePairNoExclusions
+                self.addEnergyTerm(f'grouptable(symgroup1,symgroup2) * -{ONE_ON_4_PI_EPS0}*(1/soluteDielectric - 1/solventDielectric) * {lam}^({2*a})*charge1*charge2 * (1/f-1/cutoff);'
+                    "f=sqrt(r^2+B1*B2*exp(-r^2/(4*B1*B2)))"+params+plam, CustomGBForce.ParticlePairNoExclusions
                 )
 
     def _addParticles(self):
-        # Mirror the base GBSAGBnForce._addParticles, but append the per-particle
-        # symmetry group id after radindex (self.parameters rows are
-        # [charge, or, sr]; self._symmetry_groups is aligned to particle order).
+        # Mirror the base GBSAGBnForce._addParticles, appending the per-particle group
+        # ids after radindex in add-order (self.parameters rows are [charge, or, sr]):
+        # nb_group (only when per-group coupling is active) then symgroup. Both
+        # self._nb_groups and self._symmetry_groups are aligned to particle order.
         from openmm import CustomGBForce
+        nb = self._n_nb_groups > 1
         for i, p in enumerate(self.parameters):
             radIndex = self._radiusToIndex[p[self.RADIUS_ARG_POSITION]]
-            CustomGBForce.addParticle(self,
-                p + [radIndex, float(self._symmetry_groups[i])])
+            extra = [radIndex]
+            if nb:
+                extra.append(float(self._nb_groups[i]))
+            extra.append(float(self._symmetry_groups[i]))
+            CustomGBForce.addParticle(self, p + extra)
 

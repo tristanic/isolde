@@ -1497,28 +1497,42 @@ class SimHandler:
     def assign_nb_group(self, atoms, group_id):
         '''
         Put ``atoms`` (a ChimeraX Atoms) into nonbonded group ``group_id``
-        (0 <= group_id < max_groups). Applied live to every group-aware force via
+        (0 <= group_id < nb_groups_max). Applied live to every group-aware force via
         per-particle parameter updates (no reinitialisation). Atoms outside the
         simulation construct are ignored.
+
+        In a crystallographic-symmetry simulation each atom's group is also applied to
+        its symmetry copies: a copy must share its parent's group, or its coupling to
+        other groups would be computed from the wrong group.
         '''
         forces = self._nb_group_forces()
         if not forces:
             raise RuntimeError('per-group soft-core coupling is not enabled for this '
-                'simulation (call enable_nb_groups() before starting it)')
+                'simulation')
         indices = self._atoms.indices(atoms)
         indices = [int(i) for i in indices if i != -1]
+        changed = list(indices)
+        # Propagate to symmetry copies. Copies occupy particle indices [n_real, n_total);
+        # _symmetry_copies['parent_index'][c] is the real-particle index of copy c.
+        copies = getattr(self, '_symmetry_copies', None)
+        if copies is not None:
+            n_real = len(self._atoms)
+            target = set(indices)
+            for c, p in enumerate(copies['parent_index']):
+                if int(p) in target:
+                    changed.append(n_real + c)
         gid = float(group_id)
+        pg = getattr(self, '_nb_particle_groups', None)
+        if pg is not None:
+            for i in changed:
+                pg[i] = group_id
         for f in forces:
             gi = f._nb_group_index
-            for i in indices:
+            for i in changed:
                 params = list(f.getParticleParameters(i))
                 params[gi] = gid
                 f.setParticleParameters(i, params)
             f.update_needed = True
-        pg = getattr(self, '_nb_particle_groups', None)
-        if pg is not None:
-            for i in indices:
-                pg[i] = group_id
         self.force_update_needed()
 
     def set_nb_coupling(self, group_a, group_b, lam):
@@ -3417,9 +3431,10 @@ class SimHandler:
             gbforce._symmetry_ngroups = self._symmetry_ngroups
             gbforce._symmetry_groups = groups
             gbforce._symmetry_group_table = getattr(self, '_symmetry_group_table', None)
-        elif nb_on:
-            # Per-group soft-core GB (no symmetry): every atom starts in group 0;
-            # the group manager updates membership + couplings live afterwards.
+        if nb_on:
+            # Per-group soft-core GB: every atom (real AND, in a symmetry sim, every
+            # copy) starts in group 0; the group manager updates membership + couplings
+            # live afterwards, propagating each atom's group to its symmetry copies.
             gbforce._nb_groups = numpy.zeros(n, dtype=int)
             self._nb_gbsa_force = gbforce
         gbforce.addParticles(pparams)

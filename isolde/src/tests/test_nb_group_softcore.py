@@ -159,6 +159,64 @@ def run(session=None):
     gbn.set_coupling(0, 1, 1.0, context=ctxg)
     _check(abs(_energy(ctxg) - e_gb_full) < 1e-6, "GB live restore of coupling matches full")
 
+    # ========== symmetry + nb-group COMPOSITION (Phase 5) ==========
+    # Both mechanisms active on one force. Give every particle symgroup 0 ("real") so
+    # the symmetry mask grouptable(0,0)=1 is identity -- this isolates the nb-group layer
+    # composed *under* the symmetry wrapper, confirming the two masks coexist and the
+    # per-group coupling still works. (Full symmetry-copy behaviour is covered by the
+    # existing symmetry tests; the nb layer is orthogonal to it.)
+    # (SymmetryAwareNonbondedSoftcoreForce is already imported at module scope.)
+    from chimerax.isolde.openmm.custom_forces import SymmetrySoftCoreGBSAGBnForce
+
+    # -- nonbonded --
+    symnb = SymmetryAwareNonbondedSoftcoreForce(
+        symmetry_ngroups=2, n_nb_groups=3, nb_lambda=LAMBDA)
+    symnb.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    # per-particle: [charge, sigma, epsilon, nb_group, symgroup]
+    ctx_sn = _make_context(symnb, [[0.0, SIG, EPS, 0.0, 0.0],
+                                   [0.0, SIG, EPS, 1.0, 0.0]])
+    e_sn = _energy(ctx_sn)
+    _check(abs(e_sn - e_ref) < TOL,
+           f"sym+nb nonbonded (symgroup 0, coupled) == plain full: {e_sn:.6f} vs {e_ref:.6f}")
+    symnb.set_coupling(0, 1, 0.2, context=ctx_sn)
+    _check(_energy(ctx_sn) < e_sn,
+           "sym+nb nonbonded: softening nb coupling(0,1) softens the clash")
+
+    # -- GB --
+    def _symgb_context(charges, symgroups, nb_groups, ngroups=3):
+        gb = SymmetrySoftCoreGBSAGBnForce(nb_lambda=LAMBDA, n_nb_groups=ngroups)
+        gb._symmetry_ngroups = 2
+        gb._symmetry_group_table = None          # fixed-weight symmetry table
+        gb._symmetry_groups = list(symgroups)
+        gb._nb_groups = list(nb_groups)
+        top = app.Topology(); chn = top.addChain(); res = top.addResidue('UNK', chn)
+        for i in range(len(charges)):
+            top.addAtom(f'C{i}', app.Element.getBySymbol('C'), res)
+        std = gb.getStandardParameters(top)
+        pp = np.zeros((len(charges), 3)); pp[:, 0] = charges; pp[:, 1:] = std
+        gb.addParticles(pp); gb.finalize()
+        system = mm.System()
+        for _ in charges:
+            system.addParticle(12.0)
+        system.addForce(gb)
+        ctx = mm.Context(system, mm.VerletIntegrator(1.0 * unit.femtosecond),
+                         mm.Platform.getPlatformByName("Reference"))
+        ctx.setPositions(np.array([[0.0, 0.0, 0.0], [R_REP, 0.0, 0.0]]) * unit.nanometer)
+        return gb, ctx
+
+    gb_sn, ctx_gbsn = _symgb_context(q, [0, 0], [0, 1])
+    e_gbsn = _energy(ctx_gbsn)
+    _check(abs(e_gbsn - e_gb_plain) < 1e-6,
+           f"sym+nb GB (symgroup 0, coupled) == plain GB: {e_gbsn:.6f} vs {e_gb_plain:.6f}")
+    gb_sn.set_coupling(0, 1, 0.2, context=ctx_gbsn)
+    _check(abs(_energy(ctx_gbsn) - e_gbsn) > 1e-6,
+           "sym+nb GB: softening nb coupling(0,1) changes GB energy")
+    # n_nb_groups=1: symmetry GB with the nb layer OFF must be byte-identical to the
+    # plain symmetry path (here, all-real == plain GB).
+    _gb1, ctx_gb1 = _symgb_context(q, [0, 0], [0, 0], ngroups=1)
+    _check(abs(_energy(ctx_gb1) - e_gb_plain) < 1e-6,
+           "sym GB n_nb_groups=1 (nb off) == plain GB")
+
     if _failures:
         print(f"\n{len(_failures)} CHECK(S) FAILED")
         raise SystemExit(1)
