@@ -260,7 +260,50 @@ def _restraint_satisfaction_summary(session, model):
     return summary
 
 
-def isolde_sim(session, cmd, atoms=None, discard_to=None):
+def _apply_start_decouple(session, isolde, decouple_atoms, lam):
+    '''Soften a selection against the rest of a freshly-started simulation (the
+    ``decouple``/``lambda`` options of ``isolde sim start``). The selection must be a
+    subset of the MOBILE region -- decoupling a fixed/shell atom is meaningless (it can't
+    move) and almost always a selection mistake, so it is rejected rather than silently
+    ignored. Transient: torn down with the simulation (per-group state lives on the sim
+    forces). See also the ``isolde decouple`` command.'''
+    log = session.logger
+    if not isolde.simulation_running:
+        # start_sim aborted (e.g. template failure, or the no-maps warning was declined)
+        log.warning('isolde sim start: simulation did not start; "decouple" ignored.')
+        return
+    # lam is bounded to [0.1, 1.0] at the command level (see decouple_lambda_arg); None
+    # means the keyword was omitted -> use the default.
+    if lam is None:
+        from .decouple import DEFAULT_DECOUPLE_LAMBDA
+        lam = DEFAULT_DECOUPLE_LAMBDA
+    if not len(decouple_atoms):
+        log.warning('isolde sim start: "decouple" selection is empty; nothing decoupled.')
+        return
+    sh = isolde.sim_handler
+    if not (getattr(sh, 'nb_groups_enabled', False)
+            and getattr(sh, 'nb_groups_count', 1) >= 3):
+        raise UserError(
+            'isolde sim start: "decouple" needs per-group soft-core coupling (the '
+            'soft-core nonbonded potential and SimParams.nb_groups_max >= 3, the '
+            'default), which is not available for this simulation.')
+    # Sanity check: the decoupled selection must be a SUBSET of the mobile region.
+    mobile = isolde.sim_manager.sim_construct.mobile_atoms
+    extra = decouple_atoms.subtract(mobile)
+    if len(extra):
+        raise UserError(
+            'isolde sim start: the "decouple" selection must be a subset of the MOBILE '
+            'simulation atoms, but %d of %d selected atom(s) are fixed or outside the '
+            'mobile region. Widen the simulation selection (or narrow "decouple") so '
+            'every decoupled atom is mobile.' % (len(extra), len(decouple_atoms)))
+    sh.soften_nb_selection(decouple_atoms, lam)
+    log.info('isolde sim start: decoupled %d mobile atom(s) at lambda=%.3g (low=soft, '
+             '1=full). Transient -- restored by "isolde decouple sel off" or when the '
+             'simulation stops.' % (len(decouple_atoms), lam))
+
+
+def isolde_sim(session, cmd, atoms=None, discard_to=None, decouple=None,
+               lambda_decouple=None):
     '''
     Start, stop or pause an interactive simulation.
 
@@ -279,6 +322,14 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
     discard_to: Only applicable when cmd is 'stop'. One of 'start' or
         'checkpoint'. Discards all changes since the chosen state when stopping
         the simulation.
+    decouple: Only applicable when cmd is 'start'. An atomic selection to
+        immediately soften (decouple) against the rest of the simulation using
+        per-group soft-core coupling, once the simulation is running -- for
+        dropping an initially poorly-fitted ligand/fragment in so it can relax
+        into density without exploding. Must be a SUBSET of the mobile region.
+    lambda_decouple: the soft-core coupling for the ``decouple`` selection, in
+        (0, 1] (low = strongly decoupled; 1 = full). Defaults to 0.1. Transient:
+        forgotten when the simulation stops (see the ``isolde decouple`` command).
     '''
     valid_commands = ('start', 'pause', 'resume', 'checkpoint', 'revert', 'stop')
     log = session.logger
@@ -288,6 +339,8 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         ))
     if cmd != 'start' and atoms is not None:
         log.warning('Atoms argument is not required for this command. Ignored.')
+    if cmd != 'start' and decouple is not None:
+        log.warning('"decouple" is only used with "isolde sim start". Ignored.')
     isolde = isolde_start(session)
 
     if cmd == 'start':
@@ -317,6 +370,8 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None):
         session.selection.clear()
         atoms.selected = True
         isolde.start_sim()
+        if decouple is not None:
+            _apply_start_decouple(session, isolde, decouple, lambda_decouple)
         return
 
     if not isolde.simulation_running:
@@ -631,10 +686,12 @@ def _register_isolde_commands(logger):
         register('isolde set', desc, isolde_set, logger=logger)
 
     def register_isolde_sim():
+        from .decouple import decouple_lambda_arg
         desc = CmdDesc(
             optional=[('atoms', AtomsArg)],
             required=[('cmd', EnumOf(('start', 'pause', 'resume', 'checkpoint', 'revert', 'stop')))],
-            keyword=[('discard_to', EnumOf(('start', 'checkpoint')))],
+            keyword=[('discard_to', EnumOf(('start', 'checkpoint'))),
+                     ('decouple', AtomsArg), ('lambda_decouple', decouple_lambda_arg())],
             synopsis='Start, stop or pause an interactive simulation'
             )
         register('isolde sim', desc, isolde_sim, logger=logger)
@@ -815,3 +872,5 @@ def _register_isolde_commands(logger):
     register_bfactor_refine_commands(logger)
     from chimerax.isolde.refine.rotafit import register_rotafit_command
     register_rotafit_command(logger)
+    from chimerax.isolde.cmd.decouple import register_decouple_command
+    register_decouple_command(logger)
