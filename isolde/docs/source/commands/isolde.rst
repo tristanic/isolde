@@ -318,18 +318,32 @@ list dwarfs the other validators on real-world structures; widen with
 isolde sim
 ==========
 
-Syntax: isolde sim *cmd* [*atoms*] [**discardTo** *discardTo*]
+Syntax: isolde sim *cmd* [*atoms*] [**discardTo** *discardTo*] [**decouple** *atoms*] [**lambdaDecouple** *number*]
 
 Start, stop or pause an interactive simulation.
 
-isolde sim start [*atoms*]
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+isolde sim start [*atoms*] [**decouple** *atoms*] [**lambdaDecouple** *number*]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Launches the ISOLDE GUI if not already running, and starts a simulation. If no
 atoms are specified, the simulation will encompass the entirety of the current
 selected model (or the first open model if ISOLDE is not already running). If
 *atoms* is specified, the selected atoms must come from a single model
 (if this is not the current selected model, ISOLDE will automatically switch).
+
+*decouple* (optional): an atomic selection to immediately **soften (decouple)**
+against the rest of the simulation, once it is running, using ISOLDE's per-group
+soft-core coupling (see :ref:`decouple`). This is the clean way to start a
+simulation with an initially poorly-fitted ligand or fragment: decoupled, it can
+slide through clashes and relax into density without exploding, while the rest of
+the model keeps its full-strength force field. The **lambdaDecouple** keyword
+(abbreviates to **lambda**) sets the coupling strength, in ``[0.1, 1]`` — ``0.1``
+(the default) is strongly decoupled, ``1`` is full; intermediate values give a
+gentler push-in. The decoupled selection **must be a subset of the mobile region**
+— decoupling a fixed or shell atom is meaningless and is rejected, so widen the
+simulation selection (or narrow *decouple*) if needed. The decoupling is transient:
+it is forgotten when the simulation stops, and can be cleared or adjusted mid-run
+with :ref:`decouple` (``isolde decouple sel off`` / ``... on lambdaDecouple`` *value*).
 
 isolde sim stop [**discardTo** *discardTo*]
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1474,3 +1488,56 @@ Options:
   ranking is reported (use with ``debug true``) but nothing is changed.
 * ``debug`` (default false): log the full per-rotamer ranking, the per-signal breakdown,
   polish and do-no-harm detail and per-phase timings instead of the single-line summary.
+
+
+.. _decouple:
+
+isolde decouple
+===============
+
+Syntax: isolde decouple *atoms* [**on** | **off**] [**lambdaDecouple** *number*]
+
+Interactively **soften (decouple)** the nonbonded interactions between a selection and
+the rest of the running simulation, using ISOLDE's per-group soft-core coupling. This is
+a hands-on aid for exploring and verifying the same mechanism that :ref:`rotafit` and the
+automated placement engines drive internally: it lets you watch a fragment go soft
+against its surroundings (so it can slide through clashes and relax into density) while
+the rest of the model keeps its full-strength force field.
+
+``isolde decouple`` *atoms* (``on`` is the default, so it may be omitted) places the
+selection in its own nonbonded group (and, in a crystallographic-symmetry simulation,
+its symmetry copies in a second group) and
+softens **every** interaction that touches it — against the environment *and* against its
+own crystal image — down to ``lambdaDecouple``, while leaving the environment and the
+selection's **own internal geometry** at full strength. So the selection can move freely
+through its surroundings without the surroundings deforming and without the selection
+itself falling apart. ``lambdaDecouple`` (abbreviates to ``lambda``) runs from ``0.1``
+(strongly decoupled — its default) to ``1`` (normal full coupling); intermediate values
+firm the interaction up gradually.
+
+``isolde decouple`` *atoms* ``off`` restores full coupling everywhere. Only **one**
+selection is decoupled at a time — each ``on`` first clears any previous decoupling, so
+the effect is always "this selection, soft against everything else" — and ``off`` simply
+clears it (the *atoms* argument is required for consistency but not otherwise used by
+``off``).
+
+**Transient and simulation-scoped.** The decoupling exists **only for the currently
+running simulation** and is **forgotten the moment that simulation stops**: the per-group
+state lives on the simulation's force objects, which are rebuilt fully coupled at the next
+``isolde sim start``. Nothing is written to the session, and the command has no effect
+(and reports an error) when no simulation is running. This makes it safe to experiment
+with — a fresh simulation always starts fully coupled.
+
+Requires the soft-core nonbonded potential and at least three provisioned nonbonded-group
+slots (``SimParams.nb_groups_max`` — the default of 4 provides them), which every
+simulation has by default. It is intended for interactive testing, not as part of a
+model-building protocol.
+
+Options:
+
+* ``on`` | ``off`` (optional, default ``on``): ``on`` (or omitted) decouples the
+  selection; ``off`` restores full coupling everywhere. Accepts any boolean
+  (``on``/``off``/``true``/``false``).
+* ``lambdaDecouple`` (abbreviates to ``lambda``; default 0.1): the soft-core coupling of
+  the selection to everything else, in ``[0.1, 1]`` — ``0.1`` strongly decoupled, ``1``
+  full strength. Only used with ``on``.
