@@ -3881,7 +3881,9 @@ def find_residue_templates(residues, forcefield, ligand_db = None, logger=None,
             continue
         template_name = metal_name_map.get(r.name, None)
         if template_name is not None:
-            templates[residues.index(r)] = template_name
+            # May have already been overwritten by `isolde_template_name`
+            if templates.get(residues.index(r), None) is None:
+                templates[residues.index(r)] = template_name
 
 
     return templates

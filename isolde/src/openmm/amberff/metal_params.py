@@ -326,3 +326,70 @@ def guess_ox_state(element, modelled_formal_charge=None):
     if modelled_formal_charge:
         return int(modelled_formal_charge)
     return DEFAULT_OX_STATE.get(element, 2)
+
+
+#: How much charge (e) a coordinating donor of each *kind* draws off the metal. This
+#: is the donor-aware refinement of :func:`metal_charge_split`'s single uniform delta:
+#: a soft/anionic donor (thiolate) accepts far more of the metal's formal charge than a
+#: neutral N (imidazole), matching the trend QM/RESP (MCPB/ZAFF) fits show -- e.g. a
+#: Zn(Cys)4 site fits Zn ~ +0.4 and each thiolate S ~ -0.5, NOT the +1 a blunt 50/50
+#: split gives. Values are deliberately round approximations for interactive model
+#: building, not free-energy work; total charge is always conserved (see
+#: :func:`metal_charge_transfer`).
+DONOR_TRANSFER = {
+    'thiolate':    0.40,        # Cys/Cyx S(-) -- strongest donor
+    'carboxylate': 0.30,        # Asp/Glu O(-)
+    'thioether':   0.15,        # Met S (neutral)
+    'imidazole':   0.12,        # His N (neutral)
+    'hydroxyl':    0.10,        # Ser/Thr/Tyr O-H (neutral)
+    'carbonyl':    0.10,        # Asn/Gln/backbone O
+    'water':       0.10,
+}
+#: Fallback per-donor transfer when the kind is unrecognised.
+DEFAULT_DONOR_TRANSFER = 0.15
+
+#: (residue_name, atom_name) -> donor kind for :data:`DONOR_TRANSFER`. Mirrors
+#: :data:`_COORD_DONOR_TYPE`; unrecognised donors fall back by element.
+_DONOR_CHARGE_KIND = {
+    ('CYS', 'SG'): 'thiolate', ('CYM', 'SG'): 'thiolate', ('CYX', 'SG'): 'thiolate',
+    ('MET', 'SD'): 'thioether',
+    ('ASP', 'OD1'): 'carboxylate', ('ASP', 'OD2'): 'carboxylate',
+    ('GLU', 'OE1'): 'carboxylate', ('GLU', 'OE2'): 'carboxylate',
+    ('HIS', 'ND1'): 'imidazole', ('HIS', 'NE2'): 'imidazole',
+    ('HID', 'ND1'): 'imidazole', ('HID', 'NE2'): 'imidazole',
+    ('HIE', 'ND1'): 'imidazole', ('HIE', 'NE2'): 'imidazole',
+    ('HIP', 'ND1'): 'imidazole', ('HIP', 'NE2'): 'imidazole',
+    ('SER', 'OG'): 'hydroxyl', ('THR', 'OG1'): 'hydroxyl', ('TYR', 'OH'): 'hydroxyl',
+    ('ASN', 'OD1'): 'carbonyl', ('GLN', 'OE1'): 'carbonyl',
+    ('HOH', 'O'): 'water',
+}
+_DONOR_KIND_ELEMENT_FALLBACK = {'S': 'thiolate', 'N': 'imidazole', 'O': 'carbonyl'}
+
+
+def donor_charge_kind(residue_name, atom_name, element):
+    '''Classify a coordinating donor into a :data:`DONOR_TRANSFER` kind (thiolate,
+    carboxylate, imidazole, ...), by (residue, atom) with an element fallback.'''
+    k = _DONOR_CHARGE_KIND.get((residue_name, atom_name))
+    if k is not None:
+        return k
+    return _DONOR_KIND_ELEMENT_FALLBACK.get(element, None)
+
+
+def metal_charge_transfer(ox_state, donor_kinds):
+    '''Donor-aware analogue of :func:`metal_charge_split`: every coordinating donor
+    draws off the metal a charge that depends on its *kind* (:data:`DONOR_TRANSFER`),
+    rather than an equal share. Returns ``(q_metal, deltas)`` where ``deltas[i]`` is
+    the charge added to donor ``i`` (same order as ``donor_kinds``) and
+    ``q_metal + sum(deltas) == ox_state`` exactly (total charge conserved).
+
+    The summed transfer is clamped so it never exceeds ``ox_state`` (the metal is
+    never driven to a negative partial charge): if too many strong donors would
+    over-draw, all transfers are scaled down proportionally.
+    '''
+    transfers = [DONOR_TRANSFER.get(k, DEFAULT_DONOR_TRANSFER) for k in donor_kinds]
+    total = sum(transfers)
+    if total > ox_state and total > 0:
+        scale = ox_state / total
+        transfers = [t * scale for t in transfers]
+    q_metal = ox_state - sum(transfers)
+    return q_metal, transfers

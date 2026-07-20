@@ -463,6 +463,172 @@ def run(session):
         shutil.rmtree(kdir, ignore_errors=True)
     print('PASS: re-typed cysteine SG keeps its bond + angles (nothing left unrestrained)')
 
+    # --- Part L: bare-ion multi-site (zinc fingers) ----------------------------------
+    # Donor-aware charge, auto-deprotonation, per-instance binding, and signature-based
+    # grouping/collision-avoidance -- the fixes for the (Cys)4 Zn-finger failures. The
+    # full parameterise_metal_site needs a live ISOLDE (GUI) session, so here we drive its
+    # component helpers directly, using a lightweight stand-in `site` (real ChimeraX atoms,
+    # explicit nonstandard set) since a synthetic residue is never perceived as PT_AMINO.
+
+    # metal_charge_transfer (pure): donor-aware, conserved, clamped.
+    qm, dl = mp.metal_charge_transfer(2, ['thiolate'] * 4)
+    if abs(qm + sum(dl) - 2) > 1e-9:
+        _fail('metal_charge_transfer does not conserve charge: %s' % ((qm, dl),))
+    if not (0.35 < qm < 0.45):
+        _fail('Zn(Cys)4 metal charge should be donor-aware ~+0.4, got %.3f (was +1 with '
+              'the blunt 50/50 split)' % qm)
+    qm_his, _ = mp.metal_charge_transfer(2, ['imidazole'] * 4)
+    if not (qm_his > qm + 0.5):
+        _fail('a neutral-N (His) site should keep far more charge on the metal (%.2f) '
+              'than a thiolate site (%.2f)' % (qm_his, qm))
+    qm_c, dl_c = mp.metal_charge_transfer(2, ['thiolate'] * 8)   # over-strong -> clamp
+    if qm_c < -1e-9 or abs(qm_c + sum(dl_c) - 2) > 1e-9:
+        _fail('metal_charge_transfer clamp failed (metal driven negative): %.3f' % qm_c)
+    print('PASS: metal_charge_transfer -- donor-aware (Zn~+0.4), conserved, clamped')
+
+    class _Site:
+        '''Stand-in for a MetalSite with an EXPLICIT nonstandard_residues set (so the
+        coordinating cysteines count as standard without needing PT_AMINO perception).'''
+        def __init__(self, metals, coordination, nonstandard, residues):
+            self.metals = list(metals)
+            self.coordination = list(coordination)
+            self.nonstandard_residues = list(nonstandard)
+            self.residues = list(residues)
+
+    tet = numpy.array([[1., 1., 1.], [1., -1., -1.], [-1., 1., -1.], [-1., -1., 1.]])
+    tet /= numpy.linalg.norm(tet[0])
+
+    sL = AtomicStructure(session, name='znfinger-test', auto_style=False)
+    try:
+        def _zn_cys_site(centre, resbase, n_cys=4, protonate=True):
+            '''Build a bare Zn (own residue) + n_cys CYS residues (SG donor, CB heavy
+            neighbour, optional HG). Returns a _Site with nonstandard = [ZN only].'''
+            znr = sL.new_residue('ZN', 'A', resbase)
+            zn = sL.new_atom('ZN', 'Zn'); zn.coord = numpy.array(centre, float)
+            znr.add_atom(zn)
+            coordination, cys_res = [], []
+            for i in range(n_cys):
+                d = tet[i]
+                cr = sL.new_residue('CYS', 'A', resbase + 1 + i)
+                sg = sL.new_atom('SG', 'S'); sg.coord = zn.coord + 2.3 * d
+                cb = sL.new_atom('CB', 'C'); cb.coord = zn.coord + 4.1 * d
+                cr.add_atom(sg); cr.add_atom(cb); sL.new_bond(sg, cb)
+                if protonate:
+                    hg = sL.new_atom('HG', 'H')
+                    hg.coord = sg.coord + numpy.array([0.1, 0.9, 0.2])
+                    cr.add_atom(hg); sL.new_bond(sg, hg)
+                coordination.append((zn, sg)); cys_res.append(cr)
+            return _Site([zn], coordination, [znr], [znr] + cys_res), znr, cys_res
+
+        siteL, znrL, cysL = _zn_cys_site([0., 0., 0.], 1, protonate=True)
+
+        # Auto-deprotonation: SG-HG present -> not yet a thiolate; strip HG -> thiolate.
+        if cov._retempl_donors(siteL):
+            _fail('protonated Cys should NOT yet be re-templatable thiolates')
+        n_removed = cov._deprotonate_coordinating_donors(session, siteL)
+        if n_removed != 4:
+            _fail('auto-deprotonation should have removed 4 HG, removed %d' % n_removed)
+        retp = cov._retempl_donors(siteL)
+        if len(retp) != 4:
+            _fail('after deprotonation all 4 SG should be re-templatable thiolates: %d'
+                  % len(retp))
+        if any(any(nb.element.number == 1 for nb in d.neighbors) for d in retp):
+            _fail('a deprotonated SG still carries a hydrogen')
+        print('PASS: auto-deprotonation strips coordinating Cys HG -> thiolate donors')
+
+        # Bare-ion gate + signature: identical sites share a signature; a different
+        # composition (Cys2His2) gets a DISTINCT one (no template collision).
+        if not cov._site_is_bare_ion(siteL):
+            _fail('_site_is_bare_ion should be True for a single-atom Zn residue')
+        sig1 = cov._metal_site_signature(siteL, [])
+
+        siteL2, _z2, _c2 = _zn_cys_site([20., 0., 0.], 20, protonate=False)
+        if cov._metal_site_signature(siteL2, []) != sig1:
+            _fail('two identical Zn(Cys)4 sites must share a signature (grouping)')
+
+        # A Zn(Cys)2(His)2 site: 2 thiolates + 2 imidazole N donors.
+        znr3 = sL.new_residue('ZN', 'A', 40)
+        zn3 = sL.new_atom('ZN', 'Zn'); zn3.coord = numpy.array([40., 0., 0.])
+        znr3.add_atom(zn3)
+        coord3 = []
+        for i in range(2):
+            cr = sL.new_residue('CYS', 'A', 41 + i)
+            sg = sL.new_atom('SG', 'S'); sg.coord = zn3.coord + 2.3 * tet[i]
+            cb = sL.new_atom('CB', 'C'); cb.coord = zn3.coord + 4.1 * tet[i]
+            cr.add_atom(sg); cr.add_atom(cb); sL.new_bond(sg, cb)
+            coord3.append((zn3, sg))
+        for i in range(2, 4):
+            hr = sL.new_residue('HIS', 'A', 41 + i)
+            ne2 = sL.new_atom('NE2', 'N'); ne2.coord = zn3.coord + 2.1 * tet[i]
+            hr.add_atom(ne2)
+            coord3.append((zn3, ne2))
+        siteL3 = _Site([zn3], coord3, [znr3], [znr3])
+        if cov._metal_site_signature(siteL3, []) == sig1:
+            _fail('Zn(Cys)4 and Zn(Cys)2His2 must have DISTINCT signatures (no collision)')
+        print('PASS: site signature -- identical sites share, different compositions differ')
+
+        # _build_metal_terms on the bare-ion Zn(Cys)4: donor-aware metal charge, sig-scoped
+        # SG type, all four cysteines bound per-instance, aux CYS template, and an emitted
+        # ffXML whose Zn-SG bond loads in OpenMM.
+        tnamesL = {znrL: 'MMET_' + sig1}
+        lmt = cov._build_metal_terms(session, siteL, ff, tnamesL, 0.5, sig=sig1)
+        if not (0.35 < lmt['metals'][0]['charge'] < 0.45):
+            _fail('bare-ion Zn charge should be donor-aware ~+0.4, got %.3f'
+                  % lmt['metals'][0]['charge'])
+        sgt = 'MMET_%s_SG' % sig1
+        if not lmt['donor_types'] or any(v != sgt for v in lmt['donor_types'].values()):
+            _fail('SG donor type not signature-scoped: %s' % lmt['donor_types'])
+        cyst = 'MMET_%s_CYS' % sig1
+        if sorted(t for (_r, t) in lmt['cys_overrides']) != [cyst] * 4:
+            _fail('cys_overrides did not bind all 4 cysteines to %s: %s'
+                  % (cyst, lmt['cys_overrides']))
+        if not lmt['aux_residues']:
+            _fail('no aux CYS template built for the re-typed thiolates')
+
+        gaff2_xml = os.path.join(amberdir, 'gaff2.xml')
+        ldir = tempfile.mkdtemp(prefix='isolde_znfinger_')
+        try:
+            lxml = os.path.join(ldir, 'zn.xml')
+            ac.covalent_to_ffxml({}, tnamesL, None, None, lxml, gaff2_xml, metal_terms=lmt)
+            import xml.etree.ElementTree as ET
+            lroot = ET.parse(lxml).getroot()
+            metal_et = lmt['metals'][0]['etype']
+            znsg = [b for b in lroot.findall('HarmonicBondForce/Bond')
+                    if set((b.get('type1'), b.get('type2'))) == {metal_et, sgt}]
+            if not znsg:
+                _fail('Zn-SG coordination bond (%s-%s) missing from emitted template'
+                      % (metal_et, sgt))
+            if cyst not in [r.get('name') for r in lroot.findall('Residues/Residue')]:
+                _fail('aux CYS template %s not emitted' % cyst)
+            ffL = OMMFF(os.path.join(amberdir, 'amberff14SB.xml'),
+                        os.path.join(amberdir, 'gaff2.xml'))
+            ffL.loadFile(lxml)
+            if ('MMET_' + sig1) not in ffL._templates or cyst not in ffL._templates:
+                _fail('metal / cys templates not registered after loadFile')
+            print('PASS: bare-ion Zn(Cys)4 -- donor-aware charge, per-instance Cys binding, '
+                  'Zn-SG bond loads in OpenMM')
+
+            # Per-instance override beats the metal_name_map free-ion fallback (the user's
+            # clobber-fix): a ZN carrying isolde_template_name resolves to OUR bonded
+            # template, not the built-in +1 free ion -- so a second site can't silently
+            # revert to an unrestrained free ion.
+            from chimerax.isolde.openmm.openmm_interface import find_residue_templates
+            from chimerax.atomic import Residues
+            ffP = OMMFF(os.path.join(amberdir, 'amberff14SB.xml'),
+                        os.path.join(amberdir, 'gaff2.xml'),
+                        os.path.join(amberdir, 'tip3p_HFE_multivalent.xml'))
+            ffP.loadFile(lxml)              # registers MMET_<sig> alongside the free-ion ZN
+            znrL.isolde_template_name = 'MMET_' + sig1
+            tmap = find_residue_templates(Residues([znrL]), ffP, logger=session.logger)
+            if tmap.get(0) != 'MMET_' + sig1:
+                _fail('per-instance metal override not honored (clobbered by metal_name_map '
+                      'free-ion?): %s' % dict(tmap))
+        finally:
+            shutil.rmtree(ldir, ignore_errors=True)
+        print('PASS: per-instance metal override survives the free-ion name-map fallback')
+    finally:
+        session.models.close([sL])
+
     print('ALL PASS')
 
 

@@ -75,11 +75,18 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
                 continue
             handled_metal.update(site.residues)
             try:
-                parameterise_metal_site(session, site, shell_radius=shell_radius,
+                # parameterise_metal_site handles EVERY instance of this site's
+                # coordination class in one pass and returns all residues it touched;
+                # merge them so selecting several metals of the same class doesn't
+                # re-invoke (and redo) the emission for each.
+                handled = parameterise_metal_site(session, site,
+                                        shell_radius=shell_radius,
                                         net_charge=net_charge,
                                         base_templates=base_templates,
                                         reference_model=reference_model,
                                         fetch_reference=fetch_reference)
+                if handled:
+                    handled_metal.update(handled)
             except Exception as e:
                 if always_raise_errors:
                     raise UserError(str(e))

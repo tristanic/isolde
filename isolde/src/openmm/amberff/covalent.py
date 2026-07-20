@@ -1475,8 +1475,105 @@ def _amber_bonded_tables(amber_xml):
     return bonds, angles
 
 
+def _is_thiolate_donor(donor, nonstandard):
+    '''True for a metal-coordinating deprotonated cysteine-type S donor of a STANDARD
+    residue -- i.e. one that must be re-templated (its SG re-typed + re-charged), not
+    left on the base Cys template. ``nonstandard`` is the site's set of nonstandard
+    residues (in-ligand donors are handled by the ligand template, not re-templated).'''
+    return (donor.residue not in nonstandard and donor.element.name == 'S'
+            and not any(nb.element.number == 1 for nb in donor.neighbors))
+
+
+def _retempl_donors(site):
+    '''The metal-coordinating donor atoms of ``site`` that must be re-templated
+    (deprotonated standard-residue thiolates). Shared by the emission path
+    (:func:`_build_metal_terms`) and the per-instance application path so both agree on
+    exactly which cysteines get the cluster-scoped template.'''
+    nonstandard = set(site.nonstandard_residues)
+    return set(d for (m, d) in site.coordination if _is_thiolate_donor(d, nonstandard))
+
+
+#: Coordinating donors that ISOLDE auto-deprotonates during parameterisation, keyed by
+#: (residue_name, donor_atom_name) -> the H atom name to strip. Deliberately limited to
+#: cysteine thiols: a metal-coordinating Cys is a thiolate, and reduce/AddH routinely
+#: leaves the SG-HG in place, which silently blocks the thiolate re-templating. Alcohols
+#: (Ser/Thr/Tyr) are NOT included -- they commonly coordinate as NEUTRAL donors.
+_AUTO_DEPROTONATE = {
+    ('CYS', 'SG'): 'HG', ('CYM', 'SG'): 'HG',
+}
+
+
+def _deprotonate_coordinating_donors(session, site):
+    '''Strip the coordinating hydrogen from any metal-coordinating donor that should be
+    deprotonated for coordination but arrived protonated (a Cys thiol; see
+    :data:`_AUTO_DEPROTONATE`). Deletes the H atom from the model so the deprotonated
+    template matches and the charge/re-typing path fires. Returns the number removed.
+
+    ISOLDE takes responsibility for the coordination protonation state here (the user
+    opted into auto-deprotonation); parameterisation is a pre-simulation setup step, so
+    there is no live integrator to disturb. Each removal is logged.'''
+    removed = 0
+    for (m, d) in site.coordination:
+        hname = _AUTO_DEPROTONATE.get((d.residue.name, d.name))
+        if hname is None:
+            continue
+        kind = 'thiolate' if d.element.name == 'S' else 'anionic'
+        for h in [nb for nb in d.neighbors if nb.element.number == 1]:
+            session.logger.info(
+                'Deprotonating metal-coordinating %s %s%d (removed %s) so it is treated '
+                'as a %s donor.' % (d.residue.name, d.residue.chain_id,
+                                    d.residue.number, h.name, kind))
+            h.delete()
+            removed += 1
+    return removed
+
+
+def _metal_site_signature(site, core_atoms=None):
+    '''A deterministic, order-independent slug identifying a metal site's coordination
+    CHEMISTRY, so that identical sites in one model share a template while chemically
+    different ones (Zn(Cys)4 vs Zn(Cys)2His2, or two different clusters) get distinct
+    templates/types and never collide.
+
+    The signature folds in: the metals (element + guessed oxidation state), each metal's
+    coordination number, every donor's kind (re-typed thiolate / other standard donor by
+    ff14SB type / in-ligand donor / bridging core atom), and the sorted nonstandard
+    residue names. Rendered as a readable prefix + a stable SHA-1 hash (NOT builtin
+    hash(), which is per-process salted and would break cross-run template reuse).'''
+    import hashlib
+    from .metal_params import guess_ox_state, coordinating_donor_type
+    nonstandard = set(site.nonstandard_residues)
+    core_set = set(core_atoms or [])
+    metals = sorted((m.element.name, guess_ox_state(m.element.name, None))
+                    for m in site.metals)
+    coord_numbers = sorted(len([d for (mm, d) in site.coordination if mm is m])
+                           for m in site.metals)
+    donors = []
+    for (m, d) in site.coordination:
+        if d in core_set:
+            donors.append(('core', d.element.name))
+        elif d.residue in nonstandard:
+            donors.append(('lig', d.residue.name, d.name))
+        elif _is_thiolate_donor(d, nonstandard):
+            donors.append(('thiol',))
+        else:
+            donors.append(('std', coordinating_donor_type(d.residue.name, d.name,
+                                                          d.element.name)))
+    donors.sort(key=repr)
+    resnames = sorted({r.name for r in nonstandard})
+    payload = repr((metals, coord_numbers, donors, resnames))
+    digest = hashlib.sha1(payload.encode('utf-8')).hexdigest()[:8]
+    # Readable prefix: metal elements + a compact donor-composition tag.
+    elems = ''.join(e for e, _ox in metals) or 'M'
+    from collections import Counter
+    dc = Counter(d[-1] if d[0] in ('core', 'std') else
+                 ('S' if d[0] == 'thiol' else d[1]) for d in donors)
+    comp = ''.join('%s%d' % (k, v) for k, v in sorted(dc.items()))
+    return '%s_%s_%s' % (elems, comp or 'x', digest)
+
+
 def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
-                       core_atoms=None, reference_model=None, fetch_reference=False):
+                       core_atoms=None, reference_model=None, fetch_reference=False,
+                       sig=None):
     '''Build the explicit metal-coordination emission for :func:`covalent_to_ffxml`
     (see its ``metal_terms`` argument): the metal atoms + their ion Lennard-Jones,
     the metal-donor bonds and donor-metal-donor angles (soft empirical values from
@@ -1499,7 +1596,8 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
     from chimerax.core.errors import UserError
     from itertools import combinations
     from .metal_params import (metal_bond_params, snap_angle, angle_k,
-                               metal_charge_split, guess_ox_state,
+                               metal_charge_split, metal_charge_transfer,
+                               donor_charge_kind, guess_ox_state,
                                coordinating_donor_type, CORE_ATOM_LJ,
                                UREY_BRADLEY_K)
 
@@ -1522,14 +1620,16 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
     # type + a charge reduced by the metal's donation (cf. iron_sulfur.xml's MC_CYF). Set
     # up the SG type name + a per-Cys charge-delta accumulator here; the template is built
     # after the metal loop. His-type donors need none of this (their base 'NB' works).
-    def _is_retempl_thiolate(a):
-        return (a.residue not in nonstandard and a.element.name == 'S'
-                and not any(nb.element.number == 1 for nb in a.neighbors))
-    retempl = set(d for (mm, d) in site.coordination if _is_retempl_thiolate(d))
-    _stem = '_'.join(sorted({template_names[r].split('_', 1)[-1] for r in nonstandard})) \
-        or 'metal'
-    _sg_type = 'MMET_%s_SG' % _stem
-    _cys_tmpl = 'MMET_%s_CYS' % _stem
+    retempl = _retempl_donors(site)
+    # The re-typed thiolate SG type and its CYM-clone template are keyed by the site
+    # SIGNATURE (a canonical hash of the whole coordination chemistry) so two different
+    # site classes in one model (e.g. Zn(Cys)4 vs Zn(Cys)2His2) get DISTINCT SG types /
+    # templates and never collide, while identical sites share one. Fall back to a stem
+    # derived from the ligand resnames if no signature was supplied (direct unit tests).
+    _sig = sig or ('_'.join(sorted({template_names[r].split('_', 1)[-1]
+                                    for r in nonstandard})) or 'metal')
+    _sg_type = 'MMET_%s_SG' % _sig
+    _cys_tmpl = 'MMET_%s_CYS' % _sig
     _cym = _read_amber_residue(_amberff_path(), 'CYM') if retempl else None
     _base_sg_q = -0.8844
     if _cym:
@@ -1606,7 +1706,20 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
         # AND onto re-templated cysteine thiolates (their SG carries the donation). Other
         # standard coordinating residues (His etc.) keep their untouched ISOLDE templates.
         lig_donors = [d for d in donors if d.residue in nonstandard or d in retempl]
-        q_metal, delta = metal_charge_split(ox, len(lig_donors), keep_fraction)
+        # Spread the metal's oxidation-state charge onto its ligand donors. A CLUSTER
+        # keeps the validated uniform split (metal_charge_split); a MONONUCLEAR site uses
+        # the donor-aware split (metal_charge_transfer): a soft/anionic thiolate draws far
+        # more charge off the metal than a neutral His N, so a Zn(Cys)4 comes out Zn ~+0.4
+        # / S ~-0.5 (QM/MCPB-like) instead of the blunt +1 a 50/50 split gives. Both
+        # conserve total charge (q_metal + sum(donor deltas) == ox).
+        if is_cluster:
+            q_metal, _uniform = metal_charge_split(ox, len(lig_donors), keep_fraction)
+            donor_delta = {d: _uniform for d in lig_donors}
+        else:
+            _kinds = [donor_charge_kind(d.residue.name, d.name, d.element.name)
+                      for d in lig_donors]
+            q_metal, _deltas = metal_charge_transfer(ox, _kinds)
+            donor_delta = dict(zip(lig_donors, _deltas))
         etype = _etype(m)
         ion_tmpl = _ion_template_for_element(elem, ox)
         lj = _ion_lj(forcefield, ion_tmpl) if ion_tmpl else None
@@ -1643,7 +1756,7 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
             if d in retempl:
                 # Re-templated cysteine thiolate: charge folds into the cloned template's
                 # SG; the metal-SG bond resolves to the cluster-scoped SG type.
-                cys_sg_delta[d] += delta
+                cys_sg_delta[d] += donor_delta[d]
                 terms['donor_types'][(d.residue, d.name)] = _sg_type
                 # Coordination angle metal-SG-CB (vertex SG): re-typing SG dropped the
                 # ff14SB angle that would hold the Fe-S-C geometry, so emit it explicitly
@@ -1658,10 +1771,10 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
                          snap_angle(_angle_radians(cb, d, m)), angle_k()))
             elif d.residue in nonstandard:
                 if is_core:
-                    core_charge[d] += delta         # folded into the emitted core atom
+                    core_charge[d] += donor_delta[d]  # folded into the emitted core atom
                 else:
                     terms['donor_deltas'].append({'residue': d.residue, 'name': d.name,
-                                                  'delta': delta})
+                                                  'delta': donor_delta[d]})
             else:
                 dt = coordinating_donor_type(d.residue.name, d.name, d.element.name)
                 if dt is None:
@@ -1768,83 +1881,71 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
     return terms
 
 
-def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
-                            metal_keep_fraction=0.5, base_templates=None,
-                            reference_model=None, fetch_reference=False):
-    '''Parameterise a metal coordination site end to end and load it into ISOLDE's
-    live force field.
+def _site_is_bare_ion(site):
+    '''True when the site's metal(s) are bare single-atom ion residues (Zn finger, Mg,
+    ...), rather than embedded in a multi-atom nonstandard ligand (heme, Fe-S cluster).
+    Bare ions bind PER-INSTANCE with a signature-scoped template (their charge depends on
+    the coordination composition, so one name-matched `MMET_ZN` cannot serve two classes);
+    embedded metals keep the `MMET_<resname>` name-match (resname encodes the chemistry).'''
+    return any(m.residue.num_atoms == 1 for m in site.metals)
 
-    Pipeline: build the capped super-residue with the metal(s) EXCLUDED
-    (``super_residue_to_rdkit(..., exclude=metals)``) -> type + charge the organic
-    framework with ANTECHAMBER/AM1-BCC -> Strategy-A per-atom typing
-    (``assign_types_and_charges``) -> splice the metal back as a bonded ion with soft
-    empirical coordination terms + redistributed charge (``_build_metal_terms``) ->
-    emit per-residue templates + coordination parameters
-    (``amber_convert.covalent_to_ffxml`` with ``metal_terms``) -> ``loadFile`` and
-    set ``isolde_template_name`` on every site residue.
 
-    Returns ``(xml_path, {residue: template_name})``. Raises
-    ``chimerax.core.errors.UserError`` on failure.
-    '''
-    from chimerax.core.errors import UserError
+def _emit_site_templates(session, site, forcefield, sig, is_bare_ion,
+                         net_charge=None, shell_radius=1, metal_keep_fraction=0.5,
+                         base_templates=None, reference_model=None, fetch_reference=False):
+    '''Emit + load the ffXML templates and coordination terms for ONE representative
+    metal site (which stands in for its whole signature class). Returns a dict:
+    ``{'template_names', 'metal_template', 'cys_template', 'xml_path'}`` -- the last two
+    naming the PER-INSTANCE templates the caller binds to every instance in the class
+    (``metal_template`` is set only for a bare ion; ``cys_template`` only when the site
+    re-templates coordinating cysteines).
+
+    Pipeline (unchanged from the original single-site path): build the capped
+    super-residue with the metal(s)/core EXCLUDED -> AM1-BCC-charge the organic framework
+    -> Strategy-A typing -> splice the metal back as a bonded ion + soft coordination
+    terms (``_build_metal_terms``) -> ``covalent_to_ffxml`` -> ``loadFile``.'''
     from chimerax.isolde.atomic.rdkit_bridge import super_residue_to_rdkit
     from .amber_convert import covalent_to_ffxml
+    from chimerax.atomic import Atoms
     import os, shutil
 
-    if not hasattr(session, 'isolde'):
-        raise UserError('Start ISOLDE before parameterising a metal site.')
-
-    # The coordination must be REAL bonds in the model: create_openmm_topology only
-    # bonds atoms.intra_bonds, and it is those topology bonds that make OpenMM drop
-    # the metal<->donor 1-2 / donor<->donor 1-3 nonbonded exclusions the bonded model
-    # relies on. Create any coordination bond that is not already present.
-    added = 0
-    for (m, d) in site.coordination:
-        if d not in m.neighbors:
-            try:
-                m.structure.new_bond(m, d)
-                added += 1
-            except Exception:
-                pass
-    if added:
-        session.logger.info('Added %d metal-coordination bond(s) to the model so '
-                            'the coordination is parameterised as bonded.' % added)
-
-    from chimerax.atomic import Atoms
     metals = set(site.metals)
     # Bridging inorganic core atoms (iron-sulfur mu-sulfides, ...) are NOT organic: they
     # bond only to metals, so RDKit would fill their empty valence with spurious H and
-    # AM1-BCC would type them nonsensically. Exclude them from the organic build alongside
-    # the metals and emit them as explicit, uniquely-typed cluster atoms (see the CLUSTER
-    # path in _build_metal_terms). For a PURE cluster (F3S) nothing organic remains, so
-    # super_residue_to_rdkit returns mol=None and the AM1-BCC step is skipped entirely.
+    # AM1-BCC would type them nonsensically. Exclude them alongside the metals and emit
+    # them as explicit, uniquely-typed cluster atoms (see the CLUSTER path in
+    # _build_metal_terms). A PURE cluster (F3S) leaves nothing organic -> mol is None.
     core_atoms = _cluster_core_atoms(site)
     excluded = metals | set(core_atoms)
-    ffmgr = session.isolde.forcefield_mgr
-    forcefield = ffmgr[session.isolde.sim_params.forcefield]
 
-    # Charge ONLY the metalloligand's organic framework. The coordinating standard
-    # residues (His etc.) reach it only through the Fe-N bonds we exclude, so once the
-    # metal is gone they are disconnected -- they keep their normal ISOLDE templates
-    # and are left out of the sqm run entirely (their coordination is emitted as
-    # type-keyed terms in _build_metal_terms). A bare-ion site (metal coordinated only
-    # by protein, no organic metalloligand) charges nothing -- mol is None.
+    # Charge ONLY the metalloligand's organic framework. Coordinating standard residues
+    # (His etc.) reach it only through the metal-donor bonds we exclude, so once the metal
+    # is gone they are disconnected -- they keep their normal ISOLDE templates and are left
+    # out of the sqm run (their coordination is emitted as type-keyed terms). A bare-ion
+    # site coordinated only by protein charges nothing -- mol is None.
     ligand_residues = list(site.nonstandard_residues)
+
+    # A bare-ion metal residue is PER-INSTANCE and signature-scoped (MMET_<sig>); a metal
+    # embedded in a multi-atom nonstandard ligand (heme, cluster) keeps the name-matched
+    # MMET_<resname>. Only the bare-ion metal's charge depends on the coordination class.
+    def _tname(r):
+        if r.num_atoms == 1 and r.atoms[0].element.is_metal:
+            return 'MMET_' + sig
+        return 'MMET_' + r.name
+    template_names = {r: _tname(r) for r in ligand_residues}
+
     ligand_unit = CovalentUnit(ligand_residues, [])
-    # neutralize_excluded_donors: build metal-deprotonated donors (chlorin pyrrole N,
-    # thiolate) as neutral + protonated so AM1-BCC runs on a well-behaved neutral free
-    # base; the deprotonation is restored below, charge-conserving.
     mol, cxidx_to_atom, info = super_residue_to_rdkit(
         ligand_residues, exclude=excluded, neutralize_excluded_donors=True,
         base_templates=base_templates)
 
     per_res, ante, frcmod = {}, None, None
     if mol is not None:
-        # Net charge is unreliable from the CCD field, so let ANTECHAMBER arbitrate.
         lig_atoms = Atoms([a for r in ligand_residues for a in r.atoms
                            if not a.element.is_metal])
         ante = _run_antechamber_autocharge(session, mol, lig_atoms, info['net_charge'],
                                            repr(site), override=net_charge)
+    cys_template = None
     try:
         if ante is not None:
             per_res = assign_types_and_charges(ligand_unit, mol, cxidx_to_atom, ante,
@@ -1852,26 +1953,23 @@ def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
             frcmod = ante['frcmod']
             # Restore the metal-deprotonated donors: fold each surrogate H's AM1-BCC
             # charge into its donor and re-impose the donor's original negative formal
-            # charge (conserves total charge; charges were computed on the easy neutral
-            # species and the H atoms are dropped from the template).
+            # charge (conserves total charge; the H atoms are dropped from the template).
             rd_to_spec = {s['rd']: s for d in per_res.values() for s in d['atoms']}
             for (donor_rd, h_rds, orig_fc) in info.get('neutralized', []):
                 spec = rd_to_spec.get(donor_rd)
                 if spec is None:
                     continue
                 spec['charge'] += sum(ante['charges'][h] for h in h_rds) + orig_fc
-        # Templates are emitted only for the metalloligand / metal-ion residues; the
-        # coordinating standard residues keep their normal ISOLDE templates. The name
-        # is deterministic `MMET_<resname>` (not a per-instance override) so a
-        # name-based pass in find_residue_templates binds it to ALL copies -- a
-        # metalloligand type is the same across instances (cf. the free-ligand USER_).
-        template_names = {r: 'MMET_' + r.name for r in ligand_residues}
+        # The cluster SG/CYS names stay resname-scoped (sig=None -> fallback) so the
+        # validated F3S path is unchanged; only bare-ion sites use the hash signature.
+        sig_for_terms = sig if is_bare_ion else None
         metal_terms = _build_metal_terms(session, site, forcefield, template_names,
                                          metal_keep_fraction, core_atoms=core_atoms,
                                          reference_model=reference_model,
-                                         fetch_reference=fetch_reference)
-
-        stem = '_'.join(sorted({r.name for r in ligand_residues})) or 'metal'
+                                         fetch_reference=fetch_reference,
+                                         sig=sig_for_terms)
+        stem = sig if is_bare_ion else \
+            ('_'.join(sorted({r.name for r in ligand_residues})) or 'metal')
         xml_path = os.path.join(os.getcwd(), '%s_metal.xml' % stem)
         gaff2_xml = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gaff2.xml')
         covalent_to_ffxml(per_res, template_names, mol, frcmod, xml_path,
@@ -1879,51 +1977,118 @@ def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
 
         for tn in template_names.values():
             forcefield._templates.pop(tn, None)
-        # Re-templated coordinating cysteines (MC_CYF-style) are also freshly (re)loaded.
+        # Re-templated coordinating cysteines (MC_CYF-style) are freshly (re)loaded.
         for (_cr, cys_tn) in metal_terms.get('cys_overrides', []):
             forcefield._templates.pop(cys_tn, None)
+            cys_template = cys_tn
         forcefield.loadFile(xml_path)
-        # Bind each ligating cysteine to its re-typed template PER INSTANCE (the model is
-        # full of ordinary cysteines, so this must NOT be name-matched).
-        for (cys_res, cys_tn) in metal_terms.get('cys_overrides', []):
-            cys_res.isolde_template_name = cys_tn
     finally:
         if ante is not None and ante.get('cleanup'):
             shutil.rmtree(ante['workdir'], ignore_errors=True)
 
-    # Fan out to EVERY other copy of the metalloligand in the model: give each real
-    # coordination bonds so the name-matched template binds it too (create_openmm_
-    # topology only bonds real Bonds, and the bonded template only graph-matches a
-    # copy that actually carries the Fe-donor bonds). Each copy's own coordination is
-    # detected geometrically. The representative site's bonds were already created.
-    ligand_names = {r.name for r in ligand_residues}
-    structure = ligand_residues[0].structure
-    handled = set(site.residues)
-    n_copies = 0
+    return {'template_names': template_names,
+            'metal_template': ('MMET_' + sig) if is_bare_ion else None,
+            'cys_template': cys_template, 'xml_path': xml_path}
+
+
+def parameterise_metal_site(session, site, shell_radius=1, net_charge=None,
+                            metal_keep_fraction=0.5, base_templates=None,
+                            reference_model=None, fetch_reference=False):
+    '''Parameterise a metal coordination site -- and every other instance of the same
+    coordination class in the model -- and load them into ISOLDE's live force field.
+
+    Handles ALL metal sites coherently in one pass, because the metal's coordination
+    chemistry (and hence its template) lives partly in PER-INSTANCE protein residues:
+
+    1. **Enumerate** every instance of this ligand/metal in the model (the user may have
+       selected only one). For each, auto-deprotonate coordinating donors that arrived
+       protonated (Cys thiols) and create the real coordination bonds OpenMM needs to
+       drop the coordination nonbonded exclusions.
+    2. **Group** the instances by a canonical coordination SIGNATURE
+       (:func:`_metal_site_signature`) so identical sites share one template while
+       chemically different ones (Zn(Cys)4 vs Zn(Cys)2His2) get distinct, non-colliding
+       templates.
+    3. **Emit once per class** (:func:`_emit_site_templates`).
+    4. **Apply per-instance**: bind ``isolde_template_name`` on every instance's bare-ion
+       metal residue AND its re-typed coordinating cysteines -- so no site is left on the
+       fragile name-match, and no second site silently collapses.
+
+    Returns the set of ``Residue``\\ s handled (all instances, all classes) so the caller
+    can skip re-parameterising them. Raises ``chimerax.core.errors.UserError`` on failure.
+    '''
+    from chimerax.core.errors import UserError
+    from collections import OrderedDict
+
+    if not hasattr(session, 'isolde'):
+        raise UserError('Start ISOLDE before parameterising a metal site.')
+    forcefield = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
+
+    structure = site.residues[0].structure
+    ligand_names = {r.name for r in site.nonstandard_residues}
+
+    # 1. Enumerate every instance of this class in the model (representative + copies the
+    #    user never selected), deprotonate, and create coordination bonds. Deprotonation
+    #    MUST precede grouping: it changes which donors are thiolates (the signature).
+    all_sites = [site]
+    handled_res = set(site.residues)
     for r in structure.residues:
-        if r.name not in ligand_names or r in handled:
+        if r.name not in ligand_names or r in handled_res:
             continue
         try:
-            copy_site = detect_metal_site(r)
+            s = detect_metal_site(r)
         except Exception:
             continue
-        handled.update(copy_site.residues)
-        made = False
-        for (mm, dd) in copy_site.coordination:
-            if dd not in mm.neighbors:
+        handled_res.update(s.residues)
+        all_sites.append(s)
+
+    added = 0
+    for s in all_sites:
+        _deprotonate_coordinating_donors(session, s)
+        for (m, d) in s.coordination:
+            if d not in m.neighbors:
                 try:
-                    mm.structure.new_bond(mm, dd)
-                    made = True
+                    m.structure.new_bond(m, d)
+                    added += 1
                 except Exception:
                     pass
-        if made:
-            n_copies += 1
+    if added:
+        session.logger.info('Added %d metal-coordination bond(s) to the model so the '
+                            'coordination is parameterised as bonded.' % added)
 
-    session.logger.info(
-        'Parameterised metal site %r; wrote %s and loaded templates %s. Applies to all '
-        '%d copy/copies of %s this session; reload the ffXML in future sessions with '
-        '"Load residue MD definition(s)".'
-        % (site, xml_path, ', '.join(template_names.values()), 1 + n_copies,
-           '/'.join(sorted(ligand_names))))
-    return xml_path, template_names
+    # 2. Group instances by coordination signature.
+    groups = OrderedDict()
+    for s in all_sites:
+        sg = _metal_site_signature(s, _cluster_core_atoms(s))
+        groups.setdefault(sg, []).append(s)
+
+    # 3 + 4. Emit once per class, then bind per-instance to every member.
+    all_handled = set()
+    for sg, members in groups.items():
+        rep = members[0]
+        is_bare = _site_is_bare_ion(rep)
+        emitted = _emit_site_templates(
+            session, rep, forcefield, sg, is_bare, net_charge=net_charge,
+            shell_radius=shell_radius, metal_keep_fraction=metal_keep_fraction,
+            base_templates=base_templates, reference_model=reference_model,
+            fetch_reference=fetch_reference)
+        for inst in members:
+            if emitted['metal_template']:
+                # Bare-ion metal: PER-INSTANCE override (never name-matched, so two Zn
+                # classes in one model don't cross-bind). Protected from the metal_name_map
+                # free-ion fallback by find_residue_templates' precedence.
+                for m in inst.metals:
+                    if m.residue.num_atoms == 1:
+                        m.residue.isolde_template_name = emitted['metal_template']
+            if emitted['cys_template']:
+                # Re-typed coordinating cysteines: PER-INSTANCE (the model is full of
+                # ordinary cysteines). Applied to EVERY instance, not just the one the
+                # user selected -- the fix for silently-collapsing second sites.
+                for d in _retempl_donors(inst):
+                    d.residue.isolde_template_name = emitted['cys_template']
+            all_handled.update(inst.residues)
+        session.logger.info(
+            'Parameterised metal-site class %r (%d instance(s)); wrote %s. Reload the '
+            'ffXML in future sessions with "Load residue MD definition(s)".'
+            % (sg, len(members), emitted['xml_path']))
+    return all_handled
 
