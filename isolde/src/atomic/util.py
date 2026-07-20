@@ -52,6 +52,9 @@ def correct_pseudosymmetric_sidechain_atoms(session, residues):
             flipped[r.structure] += 1
     for m, count in flipped.items():
         session.logger.info(f'ISOLDE: Corrected atom nomenclature of {count} residues in model #{m.id_string} to IUPAC-IUB standards.')
+    # Ligand phosphate/oxo terminal-oxygen naming (e.g. O1A/O2A), same idea for
+    # arbitrary CCD components. Runs at every site this driver is called from.
+    correct_pseudosymmetric_ligand_atoms(session, residues)
         
 
 def any_atom_restrained(model, atoms):
@@ -114,14 +117,21 @@ equivalent_heavy_atoms = {
     'ARG':  {'NH1': 'NH2'}
 }
 
-def swap_equivalent_atoms(residue):
-    rname = residue.name
-    if rname in rings:
-        rname = 'aromatic'
-    equivalent_pairs = equivalent_heavy_atoms[rname]
+def swap_equivalent_atoms(residue, pairs=None):
+    '''Swap the coordinates of equivalent atom pairs (carrying each heavy atom's
+    hydrogens along), so their names once again match the geometry. ``pairs`` is a
+    ``{name_a: name_b}`` dict; if omitted it is looked up from the curated
+    ``equivalent_heavy_atoms`` table by residue name. Returns False without changes
+    if any atom is missing, bonded outside the residue, or the two branches have
+    unequal atom counts.'''
+    if pairs is None:
+        rname = residue.name
+        if rname in rings:
+            rname = 'aromatic'
+        pairs = equivalent_heavy_atoms[rname]
     from chimerax.atomic import Atoms
     paired_atoms = []
-    for a1name, a2name in equivalent_pairs.items():
+    for a1name, a2name in pairs.items():
         a1, a2 = [residue.find_atom(name) for name in (a1name, a2name)]
         if a1 is None or a2 is None:
             # Bail out if any equivalent atom is missing
@@ -181,13 +191,14 @@ def correct_dihedral_restraint(residue):
 
     
 
-def correct_position_and_distance_restraints(residue):
-    rname = residue.name
+def correct_position_and_distance_restraints(residue, pairs=None):
     model = residue.structure
     from chimerax.isolde import session_extensions as sx
-    if rname in rings:
-        rname = 'aromatic'
-    pairs = equivalent_heavy_atoms[rname]
+    if pairs is None:
+        rname = residue.name
+        if rname in rings:
+            rname = 'aromatic'
+        pairs = equivalent_heavy_atoms[rname]
     apairs = {residue.find_atom(a1name): residue.find_atom(a2name) for a1name, a2name in pairs.items()}
     prm = sx.get_position_restraint_mgr(model, create=False)
     if prm is not None:
@@ -255,6 +266,64 @@ def correct_position_and_distance_restraints(residue):
                     atoms = [a1, other]
                 r = adrm.add_restraint(*atoms)
                 r.enabled, r.target, r.kappa, r.alpha, r.tolerance, r.c = rparams[1:]
+
+
+def _has_potential_prochiral_oxo(residue):
+    '''Cheap (no-RDKit) pre-filter: worth checking only if the residue has a P or S
+    atom with >=2 oxygen neighbours (a phosphate/sulfate/phosphonate-type group).
+    Skips all standard amino acids (MET/CYS sulfur has <2 O neighbours).'''
+    for a in residue.atoms:
+        if a.element.name in ('P', 'S'):
+            if sum(1 for nb in a.neighbors if nb.element.name == 'O') >= 2:
+                return True
+    return False
+
+
+def correct_pseudosymmetric_ligand_atoms(session, residues):
+    '''Conform the naming of resonance-equivalent terminal substituents (e.g. a
+    phosphate's O1A/O2A) to the CCD prochiral convention -- the ligand analogue of
+    :func:`correct_pseudosymmetric_sidechain_atoms`. These centres are exactly the
+    spurious "chiral" phosphates excluded from restraints/validation; here we make
+    their equivalent oxygens' names match the geometry the dictionary intends.
+
+    The swap direction is chosen so the model's signed volume around the centre
+    matches the CCD ideal (via :func:`chirality.prochiral_terminal_groups`), and the
+    coordinate swap + restraint repair reuse the sidechain primitives.'''
+    from collections import defaultdict
+    from chimerax.isolde.atomic.chirality import (
+        prochiral_terminal_groups, lookup_name, _signed_volume)
+    candidates = [r for r in residues if _has_potential_prochiral_oxo(r)]
+    if not candidates:
+        return
+    cache = {}
+    swapped = defaultdict(lambda: 0)
+    for r in candidates:
+        lid = lookup_name(r)
+        info = cache.get(lid)
+        if info is None:
+            try:
+                info = prochiral_terminal_groups(session, lid)
+            except Exception:
+                info = {}
+            cache[lid] = info
+        for centre_name, (equiv, nonequiv, ref_sign) in info.items():
+            atoms = {n: r.find_atom(n)
+                     for n in (centre_name, equiv[0], equiv[1], nonequiv[0], nonequiv[1])}
+            if any(a is None for a in atoms.values()):
+                continue
+            v = _signed_volume([atoms[centre_name].coord, atoms[nonequiv[0]].coord,
+                                atoms[nonequiv[1]].coord, atoms[equiv[0]].coord])
+            if v == 0:
+                continue
+            if (1.0 if v > 0 else -1.0) != ref_sign:
+                pairs = {equiv[0]: equiv[1]}
+                if swap_equivalent_atoms(r, pairs=pairs):
+                    correct_position_and_distance_restraints(r, pairs=pairs)
+                    swapped[r.structure] += 1
+    for m, count in swapped.items():
+        session.logger.info(
+            f'ISOLDE: Corrected prochiral terminal-atom naming of {count} ligand '
+            f'centre(s) in model #{m.id_string} to match the chemical-component dictionary.')
         
 
 

@@ -868,6 +868,54 @@ def cip_codes_by_name(mol):
     return out
 
 
+def spurious_stereocentre_substituents(mol):
+    '''Identify CIP-perceived stereocentres that are actually NON-stereogenic.
+
+    The canonical case is a phosphate/diphosphate phosphorus (or a sulfate/
+    phosphonate S/P, etc.) whose two non-bridging oxygens are modelled in the CCD
+    as one ``P=O`` and one ``P-OH`` / ``P-O(-)``. That bond-order/protonation
+    asymmetry makes the two otherwise-identical oxygens CIP-distinct, so both the
+    CCD (``pdbx_stereo_config``) and RDKit mark the centre chiral -- but the
+    oxygens are resonance-equivalent, so it is not a real stereocentre. Restraining
+    or flagging it is meaningless (and the restraint fights the freely-exchanging
+    group in simulation).
+
+    Returns ``{centre_cxName: [equivalent terminal cxNames]}`` for every such
+    centre (empty if none). A centre is reported only when >= 2 of its neighbours
+    are (a) **terminal** -- exactly one heavy neighbour, the centre itself -- and
+    (b) the **same element**. That pair can differ *only* in bond order, formal
+    charge or H count (there is nothing else attached to tell them apart), i.e.
+    exactly the resonance/protonation degrees of freedom we treat as equivalent --
+    so the test needs nothing more. It is also safe: a genuine stereocentre cannot
+    have two equivalent substituents (that would give it a local mirror plane), so
+    this never suppresses a real centre. Mixed-element centres (e.g. an O/S
+    phosphorothioate) and bridging substituents are left untouched.'''
+    try:
+        Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
+    except Exception:
+        return {}
+
+    def _heavy_deg(a):
+        return sum(1 for nb in a.GetNeighbors() if nb.GetAtomicNum() != 1)
+
+    out = {}
+    for centre in mol.GetAtoms():
+        if not centre.HasProp('_CIPCode') or not centre.HasProp(NAME_PROP):
+            continue
+        by_element = {}
+        for nb in centre.GetNeighbors():
+            if nb.GetAtomicNum() == 1 or not nb.HasProp(NAME_PROP):
+                continue
+            if _heavy_deg(nb) != 1:
+                continue  # bridging / substituted -- not an exchangeable terminus
+            by_element.setdefault(nb.GetAtomicNum(), []).append(nb)
+        for group in by_element.values():
+            if len(group) >= 2:
+                out[centre.GetProp(NAME_PROP)] = [a.GetProp(NAME_PROP) for a in group]
+                break
+    return out
+
+
 def fmcs_index_correspondence(mol_a, mol_b, match_bond_order=True, timeout=10):
     '''Maximum common substructure atom correspondence between two molecules,
     element- and (optionally) bond-order-aware.

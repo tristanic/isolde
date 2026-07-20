@@ -93,11 +93,18 @@ def chiral_definitions_from_ccd(session, resname):
     except Exception:
         return {}
     leaving = _leaving_atom_flags(session, resname)
+    # Spurious "stereocentres" the CCD/RDKit flag on phosphates etc. (two
+    # resonance-equivalent non-bridging oxygens) must NOT become restraints or
+    # validation outliers -- skip them here, the single generation choke-point, so
+    # they never reach the ChiralMgr.
+    spurious = rb.spurious_stereocentre_substituents(mol)
     conf = mol.GetConformer()
     from chimerax.geometry import dihedral
     defs = {}
     for atom in mol.GetAtoms():
         if not atom.HasProp('_CIPCode') or not atom.HasProp(rb.NAME_PROP):
+            continue
+        if atom.GetProp(rb.NAME_PROP) in spurious:
             continue
         nbrs = list(atom.GetNeighbors())
         if len(nbrs) < 3:
@@ -253,8 +260,13 @@ def _reference_data(session, lookup_id):
         Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
     except Exception:
         pass
+    # Skip spurious phosphate-type centres, exactly as chiral_definitions_from_ccd
+    # does, so the informational R/S letter never appears on them either.
+    spurious = rb.spurious_stereocentre_substituents(mol)
     for a in mol.GetAtoms():
         if a.HasProp(rb.NAME_PROP) and a.HasProp('_CIPCode'):
+            if a.GetProp(rb.NAME_PROP) in spurious:
+                continue
             c = a.GetProp('_CIPCode')
             if c in ('R', 'S'):
                 codes[a.GetProp(rb.NAME_PROP)] = c
@@ -266,6 +278,58 @@ def reference_cip_codes(session, lookup_id):
     ChemComp component (RDKit CIP on the reference geometry). Thin wrapper over
     :func:`_reference_data`.'''
     return _reference_data(session, lookup_id)[0]
+
+
+def prochiral_terminal_groups(session, lookup_id):
+    '''For each *spurious* (non-stereogenic) centre in the CCD component -- e.g. a
+    phosphate P with two resonance-equivalent non-bridging oxygens -- return the
+    data needed to enforce the CCD prochiral-naming convention on a model:
+
+        ``{centre_name: (equiv_names, nonequiv_names, ref_sign)}``
+
+    where ``equiv_names`` are the equivalent terminal substituents (e.g.
+    ``['O1A','O2A']``), ``nonequiv_names`` the centre's other heavy neighbours
+    (the bridging atoms), and ``ref_sign`` the sign (+1/-1) of the reference signed
+    volume ``V[centre, nonequiv[0], nonequiv[1], equiv[0]]`` from the ideal
+    geometry. A centre is included only when it has >=2 equivalent and >=2
+    non-equivalent heavy neighbours and ``ref_sign != 0`` -- i.e. the two oxygens
+    are genuinely diastereotopic (the molecule is chiral), so their naming is
+    well-defined and worth conforming. Empty if the component has none.'''
+    mol, _status = rb.template_to_rdkit(session, lookup_id)
+    if mol is None or mol.GetNumConformers() == 0:
+        return {}
+    spurious = rb.spurious_stereocentre_substituents(mol)
+    if not spurious:
+        return {}
+    conf = mol.GetConformer()
+    by_name = {}
+    coords = {}
+    for a in mol.GetAtoms():
+        if a.HasProp(rb.NAME_PROP):
+            nm = a.GetProp(rb.NAME_PROP)
+            by_name[nm] = a
+            coords[nm] = _conf_coord(conf, a.GetIdx())
+    out = {}
+    for centre_name, equiv in spurious.items():
+        centre = by_name.get(centre_name)
+        if centre is None or len(equiv) < 2:
+            continue
+        nonequiv = [
+            nb.GetProp(rb.NAME_PROP) for nb in centre.GetNeighbors()
+            if nb.GetAtomicNum() != 1 and nb.HasProp(rb.NAME_PROP)
+            and nb.GetProp(rb.NAME_PROP) not in equiv
+        ]
+        if len(nonequiv) < 2:
+            continue
+        try:
+            v = _signed_volume([coords[centre_name], coords[nonequiv[0]],
+                                coords[nonequiv[1]], coords[equiv[0]]])
+        except KeyError:
+            continue
+        if v == 0:
+            continue
+        out[centre_name] = (equiv, nonequiv, 1.0 if v > 0 else -1.0)
+    return out
 
 
 def _reference_volume_sign(cc, ideal_coords):
