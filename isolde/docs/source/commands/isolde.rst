@@ -1491,107 +1491,118 @@ given, the resolution is first sought from the session's symmetry manager
 isolde rotafit
 ==============
 
-Syntax: isolde rotafit [*residues*] [**temperature** *number*] [**settleSteps** *integer*] [**polishSteps** *integer*] [**polishTop** *integer*] [**rampIncrements** *integer*] [**acceptMargin** *number*] [**settleLambda** *number*] [**pinEnvironment** *true/false*] [**pinK** *number*] [**pinNearCutoff** *number*] [**pinDistantMultiplier** *number*] [**minimize** *true/false*] [**scoreLambda** *number*] [**allowMultiple** *true/false*] [**apply** *true/false*] [**debug** *true/false*]
+Syntax: isolde rotafit [*residues*] [**temperature** *number*] [**settleSteps** *integer*] [**polishSteps** *integer*] [**polishTop** *integer*] [**rampIncrements** *integer*] [**acceptMargin** *number*] [**settleLambda** *number*] [**minimize** *true/false*] [**scoreLambda** *number*] [**scoreMode** *local+diff/local/classic*] [**allowMultiple** *true/false*] [**apply** *true/false*] [**debug** *true/false*]
 
 Automate rotamer selection for the selected residue by *settling*, using the
 interactive simulation. If no simulation is running, one is started automatically
 around the target using ISOLDE's standard sim-start selection (its normal padding and
 soft-shell — the buffer gives the local environment room to relax around a re-fitted
 rotamer, which some fixes need). For the residue it enumerates the library rotamers
-(the same
-conformations the preview buttons cycle through) plus the residue's *current*
-conformation, culls any rotamer with severe overlaps against its surroundings, and
-*settles* each survivor in the full force field by briefly stepping the paused
-simulation at low temperature. The candidates are then ranked by OpenMM's own
-potential energy and the best is committed.
+(the same conformations the preview buttons cycle through) plus the residue's
+*current* conformation, culls any rotamer with severe overlaps against its
+surroundings, *settles* each survivor in the full force field by briefly stepping the
+paused simulation at low temperature, and ranks them by how well the settled residue
+itself fits (see **Scoring** below). The best is committed.
 
 The motivation is that pre-settle previews are misleading — a rigid rotation about
 the fixed CA-CB bond can put even the *correct* rotamer well out of the map, and
 long lists (e.g. arginine) are sorted by prevalence rather than similarity, so
 comparing them by eye is hard. Because the full force field reliably relaxes into
 the correct conformation once a rotamer is placed in the right basin, the *settled*
-energy is a far more honest arbiter than the pre-settle appearance.
+fit is a far more honest arbiter than the pre-settle appearance.
 
 The settle runs in two phases. A **soft search** (``settleLambda``, default 0.6)
 weakens ISOLDE's soft-core van der Waals term so a rotamer seeded into an overlap
 slides apart instead of exploding, and reliably drops each candidate into its basin.
-The top candidate(s) are then **polished** up to the simulation's full stiffness so the
-committed pose is tight and its energy is directly comparable to the running
-simulation. Rather than jumping straight to full stiffness (which can jolt atoms in a
-soft overlap that abruptly becomes a hard wall), the polish **ramps** the soft-core
-lambda up over ``rampIncrements`` stages so the system stiffens adiabatically. The
-map's influence on the ranking is ISOLDE's own MDFF coupling — there is no separate map
-weight to set.
+The leading candidate(s) are then **polished** up to the simulation's full stiffness so
+the committed pose is tight. Rather than jumping straight to full stiffness (which can
+jolt atoms in a soft overlap that abruptly becomes a hard wall), the polish **ramps**
+the soft-core lambda up over ``rampIncrements`` stages so the system stiffens
+adiabatically.
 
-Because lowering ``settleLambda`` softens the van der Waals term for *every* atom, the
-surrounding model is by default held in place during the settle with position
-restraints (``pinEnvironment``), leaving only the target residue free to move. This
-lets you pull ``settleLambda`` down harder to free a badly stuck rotamer without
-risking distortion of the shell; the restraints are removed again afterward.
+**Softening the target, not the environment.** The target residue is softened against
+its surroundings using ISOLDE's *per-group* soft-core coupling: its atoms (and, in a
+crystallographic simulation, their symmetry copies) are placed in their own nonbonded
+group and only their coupling to the rest of the model is weakened, so a clashy seed
+relaxes while **the environment keeps its full-strength force field and holds its own
+shape — no position restraints are used**. This lets ``settleLambda`` go low to free a
+badly stuck rotamer without distorting the shell, and lets the surroundings genuinely
+accommodate the new rotamer where that is needed. The coupling is restored to full
+strength before the simulation resumes.
+
+**Scoring (``scoreMode``, default ``local+diff``).** The candidate is judged by the
+fit of the **target residue itself**, not by the whole-construct energy — the latter is
+dominated by the surrounding thousands of atoms, whose energy drifts from pose to pose
+and swamps the single-residue signal. The primary criterion is the residue's *own* MDFF
+map fit, isolated so the environment's contribution cancels out. For a crystallographic
+map that is *phase-biased* toward the current model, this can still be fooled by a wrong
+rotamer that parks atoms on already-modelled density; ``local+diff`` breaks such ties
+using the **mFo-DFc difference map** — sampled (not recomputed) at the residue's atoms —
+which marks density the current model fails to explain, defeating model bias. The map's
+influence is ISOLDE's own MDFF coupling — there is no separate map weight to set.
 
 **"First, do no harm":** the residue's current conformation always competes as a
-candidate, and a rotamer replaces it only if it wins by a real margin
-(``acceptMargin``). This stops an already-correct fit from being flipped out by
+candidate, and a rotamer replaces it only if it wins by a real margin (``acceptMargin``;
+in ``local+diff`` a tied challenger must additionally explain meaningfully more
+difference density). This stops an already-correct fit from being flipped out by
 settling noise on repeat calls.
 
 The best candidate is auto-committed, but the **simulation is left running**: if the
 result is poor, ``isolde sim revert`` returns to the checkpoint taken at the start
 of the command, and continuing the live simulation refines the committed result
 further (ISOLDE updates the map as the R-factors improve). By default a single
-summary line is logged; ``debug true`` reports the full ranked shortlist and the
-polish / do-no-harm decisions.
+summary line is logged; ``debug true`` reports the full ranked shortlist, the per-signal
+breakdown, the polish / do-no-harm decisions and per-phase timings.
 
 Options:
 
-* ``temperature`` (default 0): temperature (K) for the settle. 0 K makes it a pure
-  downhill relaxation.
-* ``settleSteps`` (default 100): dynamics steps per rotamer during the soft search.
-  With ISOLDE's soft-core van der Waals potential, stepping typically converges
-  faster than a minimiser.
-* ``polishSteps`` (default 150): extra steps applied at full stiffness to each
-  polished candidate. Set to 0 to skip the polish phase entirely.
+* ``temperature`` (default 0): temperature (K) for the settle. 0 K makes it a pure,
+  deterministic downhill relaxation (the Langevin random force vanishes at 0 K).
+* ``settleSteps`` (default 100): 0 K dynamics steps per rotamer during the soft search.
+  With ISOLDE's soft-core van der Waals potential, stepping converges faster than a
+  minimiser. If a badly-placed rotamer seats short, raise this (it is far cheaper than
+  enabling ``minimize``).
+* ``polishSteps`` (default 150): extra steps applied while ramping to full stiffness for
+  each polished candidate. Set to 0 to skip the polish phase entirely.
 * ``polishTop`` (default 1): how many of the top soft-search candidates to polish at
-  full stiffness and re-rank by the polished energy. ``1`` polishes the winner only;
-  a larger value guards against a soft-search tie committing the wrong basin;
-  ``0`` (or negative) polishes every survivor.
+  full stiffness and re-rank. ``1`` polishes the winner only; a larger value guards
+  against a soft-search tie committing the wrong basin; ``0`` (or negative) polishes
+  every survivor. (In ``local+diff`` the poses tied with the best on the main map — the
+  difference-density contenders — are polished regardless, so the tiebreak is decided at
+  full stiffness.)
 * ``rampIncrements`` (default 5): number of stages over which the polish ramps the
   soft-core lambda from ``settleLambda`` up to full stiffness (``polishSteps`` is split
   across them). ``1`` jumps straight to full stiffness in a single stage.
 * ``acceptMargin`` (default 1): the do-no-harm threshold, as a **multiple of ISOLDE's
   MDFF coupling constant** (not an absolute energy). A rotamer must beat the current
-  conformation by at least ``acceptMargin × coupling`` kJ/mol to replace it. Because
-  the coupling is sigma-normalised, this threshold tracks the map automatically across
+  conformation by at least ``acceptMargin × coupling`` to replace it. Because the
+  coupling is sigma-normalised, this threshold tracks the map automatically across
   resolutions and between X-ray and cryo-EM. ``0`` accepts any improvement; larger
   values are stickier to the current pose. (When the simulation has no map, it is
   treated as an absolute kJ/mol value.)
-* ``settleLambda`` (default 0.6): soft-core van der Waals lambda during the search
-  phase. Lower is more forgiving of overlaps but distorts geometry below ~0.5. With
-  ``pinEnvironment`` on you can safely go lower, since only the target residue is free.
-* ``pinEnvironment`` (default true): hold the surrounding model with position
-  restraints during the settle so a low ``settleLambda`` can't push it around. Only the
-  target residue is left mobile; the restraints are restored to their prior state
-  afterward (no simulation restart needed). Atoms are pinned in two tiers: those near
-  the volume the residue and its rotamers can reach are held gently (they may need to
-  accommodate the target), while more distant atoms are frozen an order of magnitude
-  more stiffly, since any motion they make is only noise in the ranking energy.
-* ``pinK`` (default 5000): spring constant (kJ mol⁻¹ nm⁻²) for the *near*-tier position
-  restraints — ISOLDE's standard restraint strength.
-* ``pinNearCutoff`` (default 5): distance (Å) from the rotamer-reachable volume within
-  which environment atoms get the gentle ``pinK``; beyond it they are frozen hard.
-* ``pinDistantMultiplier`` (default 10): factor by which the *distant*-tier spring
-  constant exceeds ``pinK``.
-* ``minimize`` (default true): after the 0 K dynamics step, also energy-minimise each
-  candidate to convergence (a *hybrid* — dynamics seats the pose in the local density
-  well, minimisation then converges to it deterministically). This removes the run-to-run
-  settling jitter that otherwise makes the whole-construct nonbonded energy a noisy
-  ranking signal, at some extra cost. Set false for pure-dynamics settling.
+* ``settleLambda`` (default 0.6): soft-core van der Waals lambda for the target during
+  the search phase. Lower is more forgiving of overlaps but distorts geometry below
+  ~0.5. Because only the target is softened (the environment stays at full strength),
+  lowering it does not risk deforming the shell.
+* ``minimize`` (default false): after the 0 K dynamics settle, also run
+  ``minimizeEnergy()`` on each candidate. Off by default — 0 K damped dynamics already
+  settles deterministically toward the minimum, and the minimiser is the dominant cost
+  while rarely changing the outcome once scoring is localised. Enable it only to rescue
+  a genuinely high-energy start; otherwise prefer more ``settleSteps``.
 * ``scoreLambda`` (default 0 = score at the settle lambda): if set, evaluate the ranking
-  energy at this soft-core lambda regardless of the lambda the pose was settled at. A
-  softer wall makes the nonbonded term smaller and less sensitive to atom jitter.
-* ``allowMultiple`` (default false): each residue is settled individually and takes a few
-  seconds, so by default only a single residue may be targeted — a guard against an
+  at this soft-core lambda regardless of the lambda the pose was settled at.
+* ``scoreMode`` (default ``local+diff``): how candidates are ranked.
+  ``local`` ranks by the target residue's own MDFF (2mFo-DFc) map fit only.
+  ``local+diff`` adds the mFo-DFc **difference-density tiebreaker** for candidates that
+  the main map cannot separate — the recommended default for crystallographic data;
+  where no difference map exists (cryo-EM, apo) it falls back to ``local`` automatically.
+  ``classic`` restores the legacy whole-construct energy ranking and is provided for
+  comparison only — it is susceptible to the environment-noise problem the localised
+  modes were built to fix.
+* ``allowMultiple`` (default false): each residue is settled individually and takes about
+  a second, so by default only a single residue may be targeted — a guard against an
   accidental whole-model run. Set true to fit every residue in the selection.
 * ``apply`` (default true): commit the best candidate to the model. If false, the
   ranking is reported (use with ``debug true``) but nothing is changed.
-* ``debug`` (default false): log the full per-rotamer ranking, polish and do-no-harm
-  detail instead of the single-line summary.
+* ``debug`` (default false): log the full per-rotamer ranking, the per-signal breakdown,
+  polish and do-no-harm detail and per-phase timings instead of the single-line summary.

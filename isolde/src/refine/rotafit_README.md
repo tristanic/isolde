@@ -58,10 +58,11 @@ Per target residue, inside the **running, paused** simulation:
    (see §3.7). Leave the simulation running so the live MDFF trajectory refines further and
    the user can `isolde sim revert` to the checkpoint taken at the start.
 
-Settling uses a **hybrid** relax (`minimize=True`, now the default): step the integrator at
-0 K first (dynamics has momentum to seat the pose in the local density well), then
-`minimizeEnergy()` to converge deterministically (kills the run-to-run jitter that makes
-the ranking energy noisy). See §3.6.
+Settling is **0 K damped dynamics** (`minimize=False`, the default): stepping the integrator at
+0 K seats the pose in the local density well, and at `T = 0` the Langevin random force vanishes
+so the descent is deterministic — it damps toward the minimum on its own. `minimizeEnergy()` is
+available (`minimize true`) but off by default; it is the dominant cost and adds little once the
+score is localised (§4, §3.6). See §3.6.
 
 ---
 
@@ -105,31 +106,38 @@ are in **Ångström**; read them back with `getState(getPositions=True).getPosit
 - Temperature: `sim_handler.temperature = value` (routes to `_main_integrator`; the
   CompoundIntegrator has no get/setTemperature). Read the *configured* value to restore
   from `isolde.sim_params.temperature`.
-- Soft-core λ: `sim_handler.softcore_lambda` is a clean get/set property on the live context.
-  ISOLDE's live default (~0.95) is stiff; softening to ~0.6 lets clashy seeds relax instead
-  of exploding. **Always restore** temperature and λ in a `finally`.
+- Softening: `rotafit` uses **per-group soft-core coupling** (`SimHandler.assign_nb_group` /
+  `set_nb_coupling`, via the `_Softener` helper), NOT the global `softcore_lambda`. The target
+  residue goes in its own nonbonded group and only its coupling to the rest of the model is
+  softened (~0.6) so a clashy seed relaxes, while the environment stays rigid at full strength
+  (no position pinning). **Always restore** temperature and the coupling in a `finally`. (The
+  global `sim_handler.softcore_lambda` still acts as the master ceiling; see §3.8.)
 
 ### 3.5 Scoring on force groups — exclude restraints
 `getState(getEnergy=True).getPotentialEnergy()` returns the **total**, which includes
-ISOLDE's `RESTRAINT_FORCE_GROUP` (=6) — and *every* restraint lands there, including our own
-environment position pins (huge, per-atom, pose-independent **noise**). Rank on
+ISOLDE's `RESTRAINT_FORCE_GROUP` (=6) — and *every* restraint lands there (omega / phi-psi /
+distance / chiral / …), pose-independent **noise** for this decision. Rank on
 **`CORE_FORCE_GROUPS | {MAP_FORCE_GROUP}` = groups {0,1,2,3,4,5}** (bonded + nonbonded +
 MDFF), never group 6. `getState(getEnergy=True, groups=set_of_ints)` accepts a set. Force
 groups are defined at the top of openmm_interface.py.
 
-### 3.6 Settling: `minimize` under-seats; use the hybrid
+### 3.6 Settling: 0 K damped dynamics, no minimiser (default)
 A pure `minimizeEnergy()` from a freshly chi-rotated pose is a **local 0 K quench with no
 momentum**: it converges to the *nearest* minimum, which under the gentle cryo-EM map
 (`global_k ~ 0.34`) is often **off-density** — it can't ride the small barrier into the
-density well. Dynamics *can* (momentum). So the hybrid: **step first (dynamics seats the
-pose in the density well), then minimise (converges deterministically to *that* seated
-minimum).** This gives clean, noise-free ranking energies *and* density-seated geometry.
-Pure-dynamics (`minimize=False`) seats well but its stopping point is jittery (bad for
-ranking); pure-minimise is clean but off-density (bad geometry). Chain them.
+density well. **0 K dynamics can** (momentum), and because the Langevin random force is zero at
+`T = 0` it is *deterministic damped descent* — the friction settles it toward the minimum over
+the step window, so its stopping point is stable enough to rank (especially now the score is
+localised, §4, so there is no environment jitter to amplify). The original design *chained* a
+minimise after the dynamics for the last bit of convergence, but once scoring was localised and
+the commit decided by a robust multi-atom difference-density margin, that minimise stopped
+changing any decision — so `minimize` now defaults **off** (it was the dominant cost; see §4).
+If a pose ever seats short, add 0 K steps (cheap) rather than the minimiser; `minimize true`
+remains as an escape hatch for rescuing genuinely high-energy states.
 
 ### 3.7 Committing: graft the target onto the original environment
 The settled/polished poses are **whole-construct snapshots** whose *environment* was
-perturbed (pinned + settled/minimised) during evaluation. Committing that wholesale moves
+perturbed (settled/minimised) during evaluation. Committing that wholesale moves
 the surroundings too — invisible for a short 0 K step, but a minimise shifts them enough to
 look like a bad commit. **Commit only the target residue, grafted onto the original
 coordinates (`base`):** `commit = base.copy(); commit[ridx] = best[ridx]`. Keeping current =>
@@ -140,22 +148,23 @@ interface afterward.
 energy is dominated by the hundreds of in-density environment atoms; a −10000-ish map term
 says nothing about whether the single target residue is in density.
 
-### 3.8 Environment pinning (position restraints)
-ISOLDE gives every heavy atom an always-present, default-**disabled** position restraint,
-toggleable **without a context reinit** (`session_extensions.get_position_restraint_mgr`;
-`prm.get_restraints(atoms)` → collection with `.enableds/.targets/.spring_constants`,
-targets in Å, springs in kJ/mol/nm²). Because softening λ softens *everyone's* nonbonded,
-`rotafit` pins the environment (targets = current coords, enabled) during the settle so a low
-λ can't deform the shell — only the target residue stays free. Two-tier: atoms within
-`pinNearCutoff` of the rotamer-reachable volume held gently (`pinK`), distant atoms an order
-of magnitude stiffer (`pinDistantMultiplier`) since their motion is only ranking noise. Save
-`(enableds, targets, spring_constants)` (`.copy()` each!) and restore in a `finally`. Changes
-push to the context immediately while paused.
+### 3.8 Softening the target: per-group soft-core coupling (no pinning)
+`rotafit` puts the target residue's real atoms in nonbonded group 1 and its symmetry copies
+in group 2 (`SimHandler.assign_nb_group(atoms, 1, copy_group_id=2)`), leaving everything else
+in group 0. It then softens every coupling that **touches** the target — vs environment
+`(1,0)`/`(2,0)` and its crystal self-contact `(1,2)`/`(2,2)` — while the target's **internal**
+`(1,1)` and the environment's `(0,0)` stay **full**. So the sidechain relaxes into density
+(soft against its surroundings, *including its own symmetry image* across an interface) while
+the environment holds its shape by its own force field — **no position restraints**. Couplings
+update live on the paused context (no reinit); the polish ramps them back to full. The
+`_Softener` helper wraps this (`assign_target` once, `set(lam)` ramped repeatedly); the
+one-call equivalent is `SimHandler.soften_nb_selection`. Needs `nb_groups_max >= 3` (default 4).
 
-> **Note (this branch):** with the `minimize` hybrid now the default, pinning is a *noise*
-> control that the deterministic minimise largely subsumes, and it can *prevent* legitimate
-> environmental accommodation (see §5). Worth revisiting whether it should stay on by
-> default.
+> Why per-group and not the global λ: softening the global `softcore_lambda` softens
+> *everything*, which used to force `rotafit` to pin the surrounding model with position
+> restraints so it wouldn't deform under the soft λ. Per-group coupling never softens the
+> environment in the first place, so the pinning machinery (and its risk of *preventing*
+> legitimate environmental accommodation, §5) is gone.
 
 ### 3.9 Coupling-scaled thresholds
 `acceptMargin` is a **multiple of the MDFF coupling constant** (summed `global_k` over
@@ -173,13 +182,71 @@ flag and `any(t[3] for t in ...)` / `next((t for t in ... if t[3]), None)`.
 
 ## 4. Scoring philosophy
 
-- Rank on **core FF + MDFF** (§3.5); the map influence is ISOLDE's own coupling — there is
-  **no separate map weight to invent**. This was a temptation worth resisting: the sim-based
-  scorer already inherits the tuned, sigma-normalised coupling.
-- The score is a **whole-construct** energy, but the *signal* is one residue. The dominant
-  risk is that environment jitter (mostly in the O(N²) nonbonded term) swamps the tiny
-  per-residue signal. Mitigations in place: pin distant atoms hard (§3.8), and the
-  deterministic minimise (§3.6) removes stochastic jitter.
+**The whole-construct energy is the wrong ruler (learned the hard way).** The original score
+was the whole-construct core-FF + MDFF energy (§3.5). That failed on obvious cases: on 3io0
+Thr89, a *strained, worse-fitting* rotamer beat the correct one by ~420 kJ/mol, of which
+**−524 was pure environment nonbonded jitter** — the O(N²) env–env term settling into a
+slightly different local minimum from pose to pose, swamping the ~100 kJ/mol per-residue
+signal (which actually favoured the correct answer). The environment being rigid-*coupled*
+(§3.8) does **not** save you: a full-strength environment still *moves* under each pose's
+minimise, and its summed energy is a noisy whole-construct quantity. The fix is to stop
+scoring the environment at all — score **atom-local** quantities of the target only.
+
+**`score_mode` (default `local+diff`).** Three rulers, selectable per call:
+- **`local`** — rank by the target residue's **own MDFF map energy**, isolated by the
+  *difference method* (`_target_map_energy`): read the map-group energy, disable the target's
+  per-atom map terms, re-read, subtract. The (identical) environment map contribution cancels
+  exactly, leaving only the target's density fit. Immune to the env nonbonded noise entirely.
+  Fixes the Thr89 class. But on a **model-biased** crystallographic map it can still prefer a
+  *peak-parking* rotamer: the 2mFo-DFc map is phase-biased toward the current model, so a wrong
+  rotamer that parks atoms on already-modelled density can out-score the correct one (the Ile114
+  failure — wrong `tp` beats correct `pt` on summed 2Fo-Fc).
+- **`local+diff`** (default) — `local` primary, but among candidates **tied on the main map**
+  (within `DENSITY_TIE_BAND × global_k` of the best `map_local`) the tie is broken by the
+  **mFo-DFc difference-density score** (`_LocalScorer.diff_score`): the sigma-normalised sum of
+  the *difference* map sampled at the target's heavy atoms. The difference map marks density the
+  current model fails to explain (positive — where the correct atoms belong) and mismodelled
+  density (negative), so it defeats model bias **without recomputing structure factors** per
+  candidate. Do-no-harm here is data-driven: `current` is displaced only if a band-mate explains
+  ≥ `DIFF_MARGIN` σ more difference density. Used **only** as a tiebreaker (and its do-no-harm),
+  never as an MDFF driver — which preserves the reason difference density is disabled as a force
+  (too noisy to integrate against). The band gate is what makes the noisy signal safe: a pose
+  only reaches the tiebreak if the trustworthy main map already ranks it competitive. Degrades
+  to `local` when there is no difference map (cryo-EM / apo).
+- **`classic`** — the legacy whole-construct energy, kept for A/B comparison. Don't use it to
+  fit; it is the behaviour the above replaces.
+- The map influence is still ISOLDE's own sigma-normalised coupling — **no separate map weight
+  to invent** (§3.9 do-no-harm scaling unchanged; `local`/`local+diff` apply it to `map_local`).
+
+**Settle is 0 K dynamics only (no minimiser) by default.** `minimize` defaults **off**: at
+`T = 0` the Langevin random force vanishes, so 0 K "dynamics" is deterministic *damped descent*
+that settles toward the minimum on its own. `minimizeEnergy()` only decisively helps when
+rescuing a genuinely high-energy state into stable dynamics — which the soft-λ settle already
+does (clashy seeds slide apart at λ ≈ 0.6). Dropping it removed the dominant cost; if seating is
+ever short, *more 0 K steps* are far cheaper than a minimise (and `minimize true` remains as an
+escape hatch). The search phase is dynamics-only regardless (it only nominates the density
+tie-band; the polish does the honest ranking).
+
+**Cost discipline (the scorer computes only what ranks).** Each pose evaluates just the signals
+the active `score_mode` consumes — `map_local` always, `diff_score` in `local+diff`. Everything
+else (`whole`, `map_whole`, the map-force coherence, the pre-settle "approach" signals) is
+computed **only under `debug`**, for the side-by-side log. The polish minimises once (final λ)
+rather than per ramp-increment, and in `local+diff` polishes only the *difference-density
+contenders* in the band (a band member the tiebreak can't pick is never minimised). Together
+these took the Ile114 fit from ~10 s to < 1 s.
+
+**Ile114-class placement diagnostic.** `_LocalScorer.target_map_force` reports the per-atom map
+force on the target as **(rms, coherence)** — high coherence = the sidechain is being coherently
+tugged into a nearby lobe (a "cooperative gradient"); ~0 rms = stranded on the flat map. It's a
+`debug`-only diagnostic (not a ranking term): for the crystallographic model-bias case the
+difference-density tiebreak resolved it, so the seeding/anneal fix this signal was meant to
+guide is not currently needed.
+
+**Debug output.** With `debug true`, every candidate prints its signals side-by-side
+(`_metrics_str`: `map_local | diff | map_whole | whole`, plus the pre-settle `approach` block
+for the search set), for both the soft search set and the polished set, and each phase logs a
+`timing:` line — so the discriminating term and the cost are both visible at a glance.
+
 - Soft (search) and stiff (polish) rankings can disagree; polish + re-rank at full stiffness
   is the honest call, and the ramp avoids the jolt.
 
@@ -191,9 +258,9 @@ flag and `any(t[3] for t in ...)` / `next((t for t in ... if t[3]), None)`.
   *as it currently sits*. When the correct fix requires the *neighbours* to collectively
   rearrange (cross barriers to a new packing) — e.g. a backwards-fit VAL whose surroundings
   have adapted to the wrong pose — a quick settle can't discover it: the correct pose reads
-  as strained against the un-relaxed (or pinned) environment. Giving the sim more room
+  as strained against the un-relaxed environment. Giving the sim more room
   (ISOLDE's standard, non-contracted sim-start selection — now the default) helps; a fully
-  contracted/over-pinned region can leave no room at all. But some cases genuinely need the
+  contracted/over-constrained region can leave no room at all. But some cases genuinely need the
   human to place + equilibrate, with `rotafit` then confirming.
 - **Density can't always discriminate.** Near-symmetric residues (VAL, LEU, THR) at low
   resolution put almost identical density for "correct" vs "backwards"; the per-residue map
@@ -210,8 +277,10 @@ decide."** What transfers directly:
 
 - **The whole engine playbook (§3).** Threading, direct-integrator driving, coord push,
   force-group scoring, the seat-then-converge hybrid, graft-on-commit, coupling-scaled
-  thresholds, position-restraint pinning. These are engine facts, not rotafit-specific — reuse
-  them verbatim.
+  thresholds, and **per-group soft-core coupling** (soften a fragment against its surroundings
+  — including its symmetry copies — while keeping the environment rigid, via
+  `SimHandler.soften_nb_selection` / the `_Softener` pattern; §3.8). These are engine facts,
+  not rotafit-specific — reuse them verbatim.
 - **Enumerate → cull → soft-search → polish → do-no-harm → graft-commit** is a generic loop
   over *candidate placements*. For rotamers the candidates are chi-rotations; for a **new
   residue** they're backbone/rotamer placements consistent with the chain geometry; for a
@@ -240,13 +309,13 @@ What needs new design:
 | Symbol | Role |
 |---|---|
 | `rotafit()` | command entry: validate, guard (`allowMultiple`), start sim if needed, schedule work on `'sim paused'` |
-| `_run_rotafit()` | the worker (runs only when the sim thread is idle): checkpoint, set λ/temp, per-residue pin → settle → commit, restore + resume |
+| `_run_rotafit()` | the worker (runs only when the sim thread is idle): checkpoint, set coupling/temp, per-residue group→settle→commit, restore + resume |
 | `_settle_and_rank()` | enumerate + cull + soft-search a residue's candidates; returns ranked results + `base` |
 | `_commit_best()` | polish top-N (ramp), re-rank, do-no-harm, **graft-commit target onto `base`** |
 | `_settle_pose()` / `_ramped_polish()` | one settle / a λ-ramped polish of a single candidate |
 | `_relax()` | the hybrid: 0 K step (seat) then optional `minimizeEnergy()` (converge) |
 | `_score_energy()` / `_score_groups()` / `_energy_breakdown()` | force-group–filtered scoring (core FF + MDFF; excl. restraints) + debug breakdown |
-| `_pin_environment()` / `_restore_restraints()` / `_reachable_cloud()` | two-tier position-restraint pinning of the environment |
+| `_Softener` | the softening knob: target real atoms → group 1, copies → group 2; softens every coupling touching the target except its internal (1,1); no pinning |
 | `_sim_coupling_constant()` | summed MDFF `global_k` for coupling-scaled `acceptMargin` |
 | `_push_now()` / `_sim_coords()` | immediate coord push while paused / read sim coords (Å) |
 | `_summary_line()` | the single non-debug log line |
