@@ -9,6 +9,7 @@
 
 
 import numpy
+from contextlib import contextmanager
 
 
 from openmm import unit, openmm
@@ -1603,6 +1604,109 @@ class SimHandler:
             if other != g:
                 self.set_nb_coupling(g, other, lam)    # (g, env), (g, gc), (g, other...)
             self.set_nb_coupling(gc, other, lam)       # (gc, *) incl (gc, gc)
+
+    # ------------------------------------------------------------------
+    # Public sim-driving primitives for the in-sim fitting engines (rotafit,
+    # settle_poses). Thin wrappers over the context/integrator/MDFF operations
+    # those engines perform while a simulation is PAUSED on the main thread, so
+    # the engines don't reach into private attributes. All assume a running
+    # (typically paused) simulation.
+    # ------------------------------------------------------------------
+    def sim_coords(self):
+        '''Current simulation coordinates (Angstrom), REAL atoms only.
+
+        In a crystallographic-symmetry simulation the OpenMM System carries extra
+        symmetry-copy virtual-site particles after the real atoms, so the raw context
+        state is longer than ``self._atoms``; slice to the real atoms (a no-op when
+        symmetry is off). Returns an ``(n_real, 3)`` array in construct/``_atoms`` order.'''
+        st = self._simulation.context.getState(getPositions=True)
+        coords = st.getPositions(asNumpy=True).value_in_unit(unit.angstrom)
+        return coords[:len(self._atoms)]
+
+    def settle(self, steps, minimize=False, temperature=None):
+        '''Advance the sim toward a local minimum from the current coords: a 0 K
+        seat-then-optionally-minimise hybrid. ALWAYS resets velocities to 0 K and steps
+        the MAIN integrator first -- Newtonian (damped) dynamics carries momentum over
+        small barriers and seats the pose in the local well (a pure minimise from a fresh
+        placement instead quenches into the nearest minimum, often off-density under a
+        gentle map). Then, if ``minimize``, energy-minimise to converge cleanly to that
+        seated minimum (deterministic, killing run-to-run jitter in a ranking energy).
+
+        Steps the main integrator directly rather than ``self._simulation.step`` so it is
+        pure Newtonian dynamics, not routed through ISOLDE's fast-atom surveillance (which
+        can veto/interrupt a clashy settle). Optionally sets the integrator ``temperature``
+        first (default: leave it unchanged); callers needing a guaranteed 0 K descent pass
+        ``temperature=0`` or hold ``self.temperature`` at 0 around the call.'''
+        if temperature is not None:
+            self.temperature = temperature
+        ctx = self._simulation.context
+        ctx.setVelocitiesToTemperature(0 * unit.kelvin)   # clean 0 K descent
+        self._main_integrator.step(steps)                 # dynamics: fall into the well
+        if minimize:
+            self._simulation.minimizeEnergy()             # converge to the seated minimum
+
+    def potential_energy(self, groups=None):
+        '''Potential energy (kJ/mol) of the current sim state, optionally restricted to a
+        set of force groups -- e.g. ``CORE_FORCE_GROUPS`` for the force-field terms or
+        ``{MAP_FORCE_GROUP}`` for the map. A single-point read; assumes a running (typically
+        paused) simulation. ``groups`` is anything OpenMM's ``getState(groups=...)`` accepts
+        (a set of ints); None reads all groups.'''
+        kw = {} if groups is None else {'groups': groups}
+        st = self._simulation.context.getState(getEnergy=True, **kw)
+        return st.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
+
+    def _mdff_managers(self):
+        '''The MDFF managers (one per driving map) for the running sim, or ``[]``.
+
+        The managers -- which own ``get_mdff_atoms`` and ``global_k`` -- live on the
+        SimManager, not on the handler; reach them through the ISOLDE singleton. Guarded so
+        it simply reports "no maps" if any link is missing (apo sim, mid-teardown).'''
+        sm = getattr(getattr(self.session, 'isolde', None), 'sim_manager', None)
+        mgrs = getattr(sm, 'mdff_mgrs', None) if sm is not None else None
+        return list(mgrs.values()) if mgrs else []
+
+    def mdff_coupling_constant(self):
+        '''Summed MDFF coupling constant (``global_k``) over the maps driving the sim.
+
+        This is ISOLDE's own map weight: sigma-normalised and resolution-calibrated (small
+        for high-sigma cryo-EM maps, larger for x-ray), so a fitting engine can scale an
+        energy threshold by it to track the map's energy scale rather than hard-coding a
+        kJ/mol value. Returns 0.0 when the sim has no MDFF maps (apo).'''
+        total = 0.0
+        for mgr in self._mdff_managers():
+            try:
+                total += float(mgr.global_k)
+            except Exception:
+                pass
+        return total
+
+    @contextmanager
+    def map_decoupled(self, atoms):
+        '''Context manager: for its duration, DISABLE the per-atom MDFF map terms of
+        ``atoms`` across every driving map, restoring them on exit.
+
+        The map term is a pure per-atom sum, so with a selection's terms off the map no
+        longer pulls on (or scores) those atoms while everything else stays map-restrained
+        -- e.g. hold the receptor toward its experimental density while judging a ligand on
+        packing alone, or isolate a residue's own map energy by the difference method.
+        Symmetry-safe: drives the same ``update_mdff_atoms`` path as live edits (which fans
+        a disable out to each atom's symmetry terms too). Applies immediately when paused.
+        A no-op (yields straight through) when the sim has no maps or none of ``atoms`` are
+        map-coupled.'''
+        saved = []
+        try:
+            for mgr in self._mdff_managers():
+                m = mgr.get_mdff_atoms(atoms)
+                if m is None or len(m) == 0:
+                    continue
+                saved.append((mgr, m, numpy.array(m.enableds, copy=True)))
+                m.enableds = numpy.zeros(len(m), dtype=bool)   # disable this selection's terms
+                self.update_mdff_atoms(m, mgr.volume)          # live (paused => at once)
+            yield
+        finally:
+            for mgr, m, en in saved:                           # always restore
+                m.enableds = en
+                self.update_mdff_atoms(m, mgr.volume)
 
 
     @property
