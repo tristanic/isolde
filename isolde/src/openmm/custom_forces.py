@@ -1856,6 +1856,19 @@ eps0 = 1e-6*8.8541878128e-12/(unit.AVOGADRO_CONSTANT_NA*e_charge**2)*unit.farad/
 ONE_ON_4_PI_EPS0 = 1/(4*pi*eps0)*eps0.unit
 
 
+# When a nonbonded group pair is softened (per-group soft-core coupling -- e.g. the
+# "isolde decouple" command, or the rotafit/settle_poses fitting engines), the direct-space
+# electrostatic term is faded by the group-pair coupling raised to this power. Charges thus
+# fade FASTER than the vdW wall (which fades linearly in the coupling): without this, an
+# oppositely-charged cross-group pair keeps ~full Coulombic attraction while its vdW
+# repulsion is softened away, and the two atoms collapse on top of each other. 2 = square-
+# law, which for a strong salt bridge drops the residual contact attraction well below the
+# softened vdW wall. Only ACTIVELY-decoupled pairs are affected -- an undecoupled pair has
+# coupling 1.0, so the factor is 1.0 and the equilibrium force field is byte-for-byte
+# unchanged.
+COULOMB_DECOUPLE_POWER = 2
+
+
 class NonbondedSoftcoreForce(CustomNonbondedForce):
     '''
     Defines a soft-core Lennard-Jones potential to replace the default version,
@@ -1878,7 +1891,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         self.update_needed = False
 
     @staticmethod
-    def _soft_core_energy(a, b, c, lam='softcore_lambda', extra_defs=''):
+    def _soft_core_energy(a, b, c, lam='softcore_lambda', coulomb_scale=None, extra_defs=''):
         '''
         Build the soft-core LJ + Coulomb energy expression. ``lam`` is the name of
         the per-pair coupling variable used throughout; the default
@@ -1891,11 +1904,19 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         it (matching the ``lennard_jones``-uses-``lj_base`` convention here), so
         it must be appended, never prepended.
 
+        ``coulomb_scale`` (a variable name or expression, defined in ``extra_defs``)
+        multiplies ONLY the Coulomb term. ``None`` (the default) omits the factor and
+        reproduces the plain force byte-for-byte. Per-group subclasses pass a scale built
+        from the coupling table so a decoupled pair's electrostatics fades faster than its
+        vdW -- otherwise a softened vdW wall can no longer hold oppositely-charged atoms
+        apart against the (un-faded) Coulomb attraction. See COULOMB_DECOUPLE_POWER.
+
         Only the ``lennard_jones``/``lj_base`` block is Lennard-Jones-specific;
         it references ``lam`` and is the single point that a future
         double-exponential vdW form would replace, leaving the coupling
         plumbing untouched.
         '''
+        cs = f'{coulomb_scale} * ' if coulomb_scale else ''
         return (
             'lennard_jones + coulombic;'
             'lennard_jones = '
@@ -1906,7 +1927,7 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
                 f'(r/sigma)^{c} );'
             'sigma = 0.5*(sigma1+sigma2);'
             'epsilon = sqrt(epsilon1*epsilon2);'
-            f'coulombic = {ONE_ON_4_PI_EPS0} * charge1 * charge2 * '
+            f'coulombic = {cs}{ONE_ON_4_PI_EPS0} * charge1 * charge2 * '
                 f'( 1 / ( softcore_alpha*(1-{lam})^({b*4}) + r^{c} ) )^(1/{c})'
             + ((';' + extra_defs.rstrip(';')) if extra_defs else '')
             )
@@ -2050,9 +2071,18 @@ class NBGroupNonbondedSoftcoreForce(NonbondedSoftcoreForce):
         # Grouped: build the pair_lambda expression. We bypass
         # NonbondedSoftcoreForce.__init__ (which builds the plain expression) and
         # construct the CustomNonbondedForce directly with the group form.
+        # vdW softens with pair_lambda (the global ceiling min the group-pair table); the
+        # direct Coulomb term fades FASTER -- as the group-pair coupling raised to
+        # COULOMB_DECOUPLE_POWER -- so an oppositely-charged decoupled pair cannot collapse
+        # (its attraction would otherwise outlive the softened vdW wall). coulomb_scale is
+        # driven by the TABLE alone (not softcore_lambda), so an undecoupled pair keeps
+        # coulomb_scale == 1.0 and the equilibrium force field is unchanged.
         extra = ('pair_lambda = min(softcore_lambda, '
-                 'nb_coupling_table(nb_group1, nb_group2));')
-        energy = self._soft_core_energy(a, b, c, lam='pair_lambda', extra_defs=extra)
+                 'nb_coupling_table(nb_group1, nb_group2));'
+                 'coulomb_scale = nb_coupling_table(nb_group1, nb_group2)'
+                 f'^{COULOMB_DECOUPLE_POWER};')
+        energy = self._soft_core_energy(a, b, c, lam='pair_lambda',
+                                        coulomb_scale='coulomb_scale', extra_defs=extra)
         CustomNonbondedForce.__init__(self, energy)
         self.addGlobalParameter('softcore_lambda', nb_lambda)
         self.addGlobalParameter('softcore_alpha', alpha)
