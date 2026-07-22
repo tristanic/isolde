@@ -272,6 +272,60 @@ def run(session=None):
         zero_raised = True
     _check(zero_raised, "set_coupling(lam=0) raises UserError (why E_pack uses eps, not 0)")
 
+    # ===== square-law Coulomb fade on decoupling (COULOMB_DECOUPLE_POWER) =====
+    # The per-group Coulomb term must fade as (coupling)^COULOMB_DECOUPLE_POWER so a
+    # decoupled oppositely-charged pair loses its electrostatic attraction (which would
+    # otherwise outlive the softened vdW wall and pull cross-group atoms together). At full
+    # coupling the factor is 1.0 -> byte-identical to the plain force. The electrostatic
+    # contribution is isolated as E(charged) - E(uncharged) at fixed geometry (the vdW term
+    # is charge-independent, so it cancels exactly).
+    from chimerax.isolde.openmm.custom_forces import COULOMB_DECOUPLE_POWER
+    _check(COULOMB_DECOUPLE_POWER == 2,
+           f"COULOMB_DECOUPLE_POWER == 2 (got {COULOMB_DECOUPLE_POWER})")
+
+    def _grp_opp(charged):
+        q = 0.5 if charged else 0.0
+        f = NBGroupNonbondedSoftcoreForce(nb_lambda=LAMBDA, n_nb_groups=3)
+        f.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+        ctx = _make_context(f, [[+q, SIG, EPS, 0.0], [-q, SIG, EPS, 1.0]])  # groups 0,1
+        return f, ctx
+
+    def _E_at(ctx, r):
+        ctx.setPositions(np.array([[0., 0., 0.], [r, 0., 0.]]) * unit.nanometer)
+        return _energy(ctx)
+
+    # (a) full coupling (1.0) == plain force with the same opposite charges (parity: the
+    # coulomb_scale factor is 1.0^2 = 1.0, so nothing changes for an undecoupled pair).
+    fc, ctxc = _grp_opp(True)
+    refc = NonbondedSoftcoreForce(nb_lambda=LAMBDA)
+    refc.setNonbondedMethod(mm.CustomNonbondedForce.NoCutoff)
+    ctx_refc = _make_context(refc, [[+0.5, SIG, EPS], [-0.5, SIG, EPS]])
+    _check(abs(_energy(ctxc) - _energy(ctx_refc)) < TOL,
+           f"opp-charge grouped(coupling 1.0) == plain: {_energy(ctxc):.6f} vs "
+           f"{_energy(ctx_refc):.6f}")
+
+    # (b) strong decoupling (0.1): electrostatics must be ~off -- the charged and uncharged
+    # energies at short range nearly coincide (Coulomb scaled by 0.1^2 = 0.01). With the old
+    # un-faded Coulomb they differed by tens of kJ/mol.
+    R_SHORT = 0.15
+    fch, ctx_ch = _grp_opp(True)
+    fun, ctx_un = _grp_opp(False)
+    fch.set_coupling(0, 1, 0.1, context=ctx_ch)
+    fun.set_coupling(0, 1, 0.1, context=ctx_un)
+    elec_dec = abs(_E_at(ctx_ch, R_SHORT) - _E_at(ctx_un, R_SHORT))
+    _check(elec_dec < 2.0,
+           f"decoupled(0.1): electrostatics ~off at r={R_SHORT} "
+           f"(|E_charged-E_uncharged|={elec_dec:.3f} kJ/mol, must be small)")
+
+    # (c) sanity: at full coupling the same comparison shows a LARGE electrostatic term (the
+    # fix fades it only on decoupling; it does not remove equilibrium electrostatics).
+    fch1, ctx_ch1 = _grp_opp(True)
+    fun1, ctx_un1 = _grp_opp(False)
+    elec_full = abs(_E_at(ctx_ch1, R_SHORT) - _E_at(ctx_un1, R_SHORT))
+    _check(elec_full > 10.0 and elec_dec < 0.1 * elec_full,
+           f"electrostatics present at full coupling ({elec_full:.1f} kJ/mol) and >=10x "
+           f"reduced when decoupled ({elec_dec:.3f})")
+
     if _failures:
         print(f"\n{len(_failures)} CHECK(S) FAILED")
         raise SystemExit(1)
