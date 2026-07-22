@@ -28,6 +28,8 @@ as ISOLDE updates the map on R-factor improvement).
 
 import numpy as np
 
+from .settle_common import severe_clash, start_sim_on
+
 SEVERE_OVERLAP = 2.0     # Angstrom: a moved sidechain heavy atom closer than this
                          #   to a non-residue heavy atom => severe clash, cull it.
 SETTLE_STEPS = 100       # 0 K dynamics steps per rotamer during the SOFT search
@@ -191,17 +193,10 @@ def _push_now(sh, coords):
 
 
 def _sim_coords(sh):
-    '''Current simulation coordinates (Angstrom, construct/_atoms order).
-
-    Returns ONLY the real-atom rows. In a symmetry-aware simulation the OpenMM
-    System carries extra symmetry-copy virtual-site particles after the real atoms
-    ([0, n_real) real, [n_real, n_total) copies), so the raw context state is longer
-    than sh._atoms; everything in rotafit is keyed to sh._atoms, so slice to it.
-    (A no-op when symmetry is off: n_total == n_real.)'''
-    from openmm import unit
-    st = sh._simulation.context.getState(getPositions=True)
-    coords = st.getPositions(asNumpy=True).value_in_unit(unit.angstrom)
-    return coords[:len(sh._atoms)]
+    '''rotafit adapter over :meth:`SimHandler.sim_coords` (the real-atom coord slice now
+    lives on the handler, shared with settle_poses). Kept so rotafit's call sites read
+    unchanged.'''
+    return sh.sim_coords()
 
 
 def _score_groups():
@@ -236,19 +231,11 @@ def _score_energy(ctx, softener=None, score_lambda=0.0):
 
 
 def _relax(sh, integrator, ctx, steps, minimize):
-    '''Advance the sim toward a local minimum from the current coords. ALWAYS steps the
-    main integrator at 0 K first: Newtonian (damped) dynamics carries momentum over small
-    barriers and SEATS the pose in the local density well. (A pure minimise from a
-    freshly-placed rotamer instead quenches into the nearest minimum, which under the
-    gentle cryo-EM map is often off-density -- it has no momentum to ride into the well.)
-    Then, if ``minimize``, energy-minimise to converge cleanly to that seated minimum --
-    deterministic, killing the run-to-run jitter in the ranking energy. So minimize=True
-    is a HYBRID: seat with dynamics, converge with minimisation.'''
-    from openmm import unit
-    ctx.setVelocitiesToTemperature(0 * unit.kelvin)   # clean 0 K descent
-    integrator.step(steps)                            # dynamics: fall into the map well
-    if minimize:
-        sh._simulation.minimizeEnergy()               # converge to the seated minimum
+    '''rotafit adapter over :meth:`SimHandler.settle` (the 0 K seat-then-optionally-
+    minimise hybrid now lives on the handler, shared with settle_poses). ``integrator``/
+    ``ctx`` are derived inside ``settle`` now; they stay in the signature so rotafit's
+    call sites read unchanged.'''
+    sh.settle(steps, minimize)
 
 
 def _energy_breakdown(ctx):
@@ -271,24 +258,11 @@ def _breakdown_str(ctx):
 
 
 def _sim_coupling_constant(isolde):
-    '''Summed MDFF coupling constant (global_k) over the maps driving the running sim.
-    This is ISOLDE's OWN map weight: sigma-normalised (the map force divides energy by
-    the map sigma) and calibrated per resolution, so it is small for high-sigma cryo-EM
-    maps and larger for x-ray. Scaling rotafit's do-no-harm margin by it makes the
-    threshold track the map's energy scale automatically -- exactly the coupling ISOLDE
-    already uses to drive the sim, so we don't reinvent a map weight. Returns 0.0 if the
-    sim has no MDFF maps (apo).'''
-    sm = getattr(isolde, 'sim_manager', None)
-    mgrs = getattr(sm, 'mdff_mgrs', None) if sm is not None else None
-    if not mgrs:
-        return 0.0
-    total = 0.0
-    for mgr in mgrs.values():
-        try:
-            total += float(mgr.global_k)
-        except Exception:
-            pass
-    return total
+    '''rotafit adapter over :meth:`SimHandler.mdff_coupling_constant` (ISOLDE's own
+    sigma-normalised, resolution-calibrated summed ``global_k``, used to scale rotafit's
+    do-no-harm margin to the map's energy scale). Returns 0.0 if the sim has no maps.'''
+    sh = getattr(isolde, 'sim_handler', None)
+    return sh.mdff_coupling_constant() if sh is not None else 0.0
 
 
 class _LocalScorer:
@@ -387,36 +361,21 @@ def _map_energy(ctx):
 
 
 def _target_map_energy(sh, isolde, residue):
-    '''The target residue's OWN MDFF map energy (kJ/mol), by the DIFFERENCE method:
-    read the whole map energy, temporarily disable the target's per-atom map terms
-    (across every map), re-read, and subtract. The map term is a pure per-atom sum, so
-    the (unchanged) environment contribution cancels exactly and only the target's
-    density fit remains. Symmetry-safe: drives the same ``update_mdff_atoms`` path used
-    for live edits (which fans a disable out to each atom's symmetry terms too), and it
-    resolves immediately because the sim is paused. Returns 0.0 if the sim has no maps.
+    '''The target residue's OWN MDFF map energy (kJ/mol), by the DIFFERENCE method: read
+    the whole map energy, disable the target's per-atom map terms (via
+    :meth:`SimHandler.map_decoupled`), re-read, and subtract. The map term is a pure
+    per-atom sum, so the (unchanged) environment contribution cancels exactly and only the
+    target's density fit remains. Symmetry-safe and resolves immediately because the sim
+    is paused. Returns 0.0 if the sim has no maps.
 
-    NB lower (more negative) = better fit; the target sits in density when this is a
-    large negative number, and ~0 when it is out of density.'''
-    sm = getattr(isolde, 'sim_manager', None)
-    mgrs = getattr(sm, 'mdff_mgrs', None) if sm is not None else None
-    if not mgrs:
+    NB lower (more negative) = better fit; the target sits in density when this is a large
+    negative number, and ~0 when it is out of density.'''
+    if not sh.mdff_forces:
         return 0.0
     ctx = sh._simulation.context
     e_all = _map_energy(ctx)
-    saved = []
-    try:
-        for mgr in mgrs.values():
-            m = mgr.get_mdff_atoms(residue.atoms)
-            if m is None or len(m) == 0:
-                continue
-            saved.append((mgr, m, np.array(m.enableds, copy=True)))
-            m.enableds = np.zeros(len(m), dtype=bool)   # disable the target's map terms
-            sh.update_mdff_atoms(m, mgr.volume)    # live (paused => pushed at once)
+    with sh.map_decoupled(residue.atoms):
         e_without = _map_energy(ctx)
-    finally:
-        for mgr, m, en in saved:                   # always restore
-            m.enableds = en
-            sh.update_mdff_atoms(m, mgr.volume)
     return e_all - e_without
 
 
@@ -624,29 +583,16 @@ def _commit_best(sh, isolde, softener, scorer, score_mode, residue, results, bas
 
 
 def _severe_clash(pose_coords, residue, moved_names, env_coords):
-    '''True if any MOVED heavy sidechain atom in this rotamer pose comes within
-    SEVERE_OVERLAP of a fixed environment heavy atom -- an obvious non-starter.'''
-    ratoms = residue.atoms
-    is_moved = np.isin(ratoms.names, list(moved_names))
-    is_heavy = ratoms.element_names != 'H'
-    sel = is_moved & is_heavy
-    if not np.any(sel) or not len(env_coords):
-        return False
-    from chimerax.geometry import find_close_points
-    close, _ = find_close_points(pose_coords[sel], env_coords, SEVERE_OVERLAP)
-    return len(close) > 0
+    '''rotafit adapter over :func:`settle_common.severe_clash`: builds the moved-atom mask
+    from the rotamer's moving-atom NAMES and delegates (SEVERE_OVERLAP cutoff).'''
+    moved_mask = np.isin(residue.atoms.names, list(moved_names))
+    return severe_clash(pose_coords, residue.atoms, moved_mask, env_coords,
+                        cutoff=SEVERE_OVERLAP)
 
 
 def _start_sim_on(session, isolde, residues):
-    '''Start a simulation around the target residue(s) using ISOLDE's STANDARD sim-start
-    selection (its normal padding + soft-shell). The generous buffer gives the local
-    environment room to relax around a re-fitted rotamer -- important for fixes that need
-    the neighbours to accommodate (an over-contracted region can leave no such room).'''
-    from chimerax.atomic import Residues
-    from chimerax.core.commands import run
-    session.selection.clear()
-    Residues(residues).atoms.selected = True
-    run(session, 'isolde sim start sel')
+    '''rotafit adapter over :func:`settle_common.start_sim_on`.'''
+    start_sim_on(session, isolde, residues)
 
 
 def _settle_pose(sh, integrator, ctx, ridx, base, rcoords, steps, minimize=False):
