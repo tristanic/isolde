@@ -463,9 +463,9 @@ soft-core coupling (see :ref:`decouple`). This is the clean way to start a
 simulation with an initially poorly-fitted ligand or fragment: decoupled, it can
 slide through clashes and relax into density without exploding, while the rest of
 the model keeps its full-strength force field. The **lambdaDecouple** keyword
-(abbreviates to **lambda**) sets the coupling strength, in ``[0.1, 1]`` — ``0.1``
-(the default) is strongly decoupled, ``1`` is full; intermediate values give a
-gentler push-in. The decoupled selection **must be a subset of the mobile region**
+(abbreviates to **lambda**) sets the coupling strength, in ``[0.01, 1]`` — ``0.01``
+(the default) is ghost-like (near-transparent), ``0.1`` is moderately decoupled, and
+``1`` is full; larger values give a gentler push-in. The decoupled selection **must be a subset of the mobile region**
 — decoupling a fixed or shell atom is meaningless and is rejected, so widen the
 simulation selection (or narrow *decouple*) if needed. The decoupling is transient:
 it is forgotten when the simulation stops, and can be cleared or adjusted mid-run
@@ -1643,9 +1643,10 @@ softens **every** interaction that touches it — against the environment *and* 
 own crystal image — down to ``lambdaDecouple``, while leaving the environment and the
 selection's **own internal geometry** at full strength. So the selection can move freely
 through its surroundings without the surroundings deforming and without the selection
-itself falling apart. ``lambdaDecouple`` (abbreviates to ``lambda``) runs from ``0.1``
-(strongly decoupled — its default) to ``1`` (normal full coupling); intermediate values
-firm the interaction up gradually.
+itself falling apart. ``lambdaDecouple`` (abbreviates to ``lambda``) runs from ``0.01``
+(ghost-like — its default; the selection barely feels its surroundings) through ``0.1``
+(moderately decoupled) to ``1`` (normal full coupling); larger values firm the interaction
+up gradually.
 
 ``isolde decouple`` *atoms* ``off`` restores full coupling everywhere. Only **one**
 selection is decoupled at a time — each ``on`` first clears any previous decoupling, so
@@ -1670,6 +1671,6 @@ Options:
 * ``on`` | ``off`` (optional, default ``on``): ``on`` (or omitted) decouples the
   selection; ``off`` restores full coupling everywhere. Accepts any boolean
   (``on``/``off``/``true``/``false``).
-* ``lambdaDecouple`` (abbreviates to ``lambda``; default 0.1): the soft-core coupling of
-  the selection to everything else, in ``[0.1, 1]`` — ``0.1`` strongly decoupled, ``1``
-  full strength. Only used with ``on``.
+* ``lambdaDecouple`` (abbreviates to ``lambda``; default 0.01): the soft-core coupling of
+  the selection to everything else, in ``[0.01, 1]`` — ``0.01`` ghost-like (near-
+  transparent), ``0.1`` moderately decoupled, ``1`` full strength. Only used with ``on``.
