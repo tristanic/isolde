@@ -68,13 +68,54 @@ from .settle_common import severe_clash
 # lambda <= 0 (custom_forces.py set_coupling: "0 < lambda <= 1"), and the residual
 # fragment<->env energy at 1e-4 is negligible, so the difference is clean.
 NB_DECOUPLE_EPS = 1e-4
-# Soft-core coupling of the fragment to its surroundings DURING the settle (not the
-# scoring read). A soft wall lets a clashy input pose slide apart instead of exploding;
-# the polish then ramps back to full stiffness. Mirrors rotafit's SETTLE_LAMBDA.
-SETTLE_LAMBDA = 0.6
+# Soft-core coupling of the fragment to its surroundings DURING pose RANKING (phase b; not the
+# scoring read, which is at the classical lambda=1 virial). ~0.35 gives usable gradients that let
+# a clashy pose escape -- even a protein backbone threaded through a newly-built ring -- without
+# the 0 K dynamics exploding: 0.01 is too soft to move (a "ghost"), 0.6 hard enough that a real
+# overlap diverges to NaN. The polish then ramps up to POLISH_LAMBDA.
+SETTLE_LAMBDA = 0.35
+# Polish target coupling (phase c): near-native, but held below 1.0 to avoid the r=0 soft-core
+# singularity. 0.95 is ISOLDE's standard near-hard model-building value; it is also the global
+# ceiling set by _hardened_softcore, so pair_lambda = min(0.95, table) tops out here regardless.
+POLISH_LAMBDA = 0.95
 SETTLE_STEPS = 100       # 0 K dynamics steps per pose during the soft search
 POLISH_STEPS = 150       # 0 K steps applied while ramping a polished pose to full stiffness
-RAMP_INCREMENTS = 5      # stages over which the polish ramps SETTLE_LAMBDA -> full
+RAMP_INCREMENTS = 5      # stages over which the polish ramps SETTLE_LAMBDA -> POLISH_LAMBDA
+# Pre-step force guard for the POLISH ramp: if raising the coupling spikes any ligand atom's force
+# above this (kJ/mol/nm), the next 0 K integrator step would overshoot the stiff bonded geometry
+# and mangle the pose -- so cull it at that increment instead of stepping into the wreck. A
+# "crazy-high" cutoff: well above ordinary relaxation forces (~1e4), well below a real clash
+# (>=1e5-1e7). NOT applied in the search, where a high force is the clash the soft-core is meant to
+# relax. Tunable -- raise if good poses are culled while hardening, lower if manglers slip through.
+MAX_SETTLE_FORCE = 1.0e5
+
+
+def _safe_settle(sh, steps, minimize=False):
+    '''Run a dynamics settle, returning True on success or False (instead of raising) if
+    OpenMM diverges to NaN mid-step -- so a single un-settleable pose is culled, not the whole
+    run (the finite-guard on the returned coords cannot catch a NaN raised INSIDE step()).'''
+    from openmm import OpenMMException
+    try:
+        sh.settle(steps, minimize=minimize)
+    except OpenMMException:
+        return False
+    return True
+
+
+def _max_force(sh, indices):
+    '''Largest per-atom force magnitude (kJ/mol/nm) over the given system-atom ``indices`` in the
+    live OpenMM context -- one cheap force evaluation. The polish uses it as a pre-step probe: a
+    force this large means the next 0 K step would overshoot into a mangled geometry.'''
+    from openmm import unit
+    f = np.asarray(sh._simulation.context.getState(getForces=True).getForces(asNumpy=True)
+                   .value_in_unit(unit.kilojoule_per_mole / unit.nanometer))
+    idx = np.asarray(indices, dtype=int)
+    if not len(idx):
+        return 0.0
+    fi = f[idx]
+    return float(np.sqrt((fi * fi).sum(axis=1)).max())
+
+
 CURRENT_LABEL = '(current)'   # label given to the residue's starting conformation
 
 # --- scoring modes -----------------------------------------------------------------------
@@ -100,10 +141,11 @@ STRAIN_CEIL_FACTOR = 1.15
 # pose ranking -- letting RAW per-atom von-Mises rank correctly without a reference library.
 SCORE_RADIUS = 4.5       # Angstrom
 # Engagement veto: a settled pose whose MODIFIED group has retreated from the receptor into
-# solvent is "fundamentally uninteresting" and is culled -- the mirror image of the
-# severe_clash PRE-filter (which culls over-clashing INPUT poses) at the opposite extreme, on
-# the SETTLED geometry. Engagement = fraction of moved heavy atoms with >=1 receptor heavy
-# atom within CONTACT_SHELL; a pose below ENGAGE_MIN is dropped ((current) is exempt).
+# solvent is "fundamentally uninteresting" and is culled -- the opposite-extreme mirror image of
+# the severe_clash INPUT pre-filter (over-clashing input poses; hard-path only -- the soft-core
+# search relaxes clashes rather than pre-culling them), applied on the SETTLED geometry.
+# Engagement = fraction of moved heavy atoms with >=1 receptor heavy atom within CONTACT_SHELL;
+# a pose below ENGAGE_MIN is dropped ((current) is exempt).
 CONTACT_SHELL = 4.5      # Angstrom
 ENGAGE_MIN = 0.3         # minimum engaged fraction of the modified group's heavy atoms
 
@@ -122,7 +164,8 @@ class SettleResult:
     * kept_current: True if the do-no-harm margin kept the residue's starting conformation.
     * applied: True if coordinates were written to the model/sim.
     * energies: ``[(label, E_pack_kJ_per_mol), ...]`` best-first (lower = better packing).
-    * n_culled: poses dropped by the severe-clash pre-filter before settling.
+    * n_culled: poses dropped without a committing score -- the hard-path input clash
+      pre-filter, plus any that diverged during the settle or failed the engagement/strain veto.
     * accept_margin_kJ: the effective do-no-harm margin used (kJ/mol).
     * committed_coords: the committed residue-atom coordinates ``(N,3)`` (Angstrom), or None.
     * map_decoupled / score_mode: echoes of the run configuration.
@@ -143,8 +186,8 @@ class SettleResult:
 def settle_poses(session, residue, poses, *, moved_atoms=None,
                  map_decouple=True, soft_group=True, score=DEFAULT_SCORE,
                  temperature=0.0, settle_steps=SETTLE_STEPS, minimize=False,
-                 polish_top=1, accept_margin=1.0, apply=True,
-                 live=False, on_done=None, debug=False):
+                 polish_top=1, accept_margin=1.0, apply=True, decouple_on_start=False,
+                 include_current=True, live=False, on_done=None, debug=False):
     '''Settle ``poses`` for ``residue`` and commit the best, OWNING the simulation lifecycle.
 
     If no simulation is running, one is auto-started around ``residue`` (ISOLDE's standard
@@ -184,6 +227,22 @@ def settle_poses(session, residue, poses, *, moved_atoms=None,
           if a challenger's E_pack beats it by at least this margin; scaled by ISOLDE's
           MDFF coupling constant when a map drives the sim, else an absolute kJ/mol value.
         * apply: if True (default), commit the winning pose; if False, score only.
+        * decouple_on_start: if True AND this call auto-starts the sim, drop ``moved_atoms`` in as
+          ghosts (soft-core lambda 0.01) for the sim's start-up minimisation, so the receptor
+          relaxes UNAFFECTED by the rebuilt group's clashes -- and that clean equilibrated pose is
+          KEPT as the ranking base (the pre-sim revert is skipped; reverting would discard it).
+          Poses are then ranked at SETTLE_LAMBDA and polished to POLISH_LAMBDA. Only affects an
+          auto-started sim (ignored when the caller already has one running). Recommended for
+          ligand modification; off by default so rotamer-style callers keep the revert behaviour.
+        * include_current: if True (default), the residue's starting conformation competes as a
+          ``'(current)'`` candidate that is EXEMPT from the vetoes and protected by the do-no-harm
+          margin -- the "first, do no harm" policy for REFINING an existing good pose (rotafit).
+          Set False for DE-NOVO placement (a freshly-rebuilt group, e.g. ligand modification):
+          there is no meaningful incumbent to protect, and a privileged current pose distorts the
+          result two ways -- it wins by do-no-harm, and (being e.g. a gently ghost-relaxed pose) it
+          can be artificially low-strain, poisoning the RELATIVE strain ceiling so genuinely-good
+          candidates are culled. With False the candidates are ranked purely on their merits (the
+          model geometry is still the fallback if every pose is vetoed).
         * live: if False (default), fast burst driver. Runs SYNCHRONOUSLY and returns a
           SettleResult only when a sim is ALREADY paused on entry; if it has to auto-start a sim
           or pause a running one, it defers to the next safe pause (async) and returns None,
@@ -223,7 +282,12 @@ def settle_poses(session, residue, poses, *, moved_atoms=None,
     from .settle_common import start_sim_on
     sim_was_running = isolde.simulation_running
     if not sim_was_running:
-        start_sim_on(session, isolde, [residue])
+        # Phase (a): with decouple_on_start, drop moved_atoms in as ghosts (lambda 0.01) BEFORE
+        # the sim's one start-up minimize round, so the receptor relaxes UNAFFECTED by the rebuilt
+        # group's clashes. That clean pose is KEPT as the ranking base (see _deferred, which then
+        # does NOT revert). Without decouple_on_start the sim starts fully coupled.
+        start_sim_on(session, isolde, [residue],
+                     decouple_atoms=(moved_atoms if decouple_on_start else None))
     sh = isolde.sim_handler
 
     # The residue must be part of the mobile simulation construct.
@@ -250,7 +314,7 @@ def settle_poses(session, residue, poses, *, moved_atoms=None,
                score=str(score), temperature=float(temperature),
                settle_steps=int(settle_steps), minimize=bool(minimize),
                polish_top=int(polish_top), accept_margin=float(accept_margin),
-               apply=bool(apply), debug=bool(debug))
+               apply=bool(apply), include_current=bool(include_current), debug=bool(debug))
 
     if live:
         return _run_settle_live(session, isolde, residue, poses, on_done=on_done, **cfg)
@@ -275,13 +339,14 @@ def settle_poses(session, residue, poses, *, moved_atoms=None,
         result = None
         if isolde.simulation_running:
             try:
-                if not sim_was_running:
-                    # We auto-started the sim; its initial soft-core equilibration molested the
-                    # receptor while resolving the morph's clashes. ISOLDE saves a checkpoint of
-                    # the clean pre-sim state AT sim start (identical to before 'isolde sim
-                    # start'), so revert to it -- the fit then begins from the unmolested
-                    # receptor + ligand. revert()'s own coord push is deferred (a no-op while
-                    # paused), so also flush the clean coords into the paused sim immediately.
+                if not sim_was_running and not decouple_on_start:
+                    # A fully-coupled auto-start: the one start-up minimize round moved the
+                    # receptor to resolve the rebuilt group's clashes (molesting it), so revert to
+                    # the pre-sim checkpoint and begin the fit from the unmolested state. revert()'s
+                    # own coord push is deferred (a no-op while paused), so also flush the clean
+                    # coords in immediately. (When decouple_on_start -- phase (a) -- the rebuilt
+                    # group was a ghost for that minimize, so the receptor was NOT molested: we KEEP
+                    # the clean equilibrated pose as the base and do NOT revert.)
                     cp = isolde.sim_manager._starting_checkpoint
                     cp.revert()
                     sh.push_coords_to_sim(cp.saved_coords, immediate=True)
@@ -416,7 +481,7 @@ def _hardened_softcore(sh, value=0.95):
 # ------------------------------------------------------------------
 def _run_settle_burst(session, isolde, residue, poses, *, moved_atoms, map_decouple,
                       soft_group, score, temperature, settle_steps, minimize, polish_top,
-                      accept_margin, apply, debug):
+                      accept_margin, apply, include_current, debug):
     '''Fast path: the sim must be PAUSED on entry (sim thread idle => safe to drive
     _main_integrator on the main thread). Runs the whole settle synchronously and returns
     a SettleResult. The sim is LEFT RUNNING (paused) so a poor result is one revert away.'''
@@ -442,7 +507,8 @@ def _run_settle_burst(session, isolde, residue, poses, *, moved_atoms, map_decou
             session, isolde, residue, poses, moved_atoms=moved_atoms,
             map_decouple=map_decouple, soft_group=soft_group, score=score,
             settle_steps=settle_steps, minimize=minimize, polish_top=polish_top,
-            accept_margin=accept_margin, apply=apply, debug=debug, dlog=dlog)
+            accept_margin=accept_margin, apply=apply, include_current=include_current,
+            debug=debug, dlog=dlog)
     log(_summary_line(residue, result))
     return result
 
@@ -511,12 +577,18 @@ class _LiveSettleRunner:
         self._prep = _prepare(sh, self.residue, cfg['moved_atoms'], cfg['accept_margin'],
                               cfg['score'])
         prep = self._prep
-        # Work queue: current conformation first (exempt from the clash cull), then the
-        # clash-filtered input poses.
-        self._queue = [(CURRENT_LABEL, prep['base'][prep['ridx']].copy(), True)]
+        # Work queue: current conformation first (exempt from the clash cull), then the input
+        # poses. The severe_clash pre-filter runs ONLY on the hard path -- with the soft-core
+        # search on (soft_group), clashy poses are meant to RELAX at SETTLE_LAMBDA, not be
+        # pre-culled (see _settle_search for the full rationale); unrecoverable ones are dropped
+        # later by _safe_settle + the engagement/strain vetoes.
+        prefilter = not cfg['soft_group']
+        self._queue = []
+        if cfg.get('include_current', True):    # skip the exempt incumbent for de-novo placement
+            self._queue.append((CURRENT_LABEL, prep['base'][prep['ridx']].copy(), True))
         for label, pose_coords in self.poses:
-            if severe_clash(pose_coords, prep['ratoms'], prep['moved_mask'],
-                            prep['env_coords']):
+            if prefilter and severe_clash(pose_coords, prep['ratoms'], prep['moved_mask'],
+                                          prep['env_coords']):
                 self._n_culled += 1
                 self.dlog('  culled "%s" (severe clash)' % label)
                 continue
@@ -734,16 +806,23 @@ def _settle_one(sh, prep, pose_coords, settle_steps, soft_group, settle_lambda):
     return ``(score, settled_construct_coords, von_mises)``. ``score`` is the mode's ranking
     scalar; ``von_mises`` is the strain-axis value (the summed scope stress) needed by the
     complementarity ceiling, or ``None`` for other modes. The search settle is dynamics-only
-    (0 K); the honest minimised ranking is left to the polish. Softens the fragment when
-    ``soft_group`` so a clashy seed relaxes instead of exploding (the score does not depend on
-    the settle softness -- see _score_pose).'''
+    (0 K); the honest minimised ranking is left to the polish. Softens the fragment to
+    ``settle_lambda`` (~0.35) when ``soft_group`` so it has usable gradients to escape a clash
+    rather than exploding; the score does not depend on the settle softness (see _score_pose).
+
+    Returns ``(inf, coords, None)`` WITHOUT scoring if the settle diverges -- caught either as an
+    OpenMM NaN raised inside step() (via _safe_settle) or as non-finite returned coords -- so the
+    caller culls the pose rather than feeding non-finite positions to the scorer.'''
     base, ridx, moved_atoms = prep['base'], prep['ridx'], prep['moved_atoms']
     coords = base.copy()
     coords[ridx] = pose_coords
     sh.push_coords_to_sim(coords, immediate=True)
     sh.soften_nb_selection(moved_atoms, settle_lambda if soft_group else 1.0)
-    sh.settle(settle_steps, minimize=False)
+    if not _safe_settle(sh, settle_steps):
+        return float('inf'), sh.sim_coords(), None
     settled = sh.sim_coords()
+    if not np.all(np.isfinite(settled)):
+        return float('inf'), settled, None            # diverged -> caller culls this pose
     score = _score_pose(sh, prep)
     vm = _von_mises_sum(sh, prep) if prep['score_mode'] == 'complementarity' else None
     return score, settled, vm
@@ -761,12 +840,23 @@ def _polish_one(sh, prep, settled_res_coords, steps, lam_from, lam_to, increment
     sh.push_coords_to_sim(coords, immediate=True)
     increments = max(1, int(increments))
     steps_per = max(1, int(round(steps / increments)))
-    lambdas = np.linspace(lam_from, lam_to, increments + 1)[1:]   # end at lam_to (full)
+    lambdas = np.linspace(lam_from, lam_to, increments + 1)[1:]   # end at lam_to (POLISH_LAMBDA)
     last = len(lambdas) - 1
     for i, lam in enumerate(lambdas):
         sh.soften_nb_selection(moved_atoms, float(lam))
-        sh.settle(steps_per, minimize=(minimize and i == last))
-    return _score_pose(sh, prep), sh.sim_coords()
+        # Pre-step force guard: raising the coupling can spike the force on a hidden hard contact,
+        # and stepping the 0 K integrator from there overshoots the stiff bonded geometry (mangling
+        # the pose). Catch it BEFORE the step -- cheaper and cleaner than blowing up and leaning on
+        # the NaN/finite backstops. inf -> ranks worst, never committed (the other survivors carry
+        # their search scores, so nothing mangled is committed).
+        if _max_force(sh, ridx) > MAX_SETTLE_FORCE:
+            return float('inf'), sh.sim_coords()
+        if not _safe_settle(sh, steps_per, minimize=(minimize and i == last)):
+            return float('inf'), sh.sim_coords()       # diverged -> ranks worst, never committed
+    settled = sh.sim_coords()
+    if not np.all(np.isfinite(settled)):
+        return float('inf'), settled                   # diverged -> ranks worst, never committed
+    return _score_pose(sh, prep), settled
 
 
 def _prepare(sh, residue, moved_atoms, accept_margin, score=DEFAULT_SCORE):
@@ -918,32 +1008,52 @@ def _restore_coupling(session, sh, moved_atoms):
         session.logger.report_exception()
 
 
-def _settle_search(sh, prep, poses, settle_steps, soft_group, dlog):
-    '''Clash pre-filter + soft 0 K search: settle each pose (and the current conformation) and
-    record its score. For 'complementarity', per-pose metrics (engaged fraction, von-Mises,
-    e_int) are stashed in ``prep['metrics']`` and the engagement/strain vetoes are DEFERRED to
-    _finalize_settle (which applies them cross-pose via rank_by_complementarity); the legacy
-    'von_mises' mode still culls disengaged poses here. Returns ``(results, n_culled)`` where
-    results is ``[(score, label, settled_construct_coords, is_current), ...]`` (unsorted).'''
+def _settle_search(sh, prep, poses, settle_steps, soft_group, dlog, include_current=True):
+    '''Soft 0 K search (with an input clash pre-filter ONLY on the hard path): settle each pose
+    (and the current conformation) and record its score. For 'complementarity', per-pose metrics
+    (engaged fraction, von-Mises, e_int) are stashed in ``prep['metrics']`` and the
+    engagement/strain vetoes are DEFERRED to _finalize_settle (which applies them cross-pose via
+    rank_by_complementarity); the legacy 'von_mises' mode still culls disengaged poses here.
+    Returns ``(results, n_culled)`` where results is
+    ``[(score, label, settled_construct_coords, is_current), ...]`` (unsorted).'''
     ridx, base, ratoms = prep['ridx'], prep['base'], prep['ratoms']
     moved_mask, env_coords = prep['moved_mask'], prep['env_coords']
     mode = prep['score_mode']
     complementarity = (mode == 'complementarity')
     cull_disengaged = (mode == 'von_mises')     # legacy in-search cull; complementarity defers
     smlabel = {'complementarity': 'e_int', 'von_mises': 'von_mises'}.get(mode, 'E_pack')
-    # The current conformation is always a candidate (exempt from every cull) so an already-good
-    # pose can win and be kept ("first, do no harm").
-    all_poses = [(CURRENT_LABEL, base[ridx].copy())] + list(poses)
+    # Input clash pre-filter (severe_clash, 2 A): cull an obviously-hopeless INPUT pose before
+    # spending a settle cycle on it -- but ONLY on the hard path (soft_group=False). When the
+    # soft-core search is active (the ligand-modification path) the phase-(b) settle at
+    # SETTLE_LAMBDA (~0.35) is DESIGNED to relax exactly these overlaps: a fragment-elaboration
+    # caller hands us conformers that overlap the pocket by construction, and the intent is for
+    # ~0.35 to escape even a backbone-threaded-through-ring. Pre-filtering there would cull the
+    # very poses the soft-core exists to rescue. The genuinely unrecoverable ones are still
+    # dropped -- AFTER the fact -- by _safe_settle + the finite-guard ("settle diverged"), and
+    # bad-geometry survivors by the engagement/strain vetoes; so nothing hazardous slips through.
+    prefilter = not soft_group
+    # The current conformation competes as an exempt "first, do no harm" candidate ONLY when
+    # include_current -- i.e. when REFINING an existing pose (rotafit). For de-novo placement it is
+    # omitted: there is no incumbent to protect, and a privileged current pose both wins by
+    # do-no-harm and can poison the relative strain ceiling (see settle_poses docstring).
+    all_poses = list(poses)
+    if include_current:
+        all_poses = [(CURRENT_LABEL, base[ridx].copy())] + all_poses
     results = []
     n_culled = 0
     for label, pose_coords in all_poses:
         is_current = (label == CURRENT_LABEL)
-        if not is_current and severe_clash(pose_coords, ratoms, moved_mask, env_coords):
+        if (prefilter and not is_current
+                and severe_clash(pose_coords, ratoms, moved_mask, env_coords)):
             n_culled += 1
             dlog('  culled "%s" (severe input clash)' % label)
             continue
         score, settled, vm = _settle_one(sh, prep, pose_coords, settle_steps, soft_group,
                                          SETTLE_LAMBDA)
+        if not np.isfinite(score):          # settle diverged (non-finite coords) -> cull
+            n_culled += 1
+            dlog('  culled "%s" (settle diverged)' % label)
+            continue
         frac = _engaged_fraction(prep, settled)
         if cull_disengaged and not is_current and frac < ENGAGE_MIN:
             n_culled += 1
@@ -997,6 +1107,10 @@ def _finalize_settle(session, isolde, residue, prep, results, n_culled, *, polis
     best, kept_current = _choose_winner(candidates, eff_margin, dlog)
     energies = [(lbl, e) for e, lbl, _c, _cur in candidates]
     if best is None:
+        # No survivor (only possible without an exempt current pose): commit nothing and restore
+        # the pre-settle model geometry so the sim is not left at a half-settled candidate.
+        if apply:
+            sh.push_coords_to_sim(base, immediate=True)
         return SettleResult(None, False, False, energies, n_culled, eff_margin,
                             map_decoupled=map_decouple, score_mode=smlabel)
     best_e, best_label, best_coords, _bc = best
@@ -1024,16 +1138,18 @@ def _finalize_settle(session, isolde, residue, prep, results, n_culled, *, polis
 
 def _settle_and_commit(session, isolde, residue, poses, *, moved_atoms, map_decouple,
                        soft_group, score, settle_steps, minimize, polish_top, accept_margin,
-                       apply, debug, dlog):
+                       apply, include_current, debug, dlog):
     '''Burst path body (synchronous): prepare -> soft search -> polish + do-no-harm +
     commit. Assumes the sim is paused and the fit-scope guards are in force. Restores full
     coupling before returning. Returns a SettleResult.'''
     sh = isolde.sim_handler
     prep = _prepare(sh, residue, moved_atoms, accept_margin, score)
-    dlog('settle_poses %s: %d pose(s) + current; score=%s; MDFF global_k=%.3g -> margin %.2f'
-         % (residue, len(poses), prep['score_mode'], prep['gk'], prep['eff_margin']))
+    dlog('settle_poses %s: %d pose(s)%s; score=%s; MDFF global_k=%.3g -> margin %.2f'
+         % (residue, len(poses), ' + current' if include_current else '',
+            prep['score_mode'], prep['gk'], prep['eff_margin']))
     try:
-        results, n_culled = _settle_search(sh, prep, poses, settle_steps, soft_group, dlog)
+        results, n_culled = _settle_search(sh, prep, poses, settle_steps, soft_group, dlog,
+                                           include_current=include_current)
         return _finalize_settle(session, isolde, residue, prep, results, n_culled,
                                 polish_top=polish_top, minimize=minimize, apply=apply,
                                 map_decouple=map_decouple, dlog=dlog)
@@ -1059,7 +1175,7 @@ def _polish(sh, prep, results, polish_top, minimize, dlog):
     out = []
     for _e, label, settled, is_current in polish_set:
         e_pol, coords = _polish_one(sh, prep, settled[prep['ridx']], POLISH_STEPS,
-                                    SETTLE_LAMBDA, 1.0, RAMP_INCREMENTS, minimize)
+                                    SETTLE_LAMBDA, POLISH_LAMBDA, RAMP_INCREMENTS, minimize)
         out.append((e_pol, label, coords, is_current))
         polished_labels.add(label)
         dlog('  polished "%s": %s %.2f' % (label, smlabel, e_pol))
