@@ -272,7 +272,7 @@ def _apply_start_decouple(session, isolde, decouple_atoms, lam):
         # start_sim aborted (e.g. template failure, or the no-maps warning was declined)
         log.warning('isolde sim start: simulation did not start; "decouple" ignored.')
         return
-    # lam is bounded to [0.1, 1.0] at the command level (see decouple_lambda_arg); None
+    # lam is bounded to [0.01, 1.0] at the command level (see decouple_lambda_arg); None
     # means the keyword was omitted -> use the default.
     if lam is None:
         from .decouple import DEFAULT_DECOUPLE_LAMBDA
@@ -328,8 +328,8 @@ def isolde_sim(session, cmd, atoms=None, discard_to=None, decouple=None,
         dropping an initially poorly-fitted ligand/fragment in so it can relax
         into density without exploding. Must be a SUBSET of the mobile region.
     lambda_decouple: the soft-core coupling for the ``decouple`` selection, in
-        (0, 1] (low = strongly decoupled; 1 = full). Defaults to 0.1. Transient:
-        forgotten when the simulation stops (see the ``isolde decouple`` command).
+        [0.01, 1] (low = strongly decoupled; 1 = full). Defaults to 0.01 (ghost-like).
+        Transient: forgotten when the simulation stops (see ``isolde decouple``).
     '''
     valid_commands = ('start', 'pause', 'resume', 'checkpoint', 'revert', 'stop')
     log = session.logger

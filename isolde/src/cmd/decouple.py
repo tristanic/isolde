@@ -17,20 +17,24 @@ per-group state lives on the simulation's force objects, which are rebuilt fully
 coupled on the next "isolde sim start"). Nothing is persisted to the session.
 '''
 
-# Default soft-core coupling for a decoupled selection (= the minimum of the allowed
-# range). Values below 0.1 have no practical use (the selection's coupling to its
-# surroundings is already effectively off), and the soft-core potential cannot switch
-# off completely, so the range is simply [0.1, 1.0] -- 1.0 being normal full coupling.
-DEFAULT_DECOUPLE_LAMBDA = 0.1
+# Default soft-core coupling for a decoupled selection: 0.01 (= the minimum of the allowed
+# range), which is genuinely ghost-like -- the selection barely feels its surroundings,
+# which is usually the point of decoupling (and especially so with no restraining map to
+# hold it near its starting position). The floor is 0.01 rather than 0 because the soft-core
+# potential cannot switch off completely; the range is [0.01, 1.0], 1.0 being normal full
+# coupling. Pass a larger lambdaDecouple (e.g. 0.1) for a milder, only-moderately-decoupled
+# selection.
+DEFAULT_DECOUPLE_LAMBDA = 0.01
 
 
 def decouple_lambda_arg():
-    '''ChimeraX annotation for the coupling value: a float in [0.1, 1.0], bounded at the
+    '''ChimeraX annotation for the coupling value: a float in [0.01, 1.0], bounded at the
     command level. Named ``lambda_decouple`` (CLI ``lambdaDecouple``) rather than
     ``lambda``: it avoids the Python reserved word, still abbreviates to ``lambda`` for
     the user, and keeps ``decouple`` an unambiguous keyword prefix.'''
     from chimerax.core.commands import Bounded, FloatArg
-    return Bounded(FloatArg, 0.1, 1.0, inclusive=True, name='a coupling value in [0.1, 1]')
+    return Bounded(FloatArg, 0.01, 1.0, inclusive=True,
+                   name='a coupling value in [0.01, 1]')
 
 
 def decouple(session, atoms, state=True, lambda_decouple=DEFAULT_DECOUPLE_LAMBDA):
