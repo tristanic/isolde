@@ -41,14 +41,25 @@ def severe_clash(pose_coords, atoms, moved_mask, env_coords, cutoff=SEVERE_OVERL
     return len(close) > 0
 
 
-def start_sim_on(session, isolde, residues):
+def start_sim_on(session, isolde, residues, *, decouple_atoms=None, lambda_decouple=None):
     '''Start an ISOLDE simulation around ``residues`` using ISOLDE's STANDARD sim-start
     selection (its normal padding + soft-shell). The generous buffer gives the local
     environment room to relax around a re-fitted pose -- important for fixes that need the
     neighbours to accommodate (an over-contracted region can leave no such room). Raises
-    (via the sim-start path) if a target residue cannot be parameterised.'''
+    (via the sim-start path) if a target residue cannot be parameterised.
+
+    If ``decouple_atoms`` is given, that (mobile) selection is softened to
+    ``lambda_decouple`` (default ghost-like 0.01) the instant the simulation starts -- BEFORE
+    its first minimisation -- so a freshly-rebuilt or clashing group is dropped in as a
+    near-ghost and never drives a start-up "jump" that would molest the environment. This is
+    exactly the ``decouple`` option of ``isolde sim start`` (same primitive), applied here so
+    the caller need not build an atom spec.'''
     from chimerax.atomic import Residues
     from chimerax.core.commands import run
     session.selection.clear()
     Residues(residues).atoms.selected = True
     run(session, 'isolde sim start sel')
+    if decouple_atoms is not None and len(decouple_atoms):
+        # Reuse the command's primitive (validates subset-of-mobile + needs group soft-core).
+        from chimerax.isolde.cmd.cmd import _apply_start_decouple
+        _apply_start_decouple(session, isolde, decouple_atoms, lambda_decouple)
