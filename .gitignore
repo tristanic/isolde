@@ -8,3 +8,10 @@ pyqt-commercial.sip
 *.lib
 *.o
 *.o.d
+
+# CONFIDENTIALITY (SBDD workflow): generated MD parameter files (ffXML) are written
+# to the launch directory by covalent/free-ligand parameterisation and DERIVE FROM
+# LIGAND CHEMISTRY -- they must never be committed. A hard ignore on all .xml. Already-
+# tracked template .xml (gaff2.xml, amberff14SB.xml, ...) are UNAFFECTED, since ignores
+# only apply to untracked files; use "git add -f <file>.xml" to track a new one.
+*.xml
