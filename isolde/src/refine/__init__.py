@@ -8,3 +8,4 @@
 
 
 from .backrub_rotamer import Backrub, apply_backrub
+from .settle_poses import settle_poses, SettleResult
