@@ -20,6 +20,14 @@ from Qt.QtCore import Qt
 class ISOLDE_ToolUI(ToolInstance):
     SESSION_ENDURING = True
 
+    # Target of the "Help" entry in the tool window's right-click context menu
+    # (ToolInstance.help defaults to None, which makes that entry read "No help
+    # available").  This points at the GUI's own doc page, which is narrower than
+    # the docs root the GUI's Help button opens via
+    # Isolde.show_master_help_in_browser.  Built by make_docs.bat into
+    # src/docs/user/, which ChimeraX serves as help:user/.
+    help = 'help:user/tools/ISOLDE.html'
+
     def __init__(self, session, tool_name, show_splash=True):
         super().__init__(session, tool_name)
         from .isolde import Isolde
