@@ -66,6 +66,22 @@ def _leaving_atom_flags(session, resname):
     return {a[0]: (len(a) > 5 and a[5] == 'Y') for a in rec['atoms']}
 
 
+def _is_metal_centre(rdkit_atom):
+    '''True if ``rdkit_atom`` is a metal element. RDKit/CCD can CIP-flag a coordinated
+    metal as a "stereocentre" when the ligand breaks its coordination symmetry -- e.g.
+    chlorophyll's Mg, made stereogenic by the reduced ring D of the chlorin (a symmetric
+    porphyrin metal like heme Fe is NOT flagged). Such a centre is not an organic sp3
+    stereocentre: its geometry is held by the metal-site coordination bonds/angles, and a
+    chirality restraint on it fights that coordination (and mangles the site). So a metal
+    is never a chiral def, restraint, or validation outlier -- the metal analogue of the
+    phosphate spurious-centre skip.'''
+    from chimerax.atomic import Element
+    try:
+        return bool(Element.get_element(rdkit_atom.GetSymbol()).is_metal)
+    except Exception:
+        return False
+
+
 def chiral_definitions_from_ccd(session, resname):
     '''Generate chiral-centre definitions for a CCD component.
 
@@ -106,6 +122,8 @@ def chiral_definitions_from_ccd(session, resname):
             continue
         if atom.GetProp(rb.NAME_PROP) in spurious:
             continue
+        if _is_metal_centre(atom):
+            continue                    # coordinated metal: not an sp3 stereocentre
         nbrs = list(atom.GetNeighbors())
         if len(nbrs) < 3:
             continue
@@ -267,6 +285,8 @@ def _reference_data(session, lookup_id):
         if a.HasProp(rb.NAME_PROP) and a.HasProp('_CIPCode'):
             if a.GetProp(rb.NAME_PROP) in spurious:
                 continue
+            if _is_metal_centre(a):
+                continue                # coordinated metal: not an sp3 stereocentre
             c = a.GetProp('_CIPCode')
             if c in ('R', 'S'):
                 codes[a.GetProp(rb.NAME_PROP)] = c
