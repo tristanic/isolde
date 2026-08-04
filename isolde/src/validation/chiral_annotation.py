@@ -62,6 +62,12 @@ class ChiralAnnotator(Model):
         # Chirality is binary (wrong-handed or not), so every marker is the same
         # fixed size -- no severity scaling (cf. the cis/trans peptide markup).
         self._scale = 1.0
+        # Set once (and stays set) if the RDKit-backed chirality helpers can't be
+        # imported -- see _chirality_funcs(). When True the validator is inert: it
+        # neither re-attempts the import nor re-arms its update handlers, so a
+        # broken/absent RDKit build degrades to a single warning instead of
+        # spamming the same traceback on every structure-change trigger.
+        self._disabled = False
         # Cached outlier set (refreshed only on structure changes) + the pixel
         # size at which the glyph Places were last built (for the camera gate).
         self._current_chirals = None
@@ -117,7 +123,7 @@ class ChiralAnnotator(Model):
         Model.delete(self)
 
     def _update_graphics_if_needed(self, trigger_name, changes):
-        if not self.visible:
+        if self._disabled or not self.visible:
             return
         changes = changes[1]
         update_needed = False
@@ -136,14 +142,37 @@ class ChiralAnnotator(Model):
             from chimerax.atomic import get_triggers
             get_triggers().add_handler('changes done', self.update_graphics)
 
+    def _chirality_funcs(self):
+        '''Import the RDKit-backed chirality helpers, or disable this validator
+        (logging once) if the backend can't load. RDKit pulls in native
+        extensions that fail with more than plain ImportError (a bad build raises
+        ImportError on a missing DLL, but version mismatches surface as
+        OSError/RuntimeError -- see CLAUDE.md), so catch Exception and degrade
+        gracefully rather than let the same traceback repeat on every trigger.'''
+        try:
+            from ..atomic.chirality import chiral_outliers, as_modelled_configs
+            return chiral_outliers, as_modelled_configs
+        except Exception as e:
+            self._disabled = True
+            Model.display.fset(self, False)
+            self.session.logger.warning(
+                'ISOLDE chiral validation has been disabled for this session: '
+                'its RDKit backend could not be loaded '
+                f'({e.__class__.__name__}: {e}).'
+            )
+            return None
+
     def update_graphics(self, *_):
         # Structure-change path: re-detect outliers (the expensive part) and cache
         # them, then (re)build the glyph placements. The per-frame camera rescale
         # reuses the cached set so it never re-runs outlier detection.
         from chimerax.core.triggerset import DEREGISTER
-        if not self.visible:
+        if self._disabled or not self.visible:
             return DEREGISTER
-        from ..atomic.chirality import chiral_outliers, as_modelled_configs
+        funcs = self._chirality_funcs()
+        if funcs is None:
+            return DEREGISTER
+        chiral_outliers, as_modelled_configs = funcs
         from chimerax.isolde.molobject import get_chiral_mgr
         atoms = self._atomic_structure.atoms
         chirals, oriented, severity = chiral_outliers(self.session, atoms)
