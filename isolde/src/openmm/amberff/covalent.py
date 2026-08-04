@@ -127,6 +127,25 @@ class CovalentUnit:
             len(self.links))
 
 
+def _has_nonstandard_link(residue):
+    '''True if ``residue`` has an inter-residue covalent bond that is NOT a standard
+    backbone continuation (and not to solvent or a coordinated ion) -- i.e. a genuine
+    covalent-unit seam: a ligand attachment, a sidechain crosslink, or a modifying group
+    on the backbone. A residue whose only inter-residue bonds are standard peptide /
+    phosphodiester links returns False -- it is either a canonical polymer residue or an
+    in-chain NON-canonical one (norleucine, ...), which the caller tells apart by whether
+    the force field already has a template for it.'''
+    for a, nb in _inter_residue_bonds(residue):
+        other = nb.residue
+        if other.name in _SOLVENT:
+            continue
+        if other.num_atoms == 1 and other.atoms[0].element.is_metal:
+            continue
+        if not _is_backbone_continuation(a, nb):
+            return True
+    return False
+
+
 def detect_covalent_unit(residues, max_heavy_atoms=250):
     '''Resolve the covalent unit reachable from the selected residue(s).
 
@@ -191,8 +210,12 @@ def detect_covalent_unit(residues, max_heavy_atoms=250):
 
     if not links:
         raise UserError(
-            'Selected residue(s) have no non-standard covalent linkage to '
-            'parameterise. For a free ligand use "isolde parameterise" instead.')
+            'No non-standard covalent linkage found around %s to parameterise as a '
+            'covalent unit -- its only inter-residue bonds are standard backbone links. '
+            'Select a ligand and its attachment point, a sidechain crosslink, or a '
+            'covalently modified residue. (An in-chain non-canonical residue with no '
+            'template is parameterised directly, not as a unit.)'
+            % '/'.join(sorted({r.name for r in seeds})))
 
     cu = CovalentUnit(unit, links)
     if cu.num_heavy_atoms > max_heavy_atoms:
@@ -526,13 +549,30 @@ def _graph_distance_to_links(unit, shell_radius):
     return shell
 
 
-def classify_atoms(unit, shell_radius=1):
+def classify_atoms(unit, shell_radius=1, forcefield=None):
     '''Tag every atom of the unit as ``'frozen'`` (unchanged standard atom -> keep
     ff14SB type + charge), ``'shell'`` (standard atom near a seam -> keep ff14SB
     type, take AM1-BCC charge), or ``'ligand'`` (non-standard residue atom -> GAFF
-    type + AM1-BCC charge). Hydrogens inherit their heavy parent's tag.'''
+    type + AM1-BCC charge). Hydrogens inherit their heavy parent's tag.
+
+    A standard-polymer residue the force field has NO template for -- a non-canonical
+    amino acid (norleucine, ...) -- is a hybrid: only its recognised BACKBONE atoms are
+    frozen ff14SB (so the peptide bonds to its neighbours keep standard amide params),
+    while its novel SIDECHAIN is tagged ``'ligand'`` (GAFF + AM1-BCC, and adjustable by
+    charge repartition). This needs ``forcefield`` to tell canonical from non-canonical;
+    without it every standard-residue atom is frozen/shell as before.'''
     shell = _graph_distance_to_links(unit, shell_radius)
     standard = set(unit.standard_residues)
+    # Per standard residue: the heavy-atom names eligible to be frozen ff14SB. None means
+    # "all atoms" (a residue the force field has a template for -- unchanged behaviour); a
+    # set means only those names (a non-canonical residue -> freeze the backbone only).
+    frozen_names = {}
+    for r in standard:
+        if forcefield is not None and _standard_template(forcefield, r) is None:
+            info = _generic_backbone_info(r)
+            frozen_names[r] = set(info[0]) if info else set()
+        else:
+            frozen_names[r] = None
     tags = {}
     for r in unit.residues:
         for a in r.atoms:
@@ -540,6 +580,10 @@ def classify_atoms(unit, shell_radius=1):
                 continue                    # handled after, from parent
             if r not in standard:
                 tags[a] = 'ligand'
+                continue
+            fn = frozen_names[r]
+            if fn is not None and a.name not in fn:
+                tags[a] = 'ligand'          # non-canonical residue's novel sidechain
             elif a in shell:
                 tags[a] = 'shell'
             else:
@@ -597,6 +641,42 @@ def _template_atom_info(template):
     return by_name, h_of_heavy
 
 
+#: ff14SB internal-residue backbone (type, charge), ALA-derived and transferable across
+#: amino acids. Used as the FROZEN CORE for a non-canonical amino acid the force field has
+#: no template for (norleucine, ...): its backbone keeps standard ff14SB types + charges,
+#: so the peptide bonds to ordinary neighbours use the standard amide parameters, while its
+#: novel sidechain is left to GAFF/AM1-BCC. Internal-residue backbone only; terminal
+#: variants (N-terminal H1/H2/H3, C-terminal OXT) are a future extension.
+_GENERIC_AA_BACKBONE = {
+    'N':  ('N',  -0.4157), 'H':  ('H',  0.2719),
+    'CA': ('CX',  0.0337), 'HA': ('H1', 0.0823),
+    'C':  ('C',   0.5973), 'O':  ('O', -0.5679),
+}
+
+
+def _generic_backbone_info(residue):
+    '''``(by_name, h_of_heavy)`` (as :func:`_template_atom_info`) freezing the standard
+    polymer BACKBONE of a residue the force field has no template for -- a non-canonical
+    amino acid. Returns ``None`` for anything but an amino acid (a nucleotide sugar-
+    phosphate backbone freeze is the natural next step, not yet implemented).'''
+    from chimerax.atomic import Residue
+    if residue.polymer_type != Residue.PT_AMINO:
+        return None
+    h_of_heavy = {'N': _GENERIC_AA_BACKBONE['H'], 'CA': _GENERIC_AA_BACKBONE['HA']}
+    return dict(_GENERIC_AA_BACKBONE), h_of_heavy
+
+
+def _frozen_core_info(forcefield, residue):
+    '''Frozen-core ``(by_name, h_of_heavy)`` for a standard-polymer residue: its ff14SB
+    template when the force field names it (a canonical residue), else a generic backbone
+    when it does not (a non-canonical amino acid). ``None`` means "no frozen core" -- the
+    caller GAFF-types the whole residue.'''
+    tmpl = _standard_template(forcefield, residue)
+    if tmpl is not None:
+        return _template_atom_info(tmpl)
+    return _generic_backbone_info(residue)
+
+
 def _resolve_heavy(tag, info, name, ante_type, ante_charge):
     '''(type, charge) for a heavy atom under Strategy A.'''
     if tag == 'ligand' or info is None:
@@ -646,12 +726,12 @@ def assign_types_and_charges(unit, mol, cxidx_to_atom, ante, forcefield,
     '''
     from chimerax.isolde.atomic.rdkit_bridge import INDEX_PROP
 
-    tags = classify_atoms(unit, shell_radius)
+    tags = classify_atoms(unit, shell_radius, forcefield)
     tinfo = {}
     for r in unit.standard_residues:
-        tmpl = _standard_template(forcefield, r)
-        if tmpl is not None:
-            tinfo[r] = _template_atom_info(tmpl)
+        info = _frozen_core_info(forcefield, r)
+        if info is not None:
+            tinfo[r] = info
 
     types, charges = ante['types'], ante['charges']
     rd2res, rd2name = {}, {}
@@ -1571,6 +1651,41 @@ def _metal_site_signature(site, core_atoms=None):
     return '%s_%s_%s' % (elems, comp or 'x', digest)
 
 
+def _macrocycle_trans_pairs(donors, exclude):
+    '''For coordinating donors that RING a metal (a porphyrin/chlorin/corrin -- heme,
+    chlorophyll), the set of ``frozenset(donor pair)`` that are TRANS (opposite across the
+    macrocycle), identified TOPOLOGICALLY so it is robust to a badly distorted input: BFS
+    through the ligand bond graph WITHOUT crossing the metal(s) gives each donor pair a
+    through-ligand path length; a genuine macrocycle has every donor reachable from every
+    other, and the trans pairs are the ``len(donors)//2`` with the longest path (for a 4-N
+    porphyrin: the 2 pairs at ~8 bonds vs the cis ~4). Returns an EMPTY set when the donors
+    are not one connected ring, so the caller keeps snapping observed angles rather than
+    forcing square-planar.'''
+    from collections import deque
+    dset = list(donors)
+    if len(dset) < 4:
+        return set()
+    exclude = set(exclude)
+    dist = {}
+    for i, src in enumerate(dset):
+        seen = {src: 0}
+        q = deque([src])
+        while q:
+            a = q.popleft()
+            for nb in a.neighbors:
+                if nb in exclude or nb in seen:
+                    continue
+                seen[nb] = seen[a] + 1
+                q.append(nb)
+        for dj in dset[i + 1:]:
+            if dj not in seen:
+                return set()          # donors not all connected through the ligand ring
+            dist[frozenset((src, dj))] = seen[dj]
+    n_trans = len(dset) // 2
+    ordered = sorted(dist, key=lambda k: dist[k], reverse=True)
+    return set(ordered[:n_trans])
+
+
 def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
                        core_atoms=None, reference_model=None, fetch_reference=False,
                        sig=None):
@@ -1593,6 +1708,7 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
     (``terms['urey_bradley']``) hold the cage, and the core atoms are emitted explicitly
     (``terms['core']``: name/etype/charge) with :data:`metal_params.CORE_ATOM_LJ`. Empty
     (mononuclear) -> the original curated, angle-snapped, soft-bond behaviour.'''
+    import math
     from chimerax.core.errors import UserError
     from itertools import combinations
     from .metal_params import (metal_bond_params, snap_angle, angle_k,
@@ -1702,6 +1818,17 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
         # comes from metal_params' per-element default (overridable there).
         ox = guess_ox_state(elem, None)
         donors = [d for (mm, d) in site.coordination if mm is m]
+        # A MACROCYCLIC metal (porphyrin/chlorin/corrin: heme, chlorophyll, ...) is square
+        # PLANAR, never tetrahedral. Its equatorial donors are >=4 N/O in the metalloligand
+        # itself; snapping their OBSERVED angles mis-restrains a poor input to tetrahedral (a
+        # ~100 deg cis N-M-N is closer to 109.5 than 90). Detect the ring's donors and, via
+        # ligand topology (NOT the distorted coords), classify each pair cis/trans so the
+        # angles can be idealised to square-planar below. Axial donors from a separate
+        # standard residue (a heme His) are NOT in-ligand -> excluded -> keep snapping.
+        macro_donors = [d for d in donors if d.residue in nonstandard
+                        and d not in core_set and d.element.name in ('N', 'O')]
+        trans_pairs = _macrocycle_trans_pairs(macro_donors, site.metals)
+        macro_set = set(macro_donors) if trans_pairs else set()
         # Charge is redistributed onto ligand (non-standard) donors -- organic OR core --
         # AND onto re-templated cysteine thiolates (their SG carries the donation). Other
         # standard coordinating residues (His etc.) keep their untouched ISOLDE templates.
@@ -1789,8 +1916,17 @@ def _build_metal_terms(session, site, forcefield, template_names, keep_fraction,
         # polyhedron.
         for d1, d2 in combinations(donors, 2):
             both_core = d1 in core_set and d2 in core_set
-            th0 = ideal_angle(d1, m, d2) if both_core \
-                else snap_angle(_angle_radians(d1, m, d2))
+            if both_core:
+                th0 = ideal_angle(d1, m, d2)      # cluster-internal: CCD-ideal
+            elif d1 in macro_set and d2 in macro_set:
+                # Square-planar macrocycle: trans (opposite in the ring, by topology) -> 180,
+                # cis -> 90. Idealised, so a bad start can't restrain the ring to a
+                # tetrahedral metal (the CCD CLA ideal has trans N-Mg-N at only ~133 deg,
+                # which a geometric threshold would misread -- topology does not).
+                th0 = math.radians(180.0) if frozenset((d1, d2)) in trans_pairs \
+                    else math.radians(90.0)
+            else:
+                th0 = snap_angle(_angle_radians(d1, m, d2))
             terms['coord_angles'].append({'a': (d1.residue, d1.name),
                                           'metal': (r, m.name),
                                           'c': (d2.residue, d2.name),

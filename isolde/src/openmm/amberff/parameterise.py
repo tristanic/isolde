@@ -96,17 +96,39 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
         if not len(residues):
             return
 
-    # Covalent residues (bonded to another residue) route to the covalent-unit
-    # pipeline; free ligands take the classic single-residue path below.
-    covalent = [r for r in residues if len(r.neighbors) != 0]
-    if covalent:
-        from .covalent import detect_covalent_unit, parameterise_covalent_unit
+    # Bonded residues (an inter-residue covalent bond) split two ways:
+    #  * a genuine non-standard seam (ligand attachment, sidechain crosslink, backbone
+    #    modification) -> the covalent-UNIT pipeline (grows the unit, caps at backbone);
+    #  * only standard backbone links, but the force field has NO template for it -- an
+    #    in-chain NON-canonical residue such as norleucine -> the same pipeline as a
+    #    SINGLE-residue unit, capped at its own backbone peptide/phosphodiester bonds.
+    # A canonical residue selected by mistake (already parameterised) is reported plainly.
+    bonded = [r for r in residues if len(r.neighbors) != 0]
+    if bonded:
+        from .covalent import (detect_covalent_unit, parameterise_covalent_unit,
+                               _has_nonstandard_link, _standard_template, CovalentUnit)
+        forcefield = None
+        if hasattr(session, 'isolde'):
+            forcefield = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
         handled = set()
-        for r in covalent:
+        for r in bonded:
             if r in handled:
                 continue
             try:
-                unit = detect_covalent_unit(r)
+                if _has_nonstandard_link(r):
+                    unit = detect_covalent_unit(r)
+                elif forcefield is not None and _standard_template(forcefield, r) is not None:
+                    raise UserError(
+                        'Residue %s is a standard polymer residue that the %s force '
+                        'field already parameterises -- there is nothing to do. Select a '
+                        'ligand, a covalent modification/crosslink, or a non-canonical '
+                        'residue that has no template yet.'
+                        % (r.name, session.isolde.sim_params.forcefield))
+                else:
+                    # In-chain non-canonical residue: parameterise it on its own, capped
+                    # at its backbone bonds (its backbone stays standard ff14SB so the
+                    # peptide bonds to its ordinary neighbours keep amide parameters).
+                    unit = CovalentUnit([r], [])
             except UserError as e:
                 if always_raise_errors:
                     raise

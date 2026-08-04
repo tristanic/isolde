@@ -629,6 +629,62 @@ def run(session):
     finally:
         session.models.close([sL])
 
+    # --- Part M: macrocyclic metal -> SQUARE-PLANAR coordination (not tetrahedral) -----
+    # A porphyrin/chlorin/corrin metal (heme, chlorophyll) is square planar. With a poor
+    # input, snapping the observed N-M-N angles mis-restrains it to tetrahedral (the CCD
+    # CLA ideal even has its TRANS angles at only ~133 deg). _build_metal_terms detects the
+    # ring's >=4 in-ligand N donors and classifies cis/trans by LIGAND TOPOLOGY (not the
+    # distorted coords), emitting 4x90 (cis) + 2x180 (trans). Here: a synthetic macrocycle
+    # (4 N ringed by 4 bridging C) deliberately domed so the observed trans angle is < 135.
+    sM = AtomicStructure(session, name='porphyrin-test', auto_style=False)
+    try:
+        por = sM.new_residue('POR', 'A', 1)         # nonstandard metalloligand
+        zn = sM.new_atom('ZN', 'Zn'); zn.coord = numpy.array([0., 0., 0.]); por.add_atom(zn)
+        z = 0.9                                      # dome the N so observed trans ~131 deg
+        npos = {'NA': (2., 0., z), 'NB': (0., 2., z), 'NC': (-2., 0., z), 'ND': (0., -2., z)}
+        nat = {}
+        for nm, xyz in npos.items():
+            a = sM.new_atom(nm, 'N'); a.coord = numpy.array(xyz); por.add_atom(a); nat[nm] = a
+        # Bridging carbons close the 8-membered N-C ring (NA-CA-NB-CB-NC-CC-ND-CD-NA), so the
+        # four N are one connected ring through the ligand (Zn excluded from that graph).
+        ring = [('CA', 'NA', 'NB'), ('CB', 'NB', 'NC'), ('CC', 'NC', 'ND'), ('CD', 'ND', 'NA')]
+        for cn, a, b in ring:
+            mid = (numpy.array(npos[a]) + numpy.array(npos[b])) / 2.0
+            c = sM.new_atom(cn, 'C'); c.coord = mid + numpy.array([0., 0., 0.4])
+            por.add_atom(c)
+            sM.new_bond(c, nat[a]); sM.new_bond(c, nat[b])
+        for nm in nat:
+            sM.new_bond(zn, nat[nm])                 # coordination bonds
+
+        msite = cov.detect_metal_site(por)
+        # Precondition: the observed trans angle really is below a naive 135 deg threshold,
+        # so this proves TOPOLOGY (not geometry) drives the classification.
+        import math as _m
+        obs_trans = math.degrees(cov._angle_radians(nat['NA'], zn, nat['NC']))
+        if obs_trans >= 135.0:
+            _fail('setup: NA-Zn-NC should be < 135 to test topology, got %.1f' % obs_trans)
+        mtn = {por: 'MMET_POR'}
+        mmt = cov._build_metal_terms(session, msite, ff, mtn, 0.5)
+        angs = sorted(round(math.degrees(a['angle']), 1) for a in mmt['coord_angles'])
+        if len(angs) != 6:
+            _fail('expected 6 N-Zn-N angles, got %d' % len(angs))
+        if any(abs(a - 90.0) > 0.5 and abs(a - 180.0) > 0.5 for a in angs):
+            _fail('macrocyclic metal angles not square-planar (90/180): %s' % angs)
+        if angs.count(180.0) != 2 or angs.count(90.0) != 4:
+            _fail('expected 4x90 (cis) + 2x180 (trans), got %s' % angs)
+        # the 180s must be the topological trans pairs NA-NC and NB-ND.
+        def _ang(a, b):
+            for e in mmt['coord_angles']:
+                if {e['a'][1], e['c'][1]} == {a, b}:
+                    return round(math.degrees(e['angle']), 1)
+            return None
+        if _ang('NA', 'NC') != 180.0 or _ang('NB', 'ND') != 180.0:
+            _fail('trans pairs (NA-NC, NB-ND) not idealised to 180')
+        print('PASS: macrocyclic metal -> square-planar (obs trans %.0f -> 180, topology)'
+              % obs_trans)
+    finally:
+        session.models.close([sM])
+
     print('ALL PASS')
 
 

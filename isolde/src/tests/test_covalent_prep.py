@@ -364,6 +364,58 @@ def run(session):
     finally:
         session.models.close([m])
 
+    # --- Non-canonical in-chain residue: generic ff14SB backbone frozen core ----------
+    # A modified amino acid the force field has no template for (norleucine, ...) is now
+    # parameterised as a single capped residue whose BACKBONE stays standard ff14SB (so
+    # the peptide bonds to its ordinary neighbours keep amide parameters) while its novel
+    # SIDECHAIN is left to GAFF/AM1-BCC. The full pipeline needs a real PT_AMINO residue
+    # (a synthetic residue is perceived as PT_NONE), so here we lock in the core NEW logic
+    # -- the generic-backbone spec and the frozen-core fallback -- with lightweight stubs;
+    # end-to-end behaviour is a GUI check on a real modified residue (9qkq /C:8).
+    from openmm.app import ForceField as _OMMFF
+    from chimerax.isolde.openmm.amberff import amber_convert as _ac
+    from chimerax.atomic import Residue as _Res
+    _amberdir = _os.path.dirname(_ac.__file__)
+    _ff_aa = _OMMFF(_os.path.join(_amberdir, 'amberff14SB.xml'),
+                    _os.path.join(_amberdir, 'gaff2.xml'))
+
+    class _StubRes:                     # enough of a Residue for the backbone helpers
+        def __init__(self, name, ptype):
+            self.name = name
+            self.polymer_type = ptype
+
+    # (a) the generic backbone is exactly the standard internal-residue peptide atoms,
+    # standard ff14SB types, ~neutral in total (the sidechain carries any net charge).
+    bb = cov._GENERIC_AA_BACKBONE
+    if set(bb) != {'N', 'H', 'CA', 'HA', 'C', 'O'}:
+        _fail('generic backbone atom set wrong: %s' % sorted(bb))
+    if bb['N'][0] != 'N' or bb['CA'][0] != 'CX' or bb['C'][0] != 'C' or bb['O'][0] != 'O':
+        _fail('generic backbone must use standard ff14SB peptide types')
+    if abs(sum(tc[1] for tc in bb.values())) > 0.05:
+        _fail('generic backbone net charge should be ~0, got %.4f'
+              % sum(tc[1] for tc in bb.values()))
+
+    # (b) the generic backbone applies to amino acids only.
+    if cov._generic_backbone_info(_StubRes('NLE', _Res.PT_AMINO)) is None:
+        _fail('_generic_backbone_info should give a backbone for a PT_AMINO residue')
+    if cov._generic_backbone_info(_StubRes('LIG', _Res.PT_NONE)) is not None:
+        _fail('_generic_backbone_info should be None for a non-polymer residue')
+
+    # (c) frozen-core fallback: a canonical residue freezes its WHOLE ff14SB template;
+    # a no-template amino acid freezes ONLY the backbone (sidechain -> GAFF); a
+    # no-template non-polymer has no frozen core (whole residue GAFF).
+    ala_info = cov._frozen_core_info(_ff_aa, _StubRes('ALA', _Res.PT_AMINO))
+    if ala_info is None or 'CB' not in ala_info[0]:
+        _fail('_frozen_core_info(ALA) should return the full ff14SB template (incl. CB)')
+    nle_info = cov._frozen_core_info(_ff_aa, _StubRes('NLE', _Res.PT_AMINO))
+    if nle_info is None or set(nle_info[0]) != set(cov._GENERIC_AA_BACKBONE):
+        _fail('_frozen_core_info(NLE) should fall back to the generic backbone only')
+    if 'CB' in nle_info[0]:
+        _fail('the generic backbone must NOT freeze the novel sidechain (CB present)')
+    if cov._frozen_core_info(_ff_aa, _StubRes('UNL', _Res.PT_NONE)) is not None:
+        _fail('_frozen_core_info(non-polymer, no template) should be None')
+    print('PASS: non-canonical residue -- generic ff14SB backbone frozen, sidechain free')
+
     print('ALL PASS')
 
 
