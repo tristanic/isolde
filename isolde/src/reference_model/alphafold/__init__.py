@@ -51,7 +51,7 @@ def alphafold_id(model):
     except ValueError:
         return None
     import re
-    result = re.match('AF\-[A-Z0-9]*\-F1', entry_data[id_index-1])
+    result = re.match(r'AF\-[A-Z0-9]*\-F1', entry_data[id_index-1])
     if result is None:
         return None
     return result[0]
