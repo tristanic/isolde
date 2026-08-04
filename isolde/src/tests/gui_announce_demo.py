@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''
+r'''
 Live demo of the GUI-log transparency policy (run against a live GUI ISOLDE).
 
 Watch the ChimeraX *log* while this runs: every MUTATING agent action should

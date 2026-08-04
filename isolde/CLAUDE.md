@@ -16,7 +16,7 @@ All changes — Python or C++ — require a full wheel rebuild and ChimeraX rela
 
 **Windows:**
 ```bat
-make_win.bat release clean app-install
+make_win.bat clean app-install
 ```
 Python-only changes can skip `clean`: `make_win.bat release app-install`.
 
@@ -42,15 +42,35 @@ aren't found, the bat logs the error mid-stream **but still prints a stale
 build. Always run the build from the bundle dir, and grep the log for
 `error`/`prep_toml`/`does not exist`, not just "Installed".
 
+Note the absence of a `release` token: ISOLDE requires `ChimeraX-Core ==1.13.*`,
+which is currently the **daily** build (`make_win.bat`'s default). Passing
+`release` targets the stable install and the build is rejected outright.
+
 **Linux / macOS:**
 ```sh
 make wheel
 make install
 ```
 
-**Prerequisites:** ChimeraX with BundleBuilder ≥ 1.4.0, ChimeraX-Core ~= 1.11, ChimeraX-Atomic ~= 1.61, OpenMM headers at the paths referenced in `bundle_info.xml`, a compatible C++ compiler (MSVC 2015+ / GCC 4.9+ / Xcode).
+**Prerequisites:** ChimeraX with BundleBuilder ≥ 1.6.0, ChimeraX-Core ==1.13.\*,
+ChimeraX-Atomic ~= 1.67, ChimeraX-AtomicLibrary ~= 14.4, ChimeraX-Arrays ~= 1.1,
+ChimeraX-Clipper ==0.28.\*, and a C++ compiler (MSVC / GCC / Xcode).
 
-The build preprocesses `pyproject.toml.in` via `prep_toml.py` before invoking the ChimeraX bundle builder (PEP 517).
+**OpenMM is no longer a separate install** — ChimeraX 1.13 bundles it (8.4 as of
+the 2026-08 daily). `prep_toml.py` locates its libs/headers at build time via
+`openmm.version.openmm_library_path` and substitutes them into `pyproject.toml`.
+
+**Windows toolchain:** ChimeraX 1.13 ships Python 3.14 built with VS2022
+(MSC v.1944), and its prebuilt C++ libraries use the v143 toolset. MSVC only
+guarantees binary compatibility when the *linking* toolset is at least as new as
+every input, so `make_win.bat` takes vcvars' default (newest installed) and then
+verifies it against the ChimeraX being targeted, aborting if it is older. It
+deliberately does **not** pin a toolset: a pin cannot express "match ChimeraX"
+(UCSF does not publish theirs), and the previous `-vcvars_ver=14.1` pin silently
+outlived ChimeraX's move off Python 3.11.
+
+The build preprocesses `pyproject.toml.in` via `prep_toml.py` before invoking the
+ChimeraX bundle builder (PEP 517). `pyproject.toml` is generated and git-ignored.
 
 ---
 
@@ -191,8 +211,7 @@ like `rama`/`rota`/`chiral` link to `rama.html#...` etc.)
 | `isolde/src/tool.py` | Main GUI tool (`ISOLDE_ToolUI`) |
 | `isolde/src_cpp/` | C++ geometry, validation, OpenMM bindings |
 | `isolde/extern/pybind11` | Git submodule — Python ↔ C++ bindings |
-| `bundle_info.xml` | ChimeraX bundle manifest (tool/command declarations, dependencies) |
-| `pyproject.toml.in` | Build config template (processed by `prep_toml.py`) |
+| `pyproject.toml.in` | ChimeraX bundle manifest template — tool/command declarations, dependencies, C++ library/extension definitions. Processed by `prep_toml.py` into the generated (git-ignored) `pyproject.toml`. Replaced the old `bundle_info.xml`. |
 
 ---
 
