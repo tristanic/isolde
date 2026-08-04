@@ -52,7 +52,7 @@ class UI_Live_Map_Controls(UI_Panel_Base):
 
     @live_recalc.setter
     def live_recalc(self, flag):
-        self._live_checkbox.setChecked(flag)
+        self._live_checkbox.setChecked(bool(flag))
         self.isolde.set_live_xmap_recalc(flag)
 
     def enable(self):

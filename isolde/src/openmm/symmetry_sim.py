@@ -133,6 +133,97 @@ class SymmetryShell:
         return m[:, :3], m[:, 3]
 
 
+# ---------------------------------------------------------------------------
+# Operator algebra on orthogonal-space 3x4 [R|t] matrices (Angstroms).
+#
+# The orthogonal matrices bake in the specific lattice translation, so equality
+# within tolerance is EXACT operator identity (two operators differing by a whole
+# cell are tens of Angstroms apart in t and never compare equal). That lets the
+# symmetry group-weight table (below) test operator relationships without any
+# fractional/lattice bookkeeping.
+# ---------------------------------------------------------------------------
+
+def _op_inverse(m):
+    '''Inverse of an orthogonal 3x4 operator (R orthonormal): ``[R^T | -R^T t]``.'''
+    R = m[:, :3]
+    t = m[:, 3]
+    Rinv = R.T
+    return numpy.concatenate([Rinv, (-Rinv @ t)[:, None]], axis=1)
+
+
+def _op_compose(a, b):
+    '''Compose two orthogonal 3x4 operators: ``a . b`` (apply b, then a).'''
+    Ra, ta = a[:, :3], a[:, 3]
+    Rb, tb = b[:, :3], b[:, 3]
+    return numpy.concatenate([Ra @ Rb, (Ra @ tb + ta)[:, None]], axis=1)
+
+
+def _op_equal(a, b, tol=1e-3):
+    '''True if two orthogonal 3x4 operators are equal within ``tol`` (Angstroms).'''
+    return numpy.allclose(a, b, atol=tol, rtol=0.0)
+
+
+def symmetry_group_weight_table(ops_by_group, tol=1e-3):
+    '''
+    Build the flattened row-major ``n*n`` weight table for the symmetry
+    ``grouptable`` (an :class:`openmm.Discrete2DFunction`), given the orthogonal
+    operator of each group.
+
+    ``ops_by_group`` is a list of ``(3, 4)`` orthogonal ``[R | t]`` matrices
+    indexed by group id: index 0 is the identity (the real asymmetric unit);
+    ``1..M`` are one per crystallographic operator actually present in the sim.
+
+    Weights make each *unique* crystal contact contribute exactly once (all
+    representations of a contact fold the identical force back to the real atoms,
+    so the only requirement is that the weights of all present representations of
+    a relationship class ``{S, S^-1}`` sum to 1):
+
+        * ``(0, 0) = 1``            -- real <-> real (ASU internal nonbonded).
+        * ``(X, X)``, X>0 ``= 0``   -- a copy's internal energy duplicates the
+          ASU's; excluded.
+        * real <-> copy ``= 1/2``   -- the two mirror legs ``{0,S}``/``{0,S^-1}``
+          of an inter-molecular contact, each half-weighted (the established
+          double-count fix).
+        * copy <-> copy ``{X,Y}`` (relationship ``S = O_X^-1 . O_Y``) ``= the
+          residual`` ``(1 - 1/2*present(S) - 1/2*present(S^-1)) / m``, where
+          ``present(D)`` is whether operator ``D`` is one of the copy groups and
+          ``m`` is how many copy<->copy pairs share the class ``{S, S^-1}``. When
+          both mirror legs are present (whole-construct sims) this is 0 -- exactly
+          the previous behaviour. When they are absent (a local simulation at a
+          multi-way interface whose linking operator ``S`` was never added to the
+          shell) it becomes ``1/m``, so the otherwise-dropped copy<->copy contact
+          is counted exactly once.
+    '''
+    ops = [numpy.asarray(o, dtype=numpy.float64) for o in ops_by_group]
+    n = len(ops)
+
+    def present(D):
+        return any(_op_equal(ops[g], D, tol) for g in range(1, n))
+
+    copy_pairs = [(x, y) for x in range(1, n) for y in range(x + 1, n)]
+    pair_S = {p: _op_compose(_op_inverse(ops[p[0]]), ops[p[1]]) for p in copy_pairs}
+
+    def same_class(s1, s2):
+        return _op_equal(s1, s2, tol) or _op_equal(s1, _op_inverse(s2), tol)
+
+    w = [[0.0] * n for _ in range(n)]
+    w[0][0] = 1.0
+    for x in range(1, n):
+        w[0][x] = w[x][0] = 0.5
+        # w[x][x] stays 0.0
+    for p in copy_pairs:
+        S = pair_S[p]
+        m = sum(1 for q in copy_pairs if same_class(S, pair_S[q]))
+        r = 0.5 * present(S) + 0.5 * present(_op_inverse(S))
+        val = max(0.0, (1.0 - r) / m)
+        x, y = p
+        w[x][y] = w[y][x] = val
+
+    # Flatten to match symmetry_group_table / Discrete2DFunction(n, n, ...):
+    # values[i + n*j] = weight(group i, group j). The table is symmetric.
+    return [w[i][j] for j in range(n) for i in range(n)]
+
+
 def _operator_is_pure_rotation(symmat):
     '''
     Return ``True`` if the orthogonal-space operator ``symmat`` (a 3x4
@@ -243,6 +334,18 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
     overlap_verdict = {}
     n_pruned_residues = 0
 
+    # Residues flagged ``isolde_ignore`` (e.g. via "isolde ignore :UNL") are
+    # excluded from sim generation entirely: they carry no MD parameters, so
+    # neither the residue nor its crystallographic image can be simulated. We
+    # must not source copies for such parents - otherwise the parent would be
+    # promoted to the mobile selection and then subtracted straight back out with
+    # the excluded residues, leaving the shell referencing an atom that is absent
+    # from the simulation construct (which the parent-lookup guard in
+    # ``SimHandler.initialize_symmetry_copies`` then reports as a hard error).
+    ignored_residue_ids = {id(r) for r in found_atoms.unique_residues
+        if getattr(r, 'isolde_ignore', False)}
+    n_ignored_copies = 0
+
     copies = []
     for atom, symop_index in zip(found_atoms, sym_indices):
         symop_index = int(symop_index)
@@ -251,6 +354,9 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         if symop_index == 0:
             continue
         residue = atom.residue
+        if id(residue) in ignored_residue_ids:
+            n_ignored_copies += 1
+            continue
         key = (id(residue), symop_index)
         verdict = overlap_verdict.get(key)
         if verdict is None:
@@ -289,6 +395,9 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         if n_pruned_residues:
             msg += (f' Pruned {n_pruned_residues} residue/operator '
                 'combination(s) coincident with a special position.')
+        if n_ignored_copies:
+            msg += (f' Skipped {n_ignored_copies} copy(ies) whose parent lies in '
+                'an isolde-ignored residue.')
         logger.info(msg)
 
     if not copies:

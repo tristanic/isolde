@@ -19,7 +19,7 @@ class NonbondedDialog(UI_Panel_Base):
         ml = self.main_layout = DefaultVLayout()
         cbl = DefaultHLayout()
         cb = self._use_softcore_potentials_checkbox = (QCheckBox('Use softcore nonbonded potentials'))
-        cb.setChecked(isolde.sim_params.use_softcore_nonbonded_potential)
+        cb.setChecked(bool(isolde.sim_params.use_softcore_nonbonded_potential))
         cb.stateChanged.connect(self._use_softcore_potentials_checked_cb)
         cb.setToolTip('<span>Choose whether to use soft-core nonbonded potentials (will take effect on next sim start).'
             ' These can be very helpful in escaping from severe clashes, but invoke a 10-20% penalty in simulation rate.</span>')
@@ -28,7 +28,7 @@ class NonbondedDialog(UI_Panel_Base):
 
         scbl = DefaultHLayout()
         scb = self._symmetry_aware_checkbox = QCheckBox('Symmetry-aware simulation')
-        scb.setChecked(isolde.sim_params.symmetry_aware)
+        scb.setChecked(bool(isolde.sim_params.symmetry_aware))
         scb.stateChanged.connect(self._symmetry_aware_checked_cb)
         scb.setToolTip('<span>When enabled, crystallographic symmetry copies of the model '
             'become live participants in the simulation: they exert and feel nonbonded and '
@@ -79,7 +79,7 @@ class NonbondedDialog(UI_Panel_Base):
         key, val = data
         if key == 'symmetry_aware':
             with slot_disconnected(self._symmetry_aware_checkbox.stateChanged, self._symmetry_aware_checked_cb):
-                self._symmetry_aware_checkbox.setChecked(val)
+                self._symmetry_aware_checkbox.setChecked(bool(val))
 
     def cleanup(self):
         self._param_changed_handler.remove()
@@ -140,8 +140,8 @@ class ParamSlider(QWidget):
     def scaled_value(self, value):
         value = max(self.MIN_VAL*self.MULTIPLIER, min(value, self.MAX_VAL*self.MULTIPLIER))
         with self._param_changed_handler.blocked(), slot_disconnected(self._value_spinbox.valueChanged, self._spin_box_changed_cb):
-            self._slider.setValue(value/self.MULTIPLIER)
-            self._value_spinbox.setValue(value)
+            self._slider.setValue(int(round(value/self.MULTIPLIER)))
+            self._value_spinbox.setValue(float(value))
             
     def _spin_box_changed_cb(self, value):
         setattr(self._param_mgr, self.PARAM_NAME, value)
@@ -164,16 +164,16 @@ class ParamSlider(QWidget):
         key, val = data
         if key == self.PARAM_NAME:
             with slot_disconnected(self._slider.valueChanged, self._value_changed_cb):
-                v = round(val/self.MULTIPLIER)
+                v = int(round(val/self.MULTIPLIER))
                 self._slider.setValue(max(self.MIN_VAL,v, min(self.MAX_VAL,v)))
             with slot_disconnected(self._value_spinbox.valueChanged, self._spin_box_changed_cb):
-                self._value_spinbox.setValue(val)
+                self._value_spinbox.setValue(float(val))
     
     def _value_changed_cb(self, _):
         with self._param_changed_handler.blocked():
             setattr(self._param_mgr, self.PARAM_NAME, self.scaled_value)
         with slot_disconnected(self._value_spinbox.valueChanged, self._spin_box_changed_cb):
-            self._value_spinbox.setValue(self.scaled_value)
+            self._value_spinbox.setValue(float(self.scaled_value))
     
     def _reset_value_cb(self, *_):
         self._param_mgr.set_to_default(self.PARAM_NAME)

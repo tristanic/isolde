@@ -45,7 +45,7 @@ class MapAddDialog(UI_Panel_Base):
         ossb.setMinimum(1.5)
         ossb.setMaximum(5)
         ossb.setDecimals(1)
-        ossb.setValue(self.isolde.params.map_shannon_rate)
+        ossb.setValue(float(self.isolde.params.map_shannon_rate))
         ossb.valueChanged.connect(self._sampling_rate_spinbox_cb)
         ossb.setSingleStep(0.1)
         hl.addWidget(ossb)

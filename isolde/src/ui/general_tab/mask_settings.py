@@ -29,7 +29,7 @@ class MaskAndSpotlightSettingsDialog(UI_Panel_Base):
 
         l1.addWidget(QLabel('Mask radius (Å): ', parent=mf))
         mrsb = self.mask_radius_spinbox = QDoubleSpinBox(mf)
-        mrsb.setValue(params.map_mask_radius)
+        mrsb.setValue(float(params.map_mask_radius))
         mrsb.setDecimals(1)
         mrsb.setSingleStep(0.5)
         mrsb.setMinimum(0.5)
@@ -41,7 +41,7 @@ class MaskAndSpotlightSettingsDialog(UI_Panel_Base):
 
         l1.addWidget(QLabel('Spotlight radius (Å): ', parent=mf))
         slsb = self.spotlight_radius_spinbox = QDoubleSpinBox(mf)
-        slsb.setValue(params.spotlight_radius)
+        slsb.setValue(float(params.spotlight_radius))
         slsb.setDecimals(1)
         slsb.setSingleStep(1)
         slsb.setMinimum(5)
@@ -52,7 +52,7 @@ class MaskAndSpotlightSettingsDialog(UI_Panel_Base):
 
         l2 = DefaultHLayout()
         fcb = self.center_on_selection_checkbox = QCheckBox('Centre on selection when masking', parent=mf)
-        fcb.setChecked(isolde.params.center_on_sel_when_masking)
+        fcb.setChecked(bool(isolde.params.center_on_sel_when_masking))
         def _cb(state):
             isolde.params.center_on_sel_when_masking = fcb.isChecked()
         fcb.stateChanged.connect(_cb)
@@ -85,7 +85,7 @@ class MaskAndSpotlightSettingsDialog(UI_Panel_Base):
         center, radius = params
         slsb = self.spotlight_radius_spinbox
         with slot_disconnected(slsb.valueChanged, self._spotlight_radius_spinbox_changed_cb):
-            slsb.setValue(radius)
+            slsb.setValue(float(radius))
             self.session.isolde.params.spotlight_radius = radius
     
     def cleanup(self):

@@ -9,6 +9,7 @@
 
 
 import numpy
+from contextlib import contextmanager
 
 
 from openmm import unit, openmm
@@ -333,6 +334,11 @@ class SimManager:
         sc = self.sim_construct = SimConstruct(model, mobile_atoms, fixed_atoms, excluded_atoms)
         # Hand the symmetry shell (if any) to the SimHandler via the construct.
         sc.symmetry_shell = self._symmetry_shell
+        # The region-of-interest selection that drives map coverage + the
+        # covered-multiplicity n_sym (the pre-promotion selection; None for
+        # plain / whole-model sims, where the SimHandler falls back to the full
+        # mobile set).
+        sc.symmetry_coverage_atoms = self._symmetry_coverage_atoms
 
         logger.status('Preparing simulation handler')
         self._prepare_mdff_managers()
@@ -628,7 +634,16 @@ class SimManager:
             mgr = sx.get_mdff_mgr(m, v, create=False)
             if mgr is not None and mgr.enabled:
                 mdff_mgr_map[v] = mgr
-        sh.isolate_and_cover_selection(self.sim_construct.mobile_atoms,
+        # Map coverage tracks the user's region of interest, not the full mobile
+        # set: in a symmetry-aware sim the mobile selection is enlarged with
+        # distant copy-parent residues, but masking density around those far-away
+        # parents is wasteful (memory + performance) and pointless (their density
+        # restraint is delivered through their ghost inside this patch). Fall back
+        # to the full mobile set for plain sims / whole-model sims.
+        coverage_atoms = getattr(self, '_symmetry_coverage_atoms', None)
+        if coverage_atoms is None:
+            coverage_atoms = self.sim_construct.mobile_atoms
+        sh.isolate_and_cover_selection(coverage_atoms,
             include_surrounding_residues = 0,
             show_context = isolde_params.hard_shell_cutoff_distance,
             mask_radius = isolde_params.map_mask_radius,
@@ -639,56 +654,77 @@ class SimManager:
         # coverage to the symmetry copies' image positions too, so there is
         # density where the (now mobile) ghosts sit. The zone re-masks live as
         # the parents move.
-        self._cover_maps_including_symmetry(sh, isolde_params)
+        self._cover_maps_including_symmetry(sh, isolde_params, coverage_atoms)
 
-    def _cover_maps_including_symmetry(self, sym_handler, isolde_params):
+    def _cover_maps_including_symmetry(self, sym_handler, isolde_params,
+            coverage_atoms=None):
         '''
-        Extend the live map zone to cover the crystallographic symmetry ghosts
-        that are actually *drawn* -- i.e. wherever a ghost is visible, there is
-        density -- in addition to the real mobile atoms. No-op when the
-        simulation is not symmetry-aware (so ordinary sims keep their original,
-        tight coverage exactly).
+        Extend the map zone to cover the crystallographic symmetry copies that
+        actually participate in the simulation, in addition to the real atoms of
+        the region of interest. No-op when the simulation is not symmetry-aware
+        (so ordinary sims keep their original, tight coverage exactly).
 
-        Coverage is tied to the display, not to the (deliberately deep)
-        simulation shell: :func:`isolate_and_cover_selection` has just set the
-        symmetry display to the context ghosts within ``show_context`` of the
-        selection, recorded on the atomic-symmetry model as ``_current_sym_atoms``
-        (the master atoms whose images are shown), ``_current_atom_syms`` (each
-        one's operator index) and ``_current_tfs`` (the operator matrices). We
-        hand exactly those to Clipper's :func:`map_mgr.cover_atoms`, which masks
-        around each atom transformed by its operator and re-masks as the atoms
-        move -- so the density follows the ghosts because both are driven by the
-        same master coordinates.
+        Coverage is sourced directly from the **simulation shell**
+        (:attr:`_symmetry_shell`), not from the Clipper display: the shell copies
+        are the atoms that receive OpenMM virtual sites and MDFF force terms, so
+        covering exactly them makes the covered map region coincide with the set
+        of instances that carry a map term (see
+        :func:`initialize_symmetry_copies` / :func:`add_mdff_atoms`, which key the
+        covered-multiplicity ``n_sym`` and the term set off the same shell). This
+        is also independent of the GUI (works headless).
+
+        ``cover_atoms`` REPLACES the zone set by the preceding
+        :func:`isolate_and_cover_selection`, so a single combined call passes the
+        real region-of-interest atoms (identity transform) plus each shell copy's
+        parent atom under its operator. Clipper masks around each atom's
+        post-transform (ghost) position and re-masks live as the parents move, so
+        density follows the ghosts (both are driven by the same master coords).
+        The single fixed OpenMM MDFF box becomes the AABB of exactly these
+        covered positions + padding.
         '''
-        if getattr(self, '_symmetry_shell', None) is None:
+        shell = getattr(self, '_symmetry_shell', None)
+        if shell is None:
             return
-        asm = getattr(sym_handler, 'atomic_symmetry_model', None)
-        if asm is None:
-            return
-        sym_atoms = getattr(asm, '_current_sym_atoms', None)
-        tfs = getattr(asm, '_current_tfs', None)
-        atom_syms = getattr(asm, '_current_atom_syms', None)
 
         import numpy
         from chimerax.geometry import Places
-        from chimerax.atomic import concatenate
+        from chimerax.atomic import Atoms, concatenate
 
-        mobile = self.sim_construct.mobile_atoms
-        mobile = mobile[mobile.element_names != 'H']
-        if sym_atoms is None or not len(sym_atoms) or tfs is None:
-            # No ghosts drawn -> nothing extra to cover (original behaviour).
+        # Cover the real atoms of the region of interest (the pre-promotion
+        # selection when symmetry enlarged it), not the full mobile set - the
+        # distant promoted parents are deliberately left uncovered.
+        if coverage_atoms is None:
+            coverage_atoms = self.sim_construct.mobile_atoms
+        mobile = coverage_atoms[coverage_atoms.element_names != 'H']
+
+        # Dense operator ids: transform 0 = identity (the real ROI atoms); 1..M
+        # one per operator actually present among the shell copies (first-seen
+        # order). Each copy's parent atom is covered under its operator, so the
+        # mask lands at the ghost position R.r + t.
+        op_to_place = {}
+        place_mats = [numpy.eye(3, 4)]
+        copy_parents, copy_place_idx = [], []
+        for c in shell.copies:
+            symop = c.symop_index
+            pi = op_to_place.get(symop)
+            if pi is None:
+                pi = op_to_place[symop] = len(place_mats)
+                place_mats.append(numpy.asarray(shell.symmats[symop],
+                    dtype=numpy.float64))
+            copy_parents.append(c.parent_atom)
+            copy_place_idx.append(pi)
+
+        if not copy_parents:
+            # No copies -> nothing extra to cover (original behaviour).
             return
 
-        # Transform 0 is an explicit identity for the real mobile atoms; the
-        # drawn operators follow at 1.., so the ghosts' operator indices shift
-        # by one (avoids assuming _current_tfs[0] is the identity).
-        place_array = numpy.concatenate(
-            [numpy.eye(3, 4)[None, :, :], numpy.asarray(tfs, dtype=numpy.float64)])
-        transforms = Places(place_array=place_array)
-        atoms = concatenate([mobile, sym_atoms], remove_duplicates=False)
+        transforms = Places(place_array=numpy.asarray(place_mats,
+            dtype=numpy.float64))
+        atoms = concatenate([mobile, Atoms(copy_parents)],
+            remove_duplicates=False)
         transform_indices = numpy.concatenate([
             numpy.zeros(len(mobile), dtype=numpy.int32),
-            numpy.asarray(atom_syms, dtype=numpy.int32) + 1])
+            numpy.asarray(copy_place_idx, dtype=numpy.int32)])
 
         sym_handler.map_mgr.cover_atoms(atoms, transforms=transforms,
             transform_indices=transform_indices,
@@ -795,6 +831,15 @@ class SimManager:
         crystallographic symmetry.
         '''
         self._symmetry_shell = None
+        # The selection that should drive *map coverage* (and the symmetry
+        # display): the user's region of interest, before it is enlarged with
+        # distant copy-parent residues below. Covering the promoted parents at
+        # their own (often far-away) crystallographic positions masks huge extra
+        # map volumes for no benefit - a far parent's density restraint is
+        # delivered through its ghost sitting inside this selection's patch, not
+        # at the parent itself. None until/unless promotion actually enlarges the
+        # selection (a plain sim then falls back to the full mobile set).
+        self._symmetry_coverage_atoms = None
         sp = self.sim_params
         # Opt-in feature: default off leaves the simulation symmetry-blind
         # (bit-for-bit the original behaviour). See constants.SYMMETRY_AWARE.
@@ -823,6 +868,11 @@ class SimManager:
         parents = shell.parent_atoms
         new_parents = parents.subtract(parents.intersect(mobile_atoms))
         if len(new_parents):
+            # Remember the region of interest *before* enlargement, so map
+            # coverage stays tight around what the user actually selected (plus
+            # the ghosts drawn near it) rather than ballooning to the promoted
+            # distant parents.
+            self._symmetry_coverage_atoms = mobile_atoms
             new_res = new_parents.unique_residues
             mobile_atoms = mobile_atoms.merge(new_res.atoms)
             self.session.logger.info(f'ISOLDE: added {len(new_res)} residue(s) to '
@@ -1188,7 +1238,10 @@ class SimManager:
             changeds.append(changes['spring constant changed'])
         if len(changeds):
             all_changeds = concatenate(changeds, remove_duplicates=True)
-            all_changeds = all_changeds[all_changeds.sim_indices != -1]
+            # Pass the unfiltered set: update_mdff_atoms filters sim_index != -1
+            # internally for the real-atom self-terms, but must also update the
+            # ghost terms of symmetry parents whose OWN self-term was dropped
+            # (sim_index == -1) yet whose copies still carry the map coupling.
             self.sim_handler.update_mdff_atoms(all_changeds, mgr.volume)
 
     def _mdff_global_k_change_cb(self, trigger_name, data):
@@ -1204,6 +1257,19 @@ class SimManager:
             return DEREGISTER
 
 
+
+
+def _symmat_to_transform12(symmat):
+    '''
+    Flatten a Clipper orthogonal-space operator ``symmat`` (a ``(3,4)`` ``[R | t]``
+    array with R orthonormal and t in **Angstroms**) into the 12-element per-bond
+    transform expected by :class:`SymmetryAwareCubicInterpMapForce` -- row-major R
+    (9) followed by t converted to **nanometres** (3). This matches the
+    ``SymmetrySite`` construction (which also uses ``t_nm = t * 0.1``) so a term's
+    sampled position ``R.x + t_nm`` coincides with the ghost position.
+    '''
+    m = numpy.asarray(symmat, dtype=numpy.float64)
+    return numpy.concatenate([m[:, :3].ravel(), m[:, 3] * 0.1])
 
 
 class SimHandler:
@@ -1248,7 +1314,6 @@ class SimHandler:
 
         self._thread_handler = None
 
-        self._paused = False
         self._sim_running = False
         self._unstable = True
         self._unstable_counter = 0
@@ -1271,11 +1336,12 @@ class SimHandler:
         # A Volume: LinearInterpMapForce dict covering all MDFF forces
         self.mdff_forces = {}
 
-        # For symmetry-aware MDFF (Phase 1C): per-volume mapping from a real
-        # atom's particle index to the map-force indices of its symmetry copies,
-        # so live coupling-constant edits can be mirrored (and /n_sym-scaled)
-        # onto the copies. Empty when the simulation has no symmetry atoms.
-        self._mdff_copy_force_indices = {}
+        # Symmetry-aware MDFF: per-volume ``{real-atom particle index:
+        # (force_index, transform12)}`` recording each real atom's single map term
+        # (identity if its own position is covered, else the operator of its
+        # most-interior drawn image) so live coupling/enabled edits can re-apply
+        # it. Empty when the simulation has no symmetry atoms.
+        self._mdff_symmetry_term_indices = {}
 
         logger = self.session.logger
         # Overall simulation topology + system. The build can recover once from
@@ -1414,6 +1480,267 @@ class SimHandler:
                 return
             f.set_lambda(val, self._context)
 
+    # ------------------------------------------------------------------
+    # Per-group soft-core nonbonded coupling (transient; see the
+    # softcore-nb-groups design). Consumed by fitting/docking engines, NOT
+    # exposed to users.
+    #
+    # To ENABLE: an engine sets ``sim_params.nb_groups_max = N`` (e.g. 8) BEFORE
+    # starting the simulation (the coupling table is sized when the soft-core
+    # forces are built, during sim start, so it cannot be provisioned afterwards).
+    # It should reset it to 1 when done, since the parameter persists on the
+    # session. With nb_groups_max == 1 the feature is off and a simulation is
+    # bit-for-bit the plain soft-core potential.
+    #
+    # Then, while the sim runs, use assign_nb_group() / set_nb_coupling() below:
+    # every atom starts in group 0 with an all-ones coupling table, and edits go
+    # through the standard force_update_needed() path (applied immediately when
+    # paused, on the next frame when running) with no context reinitialisation.
+    # ------------------------------------------------------------------
+    @property
+    def nb_groups_enabled(self):
+        '''Whether per-group soft-core coupling is *fully* available for this simulation.
+
+        Requires the nonbonded soft-core force to be group-aware AND -- if implicit
+        solvent is active -- the GB force to be group-aware too. Otherwise softening a
+        group would decouple its nonbonded interactions while leaving its GB solvation
+        untouched (an inconsistency). This is why a crystallographic-symmetry simulation
+        with GBSA currently reports False: the symmetry GB force is not yet group-aware
+        (that composition is a later step), so engines fall back to their legacy path.'''
+        if getattr(self, '_nb_softcore_force', None) is None:
+            return False
+        if getattr(self, '_gbsa_force', None) is not None and \
+                getattr(self, '_nb_gbsa_force', None) is None:
+            return False
+        return True
+
+    @property
+    def nb_groups_count(self):
+        '''Number of group slots provisioned in the coupling table (1 if disabled).
+
+        Group ids passed to assign_nb_group / set_nb_coupling must be < this. It is
+        SimParams.nb_groups_max, captured when the soft-core forces were built.'''
+        f = getattr(self, '_nb_softcore_force', None)
+        return int(getattr(f, '_n_nb_groups', 1)) if f is not None else 1
+
+    def _nb_group_forces(self):
+        forces = []
+        f = getattr(self, '_nb_softcore_force', None)
+        if f is not None:
+            forces.append(f)
+        g = getattr(self, '_nb_gbsa_force', None)
+        if g is not None:
+            forces.append(g)
+        return forces
+
+    def assign_nb_group(self, atoms, group_id, copy_group_id=None):
+        '''
+        Put ``atoms`` (a ChimeraX Atoms) into nonbonded group ``group_id``
+        (0 <= group_id < nb_groups_max). Applied live to every group-aware force via
+        per-particle parameter updates (no reinitialisation). Atoms outside the
+        simulation construct are ignored.
+
+        In a crystallographic-symmetry simulation each atom's symmetry copies are also
+        assigned: to ``copy_group_id`` if given, else to ``group_id`` (a copy must be
+        grouped, or its coupling to other groups would be computed from the wrong
+        group). Use a distinct ``copy_group_id`` to treat an atom's crystal self-contact
+        (real<->copy) differently from its internal interactions (real<->real) -- e.g.
+        to soften the former while keeping the latter full.
+        '''
+        forces = self._nb_group_forces()
+        if not forces:
+            raise RuntimeError('per-group soft-core coupling is not enabled for this '
+                'simulation')
+        if copy_group_id is None:
+            copy_group_id = group_id
+        indices = self._atoms.indices(atoms)
+        indices = [int(i) for i in indices if i != -1]
+        # (particle index, group) assignments: real atoms, then their symmetry copies.
+        # Copies occupy particle indices [n_real, n_total);
+        # _symmetry_copies['parent_index'][c] is the real-particle index of copy c.
+        assignments = [(i, group_id) for i in indices]
+        copies = getattr(self, '_symmetry_copies', None)
+        if copies is not None:
+            n_real = len(self._atoms)
+            target = set(indices)
+            for c, p in enumerate(copies['parent_index']):
+                if int(p) in target:
+                    assignments.append((n_real + c, copy_group_id))
+        for f in forces:
+            gi = f._nb_group_index
+            for i, g in assignments:
+                params = list(f.getParticleParameters(i))
+                params[gi] = float(g)
+                f.setParticleParameters(i, params)
+            f.update_needed = True
+        pg = getattr(self, '_nb_particle_groups', None)
+        if pg is not None:
+            for i, g in assignments:
+                pg[i] = g
+        self.force_update_needed()
+
+    def set_nb_coupling(self, group_a, group_b, lam):
+        '''
+        Set the (symmetric) soft-core coupling between two nonbonded groups
+        (0 < lam <= 1) on every group-aware force, live.
+
+        This is a low-level primitive: it sets ONE table cell. In a crystallographic-
+        symmetry simulation, softening a group's coupling to the environment does NOT
+        by itself soften that group's contact with its own symmetry copies (those live
+        in whatever group the copies were assigned to). To soften a selection against
+        everything correctly -- including its own crystal image -- use
+        :meth:`soften_nb_selection`, which composes the necessary cells.
+        '''
+        forces = self._nb_group_forces()
+        if not forces:
+            raise RuntimeError('per-group soft-core coupling is not enabled')
+        for f in forces:
+            f.set_coupling(group_a, group_b, lam)      # sets update_needed
+        self.force_update_needed()
+
+    def get_nb_coupling(self, group_a, group_b):
+        '''Current coupling between two nonbonded groups (1.0 if not enabled).'''
+        f = getattr(self, '_nb_softcore_force', None)
+        if f is None:
+            return 1.0
+        return f.get_coupling(group_a, group_b)
+
+    def soften_nb_selection(self, atoms, lam, exploring_group=1, copy_group=2):
+        '''
+        Soften ``atoms`` against the rest of the model to soft-core coupling ``lam``
+        (0 < lam <= 1), correctly and symmetry-aware: the selection is placed in
+        ``exploring_group`` and its symmetry copies in ``copy_group``, then EVERY
+        coupling that touches either group is softened to ``lam`` EXCEPT the exploring
+        group's own internal coupling ``(exploring_group, exploring_group)`` -- so the
+        selection stays internally rigid while its interactions with everything else,
+        *including its own symmetry copies* (the crystal self-contact), are softened.
+        Pass ``lam=1.0`` to restore full coupling; follow with
+        ``assign_nb_group(atoms, 0)`` to fully release the selection to the environment.
+
+        This is the reusable form of the pattern rotafit uses. It handles a SINGLE
+        exploring selection versus "everything else" (group 0 = the rest); for multiple
+        simultaneous exploring groups drive the couplings explicitly. Requires at least
+        3 provisioned group slots (``nb_groups_count``; the default nb_groups_max=4
+        provides them).
+        '''
+        if not self._nb_group_forces():
+            raise RuntimeError('per-group soft-core coupling is not enabled')
+        if self.nb_groups_count <= max(exploring_group, copy_group):
+            raise ValueError('soften_nb_selection needs more group slots than are '
+                'provisioned (nb_groups_max); it uses groups %d and %d.'
+                % (exploring_group, copy_group))
+        self.assign_nb_group(atoms, exploring_group, copy_group_id=copy_group)
+        g, gc = exploring_group, copy_group
+        # Soften every cell touching the exploring group or its copy shadow, except the
+        # exploring group's internal (g, g).
+        for other in range(self.nb_groups_count):
+            if other != g:
+                self.set_nb_coupling(g, other, lam)    # (g, env), (g, gc), (g, other...)
+            self.set_nb_coupling(gc, other, lam)       # (gc, *) incl (gc, gc)
+
+    # ------------------------------------------------------------------
+    # Public sim-driving primitives for the in-sim fitting engines (rotafit,
+    # settle_poses). Thin wrappers over the context/integrator/MDFF operations
+    # those engines perform while a simulation is PAUSED on the main thread, so
+    # the engines don't reach into private attributes. All assume a running
+    # (typically paused) simulation.
+    # ------------------------------------------------------------------
+    def sim_coords(self):
+        '''Current simulation coordinates (Angstrom), REAL atoms only.
+
+        In a crystallographic-symmetry simulation the OpenMM System carries extra
+        symmetry-copy virtual-site particles after the real atoms, so the raw context
+        state is longer than ``self._atoms``; slice to the real atoms (a no-op when
+        symmetry is off). Returns an ``(n_real, 3)`` array in construct/``_atoms`` order.'''
+        st = self._simulation.context.getState(getPositions=True)
+        coords = st.getPositions(asNumpy=True).value_in_unit(unit.angstrom)
+        return coords[:len(self._atoms)]
+
+    def settle(self, steps, minimize=False, temperature=None):
+        '''Advance the sim toward a local minimum from the current coords: a 0 K
+        seat-then-optionally-minimise hybrid. ALWAYS resets velocities to 0 K and steps
+        the MAIN integrator first -- Newtonian (damped) dynamics carries momentum over
+        small barriers and seats the pose in the local well (a pure minimise from a fresh
+        placement instead quenches into the nearest minimum, often off-density under a
+        gentle map). Then, if ``minimize``, energy-minimise to converge cleanly to that
+        seated minimum (deterministic, killing run-to-run jitter in a ranking energy).
+
+        Steps the main integrator directly rather than ``self._simulation.step`` so it is
+        pure Newtonian dynamics, not routed through ISOLDE's fast-atom surveillance (which
+        can veto/interrupt a clashy settle). Optionally sets the integrator ``temperature``
+        first (default: leave it unchanged); callers needing a guaranteed 0 K descent pass
+        ``temperature=0`` or hold ``self.temperature`` at 0 around the call.'''
+        if temperature is not None:
+            self.temperature = temperature
+        ctx = self._simulation.context
+        ctx.setVelocitiesToTemperature(0 * unit.kelvin)   # clean 0 K descent
+        self._main_integrator.step(steps)                 # dynamics: fall into the well
+        if minimize:
+            self._simulation.minimizeEnergy()             # converge to the seated minimum
+
+    def potential_energy(self, groups=None):
+        '''Potential energy (kJ/mol) of the current sim state, optionally restricted to a
+        set of force groups -- e.g. ``CORE_FORCE_GROUPS`` for the force-field terms or
+        ``{MAP_FORCE_GROUP}`` for the map. A single-point read; assumes a running (typically
+        paused) simulation. ``groups`` is anything OpenMM's ``getState(groups=...)`` accepts
+        (a set of ints); None reads all groups.'''
+        kw = {} if groups is None else {'groups': groups}
+        st = self._simulation.context.getState(getEnergy=True, **kw)
+        return st.getPotentialEnergy().value_in_unit(unit.kilojoule_per_mole)
+
+    def _mdff_managers(self):
+        '''The MDFF managers (one per driving map) for the running sim, or ``[]``.
+
+        The managers -- which own ``get_mdff_atoms`` and ``global_k`` -- live on the
+        SimManager, not on the handler; reach them through the ISOLDE singleton. Guarded so
+        it simply reports "no maps" if any link is missing (apo sim, mid-teardown).'''
+        sm = getattr(getattr(self.session, 'isolde', None), 'sim_manager', None)
+        mgrs = getattr(sm, 'mdff_mgrs', None) if sm is not None else None
+        return list(mgrs.values()) if mgrs else []
+
+    def mdff_coupling_constant(self):
+        '''Summed MDFF coupling constant (``global_k``) over the maps driving the sim.
+
+        This is ISOLDE's own map weight: sigma-normalised and resolution-calibrated (small
+        for high-sigma cryo-EM maps, larger for x-ray), so a fitting engine can scale an
+        energy threshold by it to track the map's energy scale rather than hard-coding a
+        kJ/mol value. Returns 0.0 when the sim has no MDFF maps (apo).'''
+        total = 0.0
+        for mgr in self._mdff_managers():
+            try:
+                total += float(mgr.global_k)
+            except Exception:
+                pass
+        return total
+
+    @contextmanager
+    def map_decoupled(self, atoms):
+        '''Context manager: for its duration, DISABLE the per-atom MDFF map terms of
+        ``atoms`` across every driving map, restoring them on exit.
+
+        The map term is a pure per-atom sum, so with a selection's terms off the map no
+        longer pulls on (or scores) those atoms while everything else stays map-restrained
+        -- e.g. hold the receptor toward its experimental density while judging a ligand on
+        packing alone, or isolate a residue's own map energy by the difference method.
+        Symmetry-safe: drives the same ``update_mdff_atoms`` path as live edits (which fans
+        a disable out to each atom's symmetry terms too). Applies immediately when paused.
+        A no-op (yields straight through) when the sim has no maps or none of ``atoms`` are
+        map-coupled.'''
+        saved = []
+        try:
+            for mgr in self._mdff_managers():
+                m = mgr.get_mdff_atoms(atoms)
+                if m is None or len(m) == 0:
+                    continue
+                saved.append((mgr, m, numpy.array(m.enableds, copy=True)))
+                m.enableds = numpy.zeros(len(m), dtype=bool)   # disable this selection's terms
+                self.update_mdff_atoms(m, mgr.volume)          # live (paused => at once)
+            yield
+        finally:
+            for mgr, m, en in saved:                           # always restore
+                m.enableds = en
+                self.update_mdff_atoms(m, mgr.volume)
+
 
     @property
     def minimize(self):
@@ -1530,7 +1857,9 @@ class SimHandler:
         for i,f in enumerate(system.getForces()):
             if type(f) == NonbondedForce:
                 break
-        from .custom_forces import NonbondedSoftcoreForce, NonbondedSoftcoreExceptionForce
+        from .custom_forces import (NonbondedSoftcoreForce,
+            NonbondedSoftcoreExceptionForce, NBGroupNonbondedSoftcoreForce,
+            SymmetryAwareNonbondedSoftcoreForce)
         p = self._params
         param_dict = {
             'a': p.nonbonded_softcore_a,
@@ -1539,15 +1868,34 @@ class SimHandler:
             'nb_lambda': p.nonbonded_softcore_lambda_minimize,
             'alpha': p.nonbonded_softcore_alpha,
         }
-        # If crystallographic symmetry copies are present, use the symmetry-aware
-        # soft-core force: the same functional form wrapped in a per-particle
-        # group mask that suppresses same-operator copy-copy interactions (see
-        # SymmetryAwareMixin). Each particle then carries a trailing group id.
+        # Two orthogonal per-particle grouping layers may be active:
+        #  * crystallographic symmetry (symgroup + grouptable mask), if copies are
+        #    present -- SymmetryAwareMixin; and
+        #  * per-group soft-core coupling (nb_group + nb_coupling_table lambda),
+        #    if an engine set sim_params.nb_groups_max > 1 before the sim was built.
+        # The nb-group force is the base for the symmetry-aware one, so any
+        # combination composes. Each active layer appends a trailing per-particle
+        # group id, base (nb_group) before mixin (symgroup).
         groups = getattr(self, '_symmetry_particle_groups', None)
+        nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
+        nb_on = nb_max > 1
+        n_particles = system.getNumParticles()
+        if nb_on:
+            # Every atom starts in group 0 (inert: coupling table is all-ones);
+            # the engine assigns groups and couplings live afterwards.
+            nb_groups = self._nb_particle_groups = numpy.zeros(n_particles, dtype=int)
+        else:
+            nb_groups = None
+            self._nb_particle_groups = None
+
         if groups is not None:
-            from .custom_forces import SymmetryAwareNonbondedSoftcoreForce
             sf = SymmetryAwareNonbondedSoftcoreForce(
-                symmetry_ngroups=self._symmetry_ngroups, **param_dict)
+                symmetry_ngroups=self._symmetry_ngroups,
+                symmetry_group_weights=getattr(self, '_symmetry_group_table', None),
+                n_nb_groups=nb_max,
+                **param_dict)
+        elif nb_on:
+            sf = NBGroupNonbondedSoftcoreForce(n_nb_groups=nb_max, **param_dict)
         else:
             sf = NonbondedSoftcoreForce(**param_dict)
         sfb = NonbondedSoftcoreExceptionForce(**param_dict)
@@ -1556,13 +1904,14 @@ class SimHandler:
         sf.setNonbondedMethod(f.getNonbondedMethod())
         sf.setCutoffDistance(f.getCutoffDistance())
         sf.setSwitchingDistance(f.getSwitchingDistance())
-        for j in range(system.getNumParticles()):
+        for j in range(n_particles):
             charge, sigma, epsilon = f.getParticleParameters(j)
+            pp = [charge, sigma, epsilon]
+            if nb_on:
+                pp.append(float(nb_groups[j]))
             if groups is not None:
-                sf.addParticle([charge, sigma, epsilon, float(groups[j])])
-            else:
-                sf.addParticle([charge, sigma, epsilon])
-            #f.setParticleParameters(j, charge, sigma, 0)
+                pp.append(float(groups[j]))
+            sf.addParticle(pp)
         for j in range(f.getNumExceptions()):
             p1, p2, cp, sig, eps = f.getExceptionParameters(j)
             sf.addExclusion(p1, p2)
@@ -1571,6 +1920,9 @@ class SimHandler:
         system.addForce(sf)
         system.addForce(sfb)
         self.all_forces.extend((sf, sfb))
+        if nb_on:
+            # Handle for the group manager (nb_group membership + coupling table).
+            self._nb_softcore_force = sf
         self._softcore_nb_param_mgr = _SoftCoreNonbondedParamMgr(self, self._params)
 
 
@@ -1888,7 +2240,7 @@ class SimHandler:
                 self._fire_sim_paused_trigger)
 
 
-    def push_coords_to_sim(self, coords=None):
+    def push_coords_to_sim(self, coords=None, immediate=False):
         '''
         Change the atomic coordinates within the simulation.
 
@@ -1897,6 +2249,14 @@ class SimHandler:
                 - an array of coordinates in Angstroms, or None. If None, the
                   current coordinates of the simulation construct in ChimeraX
                   will be used.
+            * immediate:
+                - by default, coordinates supplied while the simulation is paused
+                  are queued and applied on resume. If ``immediate`` is True and
+                  the sim is paused, they are instead flushed to the (thread-
+                  handler) simulation state right away, so they survive resume and
+                  are seen by the next ``step()``. Only meaningful while paused
+                  (the sim thread is then idle, so this is safe); ignored while
+                  running (coords are pushed on the next 'coord update' regardless).
         '''
         if not self._sim_running:
             raise TypeError('No simulation running!')
@@ -1904,7 +2264,10 @@ class SimHandler:
             coords = self._atoms.coords
         self._pending_coords = coords
         if self.pause:
-            self._coord_update_pending=True
+            if immediate:
+                self._push_coords_to_sim()
+            else:
+                self._coord_update_pending=True
         else:
             if self._coord_push_handler is None:
                 self._coord_push_handler = self.triggers.add_handler('coord update', self._push_coords_to_sim)
@@ -2001,7 +2364,11 @@ class SimHandler:
         '''
         if not self.sim_running:
             return
-        if self._paused:
+        # NB: the live pause state is self._pause (set by the `pause` property and
+        # the main loop). A long-standing typo read self._paused here, which
+        # __init__ set to False and nothing ever updated -- so paused parameter
+        # changes were never pushed until the next resume. Use the real flag.
+        if self._pause:
             self._update_forces_in_context_if_needed()
         else:
             self._force_update_pending = True
@@ -2030,7 +2397,7 @@ class SimHandler:
         '''
         if not self.sim_running:
             return
-        # if self._paused:
+        # if self._pause:
         #     self._reinitialize_context()
         else:
             self._context_reinit_pending = True
@@ -2731,7 +3098,7 @@ class SimHandler:
             * volume:
                 - a :py:class:`chimerax.Volume` instance
         '''
-        from .custom_forces import CubicInterpMapForce
+        from .custom_forces import CubicInterpMapForce, SymmetryAwareCubicInterpMapForce
         v = volume
         region = list(v.region)
         # Ensure that the region ijk step size is [1,1,1]
@@ -2754,7 +3121,15 @@ class SimHandler:
         # particles in this force, it needs a unique name so it doesn't
         # interfere with other instances of the same force.
         suffix = str(len(self.mdff_forces)+1)
-        f = CubicInterpMapForce(data, region_tf.matrix, suffix, units='angstroms',
+        # When simulating with crystallographic symmetry, use the symmetry-aware
+        # map force: each term carries a per-bond operator so a real atom can feel
+        # the map through its symmetry image(s) (sampling at S.r), with the force
+        # folded back to the real atom by the expression's own chain rule. Plain
+        # sims keep the base force unchanged.
+        shell = getattr(self._sim_construct, 'symmetry_shell', None)
+        force_cls = (SymmetryAwareCubicInterpMapForce if shell is not None
+                     else CubicInterpMapForce)
+        f = force_cls(data, region_tf.matrix, suffix, units='angstroms',
                                 map_sigma=v.sigma)
         f.setForceGroup(MAP_FORCE_GROUP)
         self.all_forces.append(f)
@@ -2810,55 +3185,126 @@ class SimHandler:
         all_atoms = self._atoms
         indices = all_atoms.indices(mdff_atoms.atoms)
         ks = numpy.asarray(mdff_atoms.coupling_constants, dtype=numpy.float64)
-        copies = getattr(self, '_symmetry_copies', None)
-        if copies is not None:
-            # Divide each real atom's map coupling by its symmetry multiplicity,
-            # then add its copies as extra single-atom map terms carrying the
-            # same 1/n_sym share (Phase 1C).
-            ks = ks / self._symmetry_nsym[indices]
-        mdff_atoms.sim_indices = f.add_atoms(indices, ks, mdff_atoms.enableds)
-        if copies is not None:
-            self._add_mdff_symmetry_copies(f, volume, indices, mdff_atoms)
+        enableds = numpy.asarray(mdff_atoms.enableds, dtype=numpy.float64)
+        shell = getattr(self._sim_construct, 'symmetry_shell', None)
+        if shell is None:
+            mdff_atoms.sim_indices = f.add_atoms(indices, ks, enableds)
+        else:
+            self._add_mdff_symmetry_terms(f, volume, shell, mdff_atoms,
+                indices, ks, enableds)
         self.context_reinit_needed()
 
-    def _add_mdff_symmetry_copies(self, f, volume, real_indices, mdff_atoms):
+    def _add_mdff_symmetry_terms(self, f, volume, shell, mdff_atoms,
+            indices, ks, enableds):
         '''
-        Append a map-force term for every symmetry copy whose parent is one of
-        the MDFF atoms just added, with coupling ``parent_k / n_sym`` and the
-        parent's enabled state. Records the resulting force indices per parent
-        particle index so :func:`update_mdff_atoms` can keep them in step.
+        Symmetry-aware MDFF term creation (:class:`SymmetryAwareCubicInterpMapForce`).
+
+        Each real MDFF atom gets **exactly one** map term at its full coupling,
+        carrying a per-bond operator that places it inside the covered density
+        box. Because the crystallographic map is space-group symmetric, every
+        representation of an atom (its own position or any of its images) folds
+        the *identical* force ``k.grad(rho)`` back to the real atom -- so a single
+        representation at full ``k`` is exact, and there is no need to enumerate
+        all images and divide the coupling between them. The choice per atom:
+
+            * own position inside the box (the region of interest -- the common
+              case, and identical to an ordinary non-symmetry MDFF term):
+              identity transform, so ``[I|0]``;
+            * otherwise (a distant promoted parent whose own position is out of
+              box): the operator of whichever of its drawn images sits nearest the
+              region-of-interest centroid -- i.e. most interior, so it keeps the
+              most margin from the fixed box edges as the atom moves;
+            * no covered representation at all: no term (relies on nonbonded).
+
+        No terms are placed on copy (virtual-site) particles. Records, per
+        real-atom particle index, the ``(force_index, transform12)`` of its single
+        term so live coupling/enabled edits can re-apply it (the C++ update
+        overwrites all per-bond parameters, so the transform must be re-supplied).
         '''
-        copies = self._symmetry_copies
-        parent_index = copies['parent_index']
-        nsym = self._symmetry_nsym
-        n_real = self._num_real_atoms
-        kmap = {int(idx): (float(k), bool(e)) for idx, k, e in zip(
-            real_indices, mdff_atoms.coupling_constants, mdff_atoms.enableds)}
-        cidx, cks, cens, cparents = [], [], [], []
-        for j, pidx in enumerate(parent_index):
+        from chimerax.atomic import Atoms
+        from .custom_forces import SymmetryAwareCubicInterpMapForce as _SA
+        all_atoms = self._atoms
+        n_real = len(all_atoms)
+        # Which real atoms' OWN position is inside the covered map box (the region
+        # of interest; full mobile set for whole-model / plain sims), and the ROI
+        # centroid used to pick the most-interior image for the rest.
+        cov = getattr(self._sim_construct, 'symmetry_coverage_atoms', None)
+        if cov is None:
+            cov = self._sim_construct.mobile_atoms
+        self_covered = numpy.zeros(n_real, dtype=bool)
+        ci = all_atoms.indices(cov)
+        self_covered[ci[ci != -1]] = True
+        roi_coords = cov.coords
+        roi_centroid = (roi_coords.mean(axis=0) if len(roi_coords)
+            else numpy.zeros(3))
+        # For atoms whose own position is NOT covered, gather their drawn images
+        # as {parent particle index: [(symop_index, ghost_coord_A), ...]} so the
+        # most-interior one can be chosen. (Built only for non-covered parents;
+        # covered atoms just take the identity term.)
+        copies = shell.copies
+        parent_pidx = all_atoms.indices(Atoms([c.parent_atom for c in copies]))
+        images_by_parent = {}
+        for c, pidx in zip(copies, parent_pidx):
             pidx = int(pidx)
-            ke = kmap.get(pidx)
-            if ke is None:
-                continue          # this copy's parent has no map coupling
-            k, enabled = ke
-            cidx.append(n_real + j)
-            cks.append(k / nsym[pidx])
-            cens.append(float(enabled))
-            cparents.append(pidx)
-        if not cidx:
-            return
-        force_indices = f.add_atoms(
-            numpy.array(cidx, dtype=numpy.int32),
-            numpy.array(cks, dtype=numpy.float64),
-            numpy.array(cens, dtype=numpy.float64))
-        d = self._mdff_copy_force_indices.setdefault(volume, {})
-        for fi, pidx in zip(force_indices, cparents):
-            d.setdefault(pidx, []).append(int(fi))
+            if pidx < 0 or self_covered[pidx]:
+                continue
+            m = numpy.asarray(shell.symmats[c.symop_index], dtype=numpy.float64)
+            ghost = m[:, :3] @ numpy.asarray(c.parent_atom.coord,
+                dtype=numpy.float64) + m[:, 3]
+            images_by_parent.setdefault(pidx, []).append((c.symop_index, ghost))
+
+        ident = _SA.IDENTITY_TRANSFORM
+        add_i, add_k, add_e, add_tf = [], [], [], []
+        for i, k, e in zip(indices, ks, enableds):
+            i = int(i)
+            if i < 0:
+                continue    # not in the construct (should not occur)
+            if self_covered[i]:
+                tf = ident
+            else:
+                imgs = images_by_parent.get(i)
+                if not imgs:
+                    # Invariant: a symmetry shell only exists for crystallographic
+                    # data, whose map is defined throughout the cell, and the shell
+                    # is built whole-residue around the selection -- so every mobile
+                    # atom must have a covered representation (its own position in
+                    # the ROI, or a drawn image). None means the shell / map
+                    # coverage has a gap; fail loud rather than silently leave the
+                    # atom unrestrained by the map. (Should never fire.)
+                    a = all_atoms[i]
+                    raise RuntimeError(
+                        'Symmetry-aware MDFF: mobile atom {} has no covered map '
+                        'representation -- neither its own position nor any '
+                        'crystallographic image lies in the covered region. This '
+                        'indicates a gap in the symmetry shell / map coverage.'
+                        .format(a))
+                symop = min(imgs, key=lambda im: numpy.sum(
+                    (im[1] - roi_centroid) ** 2))[0]
+                tf = _symmat_to_transform12(shell.symmats[symop])
+            add_i.append(i); add_k.append(float(k)); add_e.append(float(e))
+            add_tf.append(tf)
+        sim_indices = numpy.full(len(indices), -1, dtype=numpy.int32)
+        d = self._mdff_symmetry_term_indices.setdefault(volume, {})
+        if add_i:
+            fis = f.add_atoms(
+                numpy.array(add_i, dtype=numpy.int32),
+                numpy.array(add_k, dtype=numpy.float64),
+                numpy.array(add_e, dtype=numpy.float64),
+                transforms=numpy.array(add_tf, dtype=numpy.float64))
+            pos_in_indices = {int(a): p for p, a in enumerate(indices)}
+            for fi, own, tf in zip(fis, add_i, add_tf):
+                d[own] = (int(fi), tf)
+                sim_indices[pos_in_indices[own]] = int(fi)
+        mdff_atoms.sim_indices = sim_indices
 
     def add_mdff_atom(self, mdff_atom, volume):
         '''
-        Add a singl MDFF atom proxy to the force associated with the given
-        volume. Automatically calls :func:`context_reinit_needed`
+        Add a single MDFF atom proxy to the force associated with the given
+        volume. Delegates to :func:`add_mdff_atoms` (wrapping the proxy in a
+        one-element collection over the same underlying object) so the
+        symmetry-aware term construction and the ``sim_index`` write-back are
+        handled by one code path. Automatically calls
+        :func:`context_reinit_needed`.
 
         Args:
             * mdff_atom:
@@ -2867,12 +3313,8 @@ class SimHandler:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
         '''
-        f = self.mdff_forces[volume]
-        all_atoms = self._atoms
-        index = all_atoms.index(mdff_atom.atom)
-        mdff_atom.sim_index = f.addParticle(index,
-            (mdff_atom.coupling_constant, float(mdff_atom.enabled)))
-        self.context_reinit_needed()
+        from ..molarray import MDFFAtoms
+        self.add_mdff_atoms(MDFFAtoms([mdff_atom]), volume)
 
         ##
         # During simulation
@@ -2949,50 +3391,51 @@ class SimHandler:
                   create the target force.
         '''
         f = self.mdff_forces[volume]
-        mdff_atoms = mdff_atoms[mdff_atoms.sim_indices != -1]
-        ks = numpy.asarray(mdff_atoms.coupling_constants, dtype=numpy.float64)
-        copies = getattr(self, '_symmetry_copies', None)
-        if copies is not None:
-            indices = self._atoms.indices(mdff_atoms.atoms)
-            ks = ks / self._symmetry_nsym[indices]
-            f.update_atoms(mdff_atoms.sim_indices, ks, mdff_atoms.enableds)
-            self._update_mdff_symmetry_copies(f, volume, indices, mdff_atoms)
+        shell = getattr(self._sim_construct, 'symmetry_shell', None)
+        if shell is None:
+            m = mdff_atoms[mdff_atoms.sim_indices != -1]
+            ks = numpy.asarray(m.coupling_constants, dtype=numpy.float64)
+            f.update_atoms(m.sim_indices, ks, m.enableds)
         else:
-            f.update_atoms(mdff_atoms.sim_indices, ks, mdff_atoms.enableds)
+            self._update_mdff_symmetry_terms(f, volume, mdff_atoms)
         self.force_update_needed()
 
-    def _update_mdff_symmetry_copies(self, f, volume, real_indices, mdff_atoms):
+    def _update_mdff_symmetry_terms(self, f, volume, mdff_atoms):
         '''
-        Mirror an MDFF coupling/enabled edit onto the symmetry copies of the
-        affected atoms, rescaling by the same ``1/n_sym`` factor.
+        Re-apply a coupling/enabled edit to each changed atom's single MDFF term.
+        Keyed off the real-atom particle index in
+        :attr:`_mdff_symmetry_term_indices` (which stores ``(force_index,
+        transform)`` per atom), so it reaches distant parents that are represented
+        only through a transformed term. The fixed per-term transform is
+        re-supplied because the C++ update overwrites all per-bond parameters.
         '''
-        d = self._mdff_copy_force_indices.get(volume)
+        d = self._mdff_symmetry_term_indices.get(volume)
         if not d:
             return
-        nsym = self._symmetry_nsym
-        cf_idx, cf_ks, cf_ens = [], [], []
-        for idx, k, e in zip(real_indices, mdff_atoms.coupling_constants,
+        idx = self._atoms.indices(mdff_atoms.atoms)
+        u_i, u_k, u_e, u_tf = [], [], [], []
+        for i, k, e in zip(idx, mdff_atoms.coupling_constants,
                 mdff_atoms.enableds):
-            idx = int(idx)
-            force_indices = d.get(idx)
-            if not force_indices:
+            i = int(i)
+            term = d.get(i)
+            if term is None:
                 continue
-            scaled = float(k) / nsym[idx]
-            for fi in force_indices:
-                cf_idx.append(fi)
-                cf_ks.append(scaled)
-                cf_ens.append(float(e))
-        if cf_idx:
+            fi, tf = term
+            u_i.append(fi); u_k.append(float(k))
+            u_e.append(float(e)); u_tf.append(tf)
+        if u_i:
             f.update_atoms(
-                numpy.array(cf_idx, dtype=numpy.int32),
-                numpy.array(cf_ks, dtype=numpy.float64),
-                numpy.array(cf_ens, dtype=numpy.float64))
+                numpy.array(u_i, dtype=numpy.int32),
+                numpy.array(u_k, dtype=numpy.float64),
+                numpy.array(u_e, dtype=numpy.float64),
+                transforms=numpy.array(u_tf, dtype=numpy.float64))
 
     def update_mdff_atom(self, mdff_atom, volume):
         '''
-        Update the simulation to reflect the new parameters (individual
-        coupling constants, enabled/disabled states) for the given MDFF atom
-        proxy.
+        Update the simulation to reflect the new parameters (individual coupling
+        constant, enabled/disabled state) for the given MDFF atom proxy. Delegates
+        to :func:`update_mdff_atoms` (one-element collection) so the
+        symmetry-aware term handling lives in a single path.
 
         Args:
             * mdff_atom:
@@ -3001,9 +3444,8 @@ class SimHandler:
                 - the :py:class:`chimerax.Volume` instance that was used to
                   create the target force.
         '''
-        f = self.mdff_forces[volume]
-        f.update_atom(mdff_atom.sim_index,
-            mdff_atom.coupling_constant, mdff_atom.enabled)
+        from ..molarray import MDFFAtoms
+        self.update_mdff_atoms(MDFFAtoms([mdff_atom]), volume)
 
 
     def set_fixed_atoms(self, fixed_atoms):
@@ -3154,6 +3596,19 @@ class SimHandler:
 
         self._symmetry_ngroups = len(op_to_group) + 1
         self._symmetry_particle_groups = numpy.array(groups, dtype=int)
+        # Operator-set-aware group weight table (Phase 2c): each group's
+        # orthogonal [R|t] (identity for group 0), fed to symmetry_group_weight_table
+        # so cross-operator copy<->copy contacts are counted correctly in LOCAL
+        # sims (where the fixed copy-copy=0 rule would drop them). Shared by the
+        # nonbonded and GBSA forces built later in _prepare_sim.
+        ops_by_group = [numpy.concatenate([numpy.eye(3), numpy.zeros((3, 1))], axis=1)]
+        ops_by_group += [None] * len(op_to_group)
+        for symop, group in op_to_group.items():
+            R, t = shell.operator(symop)
+            ops_by_group[group] = numpy.concatenate(
+                [R, numpy.asarray(t, dtype=float)[:, None]], axis=1)
+        from .symmetry_sim import symmetry_group_weight_table
+        self._symmetry_group_table = symmetry_group_weight_table(ops_by_group)
         parent_index = numpy.array(copy_parent, dtype=int)
         self._symmetry_copies = {
             'parent_index': parent_index,
@@ -3161,11 +3616,10 @@ class SimHandler:
             'R':            numpy.array(copy_R, dtype=float),   # (ncopy, 3, 3)
             't_nm':         numpy.array(copy_t, dtype=float),   # (ncopy, 3)
         }
-        # Per-real-atom symmetry multiplicity n_sym = 1 (self) + number of its
-        # copies present. Used to divide each instance's MDFF coupling by n_sym
-        # so the net map influence per unique atom is unchanged (Phase 1C).
-        counts = numpy.bincount(parent_index, minlength=system.getNumParticles())
-        self._symmetry_nsym = 1 + counts
+        # NB: MDFF map coupling is handled entirely on the real atoms by the
+        # symmetry-aware map force (see _add_mdff_symmetry_terms, which computes
+        # its own covered multiplicity from the shell); the copies here carry only
+        # nonbonded + GBSA, so no per-atom map multiplicity is stored.
         self.session.logger.info(f'ISOLDE: added {len(shell.copies)} symmetry-'
             f'copy virtual site(s) spanning {len(op_to_group)} crystallographic '
             'operator(s) to the simulation.')
@@ -3208,17 +3662,23 @@ class SimHandler:
         # (see that class). Their charges are already set above (read from the
         # extended NonbondedForce); their (or, sr) are copied from their parent.
         groups = getattr(self, '_symmetry_particle_groups', None)
+        nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
+        # Per-group soft-core GB only applies with the soft-core potential.
+        nb_on = nb_max > 1 and params.use_softcore_nonbonded_potential
         from .custom_forces import (GBSAForce, SoftCoreGBSAGBnForce,
-            SymmetrySoftCoreGBSAGBnForce)
+            NBGroupSoftCoreGBSAGBnForce, SymmetrySoftCoreGBSAGBnForce)
         if params.use_softcore_nonbonded_potential:
-            if groups is not None:
-                force_class = SymmetrySoftCoreGBSAGBnForce
-            else:
-                force_class = SoftCoreGBSAGBnForce
             gbsa_params['nb_lambda'] = params.nonbonded_softcore_lambda_minimize
+            if groups is not None:
+                # Symmetry GB (nb-group layer is inert here until Phase 5).
+                gbforce = SymmetrySoftCoreGBSAGBnForce(n_nb_groups=nb_max, **gbsa_params)
+            elif nb_on:
+                gbforce = NBGroupSoftCoreGBSAGBnForce(n_nb_groups=nb_max, **gbsa_params)
+            else:
+                gbforce = SoftCoreGBSAGBnForce(**gbsa_params)
         else:
-            force_class = GBSAForce
-        gbforce = self._gbsa_force = force_class(**gbsa_params)
+            gbforce = GBSAForce(**gbsa_params)
+        self._gbsa_force = gbforce
         std = gbforce.getStandardParameters(top)   # (n_real, 2): (or, sr)
         n_real = len(std)
         pparams[:n_real, 1:] = std
@@ -3228,6 +3688,13 @@ class SimHandler:
             pparams[n_real:, 1:] = pparams[parent_index, 1:]
             gbforce._symmetry_ngroups = self._symmetry_ngroups
             gbforce._symmetry_groups = groups
+            gbforce._symmetry_group_table = getattr(self, '_symmetry_group_table', None)
+        if nb_on:
+            # Per-group soft-core GB: every atom (real AND, in a symmetry sim, every
+            # copy) starts in group 0; the group manager updates membership + couplings
+            # live afterwards, propagating each atom's group to its symmetry copies.
+            gbforce._nb_groups = numpy.zeros(n, dtype=int)
+            self._nb_gbsa_force = gbforce
         gbforce.addParticles(pparams)
         gbforce.finalize()
         system.addForce(gbforce)
