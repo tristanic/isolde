@@ -104,6 +104,64 @@ def run(session):
     finally:
         session.models.close([s])
 
+    # --- Part 2: rebuilding a residue must NOT move a BONDED NEIGHBOUR ----------------
+    # Bond.side_atoms() follows the whole structure graph across residue boundaries, so a
+    # backbone/link bond's "side" is the rest of the chain. The pendant-torsion optimiser
+    # must never rotate a side that leaves the residue (it would drag every downstream
+    # residue -- the 1crx DNA-chain bug). Here: a glycerol whose terminal O3 is bonded to a
+    # separate residue, a clash placed by that arm, and a heavy atom (C3, on the neighbour
+    # side) deleted so a rebuild + torsion-opt is triggered. The neighbour must not move.
+    s2 = AtomicStructure(session, name='rebuild-neighbour-test', auto_style=False)
+    try:
+        r = s2.new_residue(tmpl.name, 'A', 1)
+        made = {}
+        for ta in tmpl.atoms:
+            if ta.element.number == 1:
+                continue
+            a = s2.new_atom(ta.name, ta.element)
+            a.coord = numpy.array(ta.coord); r.add_atom(a); made[ta.name] = a
+        for ta in tmpl.atoms:
+            a1 = made.get(ta.name)
+            if a1 is None:
+                continue
+            for nb in ta.neighbors:
+                a2 = made.get(nb.name)
+                if a2 is not None and a2 not in a1.neighbors:
+                    add_bond(a1, a2)
+        # Pick a terminal heavy atom (one heavy neighbour) as the link point, and the
+        # heavy atom bonded to it as the one to delete+rebuild (so the rebuilt atom sits
+        # on the side that crosses into the neighbour residue).
+        link = None
+        for a in made.values():
+            heavy_nb = [n for n in a.neighbors if n.element.number > 1]
+            if len(heavy_nb) == 1:
+                link, inner = a, heavy_nb[0]
+                break
+        if link is None:
+            print('SKIP: no terminal heavy atom to attach a neighbour')
+        else:
+            nbr_res = s2.new_residue('NBR', 'B', 1)
+            nbr = s2.new_atom('N1', 'N')
+            nbr.coord = numpy.array(link.coord) + numpy.array([1.3, 0.2, 0.0])
+            nbr_res.add_atom(nbr)
+            add_bond(link, nbr)                       # link into the neighbour residue
+            # Clash right beside the inner atom's arm, to tempt the optimiser to rotate.
+            clr = s2.new_residue('CLS', 'C', 1)
+            cl = s2.new_atom('CL', 'Cl')
+            cl.coord = numpy.array(inner.coord) + numpy.array([0.6, 0.6, 0.0])
+            clr.add_atom(cl)
+            before_nbr = numpy.array(nbr.coord)
+            inner.delete()                            # rebuild will re-add it (built heavy)
+            fix_residue_from_template(r, tmpl)
+            after_nbr = numpy.array(nbr.coord)
+            moved = float(numpy.linalg.norm(after_nbr - before_nbr))
+            if moved > 1e-6:
+                _fail('rebuilding a residue moved a BONDED NEIGHBOUR by %.3f A '
+                      '(rebuild must never move atoms outside the residue)' % moved)
+            print('PASS: rebuild leaves a bonded neighbour untouched (moved %.4f A)' % moved)
+    finally:
+        session.models.close([s2])
+
     print('ALL PASS')
 
 

@@ -559,6 +559,7 @@ def _optimise_pendant_torsions(
 
     # Collect rotatable bonds: in-residue single bonds between heavy atoms in two
     # different rigid fragments, whose smaller side carries a freshly-built atom.
+    res_atoms = set(residue.atoms)
     jobs = []
     for b in residue.atoms.intra_bonds:
         a1, a2 = b.atoms
@@ -574,14 +575,23 @@ def _optimise_pendant_torsions(
         except Exception:
             # In a ring/cycle -- not actually rotatable; skip.
             continue
+        # A rotatable side we may move must lie ENTIRELY within this residue.
+        # Bond.side_atoms follows the whole structure graph across residue boundaries,
+        # so a backbone bond's "side" is the rest of the chain -- rotating it would drag
+        # every downstream residue. Rebuilding a residue must NEVER move another
+        # residue's atoms, so a side that escapes the residue is not a rotatable pendant
+        # (both sides of a backbone bond escape -> the bond is skipped). Genuine pendants
+        # (a nucleobase off C1', a heme propionate, a sidechain arm) stay in-residue.
+        side1_ok = res_atoms.issuperset(side1)
+        side2_ok = res_atoms.issuperset(side2)
         # Move the side carrying the freshly-built atoms, leaving the kept,
         # correctly-placed side alone -- even if the built side is the larger one
         # (that is exactly the lever that swings a whole diverged assembly back
         # into density). Only when both sides are freshly built does "move the
         # smaller side" apply, to keep the swing local. A bond with no built atom
-        # on either side is already settled and is skipped.
-        side1_built = any(a.name in built_names for a in side1)
-        side2_built = any(a.name in built_names for a in side2)
+        # (or no in-residue movable side) is skipped.
+        side1_built = side1_ok and any(a.name in built_names for a in side1)
+        side2_built = side2_ok and any(a.name in built_names for a in side2)
         if side1_built and side2_built:
             moving_atom, moving_side = (a1, side1) if len(side1) <= len(side2) \
                 else (a2, side2)
