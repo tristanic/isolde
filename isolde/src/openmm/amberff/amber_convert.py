@@ -557,7 +557,7 @@ def macrocycle_atom_indices(mol, seed_indices):
 
 def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
                       gaff2_xml, gaff_equivalent=None, lookup_seam=None,
-                      metal_terms=None):
+                      metal_terms=None, no_template_residues=None):
     '''Emit a SELF-CONTAINED OpenMM ffXML for a covalent unit.
 
     Every atom that carries a GAFF type is given a UNIQUE, per-unit **prefixed**
@@ -687,11 +687,21 @@ def covalent_to_ffxml(per_res, template_names, mol, frcmod_file, output_path,
         key = (e1, e2, e3) if e1 <= e3 else (e3, e2, e1)
         coord_angle_out[key] = (key[0], key[1], key[2], ca['angle'], ca['k'])
 
-    # Residues to emit: the organic ones plus any metal/core-only residue (a pure ion or
-    # cluster residue contributes no organic atoms, so it is absent from per_res).
+    # Residues to emit a TEMPLATE for: the organic ones plus any metal/core-only residue
+    # (a pure ion or cluster residue contributes no organic atoms, so it is absent from
+    # per_res). ``no_template_residues`` are frozen-standard BOUNDARY residues -- a standard
+    # polymer residue whose only modification is a link at its backbone-linkage atom (e.g.
+    # the 3' DG of a covalent phosphotyrosine-DNA intermediate, whose O3' is esterified
+    # exactly as the next nucleotide's phosphate would be). Emitting a template for it is
+    # both unnecessary (its chemistry is unchanged) and HARMFUL: that template is
+    # topologically identical to the standard residue, so every other copy in the model
+    # becomes ambiguous. We keep its atoms in the typing pass (so the seam bonds/angles to
+    # the modified partner still emit, keyed to its standard ff14SB types) but emit NO
+    # <Residue> block for it -- it keeps its standard template.
+    no_template = set(no_template_residues or ())
     metal_core_residues = set(metals_by_res) | set(core_by_res)
-    emit_residues = list(per_res.keys()) + [r for r in metal_core_residues
-                                            if r not in per_res]
+    emit_residues = [r for r in per_res.keys() if r not in no_template] \
+        + [r for r in metal_core_residues if r not in per_res]
 
     root = ET.Element('ForceField')
 

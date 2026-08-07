@@ -907,6 +907,48 @@ def _make_template_names(unit, forcefield, prefix='MCOV_'):
     return names
 
 
+#: A standard polymer residue's own backbone-linkage atoms -- where the chain normally
+#: continues. A covalent partner bonded HERE (rather than at a sidechain atom) attaches
+#: "where the next monomer would", via the same chemistry, so the residue itself is
+#: chemically unchanged.
+_NUCLEIC_LINK_ATOMS = frozenset(("O3'", "O5'", 'P'))
+_AMINO_LINK_ATOMS = frozenset(('N', 'C'))
+
+
+def _frozen_boundary_residues(unit, per_res):
+    '''Standard polymer residues in the unit that need NO bespoke template: their only
+    modification is a covalent link AT a standard backbone-linkage atom (a nucleotide's
+    O3'/O5'/P, an amino acid's N/C), so chemically they are unchanged -- the partner simply
+    attaches where the polymer would continue (e.g. the 3' DG of a covalent phospho-
+    tyrosine-DNA intermediate, whose O3' is esterified exactly as the next nucleotide's
+    phosphate would esterify it). Emitting a template for such a residue is unnecessary AND
+    HARMFUL: it is topologically identical to the standard residue, so registering it makes
+    every other copy in the model ambiguous (the 1crx "every DG fails" bug). They keep
+    their standard template; only the seam is parameterised, from the partner's side.
+
+    A residue linked at a SIDECHAIN atom (a ligand on a Cys SG, ...), or one with any
+    GAFF-typed atom (a genuine chemical modification), is NOT a boundary -- it still gets
+    its bespoke MCOV_ template.'''
+    from chimerax.atomic import Residue
+    boundary = set()
+    for r in unit.residues:
+        if not _is_standard_polymer(r):
+            continue
+        d = per_res.get(r)
+        if d is None or any(spec.get('is_gaff') for spec in d['atoms']):
+            continue
+        if r.polymer_type == Residue.PT_NUCLEIC:
+            link_atoms = _NUCLEIC_LINK_ATOMS
+        elif r.polymer_type == Residue.PT_AMINO:
+            link_atoms = _AMINO_LINK_ATOMS
+        else:
+            continue
+        touches = [a for (a1, a2) in unit.links for a in (a1, a2) if a.residue is r]
+        if touches and all(a.name in link_atoms for a in touches):
+            boundary.add(r)
+    return boundary
+
+
 def parameterise_covalent_unit(session, unit, shell_radius=1, net_charge=None,
                                base_templates=None):
     '''Parameterise a covalent unit end to end and load it into ISOLDE's live
@@ -956,17 +998,23 @@ def parameterise_covalent_unit(session, unit, shell_radius=1, net_charge=None,
                                            forcefield, shell_radius=shell_radius)
         repartition_charges(per_res)
         template_names = _make_template_names(unit, forcefield)
+        # A frozen-standard boundary residue (linked at its backbone-linkage atom, no
+        # chemistry change) keeps its STANDARD template -- we emit no bespoke template for
+        # it (that would collide with the identical standard one and flag every copy) and
+        # do not bind an override to it; only the seam is parameterised, from the partner.
+        boundary = _frozen_boundary_residues(unit, per_res)
 
         stem = '_'.join(sorted({r.name for r in unit.residues}))
         xml_path = os.path.join(os.getcwd(), '%s_covalent.xml' % stem)
         gaff2_xml = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gaff2.xml')
         covalent_to_ffxml(per_res, template_names, mol, ante['frcmod'], xml_path,
-                          gaff2_xml)
+                          gaff2_xml, no_template_residues=boundary)
 
-        for tn in template_names.values():
+        emitted = {r: tn for r, tn in template_names.items() if r not in boundary}
+        for tn in emitted.values():
             forcefield._templates.pop(tn, None)
         forcefield.loadFile(xml_path)
-        for r, tn in template_names.items():
+        for r, tn in emitted.items():
             r.isolde_template_name = tn
     finally:
         if ante.get('cleanup'):
@@ -976,7 +1024,7 @@ def parameterise_covalent_unit(session, unit, shell_radius=1, net_charge=None,
         'Parameterised covalent unit %r; wrote %s and loaded templates %s. '
         'These apply for this session; reload the ffXML in future sessions with '
         '"Load residue MD definition(s)".'
-        % (unit, xml_path, ', '.join(template_names.values())))
+        % (unit, xml_path, ', '.join(emitted.values())))
     return xml_path, template_names
 
 

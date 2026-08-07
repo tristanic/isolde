@@ -416,6 +416,41 @@ def run(session):
         _fail('_frozen_core_info(non-polymer, no template) should be None')
     print('PASS: non-canonical residue -- generic ff14SB backbone frozen, sidechain free')
 
+    # --- Frozen-standard BOUNDARY residue: backbone-linked -> no bespoke template ------
+    # A standard polymer residue whose only change is a covalent link at its backbone-
+    # linkage atom (a nucleotide's O3', an amino acid's N/C) keeps its STANDARD template;
+    # emitting a bespoke one collides with the identical standard template and flags every
+    # other copy (the 1crx phosphotyrosine-DNA "every DG fails" bug). Linked at a SIDECHAIN
+    # atom, or carrying any GAFF atom, it is a genuine modification and still gets one.
+    class _BA:
+        def __init__(self, name, res):
+            self.name = name; self.residue = res
+    class _BR:
+        def __init__(self, name, ptype):
+            self.name = name; self.polymer_type = ptype
+    class _BU:
+        def __init__(self, residues, links):
+            self.residues = residues; self.links = links
+
+    dg = _BR('DG', _Res.PT_NUCLEIC)
+    lig = _BR('LIG', _Res.PT_NONE)
+    o3, n7, pl = _BA("O3'", dg), _BA('N7', dg), _BA('P', lig)
+    frozen_dg = {dg: {'atoms': [{'is_gaff': False}, {'is_gaff': False}]},
+                 lig: {'atoms': [{'is_gaff': True}]}}
+    gaff_dg = {dg: {'atoms': [{'is_gaff': False}, {'is_gaff': True}]},
+               lig: {'atoms': [{'is_gaff': True}]}}
+    # (a) DG linked at O3' (backbone), all-frozen -> boundary; LIG (has GAFF) -> not.
+    fb = cov._frozen_boundary_residues(_BU([dg, lig], [(o3, pl)]), frozen_dg)
+    if dg not in fb or lig in fb:
+        _fail('backbone-linked all-frozen DG should be the only boundary: %s' % fb)
+    # (b) DG linked at a SIDECHAIN atom (N7) -> NOT a boundary.
+    if cov._frozen_boundary_residues(_BU([dg, lig], [(n7, pl)]), frozen_dg):
+        _fail('a residue linked at a non-backbone atom must not be a boundary')
+    # (c) DG carrying a GAFF atom (genuinely re-typed) -> NOT a boundary.
+    if dg in cov._frozen_boundary_residues(_BU([dg, lig], [(o3, pl)]), gaff_dg):
+        _fail('a residue with a GAFF atom must not be a boundary')
+    print('PASS: frozen-standard boundary detection (backbone-linked, no-GAFF only)')
+
     print('ALL PASS')
 
 
