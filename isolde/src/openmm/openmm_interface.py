@@ -1843,6 +1843,11 @@ class SimHandler:
         # The nb-group force is the base for the symmetry-aware one, so any
         # combination composes. Each active layer appends a trailing per-particle
         # group id, base (nb_group) before mixin (symgroup).
+        # NB: this block is also the REFERENCE CALLER for making any new nonbonded
+        # force symmetry-aware (e.g. GARNET) -- the "ADOPTING THIS FOR A NEW
+        # NONBONDED FORCE" section of custom_forces.SymmetryAwareMixin walks
+        # through mirroring it (construct with symmetry_ngroups +
+        # symmetry_group_weights; append float(group) on every addParticle).
         groups = getattr(self, '_symmetry_particle_groups', None)
         nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
         nb_on = nb_max > 1

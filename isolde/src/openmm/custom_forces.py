@@ -2168,6 +2168,82 @@ class SymmetryAwareMixin:
     while the force is still particle-free), wraps the head of the expression
     and appends the ``symgroup`` parameter + ``grouptable``. ``addParticle``
     then takes the base parameters **plus** the group id as a trailing value.
+
+    ----------------------------------------------------------------------
+    ADOPTING THIS FOR A NEW NONBONDED FORCE (e.g. a GARNET double-exponential)
+    ----------------------------------------------------------------------
+    The mask is potential-agnostic, so a new pairwise force gets symmetry for
+    free -- no symmetry-specific maths. There are two halves: the force class
+    and the code that populates it. Getting the *populating* half right is the
+    part most easily missed.
+
+    1. THE FORCE CLASS. If your force is a single ``CustomNonbondedForce``
+       subclass that (a) builds its energy expression + per-particle parameters
+       in ``__init__`` and (b) does NOT call ``addParticle`` there, just mix it
+       in -- **mixin FIRST** in the bases so its ``__init__`` runs (see the MRO
+       note in Common pitfalls)::
+
+           class SymmetryAwareGarnetForce(SymmetryAwareMixin, GarnetForce):
+               pass
+
+       Write the base energy expression **value-first**: OpenMM treats the value
+       of the first ``;``-separated clause as the pairwise energy and the rest as
+       intermediate definitions, and the mixin relies on this -- it wraps that
+       first clause as ``symmetry_switch*(<clause>)`` and preserves the
+       definitions verbatim. (cf. ``NonbondedSoftcoreForce``:
+       ``'lennard_jones + coulombic; lennard_jones = ...; ...'``.)
+
+    2. POPULATING IT. The mixin adds ``symgroup`` as the LAST per-particle
+       parameter, so every ``addParticle`` must append the atom's group id as a
+       trailing value, and the force must be built with the group count + weight
+       table. :func:`SimHandler._convert_to_soft_core_potentials`
+       (openmm_interface.py) is the reference caller; mirror it::
+
+           groups = self._symmetry_particle_groups    # int per particle; 0 = real
+           sf = SymmetryAwareGarnetForce(
+                   symmetry_ngroups=self._symmetry_ngroups,
+                   symmetry_group_weights=self._symmetry_group_table,
+                   **garnet_params)
+           for j in range(system.getNumParticles()):
+               sf.addParticle([<base params for j>, float(groups[j])])
+
+       ``_symmetry_ngroups``, ``_symmetry_particle_groups`` and
+       ``_symmetry_group_table`` are all produced by
+       :func:`SimHandler.initialize_symmetry_copies`; the weight table itself
+       comes from :func:`...symmetry_sim.symmetry_group_weight_table`. When there
+       are NO symmetry copies (``_symmetry_particle_groups`` is absent), use the
+       plain non-symmetry force and ``addParticle`` WITHOUT the trailing id --
+       exactly as the reference caller's ``else`` branch does.
+
+    3. EXCLUSIONS are orthogonal to symmetry and unchanged: real-atom 1-2/1-3
+       (+ scaled 1-4) exclusions/exceptions are added exactly as for the
+       non-symmetry force. Copies get NO bonded exclusions -- suppression of the
+       one copy-copy case that matters (same operator) is done entirely by the
+       ``grouptable`` diagonal, never by exclusions.
+
+    If your force is NOT a single ``CustomNonbondedForce`` (e.g. it splits the
+    potential across several forces, or uses a different ``Custom*Force``), the
+    mixin cannot wrap it directly -- but the PATTERN still applies: add a
+    ``symgroup`` per-particle parameter, multiply each pairwise energy by
+    ``grouptable(symgroup1,symgroup2)``, add the same ``Discrete2DFunction``
+    table, and append the group id when populating. The four statements of
+    ``__init__`` below are the reference implementation to copy.
+
+    Common pitfalls:
+      * **Bases in the wrong order** (``GarnetForce, SymmetryAwareMixin``): Python
+        resolves ``GarnetForce.__init__`` first and this mixin's ``__init__``
+        never runs, so ``symgroup``/``grouptable`` are never added -- then
+        ``addParticle`` with the trailing id fails (or, worse, the energy is
+        never masked). Mixin must come first.
+      * **Forgetting the trailing group id** in ``addParticle`` (or, conversely,
+        adding it when there are no symmetry groups): per-particle parameter
+        count mismatch at context creation.
+      * **The base adding particles in ``__init__``**: OpenMM forbids adding a
+        per-particle parameter once particles exist, so the mixin's
+        ``addPerParticleParameter('symgroup')`` throws. Add particles only from
+        the caller, after construction.
+      * **An energy expression that is not value-first**: the wrong
+        sub-expression gets masked.
     '''
     def __init__(self, *args, symmetry_ngroups=2, exclude_intra_operator=True,
             symmetry_group_weights=None, **kwargs):
