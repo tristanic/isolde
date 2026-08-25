@@ -25,6 +25,11 @@ Design (see the plan the code implements):
 * **AMBER stays the untouched legacy default.** Nothing here runs unless the
   session's force field is ``'garnet'``.
 
+Because a "simulate anything" force field has no "matches no template" safety net,
+a planned follow-up ties every component back to a verified source of truth (CCD /
+SMILES) and handles incomplete models by parameterising the *expected* graph then
+trimming — design brief: ``CHEMISTRY_PROVENANCE_BRIEF.md`` (this directory).
+
 Requires ``garnet_core`` (+ torch, torch_geometric) importable in ChimeraX's
 Python; torch is imported lazily so this module loads even when it is absent.
 '''
