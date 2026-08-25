@@ -14,10 +14,10 @@ from openmm import unit
 from openmm import VariableLangevinIntegrator, CustomGBForce
 from openmm.app import CutoffNonPeriodic, HBonds
 
-# Preferred GPU platform. ISOLDE falls back to the fastest *actually available*
-# platform if this one is absent (see ui/general_tab/platform.py), so CUDA is a safe
-# preference everywhere: used where present, otherwise Metal/OpenCL/CPU take over.
-_default_gpu_platform = "CUDA"
+# No explicit default platform: OPENMM_PLATFORMS is ordered fastest-first and the
+# selection reconciles against the platforms OpenMM actually loads, so ISOLDE simply
+# picks the fastest available (see sim_params.platform default None + the resolution
+# in openmm_interface._prepare_sim / ui/general_tab/platform.py).
 
 '''
 Constants are a slightly difficult problem here, in that ChimeraX works
@@ -58,7 +58,6 @@ class _Defaults:
         ###
         # Simulation parameters
         ###
-        'OPENMM_DEFAULT_PLATFORM':    _default_gpu_platform,
         'OPENMM_PLATFORMS':           ('CUDA', 'Metal', 'OpenCL', 'CPU', 'Reference'),
         'DEVICE_INDEX':               None,
         'OPENMM_FORCEFIELD':          'amber14',

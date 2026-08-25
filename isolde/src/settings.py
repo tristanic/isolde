@@ -58,7 +58,8 @@ class _IsoldeColorSettings(Settings):
 
 class _IsoldeAdvancedSettings(Settings):
     AUTO_SAVE = {
-        'openmm_default_platform':          defaults.OPENMM_DEFAULT_PLATFORM,
+        # (openmm_default_platform retired: ISOLDE auto-picks the fastest available
+        # platform, so persisting an explicit default is unnecessary.)
         'openmm_gpu_device_index':          defaults.DEVICE_INDEX,
 
     }

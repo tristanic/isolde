@@ -229,7 +229,9 @@ class SimParams(Param_Mgr):
         'hmr_hydrogen_mass':                    (defaults.HMR_HYDROGEN_MASS, None),
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
 
-        'platform':                             (defaults.OPENMM_DEFAULT_PLATFORM, None),
+        # None = auto: pick the fastest platform OpenMM actually loads (resolved in
+        # openmm_interface._prepare_sim); a user choice via the platform panel sets it.
+        'platform':                             (None, None),
         'platforms':                            (defaults.OPENMM_PLATFORMS, None),
         'device_index':                         (defaults.DEVICE_INDEX, None),
         'forcefield':                           (defaults.OPENMM_FORCEFIELD, None),
