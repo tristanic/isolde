@@ -25,11 +25,16 @@ from ..collapse_button import CollapsibleArea
 
 from Qt.QtWidgets import QLabel, QComboBox
 
+# Shared experience-level gate for the force-field selector AND the force-field
+# tuning dashboard (ff_tuning.py). Developer-only for now; change this one line to
+# ExpertModeSelector.ADVANCED to drop both to the Advanced level later.
+FORCEFIELD_UI_EXPERT_LEVEL = ExpertModeSelector.DEVELOPER
+
 
 class ForceFieldPanel(CollapsibleArea):
     def __init__(self, session, isolde, parent, gui, **kwargs):
         super().__init__(gui, parent, title='MD Force Field',
-                         expert_level=ExpertModeSelector.DEVELOPER, **kwargs)
+                         expert_level=FORCEFIELD_UI_EXPERT_LEVEL, **kwargs)
         ffd = self.content = ForceFieldDialog(session, isolde, gui, self)
         self.setContentLayout(ffd.main_layout)
 
