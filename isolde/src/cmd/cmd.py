@@ -39,15 +39,12 @@ def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
         if forcefield not in available:
             raise UserError('Unknown forcefield "{}". Available: {}'.format(
                 forcefield, ', '.join(sorted(available))))
+        # Setting forcefield re-resolves the force-field-sensitive sim-parameters
+        # to the new force field's profile defaults (SimParams._on_forcefield_changed),
+        # honouring any values the user has deliberately overridden. So garnet's
+        # recommended soft-core equilibration lambda (1.0, vs AMBER's 0.95) is applied
+        # automatically here -- no explicit per-parameter reset needed.
         sp.forcefield = forcefield
-        # Apply the force field's recommended soft-core equilibration lambda. garnet's
-        # double-exponential has no r=0 singularity, so it runs at exact dexp (lambda=1)
-        # at equilibrium; AMBER's conflated lambda needs 0.95. Both come from the single
-        # force-field-aware default resolver (SimParams.set_to_default consults
-        # _FORCEFIELD_PARAM_DEFAULTS), which the widget Reset button uses too, so the
-        # command and the button always agree. The minimise lambda (wall soft-start) is
-        # shared, so it is left untouched here.
-        sp.set_to_default('nonbonded_softcore_lambda_equil')
         session.logger.info('ISOLDE: force field set to "{}". Takes effect at the '
             'next simulation start.'.format(forcefield))
     if time_steps_per_gui_update is not None:

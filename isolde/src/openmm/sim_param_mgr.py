@@ -50,17 +50,9 @@ def error_cb(e):
 
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
-# Force-field-specific overrides for parameter defaults. garnet's double-exponential
-# vdW has no r=0 singularity, so at equilibrium it runs at the exact dexp (lambda=1);
-# AMBER's conflated lambda needs the static 0.95 default. Consulted by
-# :meth:`SimParams.default_for` (and thus :meth:`set_to_default`) and by
-# `isolde set forcefield`, so the widget Reset button restores the *active* force
-# field's recommended value rather than the AMBER-centric static default.
-_FORCEFIELD_PARAM_DEFAULTS = {
-    'garnet': {
-        'nonbonded_softcore_lambda_equil': 1.0,
-    },
-}
+# Per-force-field default overrides + applicability now live in
+# chimerax.isolde.openmm.forcefield_profiles (a name-keyed registry), consulted by
+# SimParams.default_for / set_to_default and re-applied on a force-field switch.
 
 @param_properties
 @autodoc
@@ -93,24 +85,63 @@ class SimParams(Param_Mgr):
     def __init__(self):
         super().__init__()
         import os
+        # Per-force-field session override memory: {ff_name: {param: value}} of the
+        # force-field-sensitive params the user changed under a given force field
+        # this session, so switching force field away and back restores that
+        # field's edits. The persistent (explicit-save) store layers on in Phase C.
+        self._session_overrides = {}
         device_index = os.environ.get('ISOLDE_DEVICE_INDEX')
         self.device_index = device_index
 
     def default_for(self, key):
         '''
-        The default value for ``key``, honouring any override for the currently
-        selected force field (:data:`_FORCEFIELD_PARAM_DEFAULTS`) before falling back
-        to the static default in :attr:`_default_params`.
+        The default value for ``key``, honouring the currently selected force
+        field's profile (:mod:`chimerax.isolde.openmm.forcefield_profiles`) before
+        falling back to the static default in :attr:`_default_params`.
         '''
-        ff = getattr(self, 'forcefield', None)
-        ff_overrides = _FORCEFIELD_PARAM_DEFAULTS.get(ff, {})
-        if key in ff_overrides:
-            return ff_overrides[key]
+        from .forcefield_profiles import get_profile
+        prof = get_profile(getattr(self, 'forcefield', None))
+        if prof.has_default(key):
+            return prof.default_for(key)
         return self._default_params[key][0]
 
-    def set_to_default(self, key):
-        '''Set one parameter back to its (force-field-aware) default value.'''
-        self.set_param(key, self.default_for(key))
+    def set_param(self, key, value, _mark_overridden=True):
+        '''
+        As :meth:`Param_Mgr.set_param`, but changing ``forcefield`` re-resolves the
+        force-field-sensitive parameters for the new force field (see
+        :meth:`_on_forcefield_changed`). Force-field-agnostic parameters are left
+        untouched.
+        '''
+        old_ff = self._params.get('forcefield') if getattr(self, '_params', None) is not None else None
+        super().set_param(key, value, _mark_overridden=_mark_overridden)
+        if (key == 'forcefield' and value != old_ff
+                and getattr(self, '_session_overrides', None) is not None):
+            self._on_forcefield_changed(old_ff, value)
+
+    def _on_forcefield_changed(self, old_ff, new_ff):
+        '''
+        Re-resolve only the force-field-sensitive parameters
+        (:func:`forcefield_profiles.ff_sensitive_params`) for ``new_ff``: stash the
+        outgoing field's user edits, then for each sensitive param restore an edit
+        the user previously made under ``new_ff`` this session, else snap it to
+        ``new_ff``'s default. Force-field-agnostic parameters (temperature,
+        device_index, spring constants, …) are untouched.
+        '''
+        from .forcefield_profiles import ff_sensitive_params
+        sensitive = ff_sensitive_params()
+        if old_ff is not None:
+            stash = self._session_overrides.setdefault(old_ff, {})
+            for k in sensitive:
+                if k != 'forcefield' and self.is_overridden(k):
+                    stash[k] = self._params[k]
+        incoming = self._session_overrides.get(new_ff, {})
+        for k in sensitive:
+            if k == 'forcefield' or k not in self._default_params:
+                continue
+            if k in incoming:
+                self.set_param(k, incoming[k], _mark_overridden=True)
+            else:
+                self.set_param(k, self.default_for(k), _mark_overridden=False)
 
     _default_params = {
         'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),

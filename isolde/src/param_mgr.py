@@ -81,6 +81,11 @@ class Param_Mgr:
         self.triggers = TriggerSet()
         self.triggers.add_trigger(self.PARAMETER_CHANGED)
         self._params = {}
+        # Names the user (or a caller) has explicitly set away from the default,
+        # tracked so that e.g. a force-field switch can re-default only the
+        # *untouched* parameters. Populated in set_param, cleared by
+        # set_to_default. See is_overridden().
+        self._overridden = set()
         for key, item in self._default_params.items():
             if type(item[1]) == Unit:
                 self._params[key] = item[0]*item[1]
@@ -105,7 +110,7 @@ class Param_Mgr:
     def __str__(self):
         return self._params.__str__()
 
-    def set_param(self, key, value):
+    def set_param(self, key, value, _mark_overridden=True):
         '''
         Set the value of a parameter. If the parameter is a numerical
         quantity with a unit, you may choose to set it directly as a
@@ -122,6 +127,11 @@ class Param_Mgr:
         `set_param('dihedral_restraint_cutoff_angle', 30 * unit.nanometer)`
 
         will fail.
+
+        ``_mark_overridden`` (internal): whether this write records ``key`` as
+        user-overridden. True for ordinary sets (property setters and direct
+        calls); False when a manager is (re-)applying a *default* value (see
+        :meth:`set_to_default`), so restoring a default un-marks it.
         '''
         try:
             units = self._default_params[key][1]
@@ -136,11 +146,35 @@ class Param_Mgr:
             raise TypeError('Tried to set a unitless quantity with units!')
         else:
             self._params[key] = value
+        if _mark_overridden:
+            self._overridden.add(key)
+        else:
+            self._overridden.discard(key)
         self.triggers.activate_trigger(self.PARAMETER_CHANGED, (key, self._params[key]))
-    
+
+    def is_overridden(self, key):
+        '''True if ``key`` has been explicitly set away from its default (and not
+        since reset via :meth:`set_to_default`).'''
+        return key in self._overridden
+
+    def overridden_params(self):
+        '''The set of parameter names currently marked as user-overridden.'''
+        return set(self._overridden)
+
+    def default_for(self, key):
+        '''
+        The default value for ``key``. The base implementation returns the static
+        default from :attr:`_default_params`; subclasses (e.g.
+        :class:`SimParams`) override this to make the default context-dependent
+        (e.g. per force field).
+        '''
+        return self._default_params[key][0]
+
     def set_to_default(self, key):
-        '''Set one parameter back to the default value.'''
-        self.set_param(key, self._default_params[key][0])
+        '''Set one parameter back to its default value (and clear its overridden
+        flag). Uses :meth:`default_for`, so subclasses' context-dependent defaults
+        are honoured.'''
+        self.set_param(key, self.default_for(key), _mark_overridden=False)
 
     def reset_to_defaults(self):
         '''Reset all parameters to defaults.'''
