@@ -2172,6 +2172,17 @@ class SimHandler:
                 self._convert_to_soft_core_potentials(self._system)
             self._soft_core_initialized=True
         integrator = self._prepare_integrator(params)
+        # Fall back gracefully if the preferred platform is unavailable (e.g. a
+        # stale/persisted name, or a preference that doesn't exist on this machine)
+        # rather than crashing in getPlatformByName. Fastest-available order comes
+        # from sim_params.platforms.
+        available = get_available_platforms()
+        if params.platform not in available:
+            fallback = next((p for p in params.platforms if p in available),
+                            available[0] if available else 'CPU')
+            logger.warning('ISOLDE: OpenMM platform "{}" is not available; falling '
+                           'back to "{}".'.format(params.platform, fallback))
+            params.platform = fallback
         platform = openmm.Platform.getPlatformByName(params.platform)
 
         properties = {}
