@@ -14,6 +14,14 @@ Interactive molecular dynamics based model building into low-resolution crystall
 > `ChemComp` vendored into ISOLDE) once it is released. **For general use, build
 > from the [`master`](https://github.com/tristanic/isolde/tree/master) branch.**
 
+> **⚠️ `garnet-ff` branch — also work in progress.**
+> On top of the `rdkit` layer above, this branch integrates the experimental
+> **GARNET** graph-ML force field as an opt-in alternative to AMBER (selected with
+> `isolde set forcefield garnet`; AMBER stays the default). It needs a few extra
+> Python packages and the `garnet_core` source tree, which are not part of a plain
+> ISOLDE install — see [Experimental: the GARNET force field](#experimental-the-garnet-force-field-development)
+> below.
+
 ## What is ISOLDE?
 
 ISOLDE is a plugin to [UCSF ChimeraX](https://www.cgl.ucsf.edu/chimerax/), designed to ease the task of
@@ -110,6 +118,53 @@ For convenience, these commands are also wrapped in a batch file, make_win.bat.
 `make_win release clean app-install`
 
 ... will achieve the same result as the above.
+
+## Experimental: the GARNET force field (development)
+
+> Status: development-grade and opt-in. AMBER remains the default; nothing here
+> runs unless you explicitly select the GARNET force field. There is deliberately
+> no polished install pipeline yet.
+
+On the `garnet-ff` branch, an ISOLDE simulation can be parameterised by the
+[garnet-isolde](https://github.com/tristanic/garnet-isolde) graph-ML force field
+instead of by AMBER template matching. Two things are needed beyond a normal
+ISOLDE build, both installed into **ChimeraX's own Python**:
+
+1. **Python packages** — `torch`, `torch-geometric` and `networkx`. These are
+   declared in `isolde/pyproject.toml.in`, so a normal build/install pulls them
+   in automatically. Two caveats:
+   - `torch` must be **>= 2.10**. Earlier versions have a NaN in the `atan2(0, 0)`
+     gradient that GARNET's dihedral term can hit, and 2.9 is the lowest `torch`
+     with ChimeraX-1.13 / Python-3.14 (`cp314`) wheels.
+   - On a machine with an NVIDIA GPU, install the matching **CUDA** wheel of
+     `torch` manually first (from https://pytorch.org), before installing the
+     bundle, so pip doesn't settle on the CPU-only build.
+
+2. **`garnet_core` and the trained weights** — this is the `garnet-isolde`
+   repository. It is **not on PyPI**, so install it *editable* into ChimeraX's
+   Python (this replaces the ad-hoc developer shim):
+
+   Linux/macOS:
+   ```
+   /path/to/ChimeraX/bin/ChimeraX --nogui --cmd "pip install -e /path/to/garnet-isolde ; exit"
+   ```
+   Windows:
+   ```
+   "C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" --nogui --cmd "pip install -e C:\path\to\garnet-isolde ; exit"
+   ```
+   The committed checkpoint (`garnetff/trained_models/dtr_sf_r5c_ep1.pt`) is
+   resolved relative to the installed `garnet_core`. To use a different epoch,
+   set the `ISOLDE_GARNET_CHECKPOINT` environment variable to its path.
+
+Once both are in place, start ISOLDE, set the experience level to **Developer**
+(a force-field selector then appears in ISOLDE's *General* tab), or simply run
+`isolde set forcefield garnet`. Switch back to AMBER with
+`isolde set forcefield amber14`.
+
+The planned chemistry-verification framework that will accompany this
+(connecting every component to a verified CCD/SMILES source of truth, and
+handling incomplete models) is described in
+`isolde/src/openmm/garnet/CHEMISTRY_PROVENANCE_BRIEF.md`.
 
 ## Building the documentation
 

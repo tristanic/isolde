@@ -30,7 +30,20 @@ dependencies = [
     "rdkit >=2023.3",
     # Fast, offline local copy of the Chemical Component Dictionary (and any
     # user-supplied collections). ccd_records() consults it before the network.
-    "ChimeraX-ChemComp ~=0.1"
+    "ChimeraX-ChemComp ~=0.1",
+    # --- GARNET graph-ML force field (experimental; opt-in via
+    # `isolde set forcefield garnet`, AMBER remains the default). These are pulled
+    # into ChimeraX's Python at bundle install. torch is version-sensitive: <=2.9
+    # has a NaN in the atan2(0,0) backward that GARNET's dihedral term can reach,
+    # fixed from 2.10; 2.9 is also the lowest torch with ChimeraX-1.13 / Python-3.14
+    # (cp314) wheels. On a CUDA machine, install the matching CUDA torch wheel
+    # manually first so pip doesn't settle on the CPU-only build.
+    # NB `garnet_core` (the trained weights) is NOT on PyPI: install the
+    # garnet-isolde repo editable into ChimeraX's Python -- see the README section
+    # "Experimental: the GARNET force field".
+    "torch >=2.10",
+    "torch-geometric",
+    "networkx >=3",
 ]
 
 [tool.setuptools.dynamic]
