@@ -1376,7 +1376,9 @@ class SimHandler:
 
         self._system = system
 
-
+        # Optional hydrogen mass repartitioning -- applied here, on real masses,
+        # BEFORE set_fixed_atoms zeroes the fixed shell. Force-field-agnostic.
+        self._apply_hydrogen_mass_repartitioning(system, sim_construct, sim_params, logger)
 
         self.set_fixed_atoms(sim_construct.fixed_atoms)
         self._thread_handler = None
@@ -3611,6 +3613,38 @@ class SimHandler:
         from ..molarray import MDFFAtoms
         self.update_mdff_atoms(MDFFAtoms([mdff_atom]), volume)
 
+
+    def _apply_hydrogen_mass_repartitioning(self, system, sim_construct, sim_params, logger):
+        '''
+        Apply hydrogen mass repartitioning to ``system`` when
+        ``sim_params.hmr_hydrogen_mass`` > 0. Force-field-agnostic; must run on real
+        masses, i.e. before :meth:`set_fixed_atoms` zeroes the fixed shell. The
+        per-centre floor (heavy atom never dropped below the H mass) lives in
+        :mod:`chimerax.isolde.openmm.hmr`.
+        '''
+        target = getattr(sim_params, 'hmr_hydrogen_mass', 0.0) or 0.0
+        if target <= 0:
+            return
+        import numpy
+        from .hmr import repartition_hydrogen_masses
+        all_atoms = sim_construct.all_atoms
+        h_indices = numpy.where(all_atoms.elements.numbers == 1)[0].tolist()
+        if not h_indices:
+            return
+        ib = all_atoms.intra_bonds
+        if len(ib) == 0:
+            return
+        ba1, ba2 = ib.atoms
+        bonds = list(zip(all_atoms.indices(ba1).tolist(), all_atoms.indices(ba2).tolist()))
+        n_h, n_centres, n_floored = repartition_hydrogen_masses(
+            system, bonds, h_indices, float(target))
+        if logger is not None and n_h:
+            msg = ('Hydrogen mass repartitioning: {} H over {} centres set toward '
+                   '{:.2f} amu'.format(n_h, n_centres, float(target)))
+            if n_floored:
+                msg += ('; {} centre(s) hit the equal-split floor (heavy atom would '
+                        'otherwise fall below the H mass)'.format(n_floored))
+            logger.info(msg)
 
     def set_fixed_atoms(self, fixed_atoms):
         ''' Fix the desired atoms rigidly in space. NOTE: a fixed atom can not

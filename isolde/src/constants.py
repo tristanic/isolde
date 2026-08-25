@@ -107,6 +107,11 @@ class _Defaults:
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
+        # Hydrogen mass repartitioning target (amu). 0 disables it (use real
+        # masses). >0 raises each H toward this mass, taking it from the bonded
+        # heavy atom, floored per centre so the heavy atom never drops below the
+        # H mass (see openmm/hmr.py). Useful for flexible-hydrogen simulations.
+        'HMR_HYDROGEN_MASS':          0.0,
         'REMOVE_C_OF_M_MOTION':       False,
         'MIN_CONVERGENCE_TOL_START':  1e-5, # * kJ mol-1 atom-1
         'MIN_CONVERGENCE_TOL_END':    1e-5, # * kJ mol-1 atom-1

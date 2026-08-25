@@ -85,13 +85,16 @@ class SimParams(Param_Mgr):
     def __init__(self):
         super().__init__()
         import os
-        # Per-force-field session override memory: {ff_name: {param: value}} of the
-        # force-field-sensitive params the user changed under a given force field
-        # this session, so switching force field away and back restores that
-        # field's edits. The persistent (explicit-save) store layers on in Phase C.
-        self._session_overrides = {}
+        # Per-force-field user overrides (live, session-scoped):
+        # ``{ff_name: {param: stored_value}}``. Every user edit is scoped to the
+        # active force field, so the live values are that field's defaults overlaid
+        # with its overrides; switching force field swaps the overlay (each field
+        # keeps its own tuning). The explicit-save *persistent* store (Phase C)
+        # mirrors this per force field on demand.
+        self._overrides = {}
         device_index = os.environ.get('ISOLDE_DEVICE_INDEX')
-        self.device_index = device_index
+        # Not a user tuning choice -> don't record it as an override.
+        self.set_param('device_index', device_index, _mark_overridden=False)
 
     def default_for(self, key):
         '''
@@ -107,41 +110,58 @@ class SimParams(Param_Mgr):
 
     def set_param(self, key, value, _mark_overridden=True):
         '''
-        As :meth:`Param_Mgr.set_param`, but changing ``forcefield`` re-resolves the
-        force-field-sensitive parameters for the new force field (see
-        :meth:`_on_forcefield_changed`). Force-field-agnostic parameters are left
-        untouched.
+        As :meth:`Param_Mgr.set_param`, but user edits are recorded per force field
+        and changing ``forcefield`` re-resolves every parameter to the new field's
+        defaults overlaid with that field's overrides (:meth:`_reapply_overrides`).
         '''
         old_ff = self._params.get('forcefield') if getattr(self, '_params', None) is not None else None
         super().set_param(key, value, _mark_overridden=_mark_overridden)
-        if (key == 'forcefield' and value != old_ff
-                and getattr(self, '_session_overrides', None) is not None):
-            self._on_forcefield_changed(old_ff, value)
+        if getattr(self, '_overrides', None) is None:
+            return                                     # still inside base __init__
+        if key == 'forcefield':
+            if value != old_ff:
+                self._reapply_overrides(value)
+            return
+        # record / clear this param as a per-force-field override for the active FF
+        ovr = self._overrides.setdefault(self._params['forcefield'], {})
+        if _mark_overridden:
+            ovr[key] = self._params[key]
+        else:
+            ovr.pop(key, None)
 
-    def _on_forcefield_changed(self, old_ff, new_ff):
-        '''
-        Re-resolve only the force-field-sensitive parameters
-        (:func:`forcefield_profiles.ff_sensitive_params`) for ``new_ff``: stash the
-        outgoing field's user edits, then for each sensitive param restore an edit
-        the user previously made under ``new_ff`` this session, else snap it to
-        ``new_ff``'s default. Force-field-agnostic parameters (temperature,
-        device_index, spring constants, …) are untouched.
-        '''
-        from .forcefield_profiles import ff_sensitive_params
-        sensitive = ff_sensitive_params()
-        if old_ff is not None:
-            stash = self._session_overrides.setdefault(old_ff, {})
-            for k in sensitive:
-                if k != 'forcefield' and self.is_overridden(k):
-                    stash[k] = self._params[k]
-        incoming = self._session_overrides.get(new_ff, {})
-        for k in sensitive:
-            if k == 'forcefield' or k not in self._default_params:
+    def _reapply_overrides(self, ff):
+        '''Re-resolve every parameter for force field ``ff``: each param is set to
+        ``ff``'s override if it has one, else ``ff``'s default. Called when the
+        force field changes so each field carries its own tuning.'''
+        ovr = self._overrides.get(ff, {})
+        for k in self._default_params.keys():
+            if k == 'forcefield':
                 continue
-            if k in incoming:
-                self.set_param(k, incoming[k], _mark_overridden=True)
+            if k in ovr:
+                self.set_param(k, ovr[k], _mark_overridden=True)
             else:
                 self.set_param(k, self.default_for(k), _mark_overridden=False)
+
+    def overrides_for(self, ff=None):
+        '''The live per-force-field override map for ``ff`` (default: the active
+        force field) as ``{param: value}``. A copy; mutate via :meth:`set_param`.'''
+        if ff is None:
+            ff = self._params.get('forcefield')
+        return dict(self._overrides.get(ff, {}))
+
+    def factory_reset(self, ff=None):
+        '''Discard all overrides for ``ff`` (default: active) and set every
+        applicable parameter back to that force field's code default. Live only;
+        the persistent store is untouched until the next explicit save.'''
+        if ff is None:
+            ff = self._params.get('forcefield')
+        from .forcefield_profiles import get_profile
+        prof = get_profile(ff)
+        self._overrides.pop(ff, None)
+        if ff == self._params.get('forcefield'):
+            for k in self._default_params.keys():
+                if k != 'forcefield' and prof.applies(k):
+                    self.set_to_default(k)
 
     _default_params = {
         'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),
@@ -191,6 +211,7 @@ class SimParams(Param_Mgr):
 
         'rigid_bonds':                          (defaults.RIGID_BONDS, None),
         'rigid_water':                          (defaults.RIGID_WATER, None),
+        'hmr_hydrogen_mass':                    (defaults.HMR_HYDROGEN_MASS, None),
         'remove_c_of_m_motion':                 (defaults.REMOVE_C_OF_M_MOTION, None),
 
         'platform':                             (defaults.OPENMM_DEFAULT_PLATFORM, None),
