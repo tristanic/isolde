@@ -25,15 +25,21 @@ one of ``'float' | 'int' | 'bool' | 'enum'`` (a unit-bearing float is still
 
 class ParamSpec:
     def __init__(self, kind, label, tooltip='', minimum=None, maximum=None,
-                 step=None, choices=None, decimals=None):
+                 step=None, choices=None, decimals=None, display_scale=None):
         self.kind = kind
         self.label = label
         self.tooltip = tooltip
         self.minimum = minimum
         self.maximum = maximum
         self.step = step
-        # decimals: spin-box precision for a float editor (None -> derived from step)
+        # decimals: spin-box precision for a float editor (None -> derived from step).
+        # These (and min/max/step) are in the parameter's RAW/native value; the UI
+        # applies display_scale for display only.
         self.decimals = decimals
+        # display_scale: the dashboard shows/edits (raw value * display_scale) -- e.g.
+        # 1000 to render a ~1e-4 tolerance as a tidy "0.1". Command / persistence use
+        # the raw value regardless. None -> shown as-is.
+        self.display_scale = display_scale
         # choices: ordered list of (token, value) for kind == 'enum'
         self.choices = list(choices) if choices else None
 
@@ -90,17 +96,19 @@ def _build_meta():
             '(needs higher friction / HMR for stability).',
             choices=_rigid_bonds_choices()),
         'hmr_hydrogen_mass': ParamSpec('float', 'HMR H mass (amu)',
-            'Hydrogen mass repartitioning target (0 = off). Raises H mass toward '
+            'Hydrogen mass repartitioning target (1 = off). Raises H mass toward '
             'this, taking it from the bonded heavy atom, floored per centre.',
-            minimum=0.0, maximum=6.0, step=0.5),
+            minimum=1.0, maximum=4.0, step=0.5, decimals=1),
         'friction_coefficient': ParamSpec('float', 'Friction (/ps)',
             'Langevin friction. Higher damps motion (suppresses "ringing" of the '
             'fast modes exposed by flexible hydrogens) at the cost of responsiveness.',
             minimum=0.1, maximum=100, step=1),
-        'variable_integrator_tolerance': ParamSpec('float', 'Integrator tolerance',
-            'Variable-timestep integrator error tolerance. Tightening (e.g. 1e-6) '
+        'variable_integrator_tolerance': ParamSpec('float', 'Integrator tol. (×1000)',
+            'Variable-timestep integrator error tolerance, shown ×1000 (so the '
+            'default 1e-4 reads as 0.1). Tightening it (e.g. to 0.001 = 1e-6) '
             'improves stability -- helpful for flexible hydrogens -- at a modest '
-            'performance cost.', minimum=1e-7, maximum=1e-2, step=1e-6, decimals=7),
+            'performance cost.', minimum=1e-7, maximum=1e-2, step=1e-6, decimals=7,
+            display_scale=1000),
     }
 
 

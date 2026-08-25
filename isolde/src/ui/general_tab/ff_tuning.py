@@ -109,16 +109,21 @@ class ForceFieldTuningDialog(UI_Panel_Base):
             w.currentIndexChanged.connect(lambda *_, n=name: self._commit(n))
             return w
         w = QDoubleSpinBox(mf)
+        s = spec.display_scale or 1.0
         if spec.minimum is not None:
-            w.setMinimum(float(spec.minimum))
+            w.setMinimum(float(spec.minimum) * s)
         if spec.maximum is not None:
-            w.setMaximum(float(spec.maximum))
+            w.setMaximum(float(spec.maximum) * s)
         if spec.step is not None:
-            w.setSingleStep(float(spec.step))
+            w.setSingleStep(float(spec.step) * s)
         if spec.decimals is not None:
-            w.setDecimals(int(spec.decimals))
+            dec = int(spec.decimals)
         else:
-            w.setDecimals(2 if (spec.step is not None and spec.step < 1) else 1)
+            dec = 2 if (spec.step is not None and spec.step < 1) else 1
+        if spec.display_scale:
+            from math import log10
+            dec = max(0, dec - int(round(log10(spec.display_scale))))
+        w.setDecimals(dec)
         w.setMaximumWidth(110)
         # commit on Enter / focus-out only (not per spin step) to keep the log clean
         w.editingFinished.connect(lambda n=name: self._commit(n))
@@ -138,7 +143,9 @@ class ForceFieldTuningDialog(UI_Panel_Base):
             return spec.token_for(v)
         if isinstance(v, Quantity):
             unit = sp._default_params[name][1]
-            return float(v.value_in_unit(unit))
+            v = float(v.value_in_unit(unit))
+        if spec.kind in ('float', 'int') and spec.display_scale:
+            return v * spec.display_scale              # scaled for display only
         return v
 
     def _commit(self, name):
@@ -157,11 +164,12 @@ class ForceFieldTuningDialog(UI_Panel_Base):
                 return
             valstr = new
         else:
-            new = w.value()
-            cur = self._display_value(name, spec)
+            new = w.value()                            # scaled (display) value
+            cur = self._display_value(name, spec)      # also scaled
             if abs(new - float(cur)) < 1e-9:
                 return
-            valstr = repr(new)
+            raw = new / spec.display_scale if spec.display_scale else new
+            valstr = repr(raw)                         # command uses the raw value
         self._run('isolde simparam {} {}'.format(name, valstr))
 
     # ----------------------------------------------------------- refresh/sync

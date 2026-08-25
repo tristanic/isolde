@@ -3635,8 +3635,8 @@ class SimHandler:
         :mod:`chimerax.isolde.openmm.hmr`.
         '''
         target = getattr(sim_params, 'hmr_hydrogen_mass', 0.0) or 0.0
-        if target <= 0:
-            return
+        if target <= 1.0:
+            return                                     # <= real H mass -> off (no-op)
         import numpy
         from .hmr import repartition_hydrogen_masses
         all_atoms = sim_construct.all_atoms

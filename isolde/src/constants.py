@@ -64,7 +64,8 @@ class _Defaults:
         'OPENMM_INTEGRATOR_TYPE':     VariableLangevinIntegrator,
         'OPENMM_NONBONDED_METHOD':    CutoffNonPeriodic,
         'OPENMM_NONBONDED_CUTOFF':    1.7, #* unit.nanometers,
-        'OPENMM_FRICTION':            5.0, #/ unit.picoseconds,
+        'OPENMM_FRICTION':            20.0, #/ unit.picoseconds,  (was 5.0 -- too low;
+        # low friction let bumped atoms, e.g. waters, fly off. 20 gives a nicer balance.)
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
         'OPENMM_CONSTRAINT_TOL':      1e-5,
         'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
@@ -105,11 +106,11 @@ class _Defaults:
         'VACUUM_DIELECTRIC_CORR':     150, # *unit.debye,
         'RIGID_BONDS':                HBonds,
         'RIGID_WATER':                True,
-        # Hydrogen mass repartitioning target (amu). 0 disables it (use real
-        # masses). >0 raises each H toward this mass, taking it from the bonded
-        # heavy atom, floored per centre so the heavy atom never drops below the
-        # H mass (see openmm/hmr.py). Useful for flexible-hydrogen simulations.
-        'HMR_HYDROGEN_MASS':          0.0,
+        # Hydrogen mass repartitioning target (amu). 1 = off (a target at/below the
+        # real H mass is a no-op). >1 raises each H toward this mass, taking it from
+        # the bonded heavy atom, floored per centre so the heavy atom never drops
+        # below the H mass (see openmm/hmr.py). Useful for flexible-hydrogen sims.
+        'HMR_HYDROGEN_MASS':          1.0,
         'REMOVE_C_OF_M_MOTION':       False,
         'MIN_CONVERGENCE_TOL_START':  1e-5, # * kJ mol-1 atom-1
         'MIN_CONVERGENCE_TOL_END':    1e-5, # * kJ mol-1 atom-1
