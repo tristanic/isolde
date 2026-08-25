@@ -122,20 +122,33 @@ class SimParams(Param_Mgr):
             if value != old_ff:
                 self._reapply_overrides(value)
             return
-        # record / clear this param as a per-force-field override for the active FF
-        ovr = self._overrides.setdefault(self._params['forcefield'], {})
-        if _mark_overridden:
-            ovr[key] = self._params[key]
-        else:
-            ovr.pop(key, None)
+        # Record as a per-force-field override ONLY for the force-field-specific
+        # allowlist; every other parameter is session-wide (set globally, never
+        # remembered per force field, never reset by a force-field switch).
+        if key in self._per_ff_params():
+            ovr = self._overrides.setdefault(self._params['forcefield'], {})
+            if _mark_overridden:
+                ovr[key] = self._params[key]
+            else:
+                ovr.pop(key, None)
+
+    @staticmethod
+    def _per_ff_params():
+        '''The set of parameter names that are force-field-specific (the tunable
+        allowlist plus anything a profile overrides). Everything else is
+        session-wide.'''
+        from .sim_param_meta import PER_FF_PARAMS
+        from .forcefield_profiles import ff_sensitive_params
+        return set(PER_FF_PARAMS) | ff_sensitive_params()
 
     def _reapply_overrides(self, ff):
-        '''Re-resolve every parameter for force field ``ff``: each param is set to
-        ``ff``'s override if it has one, else ``ff``'s default. Called when the
-        force field changes so each field carries its own tuning.'''
+        '''Re-resolve the force-field-specific parameters for force field ``ff``:
+        each is set to ``ff``'s override if it has one, else ``ff``'s default.
+        Session-wide parameters are left untouched, so switching force field never
+        disturbs the platform, trajectory smoothing, temperature, etc.'''
         ovr = self._overrides.get(ff, {})
-        for k in self._default_params.keys():
-            if k == 'forcefield':
+        for k in self._per_ff_params():
+            if k == 'forcefield' or k not in self._default_params:
                 continue
             if k in ovr:
                 self.set_param(k, ovr[k], _mark_overridden=True)
@@ -150,17 +163,19 @@ class SimParams(Param_Mgr):
         return dict(self._overrides.get(ff, {}))
 
     def factory_reset(self, ff=None):
-        '''Discard all overrides for ``ff`` (default: active) and set every
-        applicable parameter back to that force field's code default. Live only;
-        the persistent store is untouched until the next explicit save.'''
+        '''Discard the force-field-specific overrides for ``ff`` (default: active)
+        and set those parameters back to that force field's code default. Only the
+        force-field-specific parameters are touched -- session-wide settings
+        (platform, smoothing, temperature, …) are left alone. Live only; the
+        persistent store is untouched until the next explicit save.'''
         if ff is None:
             ff = self._params.get('forcefield')
         from .forcefield_profiles import get_profile
         prof = get_profile(ff)
         self._overrides.pop(ff, None)
         if ff == self._params.get('forcefield'):
-            for k in self._default_params.keys():
-                if k != 'forcefield' and prof.applies(k):
+            for k in self._per_ff_params():
+                if k != 'forcefield' and k in self._default_params and prof.applies(k):
                     self.set_to_default(k)
 
     _default_params = {

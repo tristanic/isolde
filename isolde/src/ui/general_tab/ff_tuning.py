@@ -115,8 +115,11 @@ class ForceFieldTuningDialog(UI_Panel_Base):
             w.setMaximum(float(spec.maximum))
         if spec.step is not None:
             w.setSingleStep(float(spec.step))
-        w.setDecimals(2 if (spec.step is not None and spec.step < 1) else 1)
-        w.setMaximumWidth(90)
+        if spec.decimals is not None:
+            w.setDecimals(int(spec.decimals))
+        else:
+            w.setDecimals(2 if (spec.step is not None and spec.step < 1) else 1)
+        w.setMaximumWidth(110)
         # commit on Enter / focus-out only (not per spin step) to keep the log clean
         w.editingFinished.connect(lambda n=name: self._commit(n))
         return w

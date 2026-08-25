@@ -25,13 +25,15 @@ one of ``'float' | 'int' | 'bool' | 'enum'`` (a unit-bearing float is still
 
 class ParamSpec:
     def __init__(self, kind, label, tooltip='', minimum=None, maximum=None,
-                 step=None, choices=None):
+                 step=None, choices=None, decimals=None):
         self.kind = kind
         self.label = label
         self.tooltip = tooltip
         self.minimum = minimum
         self.maximum = maximum
         self.step = step
+        # decimals: spin-box precision for a float editor (None -> derived from step)
+        self.decimals = decimals
         # choices: ordered list of (token, value) for kind == 'enum'
         self.choices = list(choices) if choices else None
 
@@ -57,21 +59,23 @@ def _rigid_bonds_choices():
             ('all-bonds', AllBonds), ('h-angles', HAngles)]
 
 
-# The curated tunable set. (Extend as needed; anything not here is simply not
-# exposed by the command / dashboard.)
+# The curated set of **force-field-specific** tunable parameters -- and ONLY these.
+#
+# Membership here is what makes a parameter per-force-field: it is remembered
+# per force field, re-resolved when the force field changes, exposed by the
+# ``isolde simparam`` command and the tuning dashboard, and included in the
+# saved store. **Every other SimParams entry is session-wide** and is never
+# touched by a force-field switch -- crucially the hardware/UX ones (platform,
+# device index, trajectory smoothing, GUI cadence) and the physical conditions
+# and interaction knobs (temperature, cutoff, GBSA on/off, symmetry, rigid water,
+# the soft-core on/off toggle, restraint spring constants) which have their own
+# controls and do not depend on the force field's functional form.
+#
+# Only put a parameter here if its *optimal value genuinely differs because of the
+# force field* (e.g. GARNET's bounded vdW makes flexible hydrogens viable, wanting
+# a different rigid_bonds / HMR / friction than AMBER).
 def _build_meta():
     return {
-        'temperature': ParamSpec('float', 'Temperature (K)',
-            'Simulation temperature.', minimum=0, maximum=500, step=1),
-        'friction_coefficient': ParamSpec('float', 'Friction (/ps)',
-            'Langevin friction. Higher damps motion (suppresses "ringing" of fast '
-            'modes) at the cost of responsiveness.', minimum=0.1, maximum=100, step=1),
-        'nonbonded_cutoff_distance': ParamSpec('float', 'Nonbonded cutoff (nm)',
-            'Direct-space nonbonded cutoff.', minimum=0.5, maximum=2.0, step=0.1),
-        'use_gbsa': ParamSpec('bool', 'Implicit solvent (GBSA)',
-            'Whether to include GBSA implicit solvent.'),
-        'use_softcore_nonbonded_potential': ParamSpec('bool', 'Soft-core nonbonded',
-            'Use the soft-core (fade-out) nonbonded potential.'),
         'nonbonded_softcore_lambda_minimize': ParamSpec('float', 'Soft-core λ (min)',
             'Soft-core coupling during minimisation. Lower softens the wall for '
             'clash escape.', minimum=0.01, maximum=1.0, step=0.01),
@@ -81,22 +85,31 @@ def _build_meta():
         'nonbonded_softcore_alpha': ParamSpec('float', 'Soft-core α',
             'Shape of the soft-core wall within the clashing region.',
             minimum=0.01, maximum=1.0, step=0.01),
-        'symmetry_aware': ParamSpec('bool', 'Symmetry-aware',
-            'Crystallographic symmetry copies participate in the simulation.'),
         'rigid_bonds': ParamSpec('enum', 'Rigid bonds',
             'Which bonds are held rigid by constraints. "none" = fully flexible '
             '(needs higher friction / HMR for stability).',
             choices=_rigid_bonds_choices()),
-        'rigid_water': ParamSpec('bool', 'Rigid water',
-            'Constrain water geometry (SETTLE).'),
         'hmr_hydrogen_mass': ParamSpec('float', 'HMR H mass (amu)',
             'Hydrogen mass repartitioning target (0 = off). Raises H mass toward '
             'this, taking it from the bonded heavy atom, floored per centre.',
             minimum=0.0, maximum=6.0, step=0.5),
+        'friction_coefficient': ParamSpec('float', 'Friction (/ps)',
+            'Langevin friction. Higher damps motion (suppresses "ringing" of the '
+            'fast modes exposed by flexible hydrogens) at the cost of responsiveness.',
+            minimum=0.1, maximum=100, step=1),
+        'variable_integrator_tolerance': ParamSpec('float', 'Integrator tolerance',
+            'Variable-timestep integrator error tolerance. Tightening (e.g. 1e-6) '
+            'improves stability -- helpful for flexible hydrogens -- at a modest '
+            'performance cost.', minimum=1e-7, maximum=1e-2, step=1e-6, decimals=7),
     }
 
 
 PARAM_META = _build_meta()
+
+# The authoritative set of per-force-field parameter names (== the tunable set).
+# SimParams consults this to decide which params are remembered per force field and
+# re-resolved on a switch; everything else is session-wide.
+PER_FF_PARAMS = frozenset(PARAM_META)
 
 
 def spec_for(key):
