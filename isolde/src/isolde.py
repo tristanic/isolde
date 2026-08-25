@@ -181,6 +181,14 @@ class Isolde():
         Parameters controlling the initialisation and behaviour of the
         simulation.
         '''
+        # Apply any per-force-field sim-parameter overrides the user has explicitly
+        # saved (the tuning dashboard's "Save current settings"). Never raises.
+        try:
+            from .openmm.sim_param_meta import load_from_settings
+            load_from_settings(self.session, sp)
+        except Exception as e:
+            self.session.logger.info('ISOLDE: could not load saved sim-parameter '
+                                     'overrides ({}).'.format(e))
 
         from .visualisation import VisualisationStateMgr
         self._vis_mgr = VisualisationStateMgr(self.session, self)

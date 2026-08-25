@@ -65,6 +65,7 @@ class _MyAPI(BundleAPI):
         settings.basic_settings = settings._IsoldeBasicSettings(session, 'isolde')
         settings.color_settings = settings._IsoldeColorSettings(session, 'isolde')
         settings.advanced_settings = settings._IsoldeAdvancedSettings(session, 'isolde')
+        settings.forcefield_settings = settings._IsoldeForceFieldSettings(session, 'isolde')
         if session.ui.is_gui:
             from .toolbar import ToolbarButtonMgr
             session._isolde_tb = ToolbarButtonMgr(session)

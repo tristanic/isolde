@@ -70,6 +70,56 @@ def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
                 session.logger.info(f'{param_name} = {param_value}')
 
 
+def isolde_simparam(session, name=None, value=None, save=False, reset=False):
+    '''
+    Get, set, save or reset ISOLDE's per-force-field simulation parameters (the
+    tunable subset in openmm/sim_param_meta.py). Edits are scoped to the currently
+    selected force field; ``save`` persists them across sessions; ``reset``
+    (factory-reset) discards the active force field's overrides.
+    '''
+    from chimerax.core.errors import UserError
+    isolde = isolde_start(session)
+    sp = isolde.sim_params
+    from chimerax.isolde.openmm import sim_param_meta as meta
+    ff = sp.forcefield
+    if save:
+        n = len(sp.overrides_for(ff))
+        ok = meta.save_to_settings(session, sp)
+        if ok:
+            session.logger.info('ISOLDE: saved {} sim-parameter override(s) for force '
+                'field "{}" (persists across sessions).'.format(n, ff))
+        else:
+            session.logger.warning('ISOLDE: could not save sim-parameters (settings unavailable).')
+        return
+    if reset:
+        sp.factory_reset()
+        session.logger.info('ISOLDE: reset all sim-parameters for force field "{}" to '
+            'defaults (not yet saved).'.format(ff))
+        return
+    if name is None:
+        # report the tunable parameters' current values for the active force field
+        lines = ['ISOLDE sim-parameters (force field "{}"):'.format(ff)]
+        for k in meta.tunable_params():
+            flag = ' *' if sp.is_overridden(k) else ''
+            lines.append('    {} = {}{}'.format(k, sp[k], flag))
+        lines.append('  (* = overridden; "isolde simparam <name> default" resets one)')
+        session.logger.info('\n'.join(lines))
+        return
+    if value is None:
+        raise UserError('Provide a value for "{}" (or "default" to reset it).'.format(name))
+    if value.strip().lower() == 'default':
+        sp.set_to_default(name)
+        session.logger.info('ISOLDE: {} reset to force-field default ({}).'.format(name, sp[name]))
+        return
+    try:
+        v = meta.parse_value(name, value)
+    except ValueError as e:
+        raise UserError(str(e))
+    setattr(sp, name, v)
+    session.logger.info('ISOLDE: {} set to {}. Takes effect at the next simulation '
+        'start.'.format(name, sp[name]))
+
+
 def isolde_select(session, model):
     isolde = getattr(session, 'isolde', None)
     if isolde is not None:
@@ -701,6 +751,15 @@ def _register_isolde_commands(logger):
         )
         register('isolde set', desc, isolde_set, logger=logger)
 
+    def register_isolde_simparam():
+        from chimerax.isolde.openmm.sim_param_meta import tunable_params
+        desc = CmdDesc(
+            optional=[('name', EnumOf(tunable_params())), ('value', StringArg)],
+            keyword=[('save', NoArg), ('reset', NoArg)],
+            synopsis='Get/set/save ISOLDE per-force-field simulation parameters',
+        )
+        register('isolde simparam', desc, isolde_simparam, logger=logger)
+
     def register_isolde_sim():
         from .decouple import decouple_lambda_arg
         desc = CmdDesc(
@@ -845,6 +904,7 @@ def _register_isolde_commands(logger):
 
     register_isolde_start()
     register_isolde_set()
+    register_isolde_simparam()
     register_isolde_select()
     register_isolde_status()
     register_isolde_sim_status()

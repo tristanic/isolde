@@ -63,6 +63,19 @@ class _IsoldeAdvancedSettings(Settings):
 
     }
 
+class _IsoldeForceFieldSettings(Settings):
+    '''
+    Persistence backend for the per-force-field simulation-parameter tuning
+    dashboard. Written only on the explicit "Save current settings" action (see
+    openmm/sim_param_meta.py). Deliberately NOT registered in ChimeraX's
+    Favourites>Settings panel -- this is a large expert dashboard, not a simple
+    preference, so it is driven only from ISOLDE's own (Developer-gated) UI.
+    '''
+    AUTO_SAVE = {
+        # {force_field_name: {param_name: json-able token}} of user overrides.
+        'ff_overrides':                     {},
+    }
+
 def register_settings_options(session):
     from chimerax.ui.options import SymbolicEnumOption
     # Symbolic names mirror ExpertModeSelector (ui/ui_base.py): the option
@@ -83,3 +96,4 @@ def register_settings_options(session):
 basic_settings = None # set during bundle initialisation
 color_settings = None # set during bundle initialisation
 advanced_settings = None # set during bundle initialisation
+forcefield_settings = None # set during bundle initialisation
