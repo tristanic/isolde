@@ -255,16 +255,6 @@ class PotentialIndicator(QWidget):
         ax2.set_xlabel('radius (Å)')
         ax2.set_ylabel(' ')
 
-        # Plot unmodified values (lambda=1) as reference
-        from chimerax.isolde.openmm.custom_forces import NonbondedSoftcoreForce
-        lj, coul = NonbondedSoftcoreForce.potential_values(radii/10, 1, 1, 1, 1, 1)
-        for ax in self._axes:
-            line1 = ax.plot(radii, lj, 'm-', linewidth=2.5)[0]
-            line1.set_label('L-J')
-            line2 = ax.plot(radii, coul, 'g-', linewidth=2.5)[0]
-            line2.set_label('Coul')
-        ax1.legend(fontsize=self.FONTSIZE, loc='upper right')
-
         self._param_mgr = param_mgr
         self._changes_handler = param_mgr.triggers.add_handler(param_mgr.PARAMETER_CHANGED, self._update_plots_if_necessary)
 
@@ -272,8 +262,33 @@ class PotentialIndicator(QWidget):
             'lambda': lambda_slider,
             'alpha':  alpha_slider
         }
+        # Reference (lambda=1) curve handles + legend, drawn/updated by _update_plots so
+        # they follow the active force field (L-J vs GARNET double-exponential).
+        self._ref_vdw_plots = [ax.plot(self._radii, self._radii * 0, 'm-', linewidth=2.5)[0]
+                               for ax in self._axes]
+        self._ref_coul_plots = [ax.plot(self._radii, self._radii * 0, 'g-', linewidth=2.5)[0]
+                                for ax in self._axes]
+        self._legend_ax = ax1
         self._update_plots()
-    
+
+    def _potential_values(self, radii_nm, l, a, b, c, alpha):
+        '''
+        Dispatch the potential-vs-radius mirror to the active force field's functional
+        form: L-J for amber14, the softened double-exponential for garnet. Both share the
+        ``(radii, lambda, a, b, c, alpha)`` signature (garnet uses default dexp alpha/beta
+        for the illustrative curve).
+        '''
+        ff = getattr(self._param_mgr, 'forcefield', 'amber14')
+        if ff == 'garnet':
+            from chimerax.isolde.openmm.garnet.soft_core import potential_values as pv
+        else:
+            from chimerax.isolde.openmm.custom_forces import NonbondedSoftcoreForce
+            pv = NonbondedSoftcoreForce.potential_values
+        return pv(radii_nm, l, a, b, c, alpha)
+
+    def _vdw_label(self):
+        return 'dexp' if getattr(self._param_mgr, 'forcefield', 'amber14') == 'garnet' else 'L-J'
+
     def _update_plots_if_necessary(self, _, data):
         name, val = data
         if name in (
@@ -281,27 +296,38 @@ class PotentialIndicator(QWidget):
             'nonbonded_softcore_a',
             'nonbonded_softcore_b',
             'nonbonded_softcore_c',
-            'nonbonded_softcore_alpha'
+            'nonbonded_softcore_alpha',
+            'forcefield',        # switch the plotted functional form when the force field changes
         ):
             self._update_plots()
-        
+
     def _update_plots(self, *_):
-        from chimerax.isolde.openmm.custom_forces import NonbondedSoftcoreForce
         pmgr = self._param_mgr
         l = getattr(pmgr, self._sliders['lambda'].PARAM_NAME)
         a = pmgr.nonbonded_softcore_a
         b = pmgr.nonbonded_softcore_b
         c = pmgr.nonbonded_softcore_c
         alpha = pmgr.nonbonded_softcore_alpha
-        lj, coul = NonbondedSoftcoreForce.potential_values(self._radii/10, l, a, b, c, alpha)
+        # Reference curve at lambda=1 (the un-softened potential) + the current-lambda curve,
+        # both in the active force field's functional form.
+        ref_vdw, ref_coul = self._potential_values(self._radii / 10, 1, a, b, c, alpha)
+        vdw, coul = self._potential_values(self._radii / 10, l, a, b, c, alpha)
+        for plot in self._ref_vdw_plots:
+            plot.set_ydata(ref_vdw)
+            plot.set_label(self._vdw_label())
+        for plot in self._ref_coul_plots:
+            plot.set_ydata(ref_coul)
+            plot.set_label('Coul')
         if not hasattr(self, '_lj_plots'):
-            self._lj_plots = [ax.plot(self._radii, lj, 'm-', linewidth=1)[0] for ax in self._axes]
+            self._lj_plots = [ax.plot(self._radii, vdw, 'm-', linewidth=1)[0] for ax in self._axes]
             self._coul_plots = [ax.plot(self._radii, coul, 'g-', linewidth=1)[0] for ax in self._axes]
+            self._legend_ax.legend(fontsize=self.FONTSIZE, loc='upper right')
         else:
             for plot in self._lj_plots:
-                plot.set_ydata(lj)
+                plot.set_ydata(vdw)
             for plot in self._coul_plots:
                 plot.set_ydata(coul)
+            self._legend_ax.legend(fontsize=self.FONTSIZE, loc='upper right')
             self.canvas.draw()
             self.canvas.flush_events()
 

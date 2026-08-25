@@ -1327,6 +1327,10 @@ class SimHandler:
         # Forcefield used in this simulation
 #        from .forcefields import forcefields
         ff = forcefield_mgr[sim_params.forcefield]
+        # garnet-isolde is built programmatically (not by createSystem); this flag
+        # routes the build below and disables the AMBER-LJ-specific soft-core path
+        # (the double-exponential vdW is inherently soft-core). AMBER is unaffected.
+        self._is_garnet = getattr(ff, 'is_garnet', False)
         ligand_db = forcefield_mgr.ligand_db(sim_params.forcefield)
 #        ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
@@ -1347,8 +1351,11 @@ class SimHandler:
         # Overall simulation topology + system. The build can recover once from
         # stale isolde_template_name overrides that no longer match their
         # residue (see _build_system_with_template_recovery).
-        top, system = self._build_system_with_template_recovery(
-            ff, atoms, sim_construct.all_residues, sim_params, ligand_db, logger)
+        if self._is_garnet:
+            top, system = self._build_garnet_system(ff, sim_construct, sim_params, logger)
+        else:
+            top, system = self._build_system_with_template_recovery(
+                ff, atoms, sim_construct.all_residues, sim_params, ligand_db, logger)
         self.topology = top
 
 
@@ -1755,6 +1762,23 @@ class SimHandler:
     def atoms(self):
         return self._atoms
 
+    def _build_garnet_system(self, ff, sim_construct, sim_params, logger):
+        '''
+        Build the OpenMM topology + system from the garnet-isolde force field.
+
+        garnet parameterises from topology alone, so we parameterise the *whole*
+        model once (cached on it) and build this simulation's System from the
+        cached parameters projected onto ``sim_construct.all_atoms``. The
+        chemically-incomplete outer edge of the fixed buffer needs no capping:
+        boundary bonds into the non-simulated surroundings are dropped and those
+        atoms are frozen, exactly as the AMBER path drops external bonds.
+        '''
+        from .garnet import get_garnet_parameters, build_garnet_system
+        model = sim_construct.all_atoms.unique_structures[0]
+        garnet_params = get_garnet_parameters(
+            model, checkpoint_path=ff.checkpoint_path, logger=logger)
+        return build_garnet_system(self.session, sim_params, sim_construct, garnet_params)
+
     def _build_system_with_template_recovery(self, ff, atoms, all_residues,
             sim_params, ligand_db, logger):
         '''
@@ -1925,6 +1949,135 @@ class SimHandler:
             self._nb_softcore_force = sf
         self._softcore_nb_param_mgr = _SoftCoreNonbondedParamMgr(self, self._params)
 
+    def _convert_garnet_to_soft_core_potentials(self, system):
+        '''
+        garnet analogue of :meth:`_convert_to_soft_core_potentials`. Replaces garnet's
+        plain Coulomb ``NonbondedForce`` + double-exponential ``CustomNonbondedForce``
+        (+ the scaled 1-4 / gated 1-3 ``CustomBondForce`` companions) with a single
+        combined garnet soft-core force (dexp vdW + softened Coulomb, group- and
+        symmetry-aware via the shared mixins) plus a soft-core exception force, so
+        garnet flows through the same coupling / decouple / symmetry / GBSA machinery
+        as AMBER. The combined force reduces to exact garnet at full coupling.
+        '''
+        from openmm import unit as _unit
+        from .garnet.soft_core import (
+            GarnetNonbondedSoftcoreForce, NBGroupGarnetNonbondedSoftcoreForce,
+            SymmetryAwareGarnetNonbondedSoftcoreForce, GarnetNonbondedSoftcoreExceptionForce,
+            find_garnet_nonbonded_forces)
+        p = self._params
+        coulomb, ci, dexp, di, extras = find_garnet_nonbonded_forces(system)
+        if coulomb is None or dexp is None:
+            raise RuntimeError('garnet soft-core conversion could not locate the plain '
+                'Coulomb / double-exponential nonbonded forces')
+        # dexp globals + vdW 1-4/1-3 scales (off the pre-built companions, if present).
+        dexp_alpha = dexp_beta = None
+        for k in range(dexp.getNumGlobalParameters()):
+            nm = dexp.getGlobalParameterName(k)
+            if nm == 'alpha': dexp_alpha = dexp.getGlobalParameterDefaultValue(k)
+            elif nm == 'beta': dexp_beta = dexp.getGlobalParameterDefaultValue(k)
+        vdw14 = 0.0; f13 = None; vdw13 = 0.0
+        for f, _idx in extras:
+            gn = {f.getGlobalParameterName(k): k for k in range(f.getNumGlobalParameters())}
+            if 'w14vdw' in gn:
+                vdw14 = f.getGlobalParameterDefaultValue(gn['w14vdw'])
+            elif 'w13vdw' in gn:
+                f13, vdw13 = f, f.getGlobalParameterDefaultValue(gn['w13vdw'])
+
+        param_dict = {'a': p.nonbonded_softcore_a, 'b': p.nonbonded_softcore_b,
+            'c': p.nonbonded_softcore_c, 'nb_lambda': p.nonbonded_softcore_lambda_minimize,
+            'alpha': p.nonbonded_softcore_alpha,
+            'dexp_alpha': dexp_alpha, 'dexp_beta': dexp_beta}
+
+        groups = getattr(self, '_symmetry_particle_groups', None)
+        nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
+        nb_on = nb_max > 1
+        n_particles = system.getNumParticles()
+        if nb_on:
+            nb_groups = self._nb_particle_groups = numpy.zeros(n_particles, dtype=int)
+        else:
+            nb_groups = None
+            self._nb_particle_groups = None
+
+        if groups is not None:
+            sf = SymmetryAwareGarnetNonbondedSoftcoreForce(
+                symmetry_ngroups=self._symmetry_ngroups,
+                symmetry_group_weights=getattr(self, '_symmetry_group_table', None),
+                n_nb_groups=nb_max, **param_dict)
+        elif nb_on:
+            sf = NBGroupGarnetNonbondedSoftcoreForce(n_nb_groups=nb_max, **param_dict)
+        else:
+            sf = GarnetNonbondedSoftcoreForce(**param_dict)
+        sfb = GarnetNonbondedSoftcoreExceptionForce(
+            a=param_dict['a'], b=param_dict['b'], c=param_dict['c'],
+            nb_lambda=param_dict['nb_lambda'], alpha=param_dict['alpha'],
+            dexp_alpha=dexp_alpha, dexp_beta=dexp_beta)
+        sf.setForceGroup(NONBONDED_FORCE_GROUP)
+        sfb.setForceGroup(NONBONDED_FORCE_GROUP)
+        sf.setNonbondedMethod(dexp.getNonbondedMethod())
+        sf.setCutoffDistance(dexp.getCutoffDistance())
+
+        n_real = int(getattr(self, '_num_real_atoms', n_particles))
+        # charge: from the (symmetry-extended) Coulomb NB (n_total). sigma/eps: from the
+        # dexp CNB (n_real), extended to copies via parent_index.
+        charges = [coulomb.getParticleParameters(j)[0].value_in_unit(_unit.elementary_charge)
+                   for j in range(coulomb.getNumParticles())]
+        sig = [0.0] * n_particles; eps = [0.0] * n_particles
+        for j in range(dexp.getNumParticles()):
+            s, e = dexp.getParticleParameters(j)
+            sig[j], eps[j] = float(s), float(e)
+        if groups is not None:
+            for cidx, parent in enumerate(self._symmetry_copies['parent_index']):
+                jt = n_real + cidx
+                sig[jt], eps[jt] = sig[int(parent)], eps[int(parent)]
+        for j in range(n_particles):
+            pp = [charges[j], sig[j], eps[j]]
+            if nb_on: pp.append(float(nb_groups[j]))
+            if groups is not None: pp.append(float(groups[j]))
+            sf.addParticle(pp)
+
+        # Exclusions: real 1-2/1-3/1-4 (copies rely on the grouptable diagonal, not exclusions).
+        for k in range(dexp.getNumExclusions()):
+            a1, a2 = dexp.getExclusionParticles(k)
+            sf.addExclusion(a1, a2)
+        # 1-4 charge products (coulomb14scale already baked in) keyed by atom pair.
+        qprod = {}
+        for k in range(coulomb.getNumExceptions()):
+            a1, a2, cp, _cs, _ce = coulomb.getExceptionParameters(k)
+            qprod[frozenset((a1, a2))] = cp.value_in_unit(_unit.elementary_charge ** 2)
+        # Add back the 1-4 (vdW + Coulomb) as soft-core bonds.
+        if vdw14 != 0.0:
+            # f14 lists the authoritative 1-4 set; carry each pair's vdW + Coulomb.
+            f14 = next(f for f, _ in extras
+                       if 'w14vdw' in {f.getGlobalParameterName(k)
+                                       for k in range(f.getNumGlobalParameters())})
+            for bk in range(f14.getNumBonds()):
+                a1, a2, _params = f14.getBondParameters(bk)
+                sfb.addBond(a1, a2, [qprod.get(frozenset((a1, a2)), 0.0),
+                                     sig[a1], sig[a2], eps[a1], eps[a2], vdw14])
+        else:
+            # No 1-4 vdW: only the charged 1-4 Coulomb needs re-adding (vdw_scale = 0).
+            for pair, q in qprod.items():
+                if q != 0.0:
+                    a1, a2 = tuple(pair)
+                    sfb.addBond(a1, a2, [q, sig[a1], sig[a2], eps[a1], eps[a2], 0.0])
+        # Gated 1-3 vdW (metals only; no 1-3 Coulomb).
+        if f13 is not None and vdw13 != 0.0:
+            for bk in range(f13.getNumBonds()):
+                a1, a2, _params = f13.getBondParameters(bk)
+                sfb.addBond(a1, a2, [0.0, sig[a1], sig[a2], eps[a1], eps[a2], vdw13])
+
+        # Swap: remove the plain forces (highest index first) then add the soft-core ones.
+        for idx in sorted([ci, di] + [ix for _, ix in extras], reverse=True):
+            system.removeForce(idx)
+        system.addForce(sf)
+        if sfb.getNumBonds():
+            system.addForce(sfb)
+            self.all_forces.append(sfb)
+        self.all_forces.append(sf)
+        if nb_on:
+            self._nb_softcore_force = sf
+        self._softcore_nb_param_mgr = _SoftCoreNonbondedParamMgr(self, self._params)
+
 
     def initialize_restraint_forces(self, amber_cmap=True, tugging=True, position_restraints=True,
         distance_restraints=True, adaptive_distance_restraints=True,
@@ -2001,9 +2154,20 @@ class SimHandler:
             self.initialize_symmetry_copies(shell)
             self._symmetry_initialized = True
         if params.use_gbsa and not hasattr(self, '_gbsa_force'):
+            # GBSA runs before the soft-core conversion, so it reads charges off the still-present
+            # plain Coulomb NonbondedForce (garnet or AMBER). With soft-core on it builds the
+            # group-aware/symmetry-masked soft-core GB force, so garnet's symmetry copies are
+            # correctly masked (not over-counted) and GBIS fades in lockstep with the nonbonded.
             self.initialize_implicit_solvent(params)
-        if params.use_softcore_nonbonded_potential and not hasattr(self, '_soft_core_initialized'):
-            self._convert_to_soft_core_potentials(self._system)
+        # Convert the nonbonded forces to their soft-core / fade-out form (minimise soft-start,
+        # `isolde decouple`, symmetry). garnet uses its own combined dexp+Coulomb soft-core force;
+        # AMBER uses the LJ+Coulomb one. Both flow through the same coupling/group/GBSA machinery.
+        if (params.use_softcore_nonbonded_potential
+                and not hasattr(self, '_soft_core_initialized')):
+            if self._is_garnet:
+                self._convert_garnet_to_soft_core_potentials(self._system)
+            else:
+                self._convert_to_soft_core_potentials(self._system)
             self._soft_core_initialized=True
         integrator = self._prepare_integrator(params)
         platform = openmm.Platform.getPlatformByName(params.platform)
@@ -3663,11 +3827,16 @@ class SimHandler:
         # extended NonbondedForce); their (or, sr) are copied from their parent.
         groups = getattr(self, '_symmetry_particle_groups', None)
         nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
+        # garnet disables the soft-core NB conversion, so its GBSA must take the
+        # the soft-core GB force stays in lockstep with the soft-core NB force via the shared
+        # softcore_lambda + nb_coupling_table. garnet now flows through this path too (its combined
+        # soft-core NB force is installed just after, sharing the same global + table).
+        use_softcore = params.use_softcore_nonbonded_potential
         # Per-group soft-core GB only applies with the soft-core potential.
-        nb_on = nb_max > 1 and params.use_softcore_nonbonded_potential
+        nb_on = nb_max > 1 and use_softcore
         from .custom_forces import (GBSAForce, SoftCoreGBSAGBnForce,
             NBGroupSoftCoreGBSAGBnForce, SymmetrySoftCoreGBSAGBnForce)
-        if params.use_softcore_nonbonded_potential:
+        if use_softcore:
             gbsa_params['nb_lambda'] = params.nonbonded_softcore_lambda_minimize
             if groups is not None:
                 # Symmetry GB (nb-group layer is inert here until Phase 5).

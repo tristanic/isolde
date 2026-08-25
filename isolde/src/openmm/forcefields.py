@@ -44,16 +44,35 @@ _forcefield_files = {
         'free_amino_acids.xml',      # Free amino acids, DOI: 10.1007/s00894-014-2478-z,
         'phosphate_analogues.xml',
         ]],
-
-    'charmm36': ['charmm36.xml', 'charmm36/water.xml',]
 }
 
 _ligand_files = {
     'amber14': os.path.join(ff_dir, 'amberff', 'moriarty_and_case.zip'),
-    'charmm36': None
 }
 
 default_forcefields = list(_forcefield_files.keys())
+
+# The garnet-isolde graph-ML force field. Unlike the AMBER entries above it has no
+# ffXML files and no ligand DB: it builds the OpenMM System programmatically from
+# parameters predicted over the whole model (see openmm/garnet/). Registered here so
+# it shows up in `available_forcefields` and can be selected like any other.
+GARNET_FORCEFIELD_NAME = 'garnet'
+_extra_forcefields = [GARNET_FORCEFIELD_NAME]
+
+
+class GarnetForcefieldHandle:
+    '''
+    Sentinel returned by :class:`ForcefieldMgr` for the garnet force field.
+
+    It is *not* an OpenMM ``ForceField``; ``SimHandler`` detects the
+    ``is_garnet`` flag and routes to the programmatic garnet System builder
+    instead of template-matching + ``createSystem``. Carries the checkpoint path
+    (None -> the default committed checkpoint, resolved at parameterisation time).
+    '''
+    is_garnet = True
+
+    def __init__(self, checkpoint_path=None):
+        self.checkpoint_path = checkpoint_path
 
 def _define_forcefield(ff_files):
     #from openmm.app import ForceField
@@ -85,6 +104,11 @@ class ForcefieldMgr:
 
     def __getitem__(self, key):
         ffd = self._ff_dict
+        if key == GARNET_FORCEFIELD_NAME:
+            handle = ffd.get(key)
+            if handle is None:
+                handle = ffd[key] = GarnetForcefieldHandle()
+            return handle
         if key in ffd.keys():
             return ffd[key]
         else:
@@ -100,7 +124,7 @@ class ForcefieldMgr:
     def ligand_db(self, key):
         db = self._ligand_dict.get(key, None)
         if db is None:
-            ligand_zip = _ligand_files[key]
+            ligand_zip = _ligand_files.get(key)   # garnet / unknown -> None (no ligand DB)
             if ligand_zip is not None:
                 db = (ligand_zip, self._ligand_db_from_zip(ligand_zip))
                 self._ligand_dict[key] = db
@@ -122,7 +146,9 @@ class ForcefieldMgr:
 
     @property
     def available_forcefields(self):
-        return list(set(self._ff_dict.keys()).union(_forcefield_files.keys()))
+        return list(set(self._ff_dict.keys())
+                    .union(_forcefield_files.keys())
+                    .union(_extra_forcefields))
 
     @property
     def loaded_forcefields(self):

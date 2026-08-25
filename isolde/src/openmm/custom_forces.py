@@ -2015,10 +2015,10 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         self.addPerParticleParameter('epsilon')
         self.update_needed = False
 
-    @staticmethod
-    def _soft_core_energy(a, b, c, lam='softcore_lambda', coulomb_scale=None, extra_defs=''):
+    @classmethod
+    def _soft_core_energy(cls, a, b, c, lam='softcore_lambda', coulomb_scale=None, extra_defs=''):
         '''
-        Build the soft-core LJ + Coulomb energy expression. ``lam`` is the name of
+        Build the soft-core vdW + Coulomb energy expression. ``lam`` is the name of
         the per-pair coupling variable used throughout; the default
         ``'softcore_lambda'`` (the global parameter) reproduces the plain
         force byte-for-byte. Subclasses that make the coupling per-group pass
@@ -2036,26 +2036,60 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         vdW -- otherwise a softened vdW wall can no longer hold oppositely-charged atoms
         apart against the (un-faded) Coulomb attraction. See COULOMB_DECOUPLE_POWER.
 
-        Only the ``lennard_jones``/``lj_base`` block is Lennard-Jones-specific;
-        it references ``lam`` and is the single point that a future
-        double-exponential vdW form would replace, leaving the coupling
-        plumbing untouched.
+        The vdW term is supplied by the overridable :meth:`_vdw_block` classmethod (the
+        default is Lennard-Jones); the Coulomb term and the whole coupling plumbing are
+        potential-agnostic and shared. A double-exponential (GARNET) subclass overrides
+        only ``_vdw_block`` -- see ``openmm/garnet/soft_core.py``.
         '''
         cs = f'{coulomb_scale} * ' if coulomb_scale else ''
+        vdw_head, vdw_defs = cls._vdw_block(a, b, c, lam)
+        vdw_defs_clause = (vdw_defs.rstrip(';') + ';') if vdw_defs else ''
         return (
             'lennard_jones + coulombic;'
-            'lennard_jones = '
-                f'4 * epsilon * {lam}^(1/{a}) * '
-                f'( lj_base^(12/{c}) - lj_base^(6/{c}) );'
-            'lj_base = '
-                f'1 / ( softcore_alpha * (1-{lam})^{b} +'
-                f'(r/sigma)^{c} );'
-            'sigma = 0.5*(sigma1+sigma2);'
-            'epsilon = sqrt(epsilon1*epsilon2);'
+            f'lennard_jones = {vdw_head};'
+            f'{vdw_defs_clause}'
             f'coulombic = {cs}{ONE_ON_4_PI_EPS0} * charge1 * charge2 * '
-                f'( 1 / ( softcore_alpha*(1-{lam})^({b*4}) + r^{c} ) )^(1/{c})'
+                f'( 1 / ( softcore_alpha*(1-{lam})^({cls._coulomb_floor_power(b)}) + r^{c} ) )^(1/{c})'
             + ((';' + extra_defs.rstrip(';')) if extra_defs else '')
             )
+
+    @classmethod
+    def _vdw_floor_power(cls, b):
+        '''
+        Exponent on ``(1-lambda)`` in the **vdW** soft-core floor. Default ``b``
+        (Lennard-Jones / Pham-Shirts). Overridden per functional form: a finite wall
+        (GARNET double-exponential) must soften *slower* than L-J's r^-12 wall, so
+        its floor exponent is raised (see ``openmm/garnet/soft_core.py``).
+        '''
+        return b
+
+    @classmethod
+    def _coulomb_floor_power(cls, b):
+        '''
+        Exponent on ``(1-lambda)`` in the **Coulomb** soft-core floor. Default ``4b``
+        -- tuned so the towering L-J wall softens well before the electrostatics do.
+        For a finite wall this must be brought into balance with the vdW floor (the
+        GARNET subclass sets vdW and Coulomb floors equal, so vdW stays above Coulomb
+        as both soften -- no opposite-charge contact collapse).
+        '''
+        return b * 4
+
+    @classmethod
+    def _vdw_block(cls, a, b, c, lam):
+        '''
+        Return ``(head_value, defs)`` for the vdW term: the RHS of
+        ``lennard_jones = <head_value>`` plus any ``;``-joined intermediate
+        definitions (``defs``, appended after the head, per the Lepton
+        define-after-use rule; ``''`` if none). Default = soft-core Lennard-Jones.
+        Overridden by the GARNET double-exponential subclass, leaving the coupling
+        plumbing in :meth:`_soft_core_energy` untouched.
+        '''
+        head = (f'4 * epsilon * {lam}^(1/{a}) * '
+                f'( lj_base^(12/{c}) - lj_base^(6/{c}) )')
+        defs = (f'lj_base = 1 / ( softcore_alpha * (1-{lam})^{cls._vdw_floor_power(b)} +(r/sigma)^{c} );'
+                'sigma = 0.5*(sigma1+sigma2);'
+                'epsilon = sqrt(epsilon1*epsilon2)')
+        return head, defs
     
     def set_lambda(self, value, context=None):
         if value <=0 or value > 1:

@@ -30,9 +30,26 @@ def isolde_start(session, show_splash=True):
     return session.isolde
 
 def isolde_set(session, time_steps_per_gui_update=None, temperature=None,
-        gpu_device_index=None, sim_fidelity_mode=None, symmetry_aware=None):
+        gpu_device_index=None, sim_fidelity_mode=None, symmetry_aware=None,
+        forcefield=None):
     isolde=isolde_start(session)
     sp = isolde.sim_params
+    if forcefield is not None:
+        available = isolde.forcefield_mgr.available_forcefields
+        if forcefield not in available:
+            raise UserError('Unknown forcefield "{}". Available: {}'.format(
+                forcefield, ', '.join(sorted(available))))
+        sp.forcefield = forcefield
+        # Apply the force field's recommended soft-core equilibration lambda. garnet's
+        # double-exponential has no r=0 singularity, so it runs at exact dexp (lambda=1)
+        # at equilibrium; AMBER's conflated lambda needs 0.95. Both come from the single
+        # force-field-aware default resolver (SimParams.set_to_default consults
+        # _FORCEFIELD_PARAM_DEFAULTS), which the widget Reset button uses too, so the
+        # command and the button always agree. The minimise lambda (wall soft-start) is
+        # shared, so it is left untouched here.
+        sp.set_to_default('nonbonded_softcore_lambda_equil')
+        session.logger.info('ISOLDE: force field set to "{}". Takes effect at the '
+            'next simulation start.'.format(forcefield))
     if time_steps_per_gui_update is not None:
         sp.sim_steps_per_gui_update=time_steps_per_gui_update
     if temperature is not None:
@@ -673,6 +690,7 @@ def _register_isolde_commands(logger):
 
     def register_isolde_set():
         from chimerax.isolde.openmm.sim_param_mgr import fidelity_modes
+        from chimerax.isolde.openmm.forcefields import default_forcefields, _extra_forcefields
         desc = CmdDesc(
             keyword = [
                 ('time_steps_per_gui_update', IntArg),
@@ -680,6 +698,7 @@ def _register_isolde_commands(logger):
                 ('gpu_device_index', IntArg),
                 ('sim_fidelity_mode', EnumOf(fidelity_modes.keys())),
                 ('symmetry_aware', BoolArg),
+                ('forcefield', EnumOf(tuple(default_forcefields) + tuple(_extra_forcefields))),
             ],
             synopsis = 'Adjust ISOLDE simulation settings',
         )

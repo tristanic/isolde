@@ -50,6 +50,18 @@ def error_cb(e):
 
 FLOAT_TYPE = defaults.FLOAT_TYPE
 
+# Force-field-specific overrides for parameter defaults. garnet's double-exponential
+# vdW has no r=0 singularity, so at equilibrium it runs at the exact dexp (lambda=1);
+# AMBER's conflated lambda needs the static 0.95 default. Consulted by
+# :meth:`SimParams.default_for` (and thus :meth:`set_to_default`) and by
+# `isolde set forcefield`, so the widget Reset button restores the *active* force
+# field's recommended value rather than the AMBER-centric static default.
+_FORCEFIELD_PARAM_DEFAULTS = {
+    'garnet': {
+        'nonbonded_softcore_lambda_equil': 1.0,
+    },
+}
+
 @param_properties
 @autodoc
 class SimParams(Param_Mgr):
@@ -83,6 +95,22 @@ class SimParams(Param_Mgr):
         import os
         device_index = os.environ.get('ISOLDE_DEVICE_INDEX')
         self.device_index = device_index
+
+    def default_for(self, key):
+        '''
+        The default value for ``key``, honouring any override for the currently
+        selected force field (:data:`_FORCEFIELD_PARAM_DEFAULTS`) before falling back
+        to the static default in :attr:`_default_params`.
+        '''
+        ff = getattr(self, 'forcefield', None)
+        ff_overrides = _FORCEFIELD_PARAM_DEFAULTS.get(ff, {})
+        if key in ff_overrides:
+            return ff_overrides[key]
+        return self._default_params[key][0]
+
+    def set_to_default(self, key):
+        '''Set one parameter back to its (force-field-aware) default value.'''
+        self.set_param(key, self.default_for(key))
 
     _default_params = {
         'restraint_max_force':                  (defaults.MAX_RESTRAINT_FORCE, OPENMM_FORCE_UNIT),
