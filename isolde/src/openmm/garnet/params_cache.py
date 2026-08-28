@@ -27,11 +27,13 @@ import os
 import numpy
 
 
-# Newest committed garnet weights (WIP, DTR-SF epoch 1/12; 38-wide features).
-# Not wired to any default-pointer constant in garnet_core, so we resolve it
-# relative to the garnet_core package. Override with $ISOLDE_GARNET_CHECKPOINT
-# or by passing checkpoint_path explicitly (later epochs land as dtr_sf_ep{N}.pt).
-_DEFAULT_CHECKPOINT_NAME = os.path.join('garnetff', 'trained_models', 'dtr_sf_r5c_ep1.pt')
+# Newest committed garnet weights (WIP DTR-SF; 38-wide features). Same architecture
+# as the earlier r5c round -- a drop-in retrain (r5d adds crystal-pressure/thermal
+# training terms; the inference featurize/predict path is unchanged). Not wired to
+# any default-pointer constant in garnet_core, so we resolve it relative to the
+# garnet_core package. Override with $ISOLDE_GARNET_CHECKPOINT or by passing
+# checkpoint_path explicitly (later rounds/epochs land as dtr_sf_<round>_ep{N}.pt).
+_DEFAULT_CHECKPOINT_NAME = os.path.join('garnetff', 'trained_models', 'dtr_sf_r5d_ep1.pt')
 
 
 def default_checkpoint_path():

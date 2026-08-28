@@ -152,7 +152,7 @@ ISOLDE build, both installed into **ChimeraX's own Python**:
    ```
    "C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" --nogui --cmd "pip install -e C:\path\to\garnet-isolde ; exit"
    ```
-   The committed checkpoint (`garnetff/trained_models/dtr_sf_r5c_ep1.pt`) is
+   The committed checkpoint (`garnetff/trained_models/dtr_sf_r5d_ep1.pt`) is
    resolved relative to the installed `garnet_core`. To use a different epoch,
    set the `ISOLDE_GARNET_CHECKPOINT` environment variable to its path.
 
