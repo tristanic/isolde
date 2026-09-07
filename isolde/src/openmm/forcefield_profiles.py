@@ -72,14 +72,24 @@ class ForceFieldProfile:
 # single-defaults behaviour.
 _EMPTY_PROFILE = ForceFieldProfile('_default')
 
-# GARNET: the double-exponential vdW has no r->0 singularity, so at equilibrium it
-# runs at the exact dexp (soft-core lambda = 1), unlike AMBER's conflated lambda
-# (0.95). (This supersedes the former module-level _FORCEFIELD_PARAM_DEFAULTS dict in
-# sim_param_mgr.py.) Every selectable GARNET incarnation (the bare ``garnet`` alias
-# plus each ``garnet-{run}`` variant) shares this profile -- they differ in checkpoint
-# / functional form, not in these session-parameter defaults.
+# GARNET: the double-exponential vdW has no r->0 singularity, so it runs at the exact
+# dexp (soft-core lambda = 1) at BOTH equilibrium and minimisation, unlike AMBER (whose
+# r^-12 wall needs softening -- lambda 0.95 equil / 0.8 minimise -- to tame near-singular
+# clash forces). garnet's finite wall gives bounded forces even on a severe clash, so the
+# minimiser resolves clashes at lambda=1 without soft-start softening.
+#   ⚠ lambda_minimize=1.0 is also load-bearing for stability: at lambda<1 the softened
+#   walls + the (AMBER-derived, interim) GB implicit solvent DISSOCIATE metal-ion
+#   coordination shells during the startup minimisation (validated on Mg(H2O)5-acetate:
+#   min @ lambda=0.8 -> shell blows to >4 A and lambda->1 cannot recover it; min @ 1.0 ->
+#   stable at ~2.12 A). It remains a tunable knob (a user with an extreme clash and no
+#   metals can lower it), but the default must be 1.0.
+# (This supersedes the former module-level _FORCEFIELD_PARAM_DEFAULTS dict in
+# sim_param_mgr.py.) Every selectable GARNET incarnation (the bare ``garnet`` alias plus
+# each ``garnet-{run}`` variant) shares this profile -- they differ in checkpoint /
+# functional form, not in these session-parameter defaults.
 _GARNET_PROFILE_DEFAULTS = {
     'nonbonded_softcore_lambda_equil': 1.0,
+    'nonbonded_softcore_lambda_minimize': 1.0,
 }
 _GARNET_PROFILE_NAMES = ('garnet', 'garnet-r5d', 'garnet-r10b')
 
