@@ -1331,6 +1331,10 @@ class SimHandler:
         # routes the build below and disables the AMBER-LJ-specific soft-core path
         # (the double-exponential vdW is inherently soft-core). AMBER is unaffected.
         self._is_garnet = getattr(ff, 'is_garnet', False)
+        # Which garnet incarnation (e.g. 'garnet-r5d' / 'garnet-r10b'); None for AMBER.
+        # The build/soft-core paths are form-agnostic (they key off the predicted parameters,
+        # not this tag), but it is recorded for profiles, logging and any variant-specific UI.
+        self._garnet_variant = getattr(ff, 'variant', None)
         ligand_db = forcefield_mgr.ligand_db(sim_params.forcefield)
 #        ff = self._forcefield = self.define_forcefield(forcefields[sim_params.forcefield])
 
@@ -1965,30 +1969,68 @@ class SimHandler:
         from .garnet.soft_core import (
             GarnetNonbondedSoftcoreForce, NBGroupGarnetNonbondedSoftcoreForce,
             SymmetryAwareGarnetNonbondedSoftcoreForce, GarnetNonbondedSoftcoreExceptionForce,
+            GarnetPeratomNonbondedSoftcoreForce, NBGroupGarnetPeratomNonbondedSoftcoreForce,
+            SymmetryAwareGarnetPeratomNonbondedSoftcoreForce,
+            GarnetPeratomGuardNonbondedSoftcoreForce,
+            NBGroupGarnetPeratomGuardNonbondedSoftcoreForce,
+            SymmetryAwareGarnetPeratomGuardNonbondedSoftcoreForce,
+            GarnetPeratomNonbondedSoftcoreExceptionForce,
             find_garnet_nonbonded_forces)
         p = self._params
-        coulomb, ci, dexp, di, extras = find_garnet_nonbonded_forces(system)
+        coulomb, ci, dexp, di, extras, guards = find_garnet_nonbonded_forces(system)
         if coulomb is None or dexp is None:
             raise RuntimeError('garnet soft-core conversion could not locate the plain '
                 'Coulomb / double-exponential nonbonded forces')
-        # dexp globals + vdW 1-4/1-3 scales (off the pre-built companions, if present).
+
+        # Functional form, read off the built forces themselves (not the FF name), so the
+        # converter is variant-agnostic: the per-atom wall carries a per-particle ``bee``
+        # (the uniform wall a scalar ``alpha`` global instead); the short-range Coulomb
+        # guard is present iff its two forces were found.
+        dexp_pnames = {dexp.getPerParticleParameterName(k)
+                       for k in range(dexp.getNumPerParticleParameters())}
+        per_atom = 'bee' in dexp_pnames
+        has_guard = len(guards) > 0
+
+        # dexp shape globals: old form carries alpha+beta; per-atom carries only beta.
         dexp_alpha = dexp_beta = None
         for k in range(dexp.getNumGlobalParameters()):
             nm = dexp.getGlobalParameterName(k)
             if nm == 'alpha': dexp_alpha = dexp.getGlobalParameterDefaultValue(k)
             elif nm == 'beta': dexp_beta = dexp.getGlobalParameterDefaultValue(k)
-        vdw14 = 0.0; f13 = None; vdw13 = 0.0
+        # vdW 1-4 / gated-1-3 dexp companions (off the pre-built forces, if present).
+        vdw14 = 0.0; f14 = None; f13 = None; vdw13 = 0.0
         for f, _idx in extras:
             gn = {f.getGlobalParameterName(k): k for k in range(f.getNumGlobalParameters())}
             if 'w14vdw' in gn:
-                vdw14 = f.getGlobalParameterDefaultValue(gn['w14vdw'])
+                f14, vdw14 = f, f.getGlobalParameterDefaultValue(gn['w14vdw'])
             elif 'w13vdw' in gn:
                 f13, vdw13 = f, f.getGlobalParameterDefaultValue(gn['w13vdw'])
+        # Guard forces (per-atom form only): the nonbonded ``cgw`` force (carries per-atom
+        # ``bg``) + its 1-4 ``w14cg`` companion. Read off ``cgw`` and the 1-4 scale.
+        guard_nb = guard14 = None; cgw = None; cg_scale = 0.0
+        for f, _idx in guards:
+            if isinstance(f, openmm.CustomNonbondedForce):
+                guard_nb = f
+            else:
+                guard14 = f
+        if guard_nb is not None:
+            gn = {guard_nb.getGlobalParameterName(k): k
+                  for k in range(guard_nb.getNumGlobalParameters())}
+            cgw = guard_nb.getGlobalParameterDefaultValue(gn['cgw'])
+        if guard14 is not None:
+            gn = {guard14.getGlobalParameterName(k): k
+                  for k in range(guard14.getNumGlobalParameters())}
+            cg_scale = guard14.getGlobalParameterDefaultValue(gn['w14cg'])
 
-        param_dict = {'a': p.nonbonded_softcore_a, 'b': p.nonbonded_softcore_b,
-            'c': p.nonbonded_softcore_c, 'nb_lambda': p.nonbonded_softcore_lambda_minimize,
-            'alpha': p.nonbonded_softcore_alpha,
-            'dexp_alpha': dexp_alpha, 'dexp_beta': dexp_beta}
+        base_kw = dict(a=p.nonbonded_softcore_a, b=p.nonbonded_softcore_b,
+            c=p.nonbonded_softcore_c, nb_lambda=p.nonbonded_softcore_lambda_minimize,
+            alpha=p.nonbonded_softcore_alpha)
+        if per_atom and has_guard:
+            vdw_kw = dict(dexp_beta=dexp_beta, coulomb_guard_w=cgw)
+        elif per_atom:
+            vdw_kw = dict(dexp_beta=dexp_beta)
+        else:
+            vdw_kw = dict(dexp_alpha=dexp_alpha, dexp_beta=dexp_beta)
 
         groups = getattr(self, '_symmetry_particle_groups', None)
         nb_max = int(getattr(self._params, 'nb_groups_max', 1) or 1)
@@ -2000,40 +2042,71 @@ class SimHandler:
             nb_groups = None
             self._nb_particle_groups = None
 
-        if groups is not None:
-            sf = SymmetryAwareGarnetNonbondedSoftcoreForce(
-                symmetry_ngroups=self._symmetry_ngroups,
-                symmetry_group_weights=getattr(self, '_symmetry_group_table', None),
-                n_nb_groups=nb_max, **param_dict)
-        elif nb_on:
-            sf = NBGroupGarnetNonbondedSoftcoreForce(n_nb_groups=nb_max, **param_dict)
+        # Force class = (functional form) x (symmetry / nb-group / plain).
+        if per_atom and has_guard:
+            cls_sym = SymmetryAwareGarnetPeratomGuardNonbondedSoftcoreForce
+            cls_grp = NBGroupGarnetPeratomGuardNonbondedSoftcoreForce
+            cls_plain = GarnetPeratomGuardNonbondedSoftcoreForce
+        elif per_atom:
+            cls_sym = SymmetryAwareGarnetPeratomNonbondedSoftcoreForce
+            cls_grp = NBGroupGarnetPeratomNonbondedSoftcoreForce
+            cls_plain = GarnetPeratomNonbondedSoftcoreForce
         else:
-            sf = GarnetNonbondedSoftcoreForce(**param_dict)
-        sfb = GarnetNonbondedSoftcoreExceptionForce(
-            a=param_dict['a'], b=param_dict['b'], c=param_dict['c'],
-            nb_lambda=param_dict['nb_lambda'], alpha=param_dict['alpha'],
-            dexp_alpha=dexp_alpha, dexp_beta=dexp_beta)
+            cls_sym = SymmetryAwareGarnetNonbondedSoftcoreForce
+            cls_grp = NBGroupGarnetNonbondedSoftcoreForce
+            cls_plain = GarnetNonbondedSoftcoreForce
+        if groups is not None:
+            sf = cls_sym(symmetry_ngroups=self._symmetry_ngroups,
+                symmetry_group_weights=getattr(self, '_symmetry_group_table', None),
+                n_nb_groups=nb_max, **base_kw, **vdw_kw)
+        elif nb_on:
+            sf = cls_grp(n_nb_groups=nb_max, **base_kw, **vdw_kw)
+        else:
+            sf = cls_plain(**base_kw, **vdw_kw)
+
+        # Exception force, matched to the form (per-atom carries bee1/bee2 [+ guard]).
+        if per_atom:
+            sfb = GarnetPeratomNonbondedSoftcoreExceptionForce(
+                a=base_kw['a'], b=base_kw['b'], c=base_kw['c'],
+                nb_lambda=base_kw['nb_lambda'], alpha=base_kw['alpha'],
+                dexp_beta=dexp_beta, coulomb_guard_w=(cgw if has_guard else None))
+        else:
+            sfb = GarnetNonbondedSoftcoreExceptionForce(
+                a=base_kw['a'], b=base_kw['b'], c=base_kw['c'],
+                nb_lambda=base_kw['nb_lambda'], alpha=base_kw['alpha'],
+                dexp_alpha=dexp_alpha, dexp_beta=dexp_beta)
         sf.setForceGroup(NONBONDED_FORCE_GROUP)
         sfb.setForceGroup(NONBONDED_FORCE_GROUP)
         sf.setNonbondedMethod(dexp.getNonbondedMethod())
         sf.setCutoffDistance(dexp.getCutoffDistance())
 
         n_real = int(getattr(self, '_num_real_atoms', n_particles))
-        # charge: from the (symmetry-extended) Coulomb NB (n_total). sigma/eps: from the
-        # dexp CNB (n_real), extended to copies via parent_index.
+        # charge: from the (symmetry-extended) Coulomb NB (n_total). sigma/eps (+ per-atom
+        # bee / guard bg): from the dexp / guard CNBs (n_real), extended to copies via parent.
         charges = [coulomb.getParticleParameters(j)[0].value_in_unit(_unit.elementary_charge)
                    for j in range(coulomb.getNumParticles())]
         sig = [0.0] * n_particles; eps = [0.0] * n_particles
+        bee = [0.0] * n_particles if per_atom else None
+        bg = [0.0] * n_particles if has_guard else None
         for j in range(dexp.getNumParticles()):
-            s, e = dexp.getParticleParameters(j)
-            sig[j], eps[j] = float(s), float(e)
+            pv = dexp.getParticleParameters(j)
+            sig[j], eps[j] = float(pv[0]), float(pv[1])
+            if per_atom:
+                bee[j] = float(pv[2])
+        if has_guard and guard_nb is not None:
+            for j in range(guard_nb.getNumParticles()):
+                bg[j] = float(guard_nb.getParticleParameters(j)[1])   # [chg, bg]
         if groups is not None:
             for cidx, parent in enumerate(self._symmetry_copies['parent_index']):
-                jt = n_real + cidx
-                sig[jt], eps[jt] = sig[int(parent)], eps[int(parent)]
+                jt = n_real + cidx; pi = int(parent)
+                sig[jt], eps[jt] = sig[pi], eps[pi]
+                if per_atom: bee[jt] = bee[pi]
+                if has_guard: bg[jt] = bg[pi]
         for j in range(n_particles):
             pp = [charges[j], sig[j], eps[j]]
             if nb_on: pp.append(float(nb_groups[j]))
+            if per_atom: pp.append(bee[j])
+            if per_atom and has_guard: pp.append(bg[j])
             if groups is not None: pp.append(float(groups[j]))
             sf.addParticle(pp)
 
@@ -2046,30 +2119,54 @@ class SimHandler:
         for k in range(coulomb.getNumExceptions()):
             a1, a2, cp, _cs, _ce = coulomb.getExceptionParameters(k)
             qprod[frozenset((a1, a2))] = cp.value_in_unit(_unit.elementary_charge ** 2)
-        # Add back the 1-4 (vdW + Coulomb) as soft-core bonds.
-        if vdw14 != 0.0:
-            # f14 lists the authoritative 1-4 set; carry each pair's vdW + Coulomb.
-            f14 = next(f for f, _ in extras
-                       if 'w14vdw' in {f.getGlobalParameterName(k)
-                                       for k in range(f.getNumGlobalParameters())})
+
+        def _exc_payload(a1, a2, vscale):
+            '''Per-bond parameters for the soft-core exception force, ordered to match its
+            declaration (charge_prod, sigma/eps, [bee1/bee2], vdw_scale, [guard 1-4]).'''
+            out = [qprod.get(frozenset((a1, a2)), 0.0), sig[a1], sig[a2], eps[a1], eps[a2]]
+            if per_atom:
+                out += [bee[a1], bee[a2]]
+            out.append(vscale)
+            if per_atom and has_guard:
+                # raw charge product for the guard prefactor + coulomb14scale + per-atom bg
+                out += [charges[a1] * charges[a2], cg_scale, bg[a1], bg[a2]]
+            return out
+
+        # Re-add the 1-4 vdW + Coulomb (+ guard). Authoritative 1-4 set: the vdW companion if
+        # present (covers every 1-4 pair), else the guard companion, else the charged pairs.
+        added14 = set()
+        if f14 is not None:
             for bk in range(f14.getNumBonds()):
-                a1, a2, _params = f14.getBondParameters(bk)
-                sfb.addBond(a1, a2, [qprod.get(frozenset((a1, a2)), 0.0),
-                                     sig[a1], sig[a2], eps[a1], eps[a2], vdw14])
-        else:
-            # No 1-4 vdW: only the charged 1-4 Coulomb needs re-adding (vdw_scale = 0).
-            for pair, q in qprod.items():
-                if q != 0.0:
-                    a1, a2 = tuple(pair)
-                    sfb.addBond(a1, a2, [q, sig[a1], sig[a2], eps[a1], eps[a2], 0.0])
-        # Gated 1-3 vdW (metals only; no 1-3 Coulomb).
+                a1, a2, _pp = f14.getBondParameters(bk)
+                sfb.addBond(a1, a2, _exc_payload(a1, a2, vdw14))
+                added14.add(frozenset((a1, a2)))
+        elif per_atom and has_guard and guard14 is not None:
+            for bk in range(guard14.getNumBonds()):
+                a1, a2, _pp = guard14.getBondParameters(bk)
+                sfb.addBond(a1, a2, _exc_payload(a1, a2, 0.0))
+                added14.add(frozenset((a1, a2)))
+        for pair, q in qprod.items():
+            if q != 0.0 and pair not in added14:
+                a1, a2 = tuple(pair)
+                sfb.addBond(a1, a2, _exc_payload(a1, a2, 0.0))
+                added14.add(pair)
+        # Gated 1-3 vdW (metals only; no 1-3 Coulomb, and the guard is inert here -- its raw
+        # charge product is passed as 0 so cg_pref -> 0).
         if f13 is not None and vdw13 != 0.0:
             for bk in range(f13.getNumBonds()):
-                a1, a2, _params = f13.getBondParameters(bk)
-                sfb.addBond(a1, a2, [0.0, sig[a1], sig[a2], eps[a1], eps[a2], vdw13])
+                a1, a2, _pp = f13.getBondParameters(bk)
+                payload = [0.0, sig[a1], sig[a2], eps[a1], eps[a2]]
+                if per_atom:
+                    payload += [bee[a1], bee[a2]]
+                payload.append(vdw13)
+                if per_atom and has_guard:
+                    payload += [0.0, cg_scale, bg[a1], bg[a2]]
+                sfb.addBond(a1, a2, payload)
 
-        # Swap: remove the plain forces (highest index first) then add the soft-core ones.
-        for idx in sorted([ci, di] + [ix for _, ix in extras], reverse=True):
+        # Swap: remove the plain Coulomb/dexp + vdW companions + guard forces (highest index
+        # first), then add the combined soft-core force(s) -- the guard now lives inside them.
+        remove = [ci, di] + [ix for _, ix in extras] + [ix for _, ix in guards]
+        for idx in sorted(remove, reverse=True):
             system.removeForce(idx)
         system.addForce(sf)
         if sfb.getNumBonds():
@@ -3897,6 +3994,30 @@ class SimHandler:
         std = gbforce.getStandardParameters(top)   # (n_real, 2): (or, sr)
         n_real = len(std)
         pparams[:n_real, 1:] = std
+        # ⚠ INTERIM garnet metal GB-radius hot-fix (see _garnet_interim_gb_radius_override).
+        # GBn1 has no Born radius for metals, so getStandardParameters falls back to a 1.5 Å
+        # default that is far too small for a +2 cation -- GB then over-solvates it and ejects
+        # its coordination shell. Raise metal radii into a safe in-range value; garnet-only.
+        if self._is_garnet:
+            _garnet_interim_gb_radius_override(self._atoms, pparams[:n_real, 1],
+                                               self.session.logger)
+        # GBn1's neck lookup is only defined for radii in [1, 2] Angstrom (the C/H/N/O/F/P/S/Cl
+        # set it was parameterised for). garnet can parameterise a ligand containing an element
+        # outside that set (e.g. silicon at 2.1 Å), whose standard GB radius falls out of range
+        # and would make ``addParticles`` raise. Clamp any such radius into the valid window so
+        # the (approximate) implicit solvent can still run, warning which elements were affected.
+        # A proper per-element radius -- or a garnet-native GB head -- is the real fix.
+        radii = pparams[:n_real, 1]
+        oor = numpy.where((radii < 0.1) | (radii > 0.2))[0]
+        if len(oor):
+            from collections import Counter
+            elts = Counter(self._atoms[int(i)].element.name for i in oor)
+            self.session.logger.warning(
+                'Implicit solvent (GBn1): {} atom(s) have a GB radius outside the valid '
+                '1-2 Angstrom range ({}); clamping so the simulation can run. Their solvation '
+                'is approximate -- consider turning GBSA off for models with these elements.'
+                .format(len(oor), ', '.join('{}x {}'.format(n, e) for e, n in elts.items())))
+            numpy.clip(radii, 0.1, 0.2, out=radii)
         if groups is not None:
             # Each copy inherits its parent's offset/scaled radius.
             parent_index = self._symmetry_copies['parent_index']
@@ -3915,6 +4036,59 @@ class SimHandler:
         system.addForce(gbforce)
         # set the base NonbondedForce dielectric to vacuum
         f.setReactionFieldDielectric(1.0)
+
+# ======================================================================================
+# ⚠⚠ INTERIM HOT-FIX — remove when garnet gets its own implicit-solvent treatment. ⚠⚠
+# ======================================================================================
+# garnet runs under ISOLDE's AMBER-derived GBn1 (igb=7) implicit solvent, which carries
+# Born radii only for the organic non-metals (C,H,N,O,F,P,S,Cl); every metal falls through
+# to OpenMM's Bondi ``default_radius`` of 1.5 Å. That radius is far too small for a compact
+# cation, so GB's ``q²/B`` self-solvation is grossly over-favourable and the ion ejects its
+# own coordination shell. Validated headless on [Mg(H2O)5(acetato)]⁺ (r10b): under GBn1 the
+# octahedral first shell dissociates (waters to >15 Å); bumping Mg's GB radius to ~1.9-2.0 Å
+# -- still inside GBn1's [1,2] Å neck range -- makes the intact shell the global minimum
+# again, at ~2.12 Å vs the 2.06 Å experiment, without over-cohering. AMBER is unaffected (its
+# metal ions are separately parameterised; this is gated on garnet). This is a STOP-GAP so
+# garnet sims with metals behave reasonably; the real fix is a garnet-native / co-trained
+# implicit solvent -- see garnet-isolde docs/garnet_native_implicit_solvent_brief.md.
+_GARNET_INTERIM_GB_METAL_RADIUS_NM = 0.20   # 2.0 Å -- GBn1's max admissible neck radius
+
+# Fallback metal set if a ChimeraX Element ever lacks ``is_metal`` (alkali, alkaline-earth,
+# transition, lanthanide/actinide, post-transition; deliberately generous).
+_METAL_ATOMIC_NUMBERS = frozenset(
+    [3, 4, 11, 12, 13] + list(range(19, 31)) + [31] + list(range(37, 49)) + [49, 50]
+    + list(range(55, 84)) + list(range(87, 104)))
+
+
+def _garnet_interim_gb_radius_override(atoms, radii_nm, logger):
+    '''
+    INTERIM stop-gap (see the banner above): raise every metal atom's GBn1 Born radius to a
+    safe in-range value so garnet metal ions do not over-solvate and eject their coordination
+    shell. ``radii_nm`` is the per-real-atom GB-radius column (a numpy view, nm), edited in
+    place. Only radii *below* the target are raised (never lowered -- the caller's [1,2] Å
+    clamp handles out-of-range-high, e.g. Si). Returns the number of atoms bumped.
+    '''
+    from collections import Counter
+    target = _GARNET_INTERIM_GB_METAL_RADIUS_NM
+    bumped = Counter()
+    for i, a in enumerate(atoms):
+        el = a.element
+        is_metal = getattr(el, 'is_metal', None)
+        if is_metal is None:
+            is_metal = el.number in _METAL_ATOMIC_NUMBERS
+        if is_metal and radii_nm[i] < target:
+            radii_nm[i] = target
+            bumped[el.name] += 1
+    if bumped and logger is not None:
+        logger.warning(
+            'garnet implicit solvent (INTERIM hot-fix): GBn1 has no Born radius for {} -- '
+            'raised from the 1.5 Å default to {:.1f} Å so the ion does not over-solvate and '
+            'eject its coordination shell. Metal solvation is approximate; the real fix is a '
+            'garnet-native implicit-solvent treatment.'.format(
+                ', '.join('{}x {}'.format(n, e) for e, n in sorted(bumped.items())),
+                target * 10))
+    return sum(bumped.values())
+
 
 class _SoftCoreNonbondedParamMgr:
     def __init__(self, sim_handler, param_mgr):

@@ -126,7 +126,17 @@ def place_ligand(session, ligand_id, model=None, position=None, bfactor=None, ch
                                       b_factor=bfactor, residue_name=resname)
         if chemcomp_id is not None:
             r.isolde_chemcomp_id = chemcomp_id
-        if use_md_template and len(r.atoms) > 3:
+        from chimerax.isolde.openmm.forcefields import is_garnet_forcefield
+        if use_md_template and len(r.atoms) > 3 \
+                and is_garnet_forcefield(session.isolde.sim_params.forcefield):
+            # GARNET parameterises any residue directly from its topology, so there is no
+            # AMBER MD template to match (and the handle has no ``_templates``). Skip the
+            # template-fixing step; garnet parameterises the placed ligand when the sim
+            # (re)builds. The CCD/SMILES coordinate template already gives sensible chemistry.
+            session.logger.info(
+                'place_ligand: GARNET force field selected; skipping MD-template matching '
+                '(garnet parameterises the ligand from its topology).')
+        elif use_md_template and len(r.atoms) > 3:
             ff = session.isolde.forcefield_mgr[session.isolde.sim_params.forcefield]
             if md_template_name is None:
                 from chimerax.isolde.openmm.amberff.template_utils import ccd_to_known_template

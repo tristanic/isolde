@@ -59,6 +59,39 @@ def parameterise_cmd(session, residues, override=False, net_charge=None,
         if any(a.element.is_metal for a in r.atoms):
             return True
         return any(nb.element.is_metal for a in r.atoms for nb in a.neighbors)
+
+    # --- Chemistry preflight -------------------------------------------------
+    # `isolde parameterise` inspects the chemistry but MUST NOT modify or
+    # silently "repair" it. Refuse up front on an obvious bonding pathology or an
+    # incomplete valence (e.g. missing hydrogens) rather than feeding antechamber
+    # something broken or guessing a protonation state the user did not choose;
+    # and WARN -- never rebuild -- when a residue's heavy-atom composition
+    # diverges from the CCD component of its name. Metal-involved residues are
+    # left to the metal-site pipeline, which handles their chemistry itself.
+    from chimerax.isolde.atomic import chem_preflight
+    _pf_problems = {}
+    _pf_seen = set()
+    for r in residues:
+        if r.name in _pf_seen or _metal_involved(r):
+            continue
+        _pf_seen.add(r.name)
+        over, under = chem_preflight.residue_valence_problems(r)
+        if over or under:
+            _pf_problems[r.name] = chem_preflight.format_valence_problems(r, over, under)
+            continue
+        _ccd_msg = chem_preflight.format_ccd_warning(
+            chem_preflight.ccd_comparison(session, r))
+        if _ccd_msg:
+            session.logger.warning(_ccd_msg)
+    if _pf_problems:
+        if always_raise_errors:
+            raise UserError('\n\n'.join(_pf_problems.values()))
+        for _msg in _pf_problems.values():
+            session.logger.warning(_msg)
+        residues = Residues([r for r in residues if r.name not in _pf_problems])
+        if not len(residues):
+            return
+
     metal_seeds = [r for r in residues if _metal_involved(r)]
     handled_metal = set()
     if metal_seeds:

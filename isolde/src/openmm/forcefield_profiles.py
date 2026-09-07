@@ -72,17 +72,20 @@ class ForceFieldProfile:
 # single-defaults behaviour.
 _EMPTY_PROFILE = ForceFieldProfile('_default')
 
+# GARNET: the double-exponential vdW has no r->0 singularity, so at equilibrium it
+# runs at the exact dexp (soft-core lambda = 1), unlike AMBER's conflated lambda
+# (0.95). (This supersedes the former module-level _FORCEFIELD_PARAM_DEFAULTS dict in
+# sim_param_mgr.py.) Every selectable GARNET incarnation (the bare ``garnet`` alias
+# plus each ``garnet-{run}`` variant) shares this profile -- they differ in checkpoint
+# / functional form, not in these session-parameter defaults.
+_GARNET_PROFILE_DEFAULTS = {
+    'nonbonded_softcore_lambda_equil': 1.0,
+}
+_GARNET_PROFILE_NAMES = ('garnet', 'garnet-r5d', 'garnet-r10b')
+
 _PROFILES = {
-    # GARNET: the double-exponential vdW has no r->0 singularity, so at
-    # equilibrium it runs at the exact dexp (soft-core lambda = 1), unlike AMBER's
-    # conflated lambda (0.95). (This supersedes the former module-level
-    # _FORCEFIELD_PARAM_DEFAULTS dict in sim_param_mgr.py.)
-    'garnet': ForceFieldProfile(
-        'garnet',
-        param_defaults={
-            'nonbonded_softcore_lambda_equil': 1.0,
-        },
-    ),
+    name: ForceFieldProfile(name, param_defaults=dict(_GARNET_PROFILE_DEFAULTS))
+    for name in _GARNET_PROFILE_NAMES
 }
 
 

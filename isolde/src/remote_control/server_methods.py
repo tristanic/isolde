@@ -37,11 +37,16 @@ def run_chimerax_command(session, commands:'string or list of strings'):
     if not isinstance(commands, list):
         commands = [commands]
     from chimerax.core.commands import run
+    from chimerax.core.errors import NotABug
     try:
         for cmd in commands:
             run(session, cmd, log=False)
     except NotABug as e:
-        logger.info(str(e))
+        # NotABug is the base class of UserError/LimitationError/NonChimeraError:
+        # expected, user-facing errors. Log the clean message and return normally
+        # (the REST layer captures the log). Any other exception is a genuine bug
+        # and is left to propagate so it surfaces with a full traceback.
+        session.logger.info(str(e))
     return {}
 
 

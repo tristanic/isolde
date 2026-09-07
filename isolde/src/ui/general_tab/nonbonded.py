@@ -278,8 +278,9 @@ class PotentialIndicator(QWidget):
         ``(radii, lambda, a, b, c, alpha)`` signature (garnet uses default dexp alpha/beta
         for the illustrative curve).
         '''
+        from chimerax.isolde.openmm.forcefields import is_garnet_forcefield
         ff = getattr(self._param_mgr, 'forcefield', 'amber14')
-        if ff == 'garnet':
+        if is_garnet_forcefield(ff):
             from chimerax.isolde.openmm.garnet.soft_core import potential_values as pv
         else:
             from chimerax.isolde.openmm.custom_forces import NonbondedSoftcoreForce
@@ -287,7 +288,9 @@ class PotentialIndicator(QWidget):
         return pv(radii_nm, l, a, b, c, alpha)
 
     def _vdw_label(self):
-        return 'dexp' if getattr(self._param_mgr, 'forcefield', 'amber14') == 'garnet' else 'L-J'
+        from chimerax.isolde.openmm.forcefields import is_garnet_forcefield
+        return 'dexp' if is_garnet_forcefield(
+            getattr(self._param_mgr, 'forcefield', 'amber14')) else 'L-J'
 
     def _update_plots_if_necessary(self, _, data):
         name, val = data

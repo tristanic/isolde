@@ -2044,12 +2044,14 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
         cs = f'{coulomb_scale} * ' if coulomb_scale else ''
         vdw_head, vdw_defs = cls._vdw_block(a, b, c, lam)
         vdw_defs_clause = (vdw_defs.rstrip(';') + ';') if vdw_defs else ''
+        coulomb_head, coulomb_defs = cls._coulomb_block(b, c, lam, cs)
+        coulomb_defs_clause = (';' + coulomb_defs.rstrip(';')) if coulomb_defs else ''
         return (
             'lennard_jones + coulombic;'
             f'lennard_jones = {vdw_head};'
             f'{vdw_defs_clause}'
-            f'coulombic = {cs}{ONE_ON_4_PI_EPS0} * charge1 * charge2 * '
-                f'( 1 / ( softcore_alpha*(1-{lam})^({cls._coulomb_floor_power(b)}) + r^{c} ) )^(1/{c})'
+            f'coulombic = {coulomb_head}'
+            + coulomb_defs_clause
             + ((';' + extra_defs.rstrip(';')) if extra_defs else '')
             )
 
@@ -2090,6 +2092,27 @@ class NonbondedSoftcoreForce(CustomNonbondedForce):
                 'sigma = 0.5*(sigma1+sigma2);'
                 'epsilon = sqrt(epsilon1*epsilon2)')
         return head, defs
+
+    @classmethod
+    def _coulomb_block(cls, b, c, lam, cs):
+        '''
+        Return ``(head_value, defs)`` for the Coulomb term: the RHS of
+        ``coulombic = <head_value>`` plus any ``;``-joined intermediate definitions
+        (appended after the head, per the same Lepton define-after-use rule as
+        :meth:`_vdw_block`; ``''`` if none). ``cs`` is the already-formatted
+        coupling-scale prefix (``''`` or ``'<scale> * '``) that multiplies the whole
+        electrostatics term.
+
+        Default = the soft-core reaction-field-free Coulomb (a single term, so ``cs``
+        needs no parentheses -- byte-for-byte the historical expression). A subclass
+        that adds an electrostatics *correction* (e.g. GARNET's short-range Coulomb
+        guard) returns ``bare + correction`` parenthesised so ``cs`` scales both,
+        keeping the correction faded in lockstep with the Coulomb it guards -- the
+        potential-agnostic coupling plumbing in :meth:`_soft_core_energy` is untouched.
+        '''
+        head = (f'{cs}{ONE_ON_4_PI_EPS0} * charge1 * charge2 * '
+                f'( 1 / ( softcore_alpha*(1-{lam})^({cls._coulomb_floor_power(b)}) + r^{c} ) )^(1/{c})')
+        return head, ''
     
     def set_lambda(self, value, context=None):
         if value <=0 or value > 1:

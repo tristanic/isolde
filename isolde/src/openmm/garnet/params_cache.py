@@ -36,14 +36,38 @@ import numpy
 _DEFAULT_CHECKPOINT_NAME = os.path.join('garnetff', 'trained_models', 'dtr_sf_r5d_ep1.pt')
 
 
+def _garnet_repo_root():
+    import garnet_core
+    return os.path.dirname(os.path.dirname(os.path.abspath(garnet_core.__file__)))
+
+
 def default_checkpoint_path():
     '''Absolute path to the default garnet checkpoint (env override honoured).'''
     override = os.environ.get('ISOLDE_GARNET_CHECKPOINT')
     if override:
         return override
-    import garnet_core
-    repo = os.path.dirname(os.path.dirname(os.path.abspath(garnet_core.__file__)))
-    return os.path.join(repo, _DEFAULT_CHECKPOINT_NAME)
+    return os.path.join(_garnet_repo_root(), _DEFAULT_CHECKPOINT_NAME)
+
+
+def resolve_checkpoint_path(checkpoint_path=None):
+    '''
+    Resolve a force-field handle's ``checkpoint_path`` to an absolute path.
+
+    * ``None`` -> the default checkpoint (``$ISOLDE_GARNET_CHECKPOINT`` honoured);
+      this is the bare ``garnet`` alias's behaviour, unchanged from before.
+    * an absolute path, or a relative path that already exists from the cwd ->
+      used verbatim (explicit user/dev override).
+    * a repo-relative name (how the force-field registry pins each ``garnet-{run}``
+      variant, e.g. ``garnetff/trained_models/dtr_sf_r10b_ep1.pt``) -> resolved
+      against the garnet_core repo root, the same base ``default_checkpoint_path``
+      uses. An explicit variant checkpoint deliberately does NOT consult the env
+      override, so selecting ``garnet-r10b`` is deterministic.
+    '''
+    if checkpoint_path is None:
+        return default_checkpoint_path()
+    if os.path.isabs(checkpoint_path) or os.path.exists(checkpoint_path):
+        return checkpoint_path
+    return os.path.join(_garnet_repo_root(), checkpoint_path)
 
 
 def _to_numpy(x):
@@ -62,7 +86,8 @@ class SubsetParameters:
     params...)`` tuples; per-atom arrays are numpy, length ``n_particles``.
     '''
     def __init__(self, n_particles, charges, sigmas, epsilons,
-                 bonds, angles, propers, impropers, has_oop, globals_, missing_atoms):
+                 bonds, angles, propers, impropers, has_oop, globals_, missing_atoms,
+                 bee=None, cg_b=None):
         self.n_particles = n_particles
         self.charges = charges
         self.sigmas = sigmas
@@ -72,8 +97,13 @@ class SubsetParameters:
         self.propers = propers        # [(i, j, k, l, [k1..k6]), ...]
         self.impropers = impropers    # [(kind, (i, j, k, l), payload), ...]
         self.has_oop = has_oop        # True -> impropers are harmonic OOP, else periodic
-        self.globals = globals_       # {'coulomb14scale', 'dexp_alpha', 'dexp_beta', ...}
+        self.globals = globals_       # {'coulomb14scale', 'dexp_beta', ...[+form-specific]}
         self.missing_atoms = missing_atoms   # atoms with no cached parameters (should be empty)
+        # Optional per-particle arrays (length n_particles) for later garnet forms, or None
+        # when the feature is off for this checkpoint. ``bee``: per-atom repulsive-wall decay
+        # (per-atom-wall form). ``cg_b``: per-atom Coulomb-guard decay (guard form).
+        self.bee = bee
+        self.cg_b = cg_b
 
 
 class GarnetParameters:
@@ -85,8 +115,15 @@ class GarnetParameters:
     '''
     def __init__(self, structure, checkpoint_path=None):
         self.structure = structure
-        self.checkpoint_path = checkpoint_path or default_checkpoint_path()
+        self.checkpoint_path = resolve_checkpoint_path(checkpoint_path)
         self._per_atom = {}       # Atom -> (charge, sigma, epsilon)
+        # Optional per-atom quantities that only later garnet incarnations predict
+        # (empty dict == the feature is off for this checkpoint; the builder keys off
+        # emptiness). ``_dexp_b``: per-atom repulsive-wall decay for the per-atom-wall
+        # form (``use_b_head``). ``_cg_b``: per-atom short-range Coulomb-guard decay
+        # (``use_coulomb_guard``). See garnet_core.openmm_build._per_atom_wall / _coulomb_guard.
+        self._dexp_b = {}         # Atom -> float
+        self._cg_b = {}           # Atom -> float
         self._bonds = {}          # frozenset({a, b}) -> (k, r0)
         self._angles = {}         # (a_i, a_j, a_k) -> (k_theta, theta0)   (a_j = vertex)
         self._propers = {}        # (a_i, a_j, a_k, a_l) -> [k1..k6]
@@ -149,6 +186,21 @@ class GarnetParameters:
         for i, a in enumerate(atoms):
             self._per_atom[a] = (float(q[i]), float(sig[i]), float(eps[i]))
 
+        # Per-atom repulsive-wall decay (per-atom-wall form only). Present iff the
+        # checkpoint's `use_b_head` is live; earlier rounds use the scalar `dexp_alpha`
+        # global instead (stored below) and omit this key entirely.
+        if 'dexp_b' in params:
+            bee = _to_numpy(params['dexp_b'])
+            for i, a in enumerate(atoms):
+                self._dexp_b[a] = float(bee[i])
+        # Per-atom short-range Coulomb-guard decay (guard form only). garnet_core emits
+        # `coulomb_guard_b` (per-atom) + `coulomb_guard_w` (scalar) together, and only when
+        # the guard is on; absence of the key is the off switch (never a value).
+        if 'coulomb_guard_w' in params:
+            cgb = _to_numpy(params['coulomb_guard_b'])
+            for i, a in enumerate(atoms):
+                self._cg_b[a] = float(cgb[i])
+
         bk = _to_numpy(params['bond_k'])
         br0 = _to_numpy(params['bond_r0'])
         bis = [int(i) for i in data.bond_is]
@@ -191,13 +243,20 @@ class GarnetParameters:
                 key = (atoms[iis[m]], atoms[ijs[m]], atoms[iks[m]], atoms[ils[m]])
                 self._impropers[key] = ('periodic', [float(x) for x in imk[m]])
 
-        self._globals = {
+        gl = {
             'coulomb14scale': float(_to_numpy(params['coulomb14scale'])),
-            'dexp_alpha': float(_to_numpy(params['dexp_alpha'])),
             'dexp_beta': float(_to_numpy(params['dexp_beta'])),
             'vdw14scale': float(_to_numpy(params.get('vdw14scale', 0.0))),
             'vdw13scale': float(_to_numpy(params.get('vdw13scale', 0.0))),
         }
+        # The scalar repulsive-wall exponent exists only in the OLD (uniform-wall) form;
+        # the per-atom-wall form drops it in favour of per-atom `dexp_b` (stored above).
+        if 'dexp_alpha' in params:
+            gl['dexp_alpha'] = float(_to_numpy(params['dexp_alpha']))
+        # Coulomb-guard strength `w`, a scalar global, present iff the guard is on.
+        if 'coulomb_guard_w' in params:
+            gl['coulomb_guard_w'] = float(_to_numpy(params['coulomb_guard_w']))
+        self._globals = gl
 
     # --------------------------------------------------------------- project
     def subset_for(self, all_atoms):
@@ -217,6 +276,10 @@ class GarnetParameters:
         charges = numpy.zeros(n)
         sigmas = numpy.zeros(n)
         epsilons = numpy.zeros(n)
+        # Only materialise the optional per-atom arrays when this checkpoint predicts them,
+        # so the builder can key off ``is None`` to choose the old vs new functional form.
+        bee = numpy.zeros(n) if self._dexp_b else None
+        cg_b = numpy.zeros(n) if self._cg_b else None
         missing = []
         for a, i in index.items():
             p = self._per_atom.get(a)
@@ -224,6 +287,10 @@ class GarnetParameters:
                 missing.append(a)
                 continue
             charges[i], sigmas[i], epsilons[i] = p
+            if bee is not None:
+                bee[i] = self._dexp_b.get(a, 0.0)
+            if cg_b is not None:
+                cg_b[i] = self._cg_b.get(a, 0.0)
 
         bonds = []
         for key, (k, r0) in self._bonds.items():
@@ -247,7 +314,8 @@ class GarnetParameters:
                 impropers.append((kind, (index[a], index[b], index[c], index[d]), payload))
 
         return SubsetParameters(n, charges, sigmas, epsilons, bonds, angles,
-                                propers, impropers, self.has_oop, dict(self._globals), missing)
+                                propers, impropers, self.has_oop, dict(self._globals), missing,
+                                bee=bee, cg_b=cg_b)
 
 
 import weakref
@@ -265,7 +333,7 @@ def get_garnet_parameters(structure, checkpoint_path=None, force=False, logger=N
     '''
     cached = _PARAM_CACHE.get(structure)
     if (cached is not None and not force
-            and cached.checkpoint_path == (checkpoint_path or default_checkpoint_path())
+            and cached.checkpoint_path == resolve_checkpoint_path(checkpoint_path)
             and len(cached._per_atom) == structure.num_atoms):
         return cached
     gp = GarnetParameters(structure, checkpoint_path=checkpoint_path)

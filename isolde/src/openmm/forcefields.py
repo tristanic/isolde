@@ -57,21 +57,52 @@ default_forcefields = list(_forcefield_files.keys())
 # parameters predicted over the whole model (see openmm/garnet/). Registered here so
 # it shows up in `available_forcefields` and can be selected like any other.
 GARNET_FORCEFIELD_NAME = 'garnet'
-_extra_forcefields = [GARNET_FORCEFIELD_NAME]
+
+# GARNET is not a single force field: successive training rounds change not just the
+# weights but the OpenMM functional forms (e.g. r10b adds a per-atom repulsive wall and
+# a short-range Coulomb guard that earlier rounds lack). Each incarnation is a training
+# run pinned to its own checkpoint and is INDEPENDENTLY SELECTABLE, so two can be compared
+# side by side in one session. Names follow ``garnet-{run}``; each value is the checkpoint
+# path RELATIVE to the garnet_core repo root, resolved lazily in params_cache (which is the
+# only place that imports garnet_core -- this module is loaded at bundle init, before torch
+# is guaranteed present). The functional form itself is auto-detected from the checkpoint's
+# predicted parameters, so adding a future round is just one entry here + a profile.
+# Ordered NEWEST-FIRST: the selector lists them in this order (most recent round first).
+_GARNET_VARIANTS = {
+    'garnet-r10b': os.path.join('garnetff', 'trained_models', 'dtr_sf_r10b_ep1.pt'),
+    'garnet-r5d':  os.path.join('garnetff', 'trained_models', 'dtr_sf_r5d_ep1.pt'),
+}
+
+# Only the versioned ``garnet-{run}`` entries are OFFERED as options. The bare ``garnet``
+# name is kept solely as a backward-compatible alias resolvable in ``__getitem__`` (so an
+# old script or saved session naming it still loads, following the params_cache default),
+# but it is deliberately NOT listed -- now that incarnations are versioned, an unversioned
+# "garnet" is ambiguous.
+_extra_forcefields = list(_GARNET_VARIANTS)
+
+
+def is_garnet_forcefield(name):
+    '''True if ``name`` selects any GARNET incarnation -- the bare ``garnet`` alias or a
+    ``garnet-{run}`` variant. Use this instead of ``name == 'garnet'`` anywhere a force-field
+    *name* string is tested, so the variant names are handled too.'''
+    return name == GARNET_FORCEFIELD_NAME or name in _GARNET_VARIANTS
 
 
 class GarnetForcefieldHandle:
     '''
-    Sentinel returned by :class:`ForcefieldMgr` for the garnet force field.
+    Sentinel returned by :class:`ForcefieldMgr` for a garnet force field.
 
     It is *not* an OpenMM ``ForceField``; ``SimHandler`` detects the
     ``is_garnet`` flag and routes to the programmatic garnet System builder
-    instead of template-matching + ``createSystem``. Carries the checkpoint path
-    (None -> the default committed checkpoint, resolved at parameterisation time).
+    instead of template-matching + ``createSystem``. Carries the selected
+    ``variant`` name (for profiles / logging) and its checkpoint path (a path
+    relative to the garnet_core repo, or None -> the default committed checkpoint;
+    resolved at parameterisation time in params_cache).
     '''
     is_garnet = True
 
-    def __init__(self, checkpoint_path=None):
+    def __init__(self, variant=GARNET_FORCEFIELD_NAME, checkpoint_path=None):
+        self.variant = variant
         self.checkpoint_path = checkpoint_path
 
 def _define_forcefield(ff_files):
@@ -104,10 +135,14 @@ class ForcefieldMgr:
 
     def __getitem__(self, key):
         ffd = self._ff_dict
-        if key == GARNET_FORCEFIELD_NAME:
+        if key == GARNET_FORCEFIELD_NAME or key in _GARNET_VARIANTS:
             handle = ffd.get(key)
             if handle is None:
-                handle = ffd[key] = GarnetForcefieldHandle()
+                # None for the bare alias (-> params_cache default); an explicit,
+                # variant-specific checkpoint for a garnet-{run} entry.
+                checkpoint = _GARNET_VARIANTS.get(key)
+                handle = ffd[key] = GarnetForcefieldHandle(variant=key,
+                                                           checkpoint_path=checkpoint)
             return handle
         if key in ffd.keys():
             return ffd[key]
@@ -146,9 +181,17 @@ class ForcefieldMgr:
 
     @property
     def available_forcefields(self):
-        return list(set(self._ff_dict.keys())
-                    .union(_forcefield_files.keys())
-                    .union(_extra_forcefields))
+        # Deterministic order: the template-based force fields (amber14, ...) and any other
+        # loaded ones first, then the versioned GARNET incarnations newest-first (the order
+        # of _extra_forcefields). The bare 'garnet' alias is intentionally not offered.
+        non_garnet = []
+        seen = set()
+        for name in list(_forcefield_files.keys()) + list(self._ff_dict.keys()):
+            if name not in _extra_forcefields and name != GARNET_FORCEFIELD_NAME \
+                    and name not in seen:
+                seen.add(name)
+                non_garnet.append(name)
+        return non_garnet + list(_extra_forcefields)
 
     @property
     def loaded_forcefields(self):
@@ -189,6 +232,16 @@ class ForcefieldMgr:
             
 
 from openmm.app import ForceField as _ForceField
+def _atomic_number(atom):
+    '''Atomic number of an OpenMM template/topology atom, or 0 for a virtual
+    site (``element is None`` -- e.g. an extra point / lone pair). Some bundled
+    ligand templates carry virtual sites; treating them as a distinct, massless
+    label lets the connectivity-graph and match-score machinery tolerate them
+    instead of raising ``AttributeError`` on ``element.atomic_number``.'''
+    element = atom.element
+    return element.atomic_number if element is not None else 0
+
+
 class ForceField(_ForceField):
     def assignTemplates(self, topology, ignoreExternalBonds=False,
             explicit_templates={}):
@@ -272,7 +325,7 @@ class ForceField(_ForceField):
         from chimerax.isolde.graph import Graph
         import numpy
         atoms = [a for a in residue.atoms()]
-        labels = [a.element.atomic_number for a in atoms]
+        labels = [_atomic_number(a) for a in atoms]
         edges = numpy.array([[atoms.index(b.atom1), atoms.index(b.atom2)] for b in residue.internal_bonds()])
         return Graph(labels, edges)
 
@@ -284,7 +337,7 @@ class ForceField(_ForceField):
         from chimerax.isolde.graph import Graph
         import numpy
         atoms = template.atoms
-        labels = [a.element.atomic_number for a in atoms]
+        labels = [_atomic_number(a) for a in atoms]
         edges = numpy.array(list(template.bonds))
         try:
             return Graph(labels, edges)
@@ -296,9 +349,9 @@ class ForceField(_ForceField):
     @staticmethod
     def match_score(residue, template, residue_indices):
         ratoms = list(residue.atoms())
-        residue_size = sum(a.element.atomic_number for a in ratoms)
-        template_size = sum(a.element.atomic_number for a in template.atoms)
-        match_size = sum(ratoms[i].element.atomic_number for i in residue_indices)
+        residue_size = sum(_atomic_number(a) for a in ratoms)
+        template_size = sum(_atomic_number(a) for a in template.atoms)
+        match_size = sum(_atomic_number(ratoms[i]) for i in residue_indices)
         residue_delta = residue_size - match_size
         template_delta = template_size - match_size
         return 1 - (residue_delta + template_delta)/min(residue_size, template_size)

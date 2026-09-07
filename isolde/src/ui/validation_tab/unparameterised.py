@@ -245,42 +245,45 @@ class UnparameterisedResiduesDialog(UI_Panel_Base):
         self.template_tree.clear()
             
     def _ask_to_add_hydrogens_if_necessary(self, residues):
-            h = residues.atoms[residues.atoms.element_names=='H']
-            addh = False
-            from chimerax.isolde.dialog import choice_warning
-            if not len(h):
-                addh = choice_warning('This model does not appear to have hydrogens. Would you like to add them first?')
-            elif self.suspiciously_low_h(residues):
-                addh = choice_warning('This model has significantly fewer hydrogens than expected for a natural molecule. Would you like to run AddH first?')
-            elif self.waters_without_h(residues):
-                addh = choice_warning('Some or all waters are missing hydrogens. Would you like to add them first?')
-            if addh:
-                from chimerax.core.commands import run
-                run(self.session, f'addh #{residues.unique_structures[0].id_string}')
-                # Occasionally addh will add only one hydrogen to a water (typically when too close to a metal). Catch 
-                # and fix to avoid user confusion.
-                waters = residues[residues.names=='HOH']
-                bad = [w for w in waters if len(w.atoms) < 3]
-                from chimerax.build_structure import modify_atom
-                for b in bad:
-                    o = b.find_atom('O')
-                    if o is None:
-                        self.session.logger.warning(f'Water /{b.chain_id}:{b.number} is missing its O atom. Deleting.')
-                        b.delete()
-                    modify_atom(o, o.element, 2)
+        '''Offer -- never impose -- a whole-model AddH when the model looks
+        substantially under-hydrogenated, always asking permission first so the
+        user keeps control of protonation. This is the one place ISOLDE may add
+        hydrogens, and only on an explicit "yes"; the ``isolde parameterise``
+        command itself never adds hydrogens or otherwise modifies a residue.'''
+        h = residues.atoms[residues.atoms.element_names == 'H']
+        addh = False
+        from chimerax.isolde.dialog import choice_warning
+        if not len(h):
+            addh = choice_warning('This model does not appear to have hydrogens. '
+                                  'Would you like to add them first?')
+        elif self.suspiciously_low_h(residues):
+            addh = choice_warning('This model has significantly fewer hydrogens '
+                                  'than expected for a natural molecule. Would you '
+                                  'like to run AddH first?')
+        if addh:
+            from chimerax.core.commands import run
+            run(self.session, f'addh #{residues.unique_structures[0].id_string}')
+            # Occasionally AddH adds only one hydrogen to a water (typically when
+            # it is too close to a metal). Catch and fix, to avoid user confusion.
+            waters = residues[residues.names == 'HOH']
+            bad = [w for w in waters if len(w.atoms) < 3]
+            from chimerax.build_structure import modify_atom
+            for b in bad:
+                o = b.find_atom('O')
+                if o is None:
+                    self.session.logger.warning(
+                        f'Water /{b.chain_id}:{b.number} is missing its O atom. '
+                        'Deleting.')
+                    b.delete()
+                    continue
+                modify_atom(o, o.element, 2)
 
-            
     def suspiciously_low_h(self, residues):
-        hydrogens = residues.atoms[residues.atoms.element_names=='H']
-        heavy_atoms = residues.atoms[residues.atoms.element_names!='H']
-        if len(hydrogens)/len(heavy_atoms) < self.H_TO_HEAVY_ATOM_THRESHOLD_RATIO:
-            return True
-    
-    def waters_without_h(self, residues):
-        waters = residues[residues.names=='HOH']
-        for w in waters:
-            if len(w.atoms) != 3:
-                return True
+        hydrogens = residues.atoms[residues.atoms.element_names == 'H']
+        heavy_atoms = residues.atoms[residues.atoms.element_names != 'H']
+        if not len(heavy_atoms):
+            return False
+        return len(hydrogens) / len(heavy_atoms) < self.H_TO_HEAVY_ATOM_THRESHOLD_RATIO
         
 
 

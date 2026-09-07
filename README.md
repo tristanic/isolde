@@ -152,14 +152,29 @@ ISOLDE build, both installed into **ChimeraX's own Python**:
    ```
    "C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" --nogui --cmd "pip install -e C:\path\to\garnet-isolde ; exit"
    ```
-   The committed checkpoint (`garnetff/trained_models/dtr_sf_r5d_ep1.pt`) is
-   resolved relative to the installed `garnet_core`. To use a different epoch,
-   set the `ISOLDE_GARNET_CHECKPOINT` environment variable to its path.
+   The committed checkpoints are resolved relative to the installed `garnet_core`.
+   To point the bare `garnet` alias at a one-off checkpoint, set the
+   `ISOLDE_GARNET_CHECKPOINT` environment variable to its path.
 
 Once both are in place, start ISOLDE, set the experience level to **Developer**
 (a force-field selector then appears in ISOLDE's *General* tab), or simply run
-`isolde set forcefield garnet`. Switch back to AMBER with
+`isolde set forcefield <name>`. Switch back to AMBER with
 `isolde set forcefield amber14`.
+
+GARNET is offered as one entry per training run, named `garnet-{run}`, so different
+incarnations can be selected and compared side by side in the one session — each pinned
+to its own checkpoint, with its OpenMM functional form auto-detected from that checkpoint
+(later rounds change the form, e.g. `garnet-r10b` adds a per-atom repulsive wall and a
+short-range Coulomb guard that `garnet-r5d` lacks). Currently available:
+
+| name | checkpoint | functional form |
+|---|---|---|
+| `garnet-r5d`  | `dtr_sf_r5d_ep1.pt`  | double-exponential vdW, scalar wall exponent |
+| `garnet-r10b` | `dtr_sf_r10b_ep1.pt` | per-atom repulsive wall + short-range Coulomb guard |
+
+The bare `garnet` name is kept as a backward-compatible alias for the default checkpoint.
+Add a future round by dropping its `garnet-{run}` entry into `_GARNET_VARIANTS`
+(`isolde/src/openmm/forcefields.py`) and a matching profile — no other code changes.
 
 The planned chemistry-verification framework that will accompany this
 (connecting every component to a verified CCD/SMILES source of truth, and

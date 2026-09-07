@@ -164,30 +164,229 @@ class GarnetNonbondedSoftcoreExceptionForce(openmm.CustomBondForce):
         self.update_needed = False
 
 
+# ======================================================================================
+# Per-atom repulsive wall (+ short-range Coulomb guard) -- the r10b-era functional form.
+# ======================================================================================
+# The wall's repulsive decay is a PER-ATOM ``bee`` (combined to a per-pair ``alph``), and
+# only ``beta`` stays a global (``alpha`` is gone). The optional short-range Coulomb guard
+# is a positive-definite, attractive-pair-only electrostatics correction that keeps the
+# (now soft) wall from being overrun by a Coulomb sink. It is folded into the Coulomb block
+# under the SAME soft-core radial floor and coupling as bare Coulomb -- so it softens for
+# clash release and fades on decouple/symmetry in lockstep, and is never left un-faded
+# (the "guard = electrostatics" design). At lambda=1 both reduce to the exact r10b form.
+
+def _dexp_peratom_of(arg):
+    '''Per-atom-wall double-exponential at reduced coordinate ``arg``. The repulsive decay
+    ``alph`` is a per-pair intermediate built from per-particle/-bond ``bee`` (see
+    :data:`_ALPH_DEF`); ``beta`` is global; ``sigma``/``epsilon`` per-particle/-bond.
+    Mirrors ``garnet_core.openmm_build._DEXP_ENERGY_PERATOM`` with ``r/rm`` replaced by
+    ``arg`` (the softened reduced coordinate). The expression text is identical for a
+    CustomNonbondedForce (``bee1``/``sigma1``...) and a CustomBondForce (per-bond params).'''
+    return ('sqrt(epsilon1*epsilon2)*('
+            f'((beta*exp(alph))/(alph-beta))*exp(-alph*{arg})'
+            f'-((alph*exp(beta))/(alph-beta))*exp(-beta*{arg})'
+            ')')
+
+
+# Per-pair repulsive exponent from the two atoms' per-atom decays (arithmetic mean, biased
+# to the softer partner). Matches garnet_core.openmm_build._DEXP_DEFS_PERATOM's ``alph``.
+_ALPH_DEF = 'alph = 0.5*((2^(1/6))*(bee1*sigma1+bee2*sigma2))'
+
+
+class GarnetPeratomVdwMixin:
+    '''
+    Per-atom repulsive wall: overrides :meth:`_vdw_block` with the per-atom
+    double-exponential (per-particle ``bee`` -> per-pair ``alph``; only ``beta`` global),
+    and keeps the equal ``2b`` vdW/Coulomb floors. Compose **first** in the bases (like
+    :class:`GarnetVdwMixin`) so its ``__init__`` runs after the base builds the energy +
+    per-particle params. No guard here -- it inherits the base bare-Coulomb block (with the
+    garnet ``2b`` Coulomb floor via the override below).
+    '''
+    def __init__(self, *args, dexp_beta=0.0, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Added after softcore_lambda(0)/softcore_alpha(1) so LAMBDA_INDEX=0 is preserved.
+        self.addGlobalParameter('beta', dexp_beta)
+        self.addPerParticleParameter('bee')
+
+    @classmethod
+    def _vdw_floor_power(cls, b):
+        return b * 2
+
+    @classmethod
+    def _coulomb_floor_power(cls, b):
+        return b * 2
+
+    @classmethod
+    def _vdw_block(cls, a, b, c, lam):
+        head = f'{lam}^(1/{a}) * ({_dexp_peratom_of("xsoft")})'
+        defs = f'xsoft = {_xsoft_expr(lam, cls._vdw_floor_power(b), c)};{_ALPH_DEF}'
+        return head, defs
+
+
+class GarnetPeratomGuardVdwMixin(GarnetPeratomVdwMixin):
+    '''
+    Per-atom wall + short-range Coulomb guard. Adds the guard globals (``cgw``/``cgp``) and
+    per-particle ``bg``, and overrides :meth:`_coulomb_block` to fold the guard into the
+    electrostatics under the same soft-core radial floor and coupling scale as bare Coulomb.
+    '''
+    def __init__(self, *args, coulomb_guard_w=0.0, **kwargs):
+        super().__init__(*args, **kwargs)
+        from garnet_core.energy import COULOMB_GUARD_P
+        self.addGlobalParameter('cgw', coulomb_guard_w)
+        self.addGlobalParameter('cgp', COULOMB_GUARD_P)
+        self.addPerParticleParameter('bg')
+
+    @classmethod
+    def _coulomb_block(cls, b, c, lam, cs):
+        from garnet_core.energy import COULOMB_GUARD_LAMBDA as CGL
+        floor = cls._coulomb_floor_power(b)
+        # The singular 1/r of BOTH bare Coulomb and the guard is regularised by the SAME
+        # Pham-Shirts floor, so at lambda=1 (floor->0) each is its exact 1/r form and as
+        # lambda drops both soften together -- the guard can't become an un-releasable wall.
+        soft = f'( 1 / ( softcore_alpha*(1-{lam})^({floor}) + r^{c} ) )^(1/{c})'
+        bare = f'{ONE_ON_4_PI_EPS0} * charge1 * charge2 * {soft}'
+        guard = f'{ONE_ON_4_PI_EPS0} * cg_pref * cg_gg * {soft}'
+        # Guard intermediates (chained reverse-dependency order, per the guard brief):
+        # pref = pseudo-Huber of the Coulomb sink; gg = Slater-overlap damping; the pair
+        # exponent bgij = M_p(bg1, bg2). qq uses the soft-core force's per-particle charges.
+        defs = (
+            f'cg_pref = 0.5*{CGL!r}*(sqrt(cg_qq*cg_qq+cgw*cgw)-cg_qq);'
+            'cg_gg = exp(-cg_xx)*(1+(11/16)*cg_xx+(3/16)*cg_xx^2+(1/48)*cg_xx^3);'
+            'cg_qq = charge1*charge2;'
+            'cg_xx = cg_bgij*r;'
+            'cg_bgij = (0.5*(bg1^cgp+bg2^cgp))^(1/cgp)'
+        )
+        # cs (the coupling-scale prefix) multiplies the WHOLE electrostatics term, so the
+        # guard fades in lockstep with the Coulomb it corrects on decouple.
+        return f'{cs}( {bare} + {guard} )', defs
+
+
+class GarnetPeratomNonbondedSoftcoreForce(GarnetPeratomVdwMixin, NonbondedSoftcoreForce):
+    '''Plain (no groups) per-atom-wall garnet soft-core.'''
+    pass
+
+
+class NBGroupGarnetPeratomNonbondedSoftcoreForce(GarnetPeratomVdwMixin,
+                                                 NBGroupNonbondedSoftcoreForce):
+    '''Per-group per-atom-wall garnet soft-core.'''
+    pass
+
+
+class SymmetryAwareGarnetPeratomNonbondedSoftcoreForce(SymmetryAwareMixin,
+                                                       GarnetPeratomVdwMixin,
+                                                       NBGroupNonbondedSoftcoreForce):
+    '''Per-group + symmetry-aware per-atom-wall garnet soft-core.'''
+    pass
+
+
+class GarnetPeratomGuardNonbondedSoftcoreForce(GarnetPeratomGuardVdwMixin,
+                                               NonbondedSoftcoreForce):
+    '''Plain (no groups) per-atom-wall + Coulomb-guard garnet soft-core.'''
+    pass
+
+
+class NBGroupGarnetPeratomGuardNonbondedSoftcoreForce(GarnetPeratomGuardVdwMixin,
+                                                      NBGroupNonbondedSoftcoreForce):
+    '''Per-group per-atom-wall + Coulomb-guard garnet soft-core.'''
+    pass
+
+
+class SymmetryAwareGarnetPeratomGuardNonbondedSoftcoreForce(SymmetryAwareMixin,
+                                                            GarnetPeratomGuardVdwMixin,
+                                                            NBGroupNonbondedSoftcoreForce):
+    '''Per-group + symmetry-aware per-atom-wall + Coulomb-guard garnet soft-core.'''
+    pass
+
+
+class GarnetPeratomNonbondedSoftcoreExceptionForce(openmm.CustomBondForce):
+    '''
+    Per-atom-wall (+ optional guard) analogue of
+    :class:`GarnetNonbondedSoftcoreExceptionForce` for the garnet 1-4 / gated-1-3 pairs.
+    Per-bond ``bee1``/``bee2`` drive the per-pair ``alph``; ``beta`` is global. When the
+    guard is on it also carries the scaled 1-4 guard (per-bond raw charge product
+    ``q_raw_prod`` + scale ``cg_scale`` = coulomb14scale, and per-bond ``bg1``/``bg2``),
+    so at ``softcore_lambda=1`` this reproduces the plain build's 1-4 dexp + 1-4 guard
+    exactly. Faded by the global ``softcore_lambda`` only (no per-group coupling), like the
+    AMBER exception force.
+    '''
+    def __init__(self, a=1, b=2, c=6, nb_lambda=0.9, alpha=0.2, dexp_beta=0.0,
+                 coulomb_guard_w=None):
+        floor = b * 2
+        has_guard = coulomb_guard_w is not None
+        soft = f'( 1 / ( softcore_alpha*(1-softcore_lambda)^({floor}) + r^{c} ) )^(1/{c})'
+        bare = f'{ONE_ON_4_PI_EPS0} * charge_prod * {soft}'
+        parts = [
+            'vdw + coulombic;',
+            f'vdw = vdw_scale * softcore_lambda^(1/{a}) * ({_dexp_peratom_of("xsoft")});',
+            f'xsoft = {_xsoft_expr("softcore_lambda", floor, c)};',
+            _ALPH_DEF + ';',
+        ]
+        if has_guard:
+            from garnet_core.energy import COULOMB_GUARD_LAMBDA as CGL
+            guard = (f'cg_scale * {ONE_ON_4_PI_EPS0} * cg_pref * cg_gg * {soft}')
+            parts.append(f'coulombic = {bare} + {guard};')
+            parts.append(f'cg_pref = 0.5*{CGL!r}*(sqrt(cg_qq*cg_qq+cgw*cgw)-cg_qq);')
+            parts.append('cg_gg = exp(-cg_xx)*(1+(11/16)*cg_xx+(3/16)*cg_xx^2+(1/48)*cg_xx^3);')
+            parts.append('cg_qq = q_raw_prod;')
+            parts.append('cg_xx = cg_bgij*r;')
+            parts.append('cg_bgij = (0.5*(bg1^cgp+bg2^cgp))^(1/cgp)')
+        else:
+            parts.append(f'coulombic = {bare}')
+        super().__init__(''.join(parts))
+        self.addGlobalParameter('softcore_lambda', nb_lambda)
+        self.addGlobalParameter('softcore_alpha', alpha)
+        self.addGlobalParameter('beta', dexp_beta)
+        per_bond = ['charge_prod', 'sigma1', 'sigma2', 'epsilon1', 'epsilon2',
+                    'bee1', 'bee2', 'vdw_scale']
+        if has_guard:
+            from garnet_core.energy import COULOMB_GUARD_P
+            self.addGlobalParameter('cgw', coulomb_guard_w)
+            self.addGlobalParameter('cgp', COULOMB_GUARD_P)
+            per_bond += ['q_raw_prod', 'cg_scale', 'bg1', 'bg2']
+        for p in per_bond:
+            self.addPerBondParameter(p)
+        self.update_needed = False
+
+
 def find_garnet_nonbonded_forces(system):
     '''
-    Locate garnet's plain nonbonded forces in ``system``:
-    ``(coulomb_nb, coulomb_idx, dexp_cnb, dexp_idx, extra_bond_forces)`` where
-    ``extra_bond_forces`` is a list of ``(force, index)`` for the scaled 1-4 / gated
-    1-3 dexp ``CustomBondForce`` companions (identified by their ``w14vdw``/``w13vdw``
-    globals). ``coulomb``/``dexp`` are ``None`` if absent.
+    Locate garnet's plain nonbonded forces in ``system``, variant-agnostically:
+    ``(coulomb_nb, coulomb_idx, dexp_cnb, dexp_idx, extra_bond_forces, guard_forces)``.
+
+    * ``coulomb`` -- the plain ``NonbondedForce`` (LJ zeroed).
+    * ``dexp`` -- the double-exponential ``CustomNonbondedForce``, recognised for BOTH
+      forms: the old uniform wall carries an ``alpha`` global, the per-atom wall carries a
+      per-particle ``bee`` instead; both carry ``beta`` (and no guard-specific ``cgw``).
+    * ``extra_bond_forces`` -- ``(force, index)`` for the scaled 1-4 / gated-1-3 dexp
+      ``CustomBondForce`` companions (``w14vdw``/``w13vdw`` globals).
+    * ``guard_forces`` -- ``(force, index)`` for the short-range Coulomb guard forces
+      (the nonbonded ``cgw`` force + its 1-4 ``w14cg`` companion), or ``[]`` when off.
+
+    ``coulomb``/``dexp`` are ``None`` if absent.
     '''
     coulomb = dexp = None
     coulomb_idx = dexp_idx = None
     extras = []
+    guards = []
     for i in range(system.getNumForces()):
         f = system.getForce(i)
         if type(f) is openmm.NonbondedForce:
             coulomb, coulomb_idx = f, i
         elif isinstance(f, openmm.CustomNonbondedForce):
             names = {f.getGlobalParameterName(k) for k in range(f.getNumGlobalParameters())}
-            if {'alpha', 'beta'} <= names:
-                dexp, dexp_idx = f, i
+            pnames = {f.getPerParticleParameterName(k)
+                      for k in range(f.getNumPerParticleParameters())}
+            if 'cgw' in names:                          # short-range Coulomb guard force
+                guards.append((f, i))
+            elif 'beta' in names and ('alpha' in names or 'bee' in pnames):
+                dexp, dexp_idx = f, i                   # old (alpha+beta) or new (beta+bee)
         elif isinstance(f, openmm.CustomBondForce):
             names = {f.getGlobalParameterName(k) for k in range(f.getNumGlobalParameters())}
-            if names & {'w14vdw', 'w13vdw'}:
+            if 'w14cg' in names:                        # 1-4 companion of the guard
+                guards.append((f, i))
+            elif names & {'w14vdw', 'w13vdw'}:
                 extras.append((f, i))
-    return coulomb, coulomb_idx, dexp, dexp_idx, extras
+    return coulomb, coulomb_idx, dexp, dexp_idx, extras, guards
 
 
 # Representative parameters for the illustrative potential-vs-radius plot (mirrors the

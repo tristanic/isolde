@@ -49,8 +49,11 @@ def build_garnet_system(session, sim_params, sim_construct, garnet_params):
     # fed the subset bond graph in particle-index space (so the pairs are computed on the SAME
     # graph the exclusions use — no double-counting).
     from types import SimpleNamespace
-    from garnet_core.openmm_build import (_DEXP_ENERGY, _OOP_ENERGY,
-                                          make_14_vdw_force, make_13_vdw_force)
+    from garnet_core.openmm_build import (_DEXP_ENERGY, _DEXP_ENERGY_PERATOM, _OOP_ENERGY,
+                                          _CGUARD_ENERGY, _CG_P,
+                                          make_14_vdw_force, make_13_vdw_force,
+                                          make_coulomb_guard_14_force,
+                                          _per_atom_wall, _coulomb_guard)
     from garnet_core.params import TORSION_PERIODICITIES, TORSION_PHASES
     from garnet_core.energy import TORSION_DAMP_THETA_ON
 
@@ -163,22 +166,55 @@ def build_garnet_system(session, sim_params, sim_construct, garnet_params):
     system.addForce(nb)
 
     # --- Double-exponential vdW (CustomNonbondedForce): pairs within 3 bonds excluded ---
-    cnb = openmm.CustomNonbondedForce(_DEXP_ENERGY)
+    # Two functional forms, auto-selected by whether the checkpoint predicts a per-atom wall
+    # decay (``bee``): the OLD uniform wall carries a scalar ``alpha`` global; the per-atom wall
+    # carries a per-particle ``bee`` and drops ``alpha`` -- exactly mirroring build_system.
+    bee = subset.bee
+    cnb = openmm.CustomNonbondedForce(_DEXP_ENERGY if bee is None else _DEXP_ENERGY_PERATOM)
     cnb.setNonbondedMethod(cnb_method)
     try:
         cnb.setCutoffDistance(cutoff)
     except Exception:
         pass
-    cnb.addGlobalParameter('alpha', g['dexp_alpha'])
+    if bee is None:
+        cnb.addGlobalParameter('alpha', g['dexp_alpha'])
     cnb.addGlobalParameter('beta', g['dexp_beta'])
     cnb.addPerParticleParameter('sigma')
     cnb.addPerParticleParameter('epsilon')
+    if bee is not None:
+        cnb.addPerParticleParameter('bee')            # OpenMM auto-suffixes to bee1/bee2
     for i in range(subset.n_particles):
-        cnb.addParticle([float(subset.sigmas[i]), float(subset.epsilons[i])])
+        pp = [float(subset.sigmas[i]), float(subset.epsilons[i])]
+        if bee is not None:
+            pp.append(float(bee[i]))
+        cnb.addParticle(pp)
     if bond_pairs:
         cnb.createExclusionsFromBonds(bond_pairs, 3)
     cnb.setForceGroup(NONBONDED_FORCE_GROUP)
     system.addForce(cnb)
+
+    # --- Short-range Coulomb guard (guard-form checkpoints only): a CustomNonbondedForce at
+    # exclusion depth 3 + a scaled 1-4 companion (below), sharing Coulomb's partition, mirroring
+    # build_system. Positive-definite and attractive-pair-only; it is what keeps the (now soft)
+    # per-atom wall from being overrun by an oppositely-charged Coulomb sink. "Inert means
+    # ABSENT" -- nothing is added when the checkpoint carries no guard.
+    if subset.cg_b is not None:
+        cgnb = openmm.CustomNonbondedForce(_CGUARD_ENERGY)
+        cgnb.setNonbondedMethod(cnb_method)
+        try:
+            cgnb.setCutoffDistance(cutoff)
+        except Exception:
+            pass
+        cgnb.addGlobalParameter('cgw', g['coulomb_guard_w'])
+        cgnb.addGlobalParameter('cgp', _CG_P)
+        cgnb.addPerParticleParameter('chg')           # charge (auto-suffixed chg1/chg2)
+        cgnb.addPerParticleParameter('bg')            # per-atom guard decay
+        for i in range(subset.n_particles):
+            cgnb.addParticle([float(subset.charges[i]), float(subset.cg_b[i])])
+        if bond_pairs:
+            cgnb.createExclusionsFromBonds(bond_pairs, 3)
+        cgnb.setForceGroup(NONBONDED_FORCE_GROUP)
+        system.addForce(cgnb)
 
     # --- Scaled 1-4 and gated-1-3 double-exponential vdW (CustomBondForces) ---
     # The dexp CustomNonbondedForce above excludes everything within 3 bonds (1-2/1-3/1-4), so any
@@ -192,22 +228,42 @@ def build_garnet_system(session, sim_params, sim_construct, garnet_params):
     if bond_pairs:
         vdw_data = SimpleNamespace(bond_is=[i for i, _ in bond_pairs],
                                    bond_js=[j for _, j in bond_pairs])
-        vdw_params = {'sigma': subset.sigmas, 'epsilon': subset.epsilons,
-                      'dexp_alpha': g['dexp_alpha'], 'dexp_beta': g['dexp_beta']}
+        # One params-like dict for garnet's own make_* builders; each picks what it needs and
+        # dispatches on key presence (``dexp_b`` -> per-atom wall; ``coulomb_guard_w`` +
+        # ``coulomb_guard_b`` -> guard) exactly as build_system does, so the functional form
+        # stays single-sourced. All per-particle arrays are in subset (particle-index) order,
+        # matching vdw_data's bond indices.
+        pl = {'sigma': subset.sigmas, 'epsilon': subset.epsilons,
+              'dexp_beta': g['dexp_beta'], 'partial_charges': subset.charges}
+        if 'dexp_alpha' in g:
+            pl['dexp_alpha'] = g['dexp_alpha']
+        if subset.bee is not None:
+            pl['dexp_b'] = subset.bee
+        if subset.cg_b is not None:
+            pl['coulomb_guard_b'] = subset.cg_b
+            pl['coulomb_guard_w'] = g['coulomb_guard_w']
         w14v = g.get('vdw14scale', 0.0)
         if w14v != 0.0:
-            f14 = make_14_vdw_force(vdw_data, vdw_params, subset.n_particles, w14v, periodic=False)
+            f14 = make_14_vdw_force(vdw_data, pl, subset.n_particles, w14v, periodic=False)
             if f14 is not None:
                 f14.setForceGroup(NONBONDED_FORCE_GROUP)
                 system.addForce(f14)
         w13v = g.get('vdw13scale', 0.0)
         if w13v != 0.0:
             zl = [int(z) for z in all_atoms.elements.numbers]
-            f13 = make_13_vdw_force(vdw_data, vdw_params, subset.n_particles, w13v,
+            f13 = make_13_vdw_force(vdw_data, pl, subset.n_particles, w13v,
                                     atomic_numbers=zl, periodic=False)
             if f13 is not None:
                 f13.setForceGroup(NONBONDED_FORCE_GROUP)
                 system.addForce(f13)
+        # Scaled 1-4 companion of the Coulomb guard (mirrors the 1-4 dexp companion): the guard's
+        # nonbonded force excludes <=3-bond pairs, so 1-4 pairs are re-added here at coulomb14scale.
+        if subset.cg_b is not None:
+            f14cg = make_coulomb_guard_14_force(vdw_data, pl, subset.n_particles,
+                                                g['coulomb14scale'], periodic=False)
+            if f14cg is not None:
+                f14cg.setForceGroup(NONBONDED_FORCE_GROUP)
+                system.addForce(f14cg)
 
     _add_constraints(system, subset, all_atoms, sim_params, logger)
     return top, system

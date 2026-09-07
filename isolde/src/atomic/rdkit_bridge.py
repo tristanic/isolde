@@ -712,7 +712,7 @@ def _coord_or_none(x, y, z):
         return None
 
 
-def perceive_residue(session, residue):
+def perceive_residue(session, residue, use_modelled_hydrogens=False):
     '''Perceive an RDKit molecule for a modelled residue with no usable template.
 
     Clones the residue's heavy atoms into a throwaway (session-less)
@@ -734,16 +734,23 @@ def perceive_residue(session, residue):
         r2 = tmp.new_residue(residue.name, 'A', 1)
         # Map throwaway atoms back to the live residue atoms by name.
         name_to_live = {}
+        # When use_modelled_hydrogens is set we keep the residue's OWN hydrogens
+        # and perceive the chemistry EXACTLY as modelled -- parameterisation must
+        # never silently re-protonate (via addh) a ligand it is only meant to
+        # parameterise. Otherwise (rebuild / template-matching callers) the heavy
+        # atoms are cloned and addh re-adds a clean hydrogen set for perception.
+        keep_h = use_modelled_hydrogens
         for a in residue.atoms:
-            if a.element.number == 1:
+            if a.element.number == 1 and not keep_h:
                 continue          # drop modelled H; addh re-adds them cleanly
             na = tmp.new_atom(a.name, a.element)
             na.coord = a.coord
             r2.add_atom(na)
-            name_to_live[a.name] = a
+            if a.element.number != 1:
+                name_to_live[a.name] = a
         for b in residue.atoms.intra_bonds:
             a1, a2 = b.atoms
-            if a1.element.number == 1 or a2.element.number == 1:
+            if not keep_h and (a1.element.number == 1 or a2.element.number == 1):
                 continue
             na1 = r2.find_atom(a1.name)
             na2 = r2.find_atom(a2.name)
@@ -752,12 +759,13 @@ def perceive_residue(session, residue):
                     tmp.new_bond(na1, na2)
                 except Exception:
                     pass
-        try:
-            from chimerax.addh.cmd import cmd_addh
-            cmd_addh(session, AtomicStructures([tmp]), hbond=False,
-                     in_isolation=True)
-        except Exception as e:
-            session.logger.info('ISOLDE rdkit_bridge: addh failed (%s).' % e)
+        if not keep_h:
+            try:
+                from chimerax.addh.cmd import cmd_addh
+                cmd_addh(session, AtomicStructures([tmp]), hbond=False,
+                         in_isolation=True)
+            except Exception as e:
+                session.logger.info('ISOLDE rdkit_bridge: addh failed (%s).' % e)
 
         # Strip coordinated metals so the organic framework perceives cleanly;
         # remember each metal's element + which non-metal atoms it coordinates.
@@ -1050,7 +1058,7 @@ def apply_base_templates(frag_mol, ref_mols, min_match=3):
     return m2 if m2 is not None else frag_mol
 
 
-def residue_to_rdkit(residue, template=None):
+def residue_to_rdkit(residue, template=None, use_modelled_hydrogens=False):
     '''Return an RDKit molecule for ``residue`` with stereochemistry from its
     coordinates and a ``cxName`` property per atom.
 
@@ -1105,10 +1113,11 @@ def residue_to_rdkit(residue, template=None):
                 return mol, _build_atom_map(mol, name_to_live)
 
     # Fallback: perceive from geometry.
-    return perceive_residue(session, residue)
+    return perceive_residue(session, residue,
+                            use_modelled_hydrogens=use_modelled_hydrogens)
 
 
-def _unit_chemistry_maps(residue, base_template_mols=None):
+def _unit_chemistry_maps(residue, base_template_mols=None, use_modelled_hydrogens=False):
     '''Per-residue chemistry for a super-residue as
     ``({atom_name: formal_charge}, {frozenset(name1, name2): rdkit BondType},
     {aromatic atom_name, ...})``.
@@ -1125,7 +1134,8 @@ def _unit_chemistry_maps(residue, base_template_mols=None):
     order_by_pair = {}
     aromatic = set()
     try:
-        mol, _amap = residue_to_rdkit(residue)
+        mol, _amap = residue_to_rdkit(residue,
+                                      use_modelled_hydrogens=use_modelled_hydrogens)
     except Exception:
         mol = None
     if mol is None:
@@ -1230,7 +1240,12 @@ def super_residue_to_rdkit(residues, exclude=None, neutralize_excluded_donors=Fa
     if base_templates:
         base_template_mols = _resolve_base_templates(residues[0].structure.session,
                                                      base_templates)
-    chem_maps = {r: _unit_chemistry_maps(r, base_template_mols) for r in residues}
+    # Perceive each residue's bond orders/charges from the chemistry EXACTLY as
+    # modelled (its own hydrogens), never from an addh re-guess: parameterisation
+    # must respect the user's protonation, not silently override it.
+    chem_maps = {r: _unit_chemistry_maps(r, base_template_mols,
+                                         use_modelled_hydrogens=True)
+                 for r in residues}
 
     rw = Chem.RWMol()
     rd_of = {}                 # ChimeraX Atom -> rdkit index
