@@ -54,12 +54,36 @@ def main():
         # "<root>\UCSF\ChimeraX\<version>" layout below it.
         appdirs._get_win_folder = lambda csidl_name: root
     elif sys.platform == "darwin":
-        # macOS appdirs hardcodes ~/Library/... and ignores XDG_*; left as a
-        # stub -- fill in only if/when macOS testing is needed.
-        sys.stderr.write(
-            "_isolated_chimerax: macOS redirect not implemented; "
-            "ChimeraX will use its normal shared user directory.\n"
-        )
+        # macOS appdirs hardcodes ~/Library/{Application Support,Caches,Logs}
+        # and ignores XDG_*, so neither the win32 nor the Linux approach above
+        # applies. ``appdirs.AppDirs``' properties dispatch to these
+        # module-level functions at *call* time, so rebinding them re-roots
+        # every directory ChimeraX later asks for. The layout deliberately
+        # mirrors the Linux/XDG branch below, so a lane looks the same on both.
+        def _lane_dir(kind):
+            # appdirs' 4th parameter differs per function (roaming / multipath
+            # / opinion); absorb whichever it is.
+            def resolver(appname=None, appauthor=None, version=None,
+                         *args, **kwargs):
+                path = os.path.join(root, kind)
+                if appname:
+                    path = os.path.join(path, appname)
+                    # appdirs only appends the version when appname is given.
+                    # ChimeraX also builds a second, UNVERSIONED AppDirs and
+                    # relies on it being the parent of the versioned one
+                    # (chimerax.core.__main__._set_app_dirs), so honour that.
+                    if version:
+                        path = os.path.join(path, version)
+                return path
+            return resolver
+
+        appdirs.user_data_dir = _lane_dir("data")
+        appdirs.user_config_dir = _lane_dir("config")
+        appdirs.user_cache_dir = _lane_dir("cache")
+        appdirs.user_state_dir = _lane_dir("state")
+        appdirs.user_log_dir = _lane_dir("logs")
+        appdirs.site_data_dir = _lane_dir("site-data")
+        appdirs.site_config_dir = _lane_dir("site-config")
     else:
         # Linux appdirs honours XDG_*_HOME, read at call time, so setting these
         # before ChimeraX starts redirects data/config/cache/state.

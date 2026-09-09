@@ -18,7 +18,8 @@
 # With no marker, fall back to a unique per-worktree home and warn.
 #
 # NOTE: the Windows .bat is the battle-tested path on the primary dev box;
-# this .sh mirrors its logic but should be smoke-tested on Linux/macOS.
+# this .sh mirrors its logic. Verified on macOS (arm64, ChimeraX 1.13);
+# still to be smoke-tested on Linux.
 # ============================================================================
 set -euo pipefail
 
