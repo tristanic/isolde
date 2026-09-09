@@ -126,35 +126,66 @@ For convenience, these commands are also wrapped in a batch file, make_win.bat.
 > no polished install pipeline yet.
 
 On the `garnet-ff` branch, an ISOLDE simulation can be parameterised by the
-[garnet-isolde](https://github.com/tristanic/garnet-isolde) graph-ML force field
+[garnet-isolde](https://github.com/altos-labs/garnet-isolde) graph-ML force field
 instead of by AMBER template matching. Two things are needed beyond a normal
 ISOLDE build, both installed into **ChimeraX's own Python**:
 
-1. **Python packages** — `torch`, `torch-geometric` and `networkx`. These are
-   declared in `isolde/pyproject.toml.in`, so a normal build/install pulls them
-   in automatically. Two caveats:
-   - `torch` must be **>= 2.10**. Earlier versions have a NaN in the `atan2(0, 0)`
-     gradient that GARNET's dihedral term can hit, and 2.9 is the lowest `torch`
-     with ChimeraX-1.13 / Python-3.14 (`cp314`) wheels.
+1. **Python packages** — `torch` and `torch-geometric`. These are *not* ISOLDE
+   dependencies (an AMBER-only install should not pay a ~1 GB torch download), and
+   nothing in ISOLDE proper imports them. They are declared by the `garnet-isolde`
+   distribution in step 2, so installing that pulls them in automatically. Two
+   caveats:
+   - `torch` must be **>= 2.13** (what the wheel pins, matching the interpreter the
+     shipped checkpoints were trained under). Anything <= 2.9 has a NaN in the
+     `atan2(0, 0)` gradient that GARNET's dihedral term can hit. Note that torch
+     2.8 and 2.11+ also disagree on that backward, so *relaxed geometries* are
+     torch-version dependent even when both work; forward energies are not.
    - On a machine with an NVIDIA GPU, install the matching **CUDA** wheel of
-     `torch` manually first (from https://pytorch.org), before installing the
-     bundle, so pip doesn't settle on the CPU-only build.
+     `torch` manually **first** (from https://pytorch.org), before installing
+     `garnet-isolde`, so pip doesn't settle on the CPU-only build.
 
-2. **`garnet_core` and the trained weights** — this is the `garnet-isolde`
-   repository. It is **not on PyPI**, so install it *editable* into ChimeraX's
-   Python (this replaces the ad-hoc developer shim):
+2. **`garnet_core` and the trained weights** — from the `garnet-isolde`
+   repository. It is **not on PyPI**, so it is installed by hand into ChimeraX's
+   Python. Two ways, depending on whether you develop the force field or just use it.
+
+   **If you were handed a wheel** (the usual case — it bundles the trained
+   checkpoints, and is pure Python, so the one file works on Windows, Linux and
+   macOS):
 
    Linux/macOS:
    ```
-   /path/to/ChimeraX/bin/ChimeraX --nogui --cmd "pip install -e /path/to/garnet-isolde ; exit"
+   /path/to/ChimeraX/bin/ChimeraX --nogui --cmd "pip install garnet-isolde@file:///path/to/garnet_isolde-<version>-py3-none-any.whl ; exit"
    ```
    Windows:
    ```
-   "C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" --nogui --cmd "pip install -e C:\path\to\garnet-isolde ; exit"
+   "C:\Program Files\ChimeraX\bin\ChimeraX-console.exe" --nogui --cmd "pip install garnet-isolde@file:///C:/path/to/garnet_isolde-<version>-py3-none-any.whl ; exit"
    ```
-   The committed checkpoints are resolved relative to the installed `garnet_core`.
-   To point the bare `garnet` alias at a one-off checkpoint, set the
-   `ISOLDE_GARNET_CHECKPOINT` environment variable to its path.
+
+   > Note the `garnet-isolde@file://...` form, and the *three* slashes. ChimeraX's
+   > `pip` command validates its argument as a PEP 508 requirement and rejects a bare
+   > `.whl` path with *"invalid requirement specified"*; a direct reference is a valid
+   > requirement, so this is the way through. (Alternatively, bypass the ChimeraX
+   > command entirely: `PYTHONUSERBASE=<ChimeraX user dir> <ChimeraX>/bin/python3.x -m
+   > pip install --user <wheel>`.)
+
+   To build that wheel from a checkout, run `pip wheel --no-deps -w dist .` at the
+   repo root with any Python >= 3.11; the result lands in `dist/`.
+
+   **If you develop `garnet_core` itself**, install the checkout *editable* instead,
+   so your edits take effect without reinstalling:
+   ```
+   /path/to/ChimeraX/bin/ChimeraX --nogui --cmd "pip install -e /path/to/garnet-isolde ; exit"
+   ```
+
+   Either way the bundled checkpoints are found automatically: ISOLDE pins each
+   variant by bare filename and `garnet_core.weights` resolves it, knowing both the
+   installed layout (`garnet_core/trained_models/`) and a checkout's
+   `garnetff/trained_models/`. To point the bare `garnet` alias at a one-off
+   checkpoint, set the `ISOLDE_GARNET_CHECKPOINT` environment variable to its path.
+
+   > The wheel is an internal build: the licence for this fork of GARNET is not yet
+   > settled, so it carries the `Private :: Do Not Upload` marker and is not for
+   > distribution outside the team. See its bundled `NOTICE`.
 
 Once both are in place, start ISOLDE, set the experience level to **Developer**
 (a force-field selector then appears in ISOLDE's *General* tab), or simply run
@@ -170,7 +201,7 @@ short-range Coulomb guard that `garnet-r5d` lacks). Currently available:
 | name | checkpoint | functional form |
 |---|---|---|
 | `garnet-r5d`  | `dtr_sf_r5d_ep1.pt`  | double-exponential vdW, scalar wall exponent |
-| `garnet-r10b` | `dtr_sf_r10b_ep1.pt` | per-atom repulsive wall + short-range Coulomb guard |
+| `garnet-r10b` | `dtr_sf_r10b_ep2.pt` | per-atom repulsive wall + short-range Coulomb guard |
 
 The bare `garnet` name is kept as a backward-compatible alias for the default checkpoint.
 Add a future round by dropping its `garnet-{run}` entry into `_GARNET_VARIANTS`

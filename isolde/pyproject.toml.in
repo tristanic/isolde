@@ -31,19 +31,27 @@ dependencies = [
     # Fast, offline local copy of the Chemical Component Dictionary (and any
     # user-supplied collections). ccd_records() consults it before the network.
     "ChimeraX-ChemComp ~=0.1",
-    # --- GARNET graph-ML force field (experimental; opt-in via
-    # `isolde set forcefield garnet`, AMBER remains the default). These are pulled
-    # into ChimeraX's Python at bundle install. torch is version-sensitive: <=2.9
-    # has a NaN in the atan2(0,0) backward that GARNET's dihedral term can reach,
-    # fixed from 2.10; 2.9 is also the lowest torch with ChimeraX-1.13 / Python-3.14
-    # (cp314) wheels. On a CUDA machine, install the matching CUDA torch wheel
-    # manually first so pip doesn't settle on the CPU-only build.
-    # NB `garnet_core` (the trained weights) is NOT on PyPI: install the
-    # garnet-isolde repo editable into ChimeraX's Python -- see the README section
-    # "Experimental: the GARNET force field".
-    "torch >=2.10",
-    "torch-geometric",
-    "networkx >=3",
+    # NB networkx is used (atomic/template_utils.py for residue/template connectivity
+    # matching, reference_model/alphafold/find_domains.py for domain decomposition)
+    # but deliberately NOT declared: ChimeraX bundles it in the app tree (3.3 as of the
+    # 2026-09 daily), so declaring it is a no-op that resolves against the app copy.
+    # Same treatment as OpenMM, which ChimeraX has bundled since 1.13 and which ISOLDE
+    # likewise does not declare. If ChimeraX ever drops it, or ISOLDE comes to need a
+    # feature newer than the bundled version, add the floor back here.
+    # NB torch / torch-geometric are deliberately NOT declared here. They are needed
+    # only by the experimental, opt-in GARNET force field, and the `garnet-isolde`
+    # distribution that provides `garnet_core` declares them itself (with a stricter
+    # torch floor than ISOLDE could justify -- see below). They were listed here only
+    # as a workaround for garnet_core not being pip-installable; now that it ships as
+    # a wheel, declaring them would make every AMBER-only install pay a ~1 GB torch
+    # download for a force field it never selects.
+    #
+    # torch is version-sensitive: <=2.9 has a NaN in the atan2(0,0) backward that
+    # GARNET's dihedral term can reach. The garnet-isolde wheel pins >=2.13 (matching
+    # the interpreter its checkpoints were trained under). On a CUDA machine, install
+    # the matching CUDA torch wheel manually BEFORE the garnet wheel, so pip doesn't
+    # settle on the CPU-only build. See the README section "Experimental: the GARNET
+    # force field".
 ]
 
 [tool.setuptools.dynamic]
