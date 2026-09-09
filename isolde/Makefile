@@ -68,9 +68,25 @@ endif
 ifeq ($(OS),Darwin)
 CHIMERAX_EXE = $(CHIMERAX_APP)/Contents/bin/ChimeraX
 export MACOSX_DEPLOYMENT_TARGET=10.13
+# Route compilation through ccache when available -- same wiring as ChimeraX-Clipper.
+# distutils' customize_compiler honours CC/CXX, so unchanged sources become cache hits
+# on rebuild. ISOLDE has to `clean` after any C++ change (the SRCS glob only sees the
+# top level of src_cpp), which makes full recompiles routine and caching worth having.
+CCACHE := $(shell command -v ccache 2>/dev/null)
+ifdef CCACHE
+export CC := ccache clang
+export CXX := ccache clang++
+endif
 endif
 ifeq ($(OS),Linux)
 CHIMERAX_EXE = $(CHIMERAX_APP)
+# Same ccache routing as macOS; cc/c++ are the generic driver names present on
+# essentially every Linux toolchain, so this works for gcc or clang.
+CCACHE := $(shell command -v ccache 2>/dev/null)
+ifdef CCACHE
+export CC := ccache cc
+export CXX := ccache c++
+endif
 endif
 
 # --- Per-lane test isolation -------------------------------------------------
