@@ -58,7 +58,7 @@ import math
 from openmm import openmm
 
 from ..custom_forces import (NonbondedSoftcoreForce, NBGroupNonbondedSoftcoreForce,
-                             SymmetryAwareMixin, ONE_ON_4_PI_EPS0)
+                             SymmetryAwareMixin, ONE_ON_4_PI_EPS0, COULOMB_DECOUPLE_POWER)
 
 # Reduced-coordinate + softened-coordinate expression fragments, shared by the
 # CustomNonbondedForce mixin and the CustomBondForce exception below.
@@ -420,6 +420,6 @@ def potential_values(radii, lam, a, b, c, softcore_alpha, dexp_alpha=12.24, dexp
     dexp = _PLOT_EPSILON * (((be * math.exp(al)) / (al - be)) * numpy.exp(-al * xsoft)
                             - ((al * math.exp(be)) / (al - be)) * numpy.exp(-be * xsoft))
     vdw = (lam ** (1.0 / a)) * dexp
-    coul = ONE_ON_4_PI_EPS0 * charge ** 2 * (
+    coul = lam ** COULOMB_DECOUPLE_POWER * ONE_ON_4_PI_EPS0 * charge ** 2 * (
         1.0 / (softcore_alpha * (1.0 - lam) ** floor + r ** c)) ** (1.0 / c)
     return vdw, coul
