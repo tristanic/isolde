@@ -69,7 +69,7 @@ GARNET_FORCEFIELD_NAME = 'garnet'
 # predicted parameters, so adding a future round is just one entry here + a profile.
 # Ordered NEWEST-FIRST: the selector lists them in this order (most recent round first).
 _GARNET_VARIANTS = {
-    'garnet-r10b': os.path.join('garnetff', 'trained_models', 'dtr_sf_r10b_ep1.pt'),
+    'garnet-r10b': os.path.join('garnetff', 'trained_models', 'dtr_sf_r10b_ep2.pt'),
     'garnet-r5d':  os.path.join('garnetff', 'trained_models', 'dtr_sf_r5d_ep1.pt'),
 }
 
