@@ -110,7 +110,11 @@ if [ -n "$LANE_ROOT" ]; then
         exit 1
     fi
     echo "[run_chimerax] isolated lane: $LANE_ROOT" >&2
-    exec "$PY" -I "$SHIM" "$LANE_ROOT" "$@"
+    # Root via the environment, NOT argv: on macOS Qt turns leftover argv
+    # entries into file-open events, so a path there comes back as
+    # `open <lane root>` in the GUI log. See the shim's docstring.
+    export CHIMERAX_LANE_ROOT="$LANE_ROOT"
+    exec "$PY" -I "$SHIM" "$@"
 else
     # No marker -> standard, shared ChimeraX user directory (unwrapped launch).
     if [ -z "$CXLAUNCH" ] || [ ! -x "$CXLAUNCH" ]; then

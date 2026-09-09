@@ -17,12 +17,22 @@ from). There is no CLI flag or environment variable that redirects it, and the
 sitecustomize injection is impossible through the normal executable.
 
 This shim is the escape hatch: it is run as the *main script* by the bundled
-``bin/python.exe`` (``python.exe -I _isolated_chimerax.py <root> <args...>``).
-``-I`` reproduces ChimeraX's own isolation (no stray env / OS user-site leakage);
-the lane root arrives via ``argv`` so ``-I`` ignoring the environment does not
-matter. We monkeypatch ``appdirs`` *before* importing ``chimerax.core`` so every
-ChimeraX user directory lands under ``<root>`` instead of the shared per-user
-location -- giving each development "lane" its own isolated install tree.
+``bin/python.exe`` (``python.exe -I _isolated_chimerax.py <args...>``), with the
+lane root supplied in ``$CHIMERAX_LANE_ROOT``. ``-I`` reproduces ChimeraX's own
+isolation (no stray env / OS user-site leakage); it makes the interpreter ignore
+the ``PYTHON*`` variables for its own configuration but leaves ``os.environ``
+readable, so a private variable comes through fine. We monkeypatch ``appdirs``
+*before* importing ``chimerax.core`` so every ChimeraX user directory lands
+under ``<root>`` instead of the shared per-user location -- giving each
+development "lane" its own isolated install tree.
+
+The root travels in the ENVIRONMENT, not argv, and that is load-bearing on
+macOS: Qt builds its own view of the command line from the real process
+arguments rather than from ``sys.argv``, and on macOS it turns every leftover
+non-option argument into a ``QFileOpenEvent``. ChimeraX handles those as dropped
+files (``chimerax/ui/gui.py``), so a lane root sitting in argv came back as
+``open <lane root>`` / "has no suffix" in the GUI log. Sanitising ``sys.argv``
+cannot fix that -- Qt never reads it -- so the path must not be in argv at all.
 
 Driven by ``run_chimerax.bat`` / ``run_chimerax.sh``; not meant to be run by hand.
 """
@@ -32,15 +42,30 @@ import sys
 import runpy
 
 
+LANE_ROOT_ENV = "CHIMERAX_LANE_ROOT"
+
+
 def main():
-    if len(sys.argv) < 2:
+    chimerax_argv = sys.argv[1:]
+    env_root = os.environ.get(LANE_ROOT_ENV)
+
+    if env_root:
+        root = os.path.abspath(env_root)
+        # Tolerate a launcher that ALSO passes the root positionally (a
+        # run_chimerax.* predating this change). Left in place it would reach
+        # ChimeraX as a file to open, which is the bug this indirection fixes.
+        if chimerax_argv and os.path.abspath(chimerax_argv[0]) == root:
+            chimerax_argv = chimerax_argv[1:]
+    elif chimerax_argv:
+        # Backward compatibility: the root used to arrive as argv[1].
+        root = os.path.abspath(chimerax_argv[0])
+        chimerax_argv = chimerax_argv[1:]
+    else:
         sys.stderr.write(
-            "usage: python -I _isolated_chimerax.py <lane-root> [chimerax args...]\n"
+            "usage: %s=<lane-root> python -I _isolated_chimerax.py "
+            "[chimerax args...]\n" % LANE_ROOT_ENV
         )
         raise SystemExit(2)
-
-    root = os.path.abspath(sys.argv[1])
-    chimerax_argv = sys.argv[2:]
 
     os.makedirs(root, exist_ok=True)
 

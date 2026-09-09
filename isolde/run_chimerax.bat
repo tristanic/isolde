@@ -75,7 +75,12 @@ if not exist "%SHIM%" (
     exit /b 1
 )
 echo [run_chimerax] isolated lane: %LANE_ROOT% 1>&2
-"%PYEXE%" -I "%SHIM%" "%LANE_ROOT%" %CXARGS%
+REM Root via the environment, NOT argv: Qt builds its command line from the
+REM real process arguments and (on macOS) turns leftovers into file-open
+REM events, so a path there comes back as `open <lane root>`. Kept identical
+REM across platforms so the shim has one contract. See the shim docstring.
+set "CHIMERAX_LANE_ROOT=%LANE_ROOT%"
+"%PYEXE%" -I "%SHIM%" %CXARGS%
 exit /b %ERRORLEVEL%
 
 :standard
