@@ -56,8 +56,13 @@ def main():
         # ChimeraX as a file to open, which is the bug this indirection fixes.
         if chimerax_argv and os.path.abspath(chimerax_argv[0]) == root:
             chimerax_argv = chimerax_argv[1:]
-    elif chimerax_argv:
-        # Backward compatibility: the root used to arrive as argv[1].
+    elif chimerax_argv and not chimerax_argv[0].startswith("-"):
+        # Backward compatibility: the root used to arrive as argv[1]. A lane root is
+        # a path, never an option -- without that guard an invocation whose first
+        # argument is a flag (say `--nogui`) consumed the FLAG as the root, silently
+        # building a lane tree literally named "--nogui" in the working directory and
+        # dropping the flag from ChimeraX's arguments, so a headless run came up as a
+        # GUI. Falling through to the usage error is far kinder.
         root = os.path.abspath(chimerax_argv[0])
         chimerax_argv = chimerax_argv[1:]
     else:
