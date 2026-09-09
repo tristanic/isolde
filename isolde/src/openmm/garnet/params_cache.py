@@ -30,15 +30,60 @@ import numpy
 # Newest committed garnet weights (WIP DTR-SF; 38-wide features). Same architecture
 # as the earlier r5c round -- a drop-in retrain (r5d adds crystal-pressure/thermal
 # training terms; the inference featurize/predict path is unchanged). Not wired to
-# any default-pointer constant in garnet_core, so we resolve it relative to the
-# garnet_core package. Override with $ISOLDE_GARNET_CHECKPOINT or by passing
-# checkpoint_path explicitly (later rounds/epochs land as dtr_sf_<round>_ep{N}.pt).
-_DEFAULT_CHECKPOINT_NAME = os.path.join('garnetff', 'trained_models', 'dtr_sf_r5d_ep1.pt')
+# any default-pointer constant in garnet_core, so we name it and let garnet resolve
+# it. Override with $ISOLDE_GARNET_CHECKPOINT or by passing checkpoint_path
+# explicitly (later rounds/epochs land as dtr_sf_<round>_ep{N}.pt).
+#
+# A BARE FILENAME, not a path: where the weights live is garnet's business, and it
+# differs between an installed wheel (garnet_core/trained_models/) and a repo
+# checkout (a sibling garnetff/trained_models/). ISOLDE used to hard-code the
+# checkout layout and walk up out of the garnet_core package to find it, which held
+# only while the two directories happened to be siblings on disk.
+_DEFAULT_CHECKPOINT_NAME = 'dtr_sf_r5d_ep1.pt'
 
 
-def _garnet_repo_root():
-    import garnet_core
-    return os.path.dirname(os.path.dirname(os.path.abspath(garnet_core.__file__)))
+_GARNET_MISSING_MSG = (
+    "The GARNET force field requires the 'garnet-isolde' package, which is not installed "
+    "in ChimeraX's Python.\n"
+    "\n"
+    "Install the wheel from ChimeraX's command line:\n"
+    "    pip install /path/to/garnet_isolde-<version>-py3-none-any.whl\n"
+    "\n"
+    "Its torch / torch_geometric dependencies are pulled in automatically. To carry on "
+    "without GARNET, choose one of the AMBER force fields in ISOLDE's General tab."
+)
+
+
+def require_garnet_core():
+    '''
+    Import and return ``garnet_core``, or raise with instructions.
+
+    The bundle deliberately imports garnet lazily, so the failure mode for a missing
+    install is an ImportError raised at simulation start -- far from the force-field
+    selection that caused it. This turns that into something actionable.
+    '''
+    try:
+        import garnet_core
+    except ImportError as e:
+        raise ImportError(_GARNET_MISSING_MSG) from e
+    return garnet_core
+
+
+def _resolve_bundled(name):
+    '''
+    Absolute path of a checkpoint shipped with garnet, looked up by bare filename.
+
+    Delegates to ``garnet_core.weights``, which knows both the installed and the
+    checkout layout. Falls back to the historical sibling walk for a ``garnet_core``
+    predating that module, so an older checkout on another machine still works.
+    '''
+    garnet_core = require_garnet_core()
+    try:
+        from garnet_core import weights
+    except ImportError:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(garnet_core.__file__)))
+        return os.path.join(root, 'garnetff', 'trained_models', os.path.basename(name))
+    return weights.resolve(name)
 
 
 def default_checkpoint_path():
@@ -46,7 +91,7 @@ def default_checkpoint_path():
     override = os.environ.get('ISOLDE_GARNET_CHECKPOINT')
     if override:
         return override
-    return os.path.join(_garnet_repo_root(), _DEFAULT_CHECKPOINT_NAME)
+    return _resolve_bundled(_DEFAULT_CHECKPOINT_NAME)
 
 
 def resolve_checkpoint_path(checkpoint_path=None):
@@ -57,17 +102,19 @@ def resolve_checkpoint_path(checkpoint_path=None):
       this is the bare ``garnet`` alias's behaviour, unchanged from before.
     * an absolute path, or a relative path that already exists from the cwd ->
       used verbatim (explicit user/dev override).
-    * a repo-relative name (how the force-field registry pins each ``garnet-{run}``
-      variant, e.g. ``garnetff/trained_models/dtr_sf_r10b_ep2.pt``) -> resolved
-      against the garnet_core repo root, the same base ``default_checkpoint_path``
-      uses. An explicit variant checkpoint deliberately does NOT consult the env
-      override, so selecting ``garnet-r10b`` is deterministic.
+    * a bare checkpoint filename (how the force-field registry pins each
+      ``garnet-{run}`` variant, e.g. ``dtr_sf_r10b_ep2.pt``) -> resolved among the
+      checkpoints garnet ships, the same way ``default_checkpoint_path`` resolves
+      the default. A legacy repo-relative pin
+      (``garnetff/trained_models/dtr_sf_r10b_ep2.pt``) also resolves, since only the
+      basename is used. An explicit variant checkpoint deliberately does NOT consult
+      the env override, so selecting ``garnet-r10b`` is deterministic.
     '''
     if checkpoint_path is None:
         return default_checkpoint_path()
     if os.path.isabs(checkpoint_path) or os.path.exists(checkpoint_path):
         return checkpoint_path
-    return os.path.join(_garnet_repo_root(), checkpoint_path)
+    return _resolve_bundled(checkpoint_path)
 
 
 def _to_numpy(x):
@@ -140,6 +187,9 @@ class GarnetParameters:
         primitives, atoms = extract_primitives(self.structure)
 
         # Lazy imports: garnet_core / torch need only be present at sim time.
+        # require_garnet_core() first, so a missing install reports what to install
+        # instead of an unqualified "No module named 'garnet_core'".
+        require_garnet_core()
         import torch
         from garnet_core.featurize import featurize
         from garnet_core.idatm_charges import infer_formal_charges

@@ -62,15 +62,18 @@ GARNET_FORCEFIELD_NAME = 'garnet'
 # weights but the OpenMM functional forms (e.g. r10b adds a per-atom repulsive wall and
 # a short-range Coulomb guard that earlier rounds lack). Each incarnation is a training
 # run pinned to its own checkpoint and is INDEPENDENTLY SELECTABLE, so two can be compared
-# side by side in one session. Names follow ``garnet-{run}``; each value is the checkpoint
-# path RELATIVE to the garnet_core repo root, resolved lazily in params_cache (which is the
-# only place that imports garnet_core -- this module is loaded at bundle init, before torch
-# is guaranteed present). The functional form itself is auto-detected from the checkpoint's
-# predicted parameters, so adding a future round is just one entry here + a profile.
+# side by side in one session. Names follow ``garnet-{run}``; each value is the BARE
+# FILENAME of the checkpoint, resolved lazily in params_cache (which is the only place
+# that imports garnet_core -- this module is loaded at bundle init, before torch is
+# guaranteed present). A filename rather than a path because where garnet keeps its
+# weights is garnet's business: it differs between an installed wheel and a repo
+# checkout, and garnet_core.weights knows both. The functional form itself is
+# auto-detected from the checkpoint's predicted parameters, so adding a future round is
+# just one entry here + a profile.
 # Ordered NEWEST-FIRST: the selector lists them in this order (most recent round first).
 _GARNET_VARIANTS = {
-    'garnet-r10b': os.path.join('garnetff', 'trained_models', 'dtr_sf_r10b_ep2.pt'),
-    'garnet-r5d':  os.path.join('garnetff', 'trained_models', 'dtr_sf_r5d_ep1.pt'),
+    'garnet-r10b': 'dtr_sf_r10b_ep2.pt',
+    'garnet-r5d':  'dtr_sf_r5d_ep1.pt',
 }
 
 # Only the versioned ``garnet-{run}`` entries are OFFERED as options. The bare ``garnet``
@@ -95,9 +98,9 @@ class GarnetForcefieldHandle:
     It is *not* an OpenMM ``ForceField``; ``SimHandler`` detects the
     ``is_garnet`` flag and routes to the programmatic garnet System builder
     instead of template-matching + ``createSystem``. Carries the selected
-    ``variant`` name (for profiles / logging) and its checkpoint path (a path
-    relative to the garnet_core repo, or None -> the default committed checkpoint;
-    resolved at parameterisation time in params_cache).
+    ``variant`` name (for profiles / logging) and its checkpoint (a bare filename
+    among those garnet ships, or None -> the default committed checkpoint; resolved
+    at parameterisation time in params_cache).
     '''
     is_garnet = True
 
