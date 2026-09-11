@@ -179,6 +179,14 @@ class GarnetParameters:
         self.has_oop = False
         self.warnings = []
         self.parameterised = False
+        # Set True by the model's ``changes`` trigger whenever atoms/bonds are added or
+        # removed, so the next get_garnet_parameters() reparameterises. This is the real
+        # cache-invalidation signal: an atom-COUNT check alone misses a topology edit that
+        # leaves the count unchanged -- notably a protonation-state swap (one H removed, one
+        # added) -- and the swapped-in atom would then get NO bonded parameters and fly off
+        # unrestrained at simulation start.
+        self._dirty = False
+        self._change_handler = None
 
     # ------------------------------------------------------------------ build
     def parameterise(self, logger=None):
@@ -367,6 +375,35 @@ class GarnetParameters:
                                 propers, impropers, self.has_oop, dict(self._globals), missing,
                                 bee=bee, cg_b=cg_b)
 
+    # ---------------------------------------------------- change tracking
+    def register_change_handler(self):
+        '''Watch the model's ``changes`` trigger and mark the cache dirty whenever
+        atoms or bonds are created or deleted. Idempotent.'''
+        if self._change_handler is not None:
+            return
+        self._change_handler = self.structure.triggers.add_handler(
+            'changes', self._changes_cb)
+
+    def _changes_cb(self, trigger_name, data):
+        # Per-structure 'changes' fires as (structure, Changes); Changes carries the
+        # created/deleted tallies. Any atom/bond creation or deletion is a topology edit
+        # that can leave a new atom unparameterised -> reparameterise on next use.
+        changes = data[1]
+        if (changes.num_deleted_atoms() or len(changes.created_atoms())
+                or changes.num_deleted_bonds() or len(changes.created_bonds())):
+            self._dirty = True
+
+    def release_change_handler(self):
+        '''Detach the ``changes`` handler (call before discarding/replacing this cache
+        entry). ChimeraX also clears it automatically when the model is deleted.'''
+        h = self._change_handler
+        self._change_handler = None
+        if h is not None:
+            try:
+                self.structure.triggers.remove_handler(h)
+            except Exception:
+                pass
+
 
 import weakref
 _PARAM_CACHE = weakref.WeakKeyDictionary()   # structure -> GarnetParameters
@@ -377,16 +414,24 @@ def get_garnet_parameters(structure, checkpoint_path=None, force=False, logger=N
     Return a parameterised :class:`GarnetParameters` for ``structure``, caching
     it (keyed weakly to the model, so it is dropped when the model closes).
 
-    Recomputes if the atom count changed since the last parameterisation (a
-    proxy for a topology edit) or if ``force`` is True. Fragment-incremental
-    reparameterisation is deferred to full Track B.
+    Reparameterises when the cached entry has been marked **dirty** by a topology
+    edit (atoms/bonds created or deleted, tracked via the model's ``changes``
+    trigger), when the requested checkpoint differs, or when ``force`` is True. The
+    dirty bit — not an atom-count comparison — is the invalidation signal, because a
+    count comparison misses a topology edit that leaves the count unchanged (e.g. a
+    histidine protonation-state swap: one H removed, one added), after which the new
+    atom would carry no bonded parameters and fly off at simulation start.
+    Fragment-incremental reparameterisation is deferred to full Track B.
     '''
+    ckpt = resolve_checkpoint_path(checkpoint_path)
     cached = _PARAM_CACHE.get(structure)
-    if (cached is not None and not force
-            and cached.checkpoint_path == resolve_checkpoint_path(checkpoint_path)
-            and len(cached._per_atom) == structure.num_atoms):
+    if (cached is not None and not force and not cached._dirty
+            and cached.checkpoint_path == ckpt):
         return cached
+    if cached is not None:
+        cached.release_change_handler()
     gp = GarnetParameters(structure, checkpoint_path=checkpoint_path)
     gp.parameterise(logger=logger)
+    gp.register_change_handler()
     _PARAM_CACHE[structure] = gp
     return gp
