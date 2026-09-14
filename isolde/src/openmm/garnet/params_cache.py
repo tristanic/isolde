@@ -103,10 +103,10 @@ def resolve_checkpoint_path(checkpoint_path=None):
     * an absolute path, or a relative path that already exists from the cwd ->
       used verbatim (explicit user/dev override).
     * a bare checkpoint filename (how the force-field registry pins each
-      ``garnet-{run}`` variant, e.g. ``dtr_sf_r10b_ep2.pt``) -> resolved among the
+      ``garnet-{run}`` variant, e.g. ``dtr_sf_r10b_ep5.pt``) -> resolved among the
       checkpoints garnet ships, the same way ``default_checkpoint_path`` resolves
       the default. A legacy repo-relative pin
-      (``garnetff/trained_models/dtr_sf_r10b_ep2.pt``) also resolves, since only the
+      (``garnetff/trained_models/dtr_sf_r10b_ep5.pt``) also resolves, since only the
       basename is used. An explicit variant checkpoint deliberately does NOT consult
       the env override, so selecting ``garnet-r10b`` is deterministic.
     '''
