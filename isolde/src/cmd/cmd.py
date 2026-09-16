@@ -361,6 +361,8 @@ def _apply_start_decouple(session, isolde, decouple_atoms, lam):
             'mobile region. Widen the simulation selection (or narrow "decouple") so '
             'every decoupled atom is mobile.' % (len(extra), len(decouple_atoms)))
     sh.soften_nb_selection(decouple_atoms, lam)
+    from .decouple import show_decoupled
+    show_decoupled(session, isolde, decouple_atoms)     # ghost transparency to verify the set
     log.info('isolde sim start: decoupled %d mobile atom(s) at lambda=%.3g (low=soft, '
              '1=full). Transient -- restored by "isolde decouple sel off" or when the '
              'simulation stops.' % (len(decouple_atoms), lam))

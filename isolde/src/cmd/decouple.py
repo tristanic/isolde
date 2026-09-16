@@ -37,6 +37,54 @@ def decouple_lambda_arg():
                    name='a coupling value in [0.01, 1]')
 
 
+# Atom-colour alpha (0-255) for the "ghost" visualisation of a decoupled selection -- low enough
+# to read as clearly transparent so the exact softened set is easy to verify by eye.
+_DECOUPLED_ALPHA = 90
+
+
+def show_decoupled(session, isolde, atoms):
+    '''Render ``atoms`` semi-transparent to mark them as the currently decoupled ("ghost") set,
+    so a user can VERIFY the exact selection that was softened (e.g. that ``settle_poses`` ghosted
+    precisely the rebuilt group). Stores their original alpha and restores it when the simulation
+    stops (or via :func:`restore_decoupled`). Colours only -- ISOLDE's Clipper spotlight owns
+    visibility. Exclusive: any previous viz is restored first (only one decoupled set at a time).'''
+    restore_decoupled(session, isolde)
+    if atoms is None or not len(atoms):
+        return
+    try:
+        colors = atoms.colors                       # (N,4) uint8 RGBA
+        orig_alpha = colors[:, 3].copy()
+        colors[:, 3] = _DECOUPLED_ALPHA
+        atoms.colors = colors
+    except Exception:
+        return
+    isolde._decoupled_viz = (atoms, orig_alpha)
+    sh = getattr(isolde, 'sim_handler', None)
+    if sh is not None:
+        from chimerax.core.triggerset import DEREGISTER
+
+        def _on_end(*_):
+            restore_decoupled(session, isolde)
+            return DEREGISTER
+        sh.triggers.add_handler('sim terminated', _on_end)   # transient: cleared when sim stops
+
+
+def restore_decoupled(session, isolde):
+    '''Restore the original atom-colour alpha saved by a previous :func:`show_decoupled`, if any.'''
+    state = getattr(isolde, '_decoupled_viz', None)
+    if not state:
+        return
+    isolde._decoupled_viz = None
+    atoms, orig_alpha = state
+    try:
+        colors = atoms.colors
+        if len(colors) == len(orig_alpha):          # same set still present -> restore
+            colors[:, 3] = orig_alpha
+            atoms.colors = colors
+    except Exception:
+        pass
+
+
 def decouple(session, atoms, state=True, lambda_decouple=DEFAULT_DECOUPLE_LAMBDA):
     '''Soften (``on``, the default) or restore (``off``) the nonbonded coupling of
     ``atoms`` to the rest of the running simulation. ``state`` is a boolean (``on``/
@@ -68,6 +116,7 @@ def decouple(session, atoms, state=True, lambda_decouple=DEFAULT_DECOUPLE_LAMBDA
         for a in range(n):
             for b in range(a, n):
                 sh.set_nb_coupling(a, b, 1.0)
+        restore_decoupled(session, isolde)          # clear the ghost transparency
         session.logger.info('isolde decouple: full coupling restored '
                             '(all selections recoupled).')
         return
@@ -84,6 +133,7 @@ def decouple(session, atoms, state=True, lambda_decouple=DEFAULT_DECOUPLE_LAMBDA
     # keeping the environment (and the selection's own internal geometry) at full.
     sh.assign_nb_group(sh._atoms, 0)
     sh.soften_nb_selection(atoms, lambda_decouple)
+    show_decoupled(session, isolde, atoms)          # ghost transparency to verify the set
     session.logger.info(
         'isolde decouple: %d atom(s) decoupled from their surroundings at lambda=%.3g '
         '(low=soft, 1=full). Transient -- cleared by "isolde decouple sel off" or when '
