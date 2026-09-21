@@ -72,8 +72,14 @@ GARNET_FORCEFIELD_NAME = 'garnet'
 # just one entry here + a profile.
 # Ordered NEWEST-FIRST: the selector lists them in this order (most recent round first).
 _GARNET_VARIANTS = {
-    'garnet-r10b': 'dtr_sf_r10b_ep5.pt',
-    'garnet-r5d':  'dtr_sf_r5d_ep1.pt',
+    'garnet-r10b':     'dtr_sf_r10b_ep5.pt',
+    'garnet-r5d':      'dtr_sf_r5d_ep1.pt',
+    # The original upstream RELEASED garnet weights (base garnetff.Model format). load_any
+    # routes these through ModelExt.load_released, which consumes ISOLDE's 38-wide featurisation
+    # with the ring/planar columns zeroed -- so it reduces exactly to released and flows through
+    # the SAME old scalar-dexp build path as garnet-r5d (no per-atom wall, no Coulomb guard).
+    # Listed last: it is the oldest incarnation (this list is ordered newest-first).
+    'garnet-released': 'v_0_1_0.pt',
 }
 
 # Only the versioned ``garnet-{run}`` entries are OFFERED as options. The bare ``garnet``

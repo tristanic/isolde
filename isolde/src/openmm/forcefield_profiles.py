@@ -91,7 +91,7 @@ _GARNET_PROFILE_DEFAULTS = {
     'nonbonded_softcore_lambda_equil': 1.0,
     'nonbonded_softcore_lambda_minimize': 1.0,
 }
-_GARNET_PROFILE_NAMES = ('garnet', 'garnet-r5d', 'garnet-r10b')
+_GARNET_PROFILE_NAMES = ('garnet', 'garnet-r5d', 'garnet-r10b', 'garnet-released')
 
 _PROFILES = {
     name: ForceFieldProfile(name, param_defaults=dict(_GARNET_PROFILE_DEFAULTS))
