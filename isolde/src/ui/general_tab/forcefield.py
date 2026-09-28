@@ -60,8 +60,12 @@ class ForceFieldDialog(UI_Panel_Base):
     def _populate_forcefield_combo_box(self):
         sim_params = self.session.isolde.sim_params
         names = list(self.session.isolde.forcefield_mgr.available_forcefields)
-        # Stable order with the legacy default first.
-        names = sorted(names, key=lambda n: (n != 'amber14', n))
+        # Keep available_forcefields' deterministic order (non-garnet first, then garnet
+        # variants NEWEST-first) and only hoist the legacy default to the top. A stable sort
+        # on the boolean key preserves that order for every other entry -- do NOT add a name
+        # tiebreak, which would re-sort the garnet variants alphabetically (garnet-r10b before
+        # garnet-r11) and defeat the newest-first ordering.
+        names = sorted(names, key=lambda n: n != 'amber14')
         fcb = self.forcefield_combo_box
         fcb.addItems(names)
         current = getattr(sim_params, 'forcefield', 'amber14')
