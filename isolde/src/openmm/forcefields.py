@@ -72,6 +72,7 @@ GARNET_FORCEFIELD_NAME = 'garnet'
 # just one entry here + a profile.
 # Ordered NEWEST-FIRST: the selector lists them in this order (most recent round first).
 _GARNET_VARIANTS = {
+    'garnet-r11':      'dtr_sf_r11_ep1.pt',
     'garnet-r10b':     'dtr_sf_r10b_ep5.pt',
     'garnet-r5d':      'dtr_sf_r5d_ep1.pt',
     # The original upstream RELEASED garnet weights (base garnetff.Model format). load_any
