@@ -53,15 +53,16 @@ class MapAddDialog(UI_Panel_Base):
 
     def _populate_available_volumes_menu(self):
         rsmm = self.real_space_map_menu
-        from chimerax.map import Volume
-        # Only use explicit Volume instances, not subclasses
-        volumes = [v for v in self.session.models.list() if type(v)==Volume]
         rsmm.clear()
-        for v in volumes:
-            action = rsmm.addAction(f'#{v.id_string}: {v.name}')
-            def add_map_cb(*_, session=self.session, volume=v):
+        target = self.isolde.selected_model
+        for v, owners in _available_real_space_maps(self.session, target):
+            label = f'#{v.id_string}: {v.name}'
+            if owners:
+                label += ' (used by ' + ', '.join(owners) + ')'
+            action = rsmm.addAction(label)
+            def add_map_cb(*_, session=self.session, volume=v, model=target):
                 from chimerax.core.commands import run
-                run(session, f'clipper assoc #{volume.id_string} to #{session.isolde.selected_model.parent.id_string}')
+                run(session, f'clipper assoc #{volume.id_string} to #{model.id_string}')
             action.triggered.connect(add_map_cb)
         
 
@@ -88,5 +89,30 @@ class MapAddDialog(UI_Panel_Base):
             from chimerax.core.commands import run
             oversamp = self.crystal_oversample_spinbox.value()
             run(self.session, f'clipper open "{selected_file}" structureModel #{self.isolde.selected_model.id_string} overSampling {oversamp:.1f} autoFree f')
-            
-        
+
+
+def _available_real_space_maps(session, target):
+    '''One source per grid, excluding grids already associated with target.'''
+    if target is None:
+        return []
+    from chimerax.map import Volume
+    from chimerax.clipper.maps import NXmapHandler
+    from chimerax.clipper.symmetry import get_map_mgr
+    mgr = get_map_mgr(target, create=False)
+    used = ({id(v.data) for v in mgr.all_non_xtal_maps}
+        if mgr is not None else set())
+    grids = {}
+    for v in session.models.list():
+        if type(v) is not Volume and not isinstance(v, NXmapHandler):
+            continue
+        key = id(v.data)
+        if key in used:
+            continue
+        if key not in grids:
+            grids[key] = [v, []]
+        if isinstance(v, NXmapHandler):
+            # Prefer a managed source, preserving its difference-map status.
+            grids[key][0] = v
+            model = v.mapset.structure
+            grids[key][1].append(f'#{model.id_string}: {model.name}')
+    return list(grids.values())
