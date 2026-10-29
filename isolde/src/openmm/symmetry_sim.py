@@ -36,14 +36,15 @@ import numpy
 
 # Residue-level self-overlap detection.
 #
-# A residue clashes with its own crystallographic image only under a *proper
-# rotation* operator (in the Sohncke space groups of biomolecular crystals, the
-# only operators are rotations, screw rotations and translations; a screw
-# carries an on-axis atom tens of Angstroms along the axis, and a translation
-# obviously cannot self-overlap, so neither can produce a self-clash). We
-# therefore (1) use Clipper's affine axis/screw decomposition to test whether an
-# operator instance is a pure rotation at all -- skipping screws/translations
-# outright -- and only then (2) test the residue's actual image against itself.
+# A residue clashes with its own crystallographic image only under an operator
+# that leaves some point fixed: a rotation about an axis, or -- in the
+# centrosymmetric space groups of small-molecule crystals -- an inversion
+# centre, a mirror plane or a rotoinversion. A screw or glide carries every atom
+# a fraction of a cell repeat along its axis or plane, and a translation
+# obviously cannot self-overlap, so none of those can produce a self-clash. We
+# therefore (1) test whether an operator instance has a fixed point at all --
+# skipping screws/glides/translations outright -- and only then (2) test the
+# residue's actual image against itself.
 #
 # The overlap test is a direct heavy-atom clash check (image atom within
 # SELF_OVERLAP_CLASH_DISTANCE of *any* original heavy atom). Measuring real
@@ -55,9 +56,10 @@ import numpy
 # real (even tight) self-symmetry contact. (e.g. GOL /A:308 in 9cwy, P 6 2 2:
 # a 2-fold threads the glycerol body, image atoms land 0.5-1.5 A from originals.)
 SELF_OVERLAP_CLASH_DISTANCE = 2.0
-# |screw translation| (Angstroms) below which an operator counts as a pure
-# rotation (self-overlap capable). Real screw translations are fractions of a
-# cell repeat -- many Angstroms -- so this is a wide, safe separation.
+# |screw/glide translation| (Angstroms) below which an operator counts as having
+# a fixed point (self-overlap capable). Real screw and glide translations are
+# fractions of a cell repeat -- many Angstroms -- so this is a wide, safe
+# separation.
 SCREW_TRANSLATION_TOLERANCE = 0.5
 
 
@@ -194,66 +196,98 @@ def symmetry_group_weight_table(ops_by_group, tol=1e-3):
           shell) it becomes ``1/m``, so the otherwise-dropped copy<->copy contact
           is counted exactly once.
     '''
-    ops = [numpy.asarray(o, dtype=numpy.float64) for o in ops_by_group]
+    # Vectorised over all copy<->copy pairs: a small-molecule shell holds hundreds
+    # of operators (a ~10 A cell searched cutoff-deep), and the pairwise class
+    # count is O(n^4) when done one comparison at a time.
+    ops = numpy.array([numpy.asarray(o, dtype=numpy.float64) for o in ops_by_group])
     n = len(ops)
+    w = numpy.zeros((n, n))
+    w[0, 0] = 1.0
+    w[0, 1:] = w[1:, 0] = 0.5
+    # w[x][x], x>0, stays 0.0
+    if n > 2:
+        xs, ys = numpy.triu_indices(n - 1, k=1)
+        xs += 1
+        ys += 1
+        R, t = ops[:, :, :3], ops[:, :, 3]
+        Rinv = numpy.transpose(R, (0, 2, 1))
+        # S = O_x^-1 . O_y and its inverse, as _op_compose(_op_inverse(.), .) does.
+        SR = Rinv[xs] @ R[ys]
+        St = (Rinv[xs] @ t[ys][:, :, None])[:, :, 0] - (Rinv[xs] @ t[xs][:, :, None])[:, :, 0]
+        SRinv = numpy.transpose(SR, (0, 2, 1))
+        Sinvt = -(SRinv @ St[:, :, None])[:, :, 0]
+        S = numpy.concatenate([SR, St[:, :, None]], axis=2).reshape(-1, 12)
+        Sinv = numpy.concatenate([SRinv, Sinvt[:, :, None]], axis=2).reshape(-1, 12)
+        copies = ops[1:].reshape(-1, 12)
 
-    def present(D):
-        return any(_op_equal(ops[g], D, tol) for g in range(1, n))
+        def present(D, chunk=1024):
+            out = numpy.empty(len(D), bool)
+            for i in range(0, len(D), chunk):
+                d = numpy.abs(D[i:i+chunk, None, :] - copies[None, :, :]) <= tol
+                out[i:i+chunk] = d.all(axis=2).any(axis=1)
+            return out
 
-    copy_pairs = [(x, y) for x in range(1, n) for y in range(x + 1, n)]
-    pair_S = {p: _op_compose(_op_inverse(ops[p[0]]), ops[p[1]]) for p in copy_pairs}
-
-    def same_class(s1, s2):
-        return _op_equal(s1, s2, tol) or _op_equal(s1, _op_inverse(s2), tol)
-
-    w = [[0.0] * n for _ in range(n)]
-    w[0][0] = 1.0
-    for x in range(1, n):
-        w[0][x] = w[x][0] = 0.5
-        # w[x][x] stays 0.0
-    for p in copy_pairs:
-        S = pair_S[p]
-        m = sum(1 for q in copy_pairs if same_class(S, pair_S[q]))
-        r = 0.5 * present(S) + 0.5 * present(_op_inverse(S))
-        val = max(0.0, (1.0 - r) / m)
-        x, y = p
-        w[x][y] = w[y][x] = val
+        # Relationship classes {S, S^-1}: assign each pair to the first earlier
+        # representative it matches. Distinct operators differ by far more than
+        # tol, so this is the same partition as comparing every pair to every other.
+        reps = numpy.empty_like(S)
+        n_reps = 0
+        cls = numpy.empty(len(S), int)
+        for p in range(len(S)):
+            if n_reps:
+                r = reps[:n_reps]
+                hit = numpy.flatnonzero(
+                    (numpy.abs(r - S[p]) <= tol).all(axis=1)
+                    | (numpy.abs(r - Sinv[p]) <= tol).all(axis=1))
+                if len(hit):
+                    cls[p] = hit[0]
+                    continue
+            reps[n_reps] = S[p]
+            cls[p] = n_reps
+            n_reps += 1
+        m = numpy.bincount(cls)[cls]
+        r = 0.5 * present(S) + 0.5 * present(Sinv)
+        val = numpy.maximum(0.0, (1.0 - r) / m)
+        w[xs, ys] = w[ys, xs] = val
 
     # Flatten to match symmetry_group_table / Discrete2DFunction(n, n, ...):
     # values[i + n*j] = weight(group i, group j). The table is symmetric.
-    return [w[i][j] for j in range(n) for i in range(n)]
+    return w.T.ravel().tolist()
 
 
-def _operator_is_pure_rotation(symmat):
+def _operator_has_fixed_point(symmat):
     '''
     Return ``True`` if the orthogonal-space operator ``symmat`` (a 3x4
-    ``[R | t]`` array, Angstroms) is a proper rotation about a fixed axis --
-    i.e. capable of mapping a nearby residue onto itself. ``False`` for pure
-    translations and for screw rotations (whose along-axis translation carries
-    an on-axis atom many Angstroms away, so they cannot self-overlap).
+    ``[R | t]`` array, Angstroms) leaves some point in space fixed -- a rotation
+    about an axis, a mirror, an inversion centre or a rotoinversion -- and so
+    can map a nearby residue onto itself. ``False`` for translations, screw
+    rotations and glides, which carry every atom at least their intrinsic
+    translation away, so they cannot self-overlap.
 
-    Uses Clipper's affine axis/screw decomposition
-    (:func:`chimerax.clipper.geometry.util.rotation_screw_axis_and_angle_affine`),
-    which returns the along-axis screw component of *this* operator instance --
-    correctly folding in any lattice translation (a rotation plus a whole-cell
-    shift along its axis reads as a large screw and is skipped, as it should be).
+    The intrinsic (screw/glide) translation is the part of ``t`` lying in the
+    subspace ``R`` leaves fixed: the axis of a rotation, the plane of a mirror,
+    nothing at all for an inversion or rotoinversion (which therefore always
+    have a fixed point). ``x -> Rx + t`` has a fixed point exactly when it
+    vanishes. It is evaluated for *this* operator instance, so a lattice
+    translation along an axis or plane reads as a large screw or glide and is
+    skipped, as it should be.
     '''
-    from chimerax.geometry import Place
-    from chimerax.clipper.geometry.util import rotation_screw_axis_and_angle_affine
-    place = Place(matrix=numpy.asarray(symmat, dtype=numpy.float64))
-    const_point, axis_dir, angle, screw = rotation_screw_axis_and_angle_affine(place)
-    if const_point is None:
-        return False        # pure translation: no rotation axis
-    screw_mag = float(numpy.linalg.norm(screw))
-    return screw_mag < SCREW_TRANSLATION_TOLERANCE
+    m = numpy.asarray(symmat, dtype=numpy.float64)
+    r, t = m[:, :3], m[:, 3]
+    # The fixed subspace of R is the null space of (I - R). Every other singular
+    # value of (I - R) is >= 1 for a crystallographic operator (6-fold minimum).
+    _, s, vt = numpy.linalg.svd(numpy.identity(3) - r)
+    fixed = vt[s < 1e-3]
+    intrinsic = fixed.T @ (fixed @ t)
+    return float(numpy.linalg.norm(intrinsic)) < SCREW_TRANSLATION_TOLERANCE
 
 
 def _classify_self_overlap(residue_heavy_coords, image_heavy_coords,
         clash_distance=SELF_OVERLAP_CLASH_DISTANCE):
     '''
-    Decide whether a residue's symmetry image (under a pure-rotation operator)
-    overlaps the residue itself. Call only for pure-rotation operators (see
-    :func:`_operator_is_pure_rotation`); screws/translations cannot self-overlap.
+    Decide whether a residue's symmetry image overlaps the residue itself. Call
+    only for operators with a fixed point (see :func:`_operator_has_fixed_point`);
+    screws, glides and translations cannot self-overlap.
 
     Returns one of:
         * ``'none'``             -- no heavy image atom comes within
@@ -278,6 +312,61 @@ def _classify_self_overlap(residue_heavy_coords, image_heavy_coords,
     return 'none'
 
 
+def _shell_fragments(residues, mobile_atoms):
+    '''
+    Label the atoms of ``residues`` by the fragment their symmetry copies are
+    completed to. Returns ``(atoms, labels)``, with ``labels[i]`` the fragment of
+    ``atoms[i]``.
+
+    A residue in ``mobile_atoms`` is split into its connected pieces, using only
+    bonds inside the residue. A protein, nucleic-acid or ligand residue is one
+    piece, so this is the same as whole-residue completion. A small-molecule
+    (corecif) model puts the whole asymmetric unit in one residue, which splits
+    into its separate molecules: completing every copy to the whole asymmetric
+    unit instead brought 124 atoms per operator for 2226487 (4 x 31-atom
+    molecules), 35% more copies than needed.
+
+    A residue outside ``mobile_atoms`` stays whole: if one of its atoms gets a
+    copy, the whole residue is promoted to mobile, and every promoted atom then
+    needs an image to carry its MDFF term.
+    '''
+    from scipy.sparse import coo_matrix
+    from scipy.sparse.csgraph import connected_components
+    atoms = residues.atoms
+    n = len(atoms)
+    if not n:
+        return atoms, numpy.empty(0, dtype=int)
+    res_idx = residues.indices(atoms.residues)
+    a1, a2 = atoms.intra_bonds.atoms
+    i1, i2 = atoms.indices(a1), atoms.indices(a2)
+    same = res_idx[i1] == res_idx[i2]
+    graph = coo_matrix((numpy.ones(int(same.sum())), (i1[same], i2[same])),
+        shape=(n, n))
+    n_frag, labels = connected_components(graph, directed=False)
+    in_mobile = mobile_atoms.indices(atoms) >= 0
+    labels = numpy.where(in_mobile, labels, n_frag + res_idx)
+    return atoms, labels
+
+
+def _complete_fragments(found_atoms, sym_indices, frag_atoms, frag_labels):
+    '''
+    Expand per-atom symmetry hits (``found_atoms`` under ``sym_indices``) to
+    whole fragments (see :func:`_shell_fragments`), per operator. Returns
+    ``(atoms, sym_indices, fragment_labels)`` grouped by ascending operator.
+    '''
+    if not len(found_atoms):
+        return found_atoms, sym_indices, numpy.empty(0, dtype=int)
+    fi = frag_atoms.indices(found_atoms)
+    parts, ops = [], []
+    for k in numpy.unique(sym_indices):
+        hit = numpy.unique(frag_labels[fi[sym_indices == k]])
+        sel = numpy.flatnonzero(numpy.isin(frag_labels, hit))
+        parts.append(sel)
+        ops.append(numpy.full(len(sel), k, dtype=sym_indices.dtype))
+    idx = numpy.concatenate(parts)
+    return frag_atoms[idx], numpy.concatenate(ops), frag_labels[idx]
+
+
 def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
     '''
     Work out which crystallographic symmetry copies should participate in a
@@ -293,8 +382,10 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
           ``max(nonbonded, gbsa) + margin`` when the whole model is mobile).
         * logger: optional ChimeraX logger for status messages.
 
-    Residues whose image under a given operator overlaps themselves (special
-    positions) are pruned per :func:`_classify_self_overlap`.
+    Copies are completed to whole fragments (see :func:`_shell_fragments`):
+    whole residues, except that a mobile residue holding several molecules is
+    split into them. Fragments whose image under a given operator overlaps
+    themselves (special positions) are pruned per :func:`_classify_self_overlap`.
 
     Returns ``None`` (with a logged note) when OpenMM lacks ``SymmetrySite`` or
     the model has no real crystallographic symmetry (a plain P1 box).
@@ -316,21 +407,29 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         return None
 
     found_atoms, symmats, sym_indices, symops = sym_select_within(
-        cs.structure, cs.cell, cs.grid, cs.unit_cell, mobile_atoms, cutoff)
+        cs.structure, cs.cell, cs.grid, cs.unit_cell, mobile_atoms, cutoff,
+        whole_residues=False)
+    frag_atoms, frag_labels = _shell_fragments(found_atoms.unique_residues,
+        mobile_atoms)
+    found_atoms, sym_indices, found_frags = _complete_fragments(found_atoms,
+        sym_indices, frag_atoms, frag_labels)
 
     symmats = numpy.asarray(symmats, dtype=numpy.float64)
 
-    # Which operators are proper rotations (capable of self-overlap)? Screws and
-    # translations cannot map a residue onto itself, so we never even test them.
-    # Classify each operator instance once.
-    pure_rotation = {}
+    # Which operators have a fixed point (capable of self-overlap)? Screws,
+    # glides and translations cannot map a residue onto itself, so we never even
+    # test them. Classify each operator instance once.
+    has_fixed_point = {}
     for symop_index in set(int(s) for s in sym_indices):
         if symop_index == 0:
             continue
-        pure_rotation[symop_index] = _operator_is_pure_rotation(symmats[symop_index])
+        has_fixed_point[symop_index] = _operator_has_fixed_point(symmats[symop_index])
 
-    # Cache the residue-level self-overlap verdict per (residue, operator) so we
-    # only classify each combination once, then emit per-atom copies.
+    # Cache the self-overlap verdict per (fragment, operator) so we only classify
+    # each combination once, then emit per-atom copies. A fragment is the unit
+    # copies are completed to (see _shell_fragments): a residue, or one molecule
+    # of a residue that holds several, so one molecule on a special position
+    # never prunes the others' images.
     overlap_verdict = {}
     n_pruned_residues = 0
 
@@ -347,7 +446,7 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
     n_ignored_copies = 0
 
     copies = []
-    for atom, symop_index in zip(found_atoms, sym_indices):
+    for atom, symop_index, frag in zip(found_atoms, sym_indices, found_frags):
         symop_index = int(symop_index)
         # Index 0 is the identity (the ASU itself): the "copy" would be the real
         # atom, so skip it.
@@ -357,16 +456,16 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         if id(residue) in ignored_residue_ids:
             n_ignored_copies += 1
             continue
-        key = (id(residue), symop_index)
+        key = (int(frag), symop_index)
         verdict = overlap_verdict.get(key)
         if verdict is None:
-            if not pure_rotation[symop_index]:
-                # Screw / translation: cannot self-overlap.
+            if not has_fixed_point[symop_index]:
+                # Screw / glide / translation: cannot self-overlap.
                 verdict = 'none'
             else:
                 r = symmats[symop_index][:, :3]
                 t = symmats[symop_index][:, 3]
-                res_atoms = residue.atoms
+                res_atoms = frag_atoms[frag_labels == frag]
                 heavy = res_atoms[res_atoms.element_names != 'H']
                 # Fall back to all atoms if the residue is all-hydrogen (never
                 # happens for real residues, but keep the array non-empty).

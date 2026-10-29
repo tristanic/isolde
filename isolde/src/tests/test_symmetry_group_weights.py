@@ -116,6 +116,29 @@ def run(session=None):
                     _fail('weight %r out of [0,1]' % w[i][j])
     print('PASS: invariants (symmetric, [0,1], diagonal 1/0) hold')
 
+    # (e) scale: a small-molecule shell holds hundreds of operators (COD 2226487,
+    # P-1, whole-model 20 A shell: 162). The old pairwise implementation was
+    # O(n^4) in pure Python -- about an hour here -- and hung sim start-up.
+    import time
+    inv = numpy.zeros((3, 4)); inv[:3, :3] = -numpy.eye(3)
+    ops_e = [I]
+    for a in range(-2, 3):
+        for b in range(-2, 3):
+            for c in range(-1, 2):
+                for base in (I, inv):
+                    if base is I and (a, b, c) == (0, 0, 0):
+                        continue
+                    op = base.copy(); op[:, 3] += (10.5 * a, 15.7 * b, 17.5 * c)
+                    ops_e.append(op)
+    t0 = time.perf_counter()
+    w = W(ops_e)
+    dt = time.perf_counter() - t0
+    if dt > 10.0:
+        _fail('%d-operator table took %.1fs (expected well under 10s)' % (len(ops_e), dt))
+    if any(abs(w[i][j] - w[j][i]) >= 1e-12 for i in range(len(ops_e)) for j in range(i)):
+        _fail('%d-operator table not symmetric' % len(ops_e))
+    print('PASS: %d-operator table built in %.2fs' % (len(ops_e), dt))
+
     print('ALL PASS')
 
 

@@ -660,23 +660,31 @@ class SimManager:
             coverage_atoms=None):
         '''
         Extend the map zone to cover the crystallographic symmetry copies that
-        actually participate in the simulation, in addition to the real atoms of
-        the region of interest. No-op when the simulation is not symmetry-aware
-        (so ordinary sims keep their original, tight coverage exactly).
+        need density, in addition to the real atoms of the region of interest.
+        No-op when the simulation is not symmetry-aware (so ordinary sims keep
+        their original, tight coverage exactly).
 
         Coverage is sourced directly from the **simulation shell**
-        (:attr:`_symmetry_shell`), not from the Clipper display: the shell copies
-        are the atoms that receive OpenMM virtual sites and MDFF force terms, so
-        covering exactly them makes the covered map region coincide with the set
-        of instances that carry a map term (see
-        :func:`initialize_symmetry_copies` / :func:`add_mdff_atoms`, which key the
-        covered-multiplicity ``n_sym`` and the term set off the same shell). This
-        is also independent of the GUI (works headless).
+        (:attr:`_symmetry_shell`), not from the Clipper display, and is limited to
+        the copies that need density:
+
+            * for each promoted parent (mobile, but outside the region of
+              interest), the single image its MDFF term samples -- the one nearest
+              the region-of-interest centroid, chosen exactly as
+              :func:`_add_mdff_symmetry_terms` chooses it;
+            * heavy-atom ghosts within ``map_mask_radius`` of a region-of-interest
+              heavy atom, so the immediate crystal contacts show density.
+
+        Every other copy carries no map term (each real atom has exactly one), so
+        covering it only costs contouring and masking. Covering the whole shell
+        made the map box the bounding box of the shell: ~95M voxels for a
+        whole-model sim of a small-molecule crystal at 0.8 A, against ~6M for
+        this. This is also independent of the GUI (works headless).
 
         ``cover_atoms`` REPLACES the zone set by the preceding
         :func:`isolate_and_cover_selection`, so a single combined call passes the
-        real region-of-interest atoms (identity transform) plus each shell copy's
-        parent atom under its operator. Clipper masks around each atom's
+        real region-of-interest atoms (identity transform) plus each covered
+        copy's parent atom under its operator. Clipper masks around each atom's
         post-transform (ghost) position and re-masks live as the parents move, so
         density follows the ghosts (both are driven by the same master coords).
         The single fixed OpenMM MDFF box becomes the AABB of exactly these
@@ -697,14 +705,43 @@ class SimManager:
             coverage_atoms = self.sim_construct.mobile_atoms
         mobile = coverage_atoms[coverage_atoms.element_names != 'H']
 
+        copies = shell.copies
+        if not copies:
+            return
+        parents = Atoms([c.parent_atom for c in copies])
+        symops = numpy.array([c.symop_index for c in copies], dtype=int)
+        mats = numpy.asarray(shell.symmats, dtype=numpy.float64)[symops]
+        ghosts = numpy.einsum('nij,nj->ni', mats[:, :, :3],
+            parents.coords.astype(numpy.float64)) + mats[:, :, 3]
+        keep = numpy.zeros(len(copies), dtype=bool)
+        # (1) The MDFF image of each promoted parent: nearest the ROI centroid
+        # (first in shell order on a tie, as min() picks it in the MDFF code).
+        promoted = numpy.flatnonzero(coverage_atoms.indices(parents) < 0)
+        if len(promoted):
+            centroid = coverage_atoms.coords.mean(axis=0)
+            d2 = ((ghosts[promoted] - centroid) ** 2).sum(axis=1)
+            pid = self.model.atoms.indices(parents)[promoted]
+            order = numpy.lexsort((d2, pid))     # by parent, then distance (stable)
+            pid_sorted = pid[order]
+            first = numpy.ones(len(order), dtype=bool)
+            first[1:] = pid_sorted[1:] != pid_sorted[:-1]
+            keep[promoted[order[first]]] = True
+        # (2) The immediate crystal contacts of the region of interest.
+        heavy = numpy.flatnonzero(parents.element_names != 'H')
+        if len(heavy) and len(mobile):
+            from chimerax.geometry import find_close_points
+            i1, _ = find_close_points(ghosts[heavy], mobile.coords,
+                isolde_params.map_mask_radius)
+            keep[heavy[i1]] = True
+
         # Dense operator ids: transform 0 = identity (the real ROI atoms); 1..M
-        # one per operator actually present among the shell copies (first-seen
+        # one per operator actually present among the covered copies (first-seen
         # order). Each copy's parent atom is covered under its operator, so the
         # mask lands at the ghost position R.r + t.
         op_to_place = {}
         place_mats = [numpy.eye(3, 4)]
         copy_parents, copy_place_idx = [], []
-        for c in shell.copies:
+        for c in (copies[i] for i in numpy.flatnonzero(keep)):
             symop = c.symop_index
             pi = op_to_place.get(symop)
             if pi is None:
