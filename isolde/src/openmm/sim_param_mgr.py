@@ -237,6 +237,7 @@ class SimParams(Param_Mgr):
         'forcefield':                           (defaults.OPENMM_FORCEFIELD, None),
         'integrator':                           (defaults.OPENMM_INTEGRATOR_TYPE, None),
         'variable_integrator_tolerance':        (defaults.OPENMM_VAR_INTEGRATOR_TOL, None),
+        'variable_integrator_max_step':         (defaults.OPENMM_VAR_INTEGRATOR_MAX_STEP, None),
         'fixed_integrator_timestep':            (defaults.OPENMM_FIXED_INTEGRATOR_TS, None),
         'constraint_tolerance':                 (defaults.OPENMM_CONSTRAINT_TOL, None),
         'sim_steps_per_gui_update':             (defaults.SIM_STEPS_PER_GUI_UPDATE, None),

@@ -109,6 +109,13 @@ def _build_meta():
             'improves stability -- helpful for flexible hydrogens -- at a modest '
             'performance cost.', minimum=1e-7, maximum=1e-2, step=1e-6, decimals=7,
             display_scale=1000),
+        'variable_integrator_max_step': ParamSpec('float', 'Max timestep (fs)',
+            'Upper limit on the variable-timestep integrator\'s step, shown in fs '
+            '(0 = no limit). The integrator sizes its step from the current forces, '
+            'not from how stiff the fastest vibration is, so near a minimum it lets '
+            'the step grow until fully flexible hydrogens go unstable and "bounce". '
+            'Large (e.g. tugging) forces still shrink the step below this limit.',
+            minimum=0.0, maximum=0.01, step=0.0005, decimals=4, display_scale=1000),
     }
 
 

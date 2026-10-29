@@ -67,6 +67,7 @@ class _Defaults:
         'OPENMM_FRICTION':            20.0, #/ unit.picoseconds,  (was 5.0 -- too low;
         # low friction let bumped atoms, e.g. waters, fly off. 20 gives a nicer balance.)
         'OPENMM_VAR_INTEGRATOR_TOL':  1e-4,
+        'OPENMM_VAR_INTEGRATOR_MAX_STEP': 0.0, #* unit.picoseconds; 0 = no cap
         'OPENMM_CONSTRAINT_TOL':      1e-5,
         'OPENMM_FIXED_INTEGRATOR_TS': 0.001, #* unit.picoseconds,
         'SIM_STEPS_PER_GUI_UPDATE':   50,

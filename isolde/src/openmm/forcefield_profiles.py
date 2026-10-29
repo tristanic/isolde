@@ -83,6 +83,18 @@ _EMPTY_PROFILE = ForceFieldProfile('_default')
 #   min @ lambda=0.8 -> shell blows to >4 A and lambda->1 cannot recover it; min @ 1.0 ->
 #   stable at ~2.12 A). It remains a tunable knob (a user with an extreme clash and no
 #   metals can lower it), but the default must be 1.0.
+# GARNET is trained with a 0.9 nm nonbonded cutoff, so it runs at that cutoff rather
+# than AMBER's GBSA-sized 1.7 nm. Besides matching training, this sets the depth of the
+# crystallographic symmetry shell in whole-model sims (cutoff + margin): 1.7 nm put
+# ~20,000 copies around a 124-atom small-molecule ASU.
+# The variable-step integrator's error tolerance is 1e-5, not the global 1e-4: at 1e-4 the
+# integrator's per-step error heats garnet systems (an isolated small molecule reached
+# ~1500 K at low friction; COD 2224840 in a symmetry-aware sim at 0 K had its nitro groups
+# jittering and flipping). Its step is also capped at 2 fs: the integrator sizes the step
+# from the forces, not the stiffness, so near a minimum it grows the step until garnet's
+# fully flexible hydrogens (rigid_bonds none) go unstable and bounce. Large forces, e.g.
+# tugging, still shrink the step below the cap. Set here rather than per variant so new
+# garnet variants inherit both.
 # (This supersedes the former module-level _FORCEFIELD_PARAM_DEFAULTS dict in
 # sim_param_mgr.py.) Every selectable GARNET incarnation (the bare ``garnet`` alias plus
 # each ``garnet-{run}`` variant) shares this profile -- they differ in checkpoint /
@@ -90,6 +102,9 @@ _EMPTY_PROFILE = ForceFieldProfile('_default')
 _GARNET_PROFILE_DEFAULTS = {
     'nonbonded_softcore_lambda_equil': 1.0,
     'nonbonded_softcore_lambda_minimize': 1.0,
+    'nonbonded_cutoff_distance': 0.9,
+    'variable_integrator_tolerance': 1e-5,
+    'variable_integrator_max_step': 0.002,
 }
 _GARNET_PROFILE_NAMES = ('garnet', 'garnet-r5d', 'garnet-r10b', 'garnet-r11', 'garnet-released')
 

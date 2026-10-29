@@ -27,6 +27,23 @@ MAP_FORCE_GROUP=5
 RESTRAINT_FORCE_GROUP=6
 
 
+def symmetry_scaled_tolerance(tolerance, n_real, n_total):
+    '''
+    The variable-step integrator error tolerance to hand OpenMM so that it means the
+    same however many crystallographic symmetry copies the system holds.
+
+    OpenMM's variable-step integrators pick ``dt = sqrt(tol / err)`` with ``err`` the
+    RMS of ``force / mass`` over *every* particle in the system. Symmetry copies are
+    zero-mass virtual sites: they add nothing to the sum but still count in the mean,
+    loosening the effective tolerance by ``sqrt(n_total / n_real)`` (55 particles per
+    real atom for COD 2224840: 7.4x looser). Scaling by ``sqrt(n_real / n_total)``
+    cancels that. Returns ``tolerance`` unchanged when there are no copies.
+    '''
+    if not n_real or n_total <= n_real:
+        return tolerance
+    return tolerance * (n_real / n_total) ** 0.5
+
+
 
 from chimerax.isolde.delayed_reaction import delayed_reaction
 
@@ -2364,10 +2381,18 @@ class SimHandler:
         integrator = params.integrator
         temperature = self.temperature
         if integrator == openmm.VariableLangevinIntegrator:
+            tolerance = params.variable_integrator_tolerance
+            n_real = getattr(self, '_num_real_atoms', None)
+            n_total = self._system.getNumParticles()
+            scaled = symmetry_scaled_tolerance(tolerance, n_real, n_total)
+            if scaled != tolerance:
+                self.session.logger.info('ISOLDE: integrator tolerance {:g} applied as '
+                    '{:g} to offset {} zero-mass symmetry copies.'.format(
+                        tolerance, scaled, n_total - n_real))
             integrator_params = (
                 temperature,
                 params.friction_coefficient,
-                params.variable_integrator_tolerance,
+                scaled,
                 )
         elif integrator == openmm.LangevinIntegrator:
             integrator_params = (
@@ -2381,6 +2406,9 @@ class SimHandler:
             raise RuntimeError('Unrecognised or unsupported integrator: {}!'.format(integrator))
         _integrator = self._main_integrator = integrator(*integrator_params)
         _integrator.setConstraintTolerance(params.constraint_tolerance)
+        max_step = params.variable_integrator_max_step
+        if integrator == openmm.VariableLangevinIntegrator and max_step:
+            _integrator.setMaximumStepSize(max_step)
         vcheck = VelocityChecker()
         smoother = self._smoother = Smoother(params.smoothing_alpha)
         main_integrator = CompoundIntegrator()
