@@ -43,7 +43,7 @@ def register_chemcomp_id_attr(session):
         'isolde', attr_type=str, can_return_none=True)
 
 
-__version__ = "1.13.dev0"
+__version__ = "2.0.dev1"
 
 ISOLDE_STATE_VERSION = 4
 
