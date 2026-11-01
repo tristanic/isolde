@@ -19,6 +19,11 @@ coverage extend.
      region of interest, its immediate crystal contacts, and the one image each
      promoted parent's MDFF term samples are covered -- not every shell copy,
      which made the live map box the bounding box of the whole shell.
+  3. No duplicate images (``symmetry_sim._duplicate_fragment_images``): a molecule
+     or atom with site symmetry ``S`` makes ``g.M`` and ``g.S.M`` the same neighbour,
+     so the shell used to build it twice, atom on top of atom. For a molecule held
+     whole in the model (``clipper fragments complete``) the coincident twins got a
+     nonzero copy<->copy weight and the sim exploded at once (COD 2201140).
 
 Uses Clipper's bundled test crystals and lightweight fakes for the map manager,
 so it needs no running simulation or GUI. Run inside ChimeraX:
@@ -190,11 +195,64 @@ def test_coverage_promoted_parents(session):
         session.models.close([p])
 
 
+def _coincidences(model, shell):
+    '''(copy pairs closer than 0.05 A, copies within 0.5 A of a real atom).'''
+    from scipy.spatial import cKDTree
+    from chimerax.atomic import Atoms
+    par = Atoms([c.parent_atom for c in shell.copies])
+    ops = numpy.array([c.symop_index for c in shell.copies])
+    mats = numpy.asarray(shell.symmats)[ops]
+    g = numpy.einsum('nij,nj->ni', mats[:, :, :3], par.coords) + mats[:, :, 3]
+    pairs = len(cKDTree(g).query_pairs(0.05))
+    on_real = int(numpy.isfinite(cKDTree(model.atoms.coords).query(
+        g, distance_upper_bound=0.5)[0]).sum())
+    return pairs, on_real
+
+
+def test_no_duplicate_images(session):
+    from chimerax.core.commands import run
+    from chimerax.clipper.io.small_molecule import open_small_molecule_cif
+    from chimerax.clipper.cmd import split_fragments_cmd
+    from chimerax.isolde.openmm.symmetry_sim import build_symmetry_shell
+    cases = [
+        # (file, fragments mode, what has site symmetry)
+        ('cod_2021365.cif', 'complete', 'molecule completed across an inversion centre (P-1)'),
+        ('cod_2237730.cif', 'rename', 'molecule lying in a mirror plane (P2_1/m)'),
+        ('cod_1100908.cif', 'rename', 'Cu on a 2-fold (C2/c)'),
+    ]
+    for name, mode, what in cases:
+        m = open_small_molecule_cif(session, _clipper_test_file(name))
+        try:
+            n0 = m.num_atoms
+            split_fragments_cmd(session, [m], mode=mode)
+            if mode == 'complete' and m.num_atoms <= n0:
+                _fail('%s: fragments complete added no atoms - not exercising a whole '
+                      'molecule on a special position' % name)
+            shell = build_symmetry_shell(m, m.atoms, 12.0)
+            pairs, on_real = _coincidences(m, shell)
+            if pairs or on_real:
+                _fail('%s (%s): %d coincident copy pairs, %d copies on real atoms'
+                      % (name, what, pairs, on_real))
+            print('PASS: %s, %s: %d copies, none coincident' % (name, what, len(shell.copies)))
+        finally:
+            session.models.close([m])
+    p = run(session, 'open ' + _clipper_test_file('3io0.pdb'), log=False)[0]
+    try:
+        shell = build_symmetry_shell(p, p.atoms, 8.0)
+        pairs, on_real = _coincidences(p, shell)
+        if pairs or on_real:
+            _fail('3io0: %d coincident copy pairs, %d copies on real atoms' % (pairs, on_real))
+        print('PASS: 3io0 protein shell (%d copies) has no coincident images' % len(shell.copies))
+    finally:
+        session.models.close([p])
+
+
 def run_all(session):
     test_protein_shell_whole_residues(session)
     test_small_molecule_shell_per_molecule(session)
     test_coverage_whole_model(session)
     test_coverage_promoted_parents(session)
+    test_no_duplicate_images(session)
     print('ALL PASS')
 
 

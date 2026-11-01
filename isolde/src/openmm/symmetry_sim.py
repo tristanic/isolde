@@ -367,6 +367,59 @@ def _complete_fragments(found_atoms, sym_indices, frag_atoms, frag_labels):
     return frag_atoms[idx], numpy.concatenate(ops), frag_labels[idx]
 
 
+# Two atoms closer than this (Angstroms) are the same atom twice. A molecule completed
+# across a special position re-creates its own symmetry images to coordinate precision,
+# while distinct atoms never get this close: bonded heavy atoms are >= ~1.2 A apart and
+# genuine contacts (even metal coordination, ~1.9 A) are further still.
+COINCIDENT_IMAGE_DISTANCE = 0.5
+
+
+def _duplicate_fragment_images(real_atoms, frag_atoms, frag_labels, symmats, keys,
+        tol=COINCIDENT_IMAGE_DISTANCE):
+    '''
+    Return the subset of ``keys`` -- ``(fragment, operator)`` images, in shell order --
+    whose heavy atoms all land on atoms already present: real atoms, or an image kept
+    earlier in ``keys``.
+
+    This happens when the model holds a whole molecule that sits on a special position
+    (e.g. after ``clipper fragments complete``): with site symmetry ``S``, ``g.M`` and
+    ``g.S.M`` are the same neighbouring molecule, so every neighbour would be built twice,
+    atom on top of atom. The coincident pairs belong to different operator groups, whose
+    relationship ``S`` is absent from the shell (its self-image was pruned), so the group
+    weight table gives them a nonzero copy<->copy weight and they interact at r ~ 0 (COD
+    2201140, P2_1/n, on an inversion centre: every one of 5616 copies had a twin).
+    '''
+    from scipy.spatial import cKDTree
+    heavy = real_atoms[real_atoms.element_names != 'H']
+    pts = [(heavy if len(heavy) else real_atoms).coords]
+    owner = [numpy.full(len(pts[0]), -1)]
+    for k, (frag, op) in enumerate(keys):
+        a = frag_atoms[frag_labels == frag]
+        h = a[a.element_names != 'H']
+        ref = h if len(h) else a
+        pts.append(ref.coords @ symmats[op][:, :3].T + symmats[op][:, 3])
+        owner.append(numpy.full(len(ref), k))
+    pts = numpy.concatenate(pts)
+    owner = numpy.concatenate(owner)
+    pairs = cKDTree(pts).query_pairs(tol, output_type='ndarray')
+    pairs = pairs[owner[pairs[:, 0]] != owner[pairs[:, 1]]]
+    if not len(pairs):
+        return set()
+    partners = {}
+    for a, b in pairs:
+        partners.setdefault(a, []).append(b)
+        partners.setdefault(b, []).append(a)
+    kept = {-1}
+    drop = set()
+    for k, key in enumerate(keys):
+        idx = numpy.flatnonzero(owner == k)
+        if all(any(owner[q] in kept for q in partners.get(p, ())) for p in idx):
+            drop.add(key)
+        else:
+            kept.add(k)
+    return drop
+
+
 def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
     '''
     Work out which crystallographic symmetry copies should participate in a
@@ -445,7 +498,7 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         if getattr(r, 'isolde_ignore', False)}
     n_ignored_copies = 0
 
-    copies = []
+    copies, copy_keys = [], []
     for atom, symop_index, frag in zip(found_atoms, sym_indices, found_frags):
         symop_index = int(symop_index)
         # Index 0 is the identity (the ASU itself): the "copy" would be the real
@@ -485,6 +538,15 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         # as '' or ' ') to '' so the future cross-altloc comparison is clean.
         source_altloc = (getattr(atom, 'alt_loc', '') or '').strip()
         copies.append(SymmetryCopy(atom, symop_index, source_altloc))
+        copy_keys.append(key)
+
+    # Drop images that only re-create atoms already present (a molecule on a special
+    # position held whole in the model builds each neighbour twice).
+    unique_keys = list(dict.fromkeys(copy_keys))
+    duplicates = _duplicate_fragment_images(cs.structure.atoms, frag_atoms, frag_labels,
+        symmats, unique_keys)
+    if duplicates:
+        copies = [c for c, k in zip(copies, copy_keys) if k not in duplicates]
 
     if logger is not None:
         n_parents = len({id(c.parent_atom) for c in copies})
@@ -497,6 +559,10 @@ def build_symmetry_shell(model, mobile_atoms, cutoff, *, logger=None):
         if n_ignored_copies:
             msg += (f' Skipped {n_ignored_copies} copy(ies) whose parent lies in '
                 'an isolde-ignored residue.')
+        if duplicates:
+            msg += (f' Dropped {len(duplicates)} duplicate residue/operator image(s): '
+                'the model holds a whole molecule that sits on a special position, '
+                'which re-creates each neighbouring molecule twice.')
         logger.info(msg)
 
     if not copies:
